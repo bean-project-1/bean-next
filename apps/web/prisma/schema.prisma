@@ -1,0 +1,106 @@
+// =====================================================
+// BEAN — Prisma Database Schema
+// apps/web/prisma/schema.prisma
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---- User ----
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profile    BeanProfile?
+  lifeEvents LifeEvent[]
+  lifeStates LifeState[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ---- BeanProfile ----
+// Stores the three life pillars as JSON blobs for flexibility.
+// Structured columns can be added as the schema matures.
+
+model BeanProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // JSON pillars (typed in application layer via @bean/types)
+  identity  Json  // IdentityProfile
+  capital   Json  // CapitalProfile
+  wellbeing Json  // WellbeingProfile
+
+  // Computed overall life score (0–100), updated after each analysis
+  lifeScore Float?
+
+  // Dimension scores snapshot (array of DimensionScore)
+  dimensionScores Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bean_profiles")
+}
+
+// ---- LifeEvent ----
+// Records significant events that affect life trajectory
+
+model LifeEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // See LifeEventType in @bean/types
+  title       String
+  description String
+  date        DateTime
+  impact      String?  // 'positive' | 'negative' | 'neutral'
+
+  // JSON: string[] of affected dimension keys
+  affectedDimensions Json?
+
+  // Arbitrary metadata
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("life_events")
+}
+
+// ---- LifeState ----
+// Immutable snapshots of dimension scores over time (for trajectory)
+
+model LifeState {
+  id        String   @id @default(cuid())
+  userId    String
+  timestamp DateTime @default(now())
+
+  // JSON: DimensionScore[]
+  dimensionScores Json
+
+  lifeScore     Float
+  triggeredBy   String? // event id or 'manual' | 'ai_analysis'
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@map("life_states")
+}

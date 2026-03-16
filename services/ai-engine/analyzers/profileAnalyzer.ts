@@ -11,18 +11,19 @@ import type {
   BeanProfile,
   AnalysisRequest,
   AnalysisResponse,
-  DimensionScore,
   Insight,
   LifeTrajectory,
   TrajectoryPoint,
+  DimensionView,
+  DimensionCategory,
 } from '@bean/types';
 
 // Initialize OpenAI client (lazy — only if API key present)
 const getOpenAIClient = (): OpenAI => {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env['OPENAI_API_KEY']) {
     throw new Error('OPENAI_API_KEY is not set');
   }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
 };
 
 // ---- System prompt builder ----
@@ -36,14 +37,12 @@ Always respond in valid JSON format.`;
 
 function buildProfilePrompt(profile: BeanProfile): string {
   return `Analyze this life profile and return a JSON object with:
-- dimensionScores: array of { key, label, value (0-10), trend }
+- dimensionScores: array of { name, label, score (0-10), trend }
 - lifeScore: number (0-100)
-- insights: array of { category, title, body, affectedDimensions, priority, suggestedAction }
+- insights: array of { type, title, body, dimensionName, priority, suggestedAction }
 
-Profile:
-Identity: ${JSON.stringify(profile.identity)}
-Capital: ${JSON.stringify(profile.capital)}
-Wellbeing: ${JSON.stringify(profile.wellbeing)}`;
+Profile Data:
+${JSON.stringify(profile.dimensionScores ?? [])}`;
 }
 
 // ---- analyzeProfile ----
@@ -59,26 +58,27 @@ export async function analyzeProfile(request: AnalysisRequest): Promise<Analysis
 
   console.warn('analyzeProfile: running with mock data — set OPENAI_API_KEY to enable AI');
 
-  const mockScores: DimensionScore[] = [
-    { key: 'values', label: 'Values Clarity', value: 7.5, trend: 'stable' },
-    { key: 'interests', label: 'Interests', value: 8.0, trend: 'up' },
-    { key: 'motivations', label: 'Motivations', value: 6.5, trend: 'stable' },
-    { key: 'knowledge', label: 'Knowledge', value: 7.0, trend: 'up' },
-    { key: 'skills', label: 'Skills', value: 7.5, trend: 'up' },
-    { key: 'career', label: 'Career', value: 6.0, trend: 'stable' },
-    { key: 'income', label: 'Income', value: 5.5, trend: 'stable' },
-    { key: 'health', label: 'Health', value: 7.0, trend: 'up' },
-    { key: 'relationships', label: 'Relationships', value: 7.5, trend: 'stable' },
-    { key: 'happiness', label: 'Happiness', value: 6.5, trend: 'up' },
+  const mockScores: DimensionView[] = [
+    { name: 'values', label: 'Values Clarity', category: 'identity', score: 7.5, trend: 'stable' },
+    { name: 'interests', label: 'Interests', category: 'identity', score: 8.0, trend: 'up' },
+    { name: 'motivations', label: 'Motivations', category: 'identity', score: 6.5, trend: 'stable' },
+    { name: 'knowledge', label: 'Knowledge', category: 'capital', score: 7.0, trend: 'up' },
+    { name: 'skills', label: 'Skills', category: 'capital', score: 7.5, trend: 'up' },
+    { name: 'career', label: 'Career', category: 'capital', score: 6.0, trend: 'stable' },
+    { name: 'income', label: 'Income', category: 'capital', score: 5.5, trend: 'stable' },
+    { name: 'health', label: 'Health', category: 'capital', score: 7.0, trend: 'up' },
+    { name: 'relationships', label: 'Relationships', category: 'experience', score: 7.5, trend: 'stable' },
+    { name: 'happiness', label: 'Happiness', category: 'experience', score: 6.5, trend: 'up' },
   ];
 
   const lifeScore = Math.round(
-    (mockScores.reduce((sum, s) => sum + s.value, 0) / (mockScores.length * 10)) * 100
+    (mockScores.reduce((sum, s) => sum + s.score, 0) / (mockScores.length * 10)) * 100
   );
 
   return {
     lifeScore,
     dimensionScores: mockScores,
+    pillars: [], // Mocking empty pillars for now
     insights: await generateInsights(request),
     trajectory: await simulateTrajectory({ userId: request.userId, dimensionScores: mockScores }),
     generatedAt: new Date(),
@@ -108,40 +108,28 @@ export async function generateInsights(request: AnalysisRequest): Promise<Insigh
   const now = new Date();
   return [
     {
-      id: `insight_${Date.now()}_1`,
-      userId: request.userId,
-      category: 'strength',
+      type: 'strength',
       title: 'Strong intellectual foundation',
       body: 'Your knowledge and skills are above average. Leverage them to accelerate your career.',
-      affectedDimensions: ['knowledge', 'skills'],
-      priority: 'medium',
-      actionable: true,
+      dimensionName: 'skills',
+      priority: 2,
       suggestedAction: 'Identify 2–3 high-leverage projects that use your top skills.',
-      generatedAt: now,
     },
     {
-      id: `insight_${Date.now()}_2`,
-      userId: request.userId,
-      category: 'gap',
+      type: 'gap',
       title: 'Income potential not fully realized',
       body: 'Your income score lags behind your skills score. Consider negotiating or exploring higher-paying opportunities.',
-      affectedDimensions: ['income', 'career'],
-      priority: 'high',
-      actionable: true,
+      dimensionName: 'income',
+      priority: 1,
       suggestedAction: 'Research market rates for your role and prepare a compensation conversation.',
-      generatedAt: now,
     },
     {
-      id: `insight_${Date.now()}_3`,
-      userId: request.userId,
-      category: 'opportunity',
+      type: 'opportunity',
       title: 'Wellbeing is a growth catalyst',
       body: 'Investing in health and relationships has a compounding effect on all other dimensions.',
-      affectedDimensions: ['health', 'relationships', 'happiness'],
-      priority: 'medium',
-      actionable: true,
+      dimensionName: 'health',
+      priority: 2,
       suggestedAction: 'Schedule consistent exercise and one meaningful social interaction per week.',
-      generatedAt: now,
     },
   ];
 }
@@ -154,7 +142,7 @@ export async function generateInsights(request: AnalysisRequest): Promise<Insigh
  */
 export async function simulateTrajectory(options: {
   userId: string;
-  dimensionScores: DimensionScore[];
+  dimensionScores: DimensionView[];
   months?: number;
 }): Promise<LifeTrajectory> {
   const { userId, dimensionScores, months = 12 } = options;
@@ -175,7 +163,7 @@ export async function simulateTrajectory(options: {
       lifeScore: Math.min(100, Math.max(0, 65 + i * 1.5 + jitter)),
       dimensionScores: dimensionScores.map((d) => ({
         ...d,
-        value: Math.min(10, Math.max(0, d.value - (6 - i) * 0.2 + (Math.random() - 0.5) * 0.5)),
+        score: Math.min(10, Math.max(0, d.score - (6 - i) * 0.2 + (Math.random() - 0.5) * 0.5)),
       })),
     };
   });
@@ -190,7 +178,7 @@ export async function simulateTrajectory(options: {
       lifeScore: Math.min(100, currentScore + i * 0.8 + (Math.random() - 0.3) * 1.2),
       dimensionScores: dimensionScores.map((d) => ({
         ...d,
-        value: Math.min(10, d.value + i * 0.08),
+        score: Math.min(10, d.score + i * 0.08),
       })),
     };
   });

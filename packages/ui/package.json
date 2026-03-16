@@ -3,19 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "description": "BEAN Design System — reusable UI components",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./src/index.ts",
+      "require": "./src/index.ts",
+      "types": "./src/index.ts"
     }
   },
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "dev": "tsc --watch",
+    "dev": "echo '@bean/ui: using source via transpilePackages'",
     "lint": "eslint src/**/*.{ts,tsx}"
   },
   "peerDependencies": {

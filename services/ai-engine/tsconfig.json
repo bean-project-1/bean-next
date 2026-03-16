@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@bean/types": ["../../packages/types/src/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "../../packages/types/src/index.ts"],
+  "exclude": ["node_modules", "dist"]
+}

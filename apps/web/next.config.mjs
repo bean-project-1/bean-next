@@ -1,7 +1,6 @@
-import type { NextConfig } from 'next';
-
 /** @type {import('next').NextConfig} */
-const nextConfig: NextConfig = {
+const nextConfig = {
+  // Restart trigger
   // Enable standalone output for Docker deployment
   output: 'standalone',
 
@@ -11,15 +10,13 @@ const nextConfig: NextConfig = {
   // Strict React mode
   reactStrictMode: true,
 
-  // Image optimization (add domains as needed)
+  // Image optimization
   images: {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
 
-  // Experimental features
   experimental: {
-    // Server Components
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
+    serverComponentsExternalPackages: ['@prisma/client'],
   },
 };
 

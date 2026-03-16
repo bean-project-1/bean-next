@@ -1,116 +1,193 @@
 // =======================================================
-// BEAN — API Route: POST /api/profile
+// BEAN — API Route: POST + GET /api/profile
 // apps/web/app/api/profile/route.ts
-//
-// Receives onboarding data, creates or updates BeanProfile,
-// and triggers initial AI analysis.
 // =======================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import type { ApiResponse, BeanProfile } from '@bean/types';
+import { prisma } from '@/lib/prisma';
+import { setUserCookie } from '@/lib/session';
 
-// ---- Validation Schema ----
-
+// ── Validation ─────────────────────────────────────────
 const onboardingSchema = z.object({
-  profession: z.string().min(1, 'Profession is required'),
-  skills: z.array(z.string()).min(1, 'At least one skill is required'),
-  interests: z.array(z.string()).min(1, 'At least one interest is required'),
-  exerciseFrequency: z.string().min(1, 'Exercise frequency is required'),
-  lifeSatisfaction: z.number().min(0).max(10),
-  values: z.array(z.string()).optional(),
-  motivations: z.array(z.string()).optional(),
+  name: z.string().min(1),
+  email: z.string().email(),
+  profession: z.string().default(''),
+  skills: z.array(z.string()).default([]),
+  interests: z.array(z.string()).default([]),
+  exerciseFrequency: z.string().default(''),
+  lifeSatisfaction: z.number().min(0).max(10).default(5),
+  // Extra dimension scores from the Review phase sliders
+  dimensionExtras: z
+    .array(z.object({ key: z.string(), score: z.number().min(0).max(10) }))
+    .default([]),
 });
 
-// ---- Handler ----
+// Map onboarding fields → dimension keys + initial score
+function buildDimScores(
+  data: z.infer<typeof onboardingSchema>
+): { key: string; score: number }[] {
+  const results: { key: string; score: number }[] = [];
 
-export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<BeanProfile>>> {
+  if (data.profession)
+    results.push({ key: 'career', score: 7 });
+  if (data.skills.length)
+    results.push({ key: 'skills', score: Math.min(10, 5 + data.skills.length * 0.5) });
+  if (data.interests.length)
+    results.push({ key: 'interests', score: Math.min(10, 5 + data.interests.length * 0.5) });
+  if (data.exerciseFrequency) {
+    const map: Record<string, number> = {
+      Rarely: 2, '1–2x/week': 5, '3–4x/week': 7, '5+x/week': 9, Daily: 10,
+    };
+    results.push({ key: 'physical_health', score: map[data.exerciseFrequency] ?? 5 });
+  }
+  if (data.lifeSatisfaction !== undefined && data.lifeSatisfaction !== null)
+    results.push({ key: 'mental_wellbeing', score: data.lifeSatisfaction });
+
+  // Merge extras from the Review phase (extras override auto-derived)
+  const extraKeys = new Set(data.dimensionExtras.map(e => e.key));
+  const base = results.filter(r => !extraKeys.has(r.key));
+  const extras = data.dimensionExtras
+    .filter(e => e.score > 0)
+    .map(e => ({ key: e.key, score: e.score }));
+
+  return [...base, ...extras];
+}
+
+// ── POST — Onboarding: create User + BeanProfile + DimensionScores ──
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
-    // Validate input
     const parsed = onboardingSchema.safeParse(body);
+
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: parsed.error.message, code: 'VALIDATION_ERROR' },
+        { success: false, error: parsed.error.errors[0]?.message ?? 'Validation failed' },
         { status: 400 }
       );
     }
 
     const data = parsed.data;
 
-    // TODO: Get authenticated user from session
-    // const session = await getServerSession();
-    // const userId = session?.user?.id ?? 'demo-user';
-    const userId = 'demo-user';
+    // 1. Upsert User
+    let isNewUser = false;
+    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    const user = existing
+      ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name } })
+      : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name } }); })();
 
-    // TODO: Upsert BeanProfile in database via Prisma
-    // const profile = await prisma.beanProfile.upsert({
-    //   where: { userId },
-    //   create: {
-    //     userId,
-    //     identity: { values: data.values ?? [], interests: data.interests, motivations: data.motivations ?? [] },
-    //     capital: { skills: data.skills, knowledge: [], careerStage: data.profession },
-    //     wellbeing: { healthScore: data.lifeSatisfaction, relationshipsScore: 5, happinessScore: data.lifeSatisfaction },
-    //   },
-    //   update: { ... },
-    // });
+    // 2. Upsert BeanProfile — v2 schema has no JSON blob columns
+    const profile = await prisma.beanProfile.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id },
+      update: {},
+    });
 
-    // Build a mock profile response
-    const profile: BeanProfile = {
-      id: `profile_${Date.now()}`,
-      userId,
-      identity: {
-        values: data.values ?? [],
-        interests: data.interests,
-        motivations: data.motivations ?? [],
-      },
-      capital: {
-        knowledge: [],
-        skills: data.skills,
-        careerStage: data.profession,
-        jobTitle: data.profession,
-      },
-      wellbeing: {
-        healthScore: data.lifeSatisfaction,
-        relationshipsScore: 5,
-        happinessScore: data.lifeSatisfaction,
-        exerciseFrequency: data.exerciseFrequency,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // 3. Persist dimension scores in the relational DimensionScore table
+    const dimScores = buildDimScores(data);
 
-    // TODO: Trigger async AI analysis
-    // await analyzeProfile({ userId, profile });
+    if (dimScores.length > 0) {
+      const dimensions = await prisma.dimension.findMany({
+        where: { name: { in: dimScores.map(d => d.key) } },
+      });
+      const dimMap = new Map(dimensions.map(d => [d.name, d.id]));
 
-    return NextResponse.json({ success: true, data: profile }, { status: 201 });
+      await Promise.all(
+        dimScores
+          .filter(ds => dimMap.has(ds.key))
+          .map(ds =>
+            prisma.dimensionScore.upsert({
+              where: {
+                profileId_dimensionId: {
+                  profileId: profile.id,
+                  dimensionId: dimMap.get(ds.key)!,
+                },
+              },
+              create: {
+                profileId: profile.id,
+                dimensionId: dimMap.get(ds.key)!,
+                score: ds.score,
+                trend: 'stable',
+              },
+              update: { score: ds.score },
+            })
+          )
+      );
+    }
+
+    // 4. Create initial LifeState snapshot (no scores nested — kept simple)
+    const lifeScore =
+      dimScores.length > 0
+        ? (dimScores.reduce((s, d) => s + d.score, 0) / dimScores.length) * 10
+        : data.lifeSatisfaction * 10;
+
+    await prisma.lifeState.create({
+      data: { userId: user.id, lifeScore, triggeredBy: 'onboarding' },
+    });
+
+    // 5. Set session cookie
+    const res = NextResponse.json(
+      { success: true as const, data: { userId: user.id, profileId: profile.id, isNewUser } },
+      { status: 201 }
+    );
+    setUserCookie(res, user.id);
+    return res;
+
   } catch (err) {
-    console.error('[POST /api/profile]', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[POST /api/profile]', msg);
     return NextResponse.json(
-      { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      {
+        success: false,
+        error: 'Failed to create profile',
+        // Show full error in dev for debugging
+        detail: process.env.NODE_ENV !== 'production' ? msg : undefined,
+      },
       { status: 500 }
     );
   }
 }
 
-// ---- GET current profile ----
-
-export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<BeanProfile>>> {
+// ── GET — Fetch current user + profile + dimension scores ──
+export async function GET(req: NextRequest) {
   try {
-    // TODO: Get userId from session
-    // const session = await getServerSession();
+    const userId = req.cookies.get('bean_user_id')?.value;
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
-    // TODO: Fetch from DB
-    // const profile = await prisma.beanProfile.findUnique({ where: { userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: {
+          include: {
+            // ← Deep include: scores with their Dimension metadata
+            dimensionScores: {
+              include: { dimension: true },
+            },
+          },
+        },
+      },
+    });
 
-    return NextResponse.json(
-      { success: false, error: 'Not implemented yet', code: 'NOT_IMPLEMENTED' },
-      { status: 501 }
-    );
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { user, profile: user.profile },
+    });
+
   } catch (err) {
     console.error('[GET /api/profile]', err);
     return NextResponse.json(
-      { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

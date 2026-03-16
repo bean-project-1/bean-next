@@ -1,9 +1,18 @@
-// =======================================================
-// BEAN Platform — Core TypeScript Interfaces
+// =====================================================================
+// BEAN — Shared TypeScript Types (v2)
 // packages/types/src/index.ts
-// =======================================================
+//
+// Aligned with the v2 relational database schema.
+// =====================================================================
 
-// ---- User ----
+// ─── Enums / Constants ────────────────────────────────────────────────
+
+export type DimensionCategory = 'identity' | 'capital' | 'experience';
+export type ScoreTrend = 'up' | 'down' | 'stable';
+export type LifeEventImpact = 'positive' | 'negative' | 'neutral';
+export type InputSource = 'manual' | 'questionnaire' | 'integration';
+
+// ─── Core Entities ────────────────────────────────────────────────────
 
 export interface User {
   id: string;
@@ -14,175 +23,162 @@ export interface User {
   updatedAt: Date;
 }
 
-// ---- Dimension Scoring ----
-
-/** Score for any single life sub-dimension (0–10) */
-export interface DimensionScore {
-  key: string;       // e.g. "health", "career"
-  label: string;     // Human-readable label
-  value: number;     // 0–10
-  trend?: 'up' | 'down' | 'stable';
-  notes?: string;
-}
-
-// ---- Identity Pillar ----
-
-export interface IdentityProfile {
-  values: string[];
-  interests: string[];
-  motivations: string[];
-  personalityTraits?: string[];
-}
-
-// ---- Capital Pillar ----
-
-export interface CapitalProfile {
-  knowledge: string[];      // Areas of expertise
-  skills: string[];         // Specific skills
-  careerStage: string;      // e.g. "mid-level engineer"
-  jobTitle?: string;
-  industry?: string;
-  incomeRange?: string;     // e.g. "$80k–$100k"
-  educationLevel?: string;
-}
-
-// ---- Wellbeing Pillar ----
-
-export interface WellbeingProfile {
-  healthScore: number;         // 0–10
-  relationshipsScore: number;  // 0–10
-  happinessScore: number;      // 0–10
-  stressLevel?: number;        // 0–10
-  exerciseFrequency?: string;  // e.g. "3x/week"
-  sleepQuality?: number;       // 0–10
-}
-
-// ---- BEAN Profile (aggregated) ----
-
 export interface BeanProfile {
   id: string;
   userId: string;
-
-  /** Identity pillar */
-  identity: IdentityProfile;
-
-  /** Capital pillar */
-  capital: CapitalProfile;
-
-  /** Wellbeing pillar */
-  wellbeing: WellbeingProfile;
-
-  /** Computed scores per dimension */
-  dimensionScores?: DimensionScore[];
-
-  /** Overall life score (0–100) */
-  lifeScore?: number;
-
   createdAt: Date;
   updatedAt: Date;
+  dimensionScores?: DimensionScore[];
 }
 
-// ---- Life Events ----
+// ─── Dimensions ───────────────────────────────────────────────────────
 
-export type LifeEventType =
-  | 'career_change'
-  | 'relationship'
-  | 'health'
-  | 'financial'
-  | 'education'
-  | 'milestone'
-  | 'crisis'
-  | 'other';
+export interface Dimension {
+  id: string;
+  name: string;            // slug: "values", "skills", "income" …
+  label: string;           // display: "Core Values", "Skills" …
+  category: DimensionCategory;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+}
 
-export interface LifeEvent {
+export interface DimensionScore {
+  id: string;
+  profileId: string;
+  dimensionId: string;
+  score: number;           // 0.0 – 10.0
+  trend: ScoreTrend;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  dimension?: Dimension;
+}
+
+// ─── Raw Inputs ───────────────────────────────────────────────────────
+
+export interface DimensionInput {
   id: string;
   userId: string;
-  type: LifeEventType;
-  title: string;
-  description: string;
-  date: Date;
-  impact?: 'positive' | 'negative' | 'neutral';
-  affectedDimensions?: string[];
-  metadata?: Record<string, unknown>;
+  inputType: string;       // "exercise_hours_per_week", "skills", …
+  valueJson: unknown;      // flexible JSON payload
+  source: InputSource;
+  createdAt: Date;
 }
 
-// ---- Life State (snapshot) ----
+// ─── Life State (Snapshots for Trajectory) ───────────────────────────
 
 export interface LifeState {
   id: string;
   userId: string;
-  dimensionScores: DimensionScore[];
-  lifeScore: number;
+  lifeScore: number;       // 0–100 composite
   timestamp: Date;
-  triggeredBy?: string; // event id or 'manual'
+  triggeredBy?: string;
+  notes?: string;
+  scores?: LifeStateScore[];
 }
 
-// ---- Life Trajectory ----
+export interface LifeStateScore {
+  id: string;
+  lifeStateId: string;
+  dimensionId: string;
+  score: number;
+  dimension?: Dimension;
+}
 
-export interface TrajectoryPoint {
-  timestamp: Date;
+// ─── Life Events ──────────────────────────────────────────────────────
+
+export interface LifeEvent {
+  id: string;
+  userId: string;
+  type: string;            // "new_job", "marathon", "graduation" …
+  title: string;
+  description?: string;
+  date: Date;
+  impact?: LifeEventImpact;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+// ─── Onboarding ───────────────────────────────────────────────────────
+
+export interface OnboardingData {
+  name: string;
+  email: string;
+  profession: string;
+  skills: string[];
+  interests: string[];
+  exerciseFrequency: string;
+  lifeSatisfaction: number;    // 0–10
+  values?: string[];
+  motivations?: string[];
+}
+
+// ─── Score Utilities ──────────────────────────────────────────────────
+
+/** A compact view of a dimension with its current score — for display. */
+export interface DimensionView {
+  name: string;
+  label: string;
+  category: DimensionCategory;
+  score: number;
+  trend: ScoreTrend;
+  description?: string;
+}
+
+/** Grouped view by category — used in dashboard radar/pillar cards. */
+export interface PillarView {
+  category: DimensionCategory;
+  label: string;
+  score: number;          // avg of dimensions in this category
+  dimensions: DimensionView[];
+}
+
+// ─── AI / Analysis ───────────────────────────────────────────────────
+
+export interface AnalysisRequest {
+  userId: string;
+  inputs?: DimensionInput[];
+}
+
+export interface AnalysisResponse {
   lifeScore: number;
-  dimensionScores: DimensionScore[];
+  dimensionScores: DimensionView[];
+  pillars: PillarView[];
+  insights: Insight[];
+  trajectory?: LifeTrajectory;
+  generatedAt?: Date;
+}
+
+export interface Insight {
+  id?: string;
+  type: 'strength' | 'risk' | 'opportunity' | 'action' | 'gap';
+  title: string;
+  body: string;
+  dimensionName?: string;
+  priority?: number;
+  suggestedAction?: string;
 }
 
 export interface LifeTrajectory {
   userId: string;
   points: TrajectoryPoint[];
-  projectedPoints?: TrajectoryPoint[];  // AI-simulated future
+  projectedPoints: TrajectoryPoint[];
   generatedAt: Date;
 }
 
-// ---- Insights ----
-
-export type InsightCategory = 'strength' | 'gap' | 'opportunity' | 'risk' | 'action';
-
-export interface Insight {
-  id: string;
-  userId: string;
-  category: InsightCategory;
-  title: string;
-  body: string;
-  affectedDimensions: string[];
-  priority: 'low' | 'medium' | 'high';
-  actionable?: boolean;
-  suggestedAction?: string;
-  generatedAt: Date;
-}
-
-// ---- AI Analysis ----
-
-export interface AnalysisRequest {
-  userId: string;
-  profile: BeanProfile;
-  recentEvents?: LifeEvent[];
-}
-
-export interface AnalysisResponse {
+export interface TrajectoryPoint {
+  timestamp: Date;
   lifeScore: number;
-  dimensionScores: DimensionScore[];
-  insights: Insight[];
-  trajectory?: LifeTrajectory;
-  generatedAt: Date;
+  dimensionScores: Partial<DimensionView>[];
 }
 
-// ---- Onboarding ----
-
-export interface OnboardingData {
-  profession: string;
-  skills: string[];
-  interests: string[];
-  exerciseFrequency: string;
-  lifeSatisfaction: number;  // 0–10
-  values?: string[];
-  motivations?: string[];
-}
-
-// ---- API Response helpers ----
+// ─── API Helpers ─────────────────────────────────────────────────────
 
 export interface ApiSuccess<T> {
   success: true;
   data: T;
-  message?: string;
+  meta?: Record<string, unknown>;
 }
 
 export interface ApiError {

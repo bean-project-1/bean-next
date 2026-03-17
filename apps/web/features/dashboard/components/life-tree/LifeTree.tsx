@@ -12,18 +12,16 @@ interface LifeTreeProps {
 }
 
 export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => {
-  const [hoveredLeaf, setHoveredLeaf] = useState<string | null>(null);
-  const [clickedLeaf, setClickedLeaf] = useState<string | null>(null);
+  const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
+  const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
 
-  const handleLeafClick = (id: string, name: string) => {
-    setClickedLeaf(name === clickedLeaf ? null : name);
+  const handleLeafClickHandler = (id: string, name: string) => {
+    setClickedLeafId(id === clickedLeafId ? null : id);
     onLeafClick?.(id);
   };
 
-  const activeLeafName = clickedLeaf || hoveredLeaf;
-
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white relative font-sans">
+    <div className="w-full h-full flex items-center justify-center bg-white relative font-sans overflow-hidden">
       {/* Top Score Indicator */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -42,28 +40,30 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
         </div>
       </motion.div>
 
-      {/* Hover/Click Info Tooltip */}
+      {/* Global Status (if no leaf selected) */}
       <AnimatePresence>
-        {activeLeafName && (
+        {!clickedLeafId && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            className={`absolute bottom-24 ${clickedLeaf ? 'bg-emerald-600' : 'bg-slate-900'} text-white px-4 py-2 rounded-lg text-xs font-medium shadow-xl pointer-events-none z-30 transition-colors`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-16 right-16 flex flex-col items-end pointer-events-none"
           >
-            {activeLeafName}
-            {clickedLeaf && <span className="ml-2 opacity-50 text-[10px]">●</span>}
+            <span className="text-[32px] font-light text-slate-300 tracking-tighter uppercase tabular-nums">
+              {data.growthScore}<span className="text-sm ml-1">%</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">BEAN VITALITY</span>
           </motion.div>
         )}
       </AnimatePresence>
 
       <svg
         viewBox="0 0 800 800"
-        className="w-full h-full max-w-[800px] max-h-[800px]"
+        className="w-full h-full max-w-[800px] max-h-[800px] cursor-default"
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Organic Roots */}
-        <g className="opacity-20">
+        <g className="opacity-20 pointer-events-none">
           <motion.path
             d="M 400,450 C 380,550 320,600 250,700"
             stroke="#8b5cf6"
@@ -110,7 +110,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
-          className="opacity-10"
+          className="opacity-10 pointer-events-none"
         />
 
         {/* The Seed (BEAN) */}
@@ -118,6 +118,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.5 }}
+          className="pointer-events-none"
         >
           <motion.circle
             cx="400"
@@ -138,21 +139,22 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
             branch={branch}
             index={i}
             totalBranches={data.branches.length}
-            onClick={handleLeafClick}
-            onHover={setHoveredLeaf}
+            clickedLeafId={clickedLeafId}
+            onClick={handleLeafClickHandler}
+            onHover={setHoveredLeafName}
           />
         ))}
       </svg>
 
       {/* Legend */}
-      <div className="absolute bottom-10 left-10 flex flex-col gap-2 bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-slate-50">
+      <div className="absolute bottom-10 left-10 flex flex-col gap-2 bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none">
         <div className="flex items-center gap-3">
-          <div className="w-4 h-2 rounded-full bg-emerald-500" />
-          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Actividad Completada</span>
+          <div className="w-4 h-2 rounded-full bg-emerald-500 shadow-sm" />
+          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Completado</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-4 h-2 rounded-full bg-slate-200" />
-          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Actividad Pendiente</span>
+          <div className="w-4 h-2 rounded-full bg-slate-200 shadow-sm" />
+          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pendiente</span>
         </div>
       </div>
     </div>

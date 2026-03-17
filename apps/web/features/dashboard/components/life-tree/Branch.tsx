@@ -9,12 +9,16 @@ interface BranchProps {
   branch: BranchType;
   index: number;
   totalBranches: number;
+  clickedLeafId: string | null;
   onClick: (leafId: string, name: string) => void;
   onHover: (name: string | null) => void;
 }
 
-export const Branch = ({ branch, index, totalBranches, onClick, onHover }: BranchProps) => {
-  // Calculate angle based on index (fan distribution in the upper semi-circle)
+export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, onHover }: BranchProps) => {
+  // Trunk end point MUST match LifeTree (400, 350)
+  const startX = 400;
+  const startY = 350;
+
   const angle = useMemo(() => {
     const startAngle = -160;
     const endAngle = -20;
@@ -25,20 +29,35 @@ export const Branch = ({ branch, index, totalBranches, onClick, onHover }: Branc
   const length = 180 + (branch.progress / 100) * 120;
   const rad = (angle * Math.PI) / 180;
   
-  // Calculate end point for the organic path (Cubic Bezier)
-  const endX = 400 + Math.cos(rad) * length;
-  const endY = 400 + Math.sin(rad) * length;
+  const endX = startX + Math.cos(rad) * length;
+  const endY = startY + Math.sin(rad) * length;
   
-  // Control points for a more organic curve
-  const cp1x = 400 + Math.cos(rad) * (length * 0.3);
-  const cp1y = 400 + Math.sin(rad) * (length * 0.1); 
-  const cp2x = 400 + Math.cos(rad) * (length * 0.7);
-  const cp2y = 400 + Math.sin(rad) * (length * 0.8);
+  // Use consistent multipliers for control points to avoid calculation drift
+  const cp1x = startX + Math.cos(rad) * (length * 0.4);
+  const cp1y = startY + Math.sin(rad) * (length * 0.1); 
+  const cp2x = startX + Math.cos(rad) * (length * 0.6);
+  const cp2y = startY + Math.sin(rad) * (length * 0.9);
 
-  const path = `M 400,400 C ${cp1x},${cp1y} ${cp2x},${cp2y} ${endX},${endY}`;
+  const path = `M ${startX},${startY} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${endX},${endY}`;
+
+  // Formula for cubic Bezier point: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3
+  const getBezierPoint = (t: number) => {
+    const mt = 1 - t;
+    const x = mt * mt * mt * startX + 
+              3 * mt * mt * t * cp1x + 
+              3 * mt * t * t * cp2x + 
+              t * t * t * endX;
+    
+    const y = mt * mt * mt * startY + 
+              3 * mt * mt * t * cp1y + 
+              3 * mt * t * t * cp2y + 
+              t * t * t * endY;
+    
+    return { x, y };
+  };
 
   return (
-    <motion.g style={{ originX: "400px", originY: "400px" }}>
+    <motion.g>
       <motion.path
         d={path}
         stroke="#475569"
@@ -52,10 +71,10 @@ export const Branch = ({ branch, index, totalBranches, onClick, onHover }: Branc
       
       {/* Branch Label */}
       <motion.text
-        x={endX + (endX > 400 ? 10 : -10)}
-        y={endY - 10}
-        textAnchor={endX > 400 ? "start" : "end"}
-        className="text-[10px] font-bold fill-slate-500 uppercase tracking-tighter"
+        x={endX + (endX > startX ? 20 : -20)}
+        y={endY - 15}
+        textAnchor={endX > startX ? "start" : "end"}
+        className="text-[12px] font-bold fill-slate-500 uppercase tracking-tighter"
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.6 }}
         transition={{ delay: 2 }}
@@ -63,22 +82,23 @@ export const Branch = ({ branch, index, totalBranches, onClick, onHover }: Branc
         {branch.goal}
       </motion.text>
 
-      {/* Render Leaves along the branch */}
+      {/* Render Leaves precisely along the branch curve */}
       {branch.leaves.map((leaf, i) => {
-        const t = 0.4 + (i / (branch.leaves.length || 1)) * 0.5;
-        const lx = 400 + (endX - 400) * t + Math.sin(i * 10) * 10;
-        const ly = 400 + (endY - 400) * t + Math.cos(i * 10) * 8;
+        // Distribute leaves along the curve (t from 0.3 to 0.95)
+        const t = 0.3 + (i / (branch.leaves.length || 1)) * 0.6;
+        const pos = getBezierPoint(t);
         
         return (
           <Leaf
             key={leaf.id}
             leaf={leaf}
-            x={lx}
-            y={ly}
+            x={pos.x}
+            y={pos.y}
             angle={angle + 90 + (i % 2 === 0 ? 30 : -30)}
             delay={1.5 + index * 0.1 + i * 0.1}
+            isSelected={clickedLeafId === leaf.id}
             onHover={onHover}
-            onClick={(id) => onClick(id, leaf.name)}
+            onClick={onClick}
           />
         );
       })}

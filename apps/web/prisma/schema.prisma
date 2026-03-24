@@ -1,37 +1,21 @@
-// =====================================================================
-// BEAN — Prisma Database Schema (v2)
-// apps/web/prisma/schema.prisma
-//
-// Design principles:
-//   • Dimensions are stored relationally, not as JSON columns
-//   • New dimensions can be added via seed data with zero migrations
-//   • Life trajectory is captured via immutable LifeState snapshots
-//   • DimensionInputs store raw evidence for score computation
-// =====================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 // ─── Users ────────────────────────────────────────────────────────────
-// Core identity — minimal, auth-agnostic.
-// Auth provider (Clerk, NextAuth) should link by email.
-
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   name      String?
   avatarUrl String?  @map("avatar_url")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  profile         BeanProfile?
   dimensionInputs DimensionInput[]
   lifeStates      LifeState[]
   lifeEvents      LifeEvent[]
@@ -39,152 +23,70 @@ model User {
   @@map("users")
 }
 
-// ─── BeanProfile ──────────────────────────────────────────────────────
-// Represents the *current* life profile of a user.
-// Dimension scores are stored in the DimensionScore join table.
-
-model BeanProfile {
-  id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dimensionScores DimensionScore[]
-
-  @@map("bean_profiles")
-}
-
 // ─── Dimensions ───────────────────────────────────────────────────────
-// Master list of life dimensions.
-// New dimensions are added via seed data — no schema migration required.
-
 model Dimension {
-  id          String  @id @default(uuid())
-  name        String  @unique   // slug key: "values", "skills", etc.
-  label       String            // Human-readable: "Core Values"
-  category    String            // "identity" | "capital" | "experience"
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  label       String
+  category    String
   description String
   sortOrder   Int      @default(0) @map("sort_order")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  dimensionScores DimensionScore[]
-  lifeStateScores LifeStateScore[]
-
-  @@index([category])
   @@map("dimensions")
 }
 
-// ─── DimensionScore ───────────────────────────────────────────────────
-// Current score for each dimension in a user's active BeanProfile.
-// Updated whenever the user provides new inputs or triggers an analysis.
-
-model DimensionScore {
-  id          String   @id @default(uuid())
-  profileId   String   @map("profile_id")
-  dimensionId String   @map("dimension_id")
-  score       Float    // 0.0 – 10.0
-  trend       String   @default("stable") // "up" | "down" | "stable"
-  notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  profile   BeanProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  dimension Dimension   @relation(fields: [dimensionId], references: [id])
-
-  @@unique([profileId, dimensionId])
-  @@index([profileId])
-  @@index([dimensionId])
-  @@map("dimension_scores")
-}
-
 // ─── DimensionInput ───────────────────────────────────────────────────
-// Raw data that feeds into dimension score computation.
-// Flexible: any kind of structured data stored as JSON.
-//
-// Examples:
-//   inputType: "exercise_hours_per_week" → valueJson: { "hours": 4 }
-//   inputType: "certifications"          → valueJson: { "items": ["AWS SAA"] }
-//   inputType: "skills"                  → valueJson: { "items": ["Python","SQL"] }
-//   inputType: "running_distance_km"     → valueJson: { "value": 42.2 }
-
 model DimensionInput {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId @map("user_id")
   inputType String   @map("input_type")
   valueJson Json     @map("value_json")
-  source    String   @default("manual") // "manual" | "questionnaire" | "integration"
+  source    String   @default("manual")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-  @@index([userId])
-  @@index([userId, inputType])
   @@map("dimension_inputs")
 }
 
 // ─── LifeState ────────────────────────────────────────────────────────
-// Immutable snapshot of a user's life at a specific moment in time.
-// The foundation for trajectory modeling and AI simulation.
-
 model LifeState {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  lifeScore   Float    @map("life_score") // 0–100 overall
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId @map("user_id")
+  lifeScore   Float    @map("life_score")
   timestamp   DateTime @default(now())
-  triggeredBy String?  @map("triggered_by") // "onboarding" | "analysis" | "event:<id>"
+  triggeredBy String?  @map("triggered_by")
   notes       String?
+  scores      DimensionScore[]
 
-  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scores LifeStateScore[]
+  user User @relation(fields: [userId], references: [id])
 
-  @@index([userId, timestamp])
   @@map("life_states")
 }
 
-// ─── LifeStateScore ───────────────────────────────────────────────────
-// Per-dimension score captured in a LifeState snapshot.
-// Together with LifeState, enables full trajectory reconstruction.
-
-model LifeStateScore {
-  id          String @id @default(uuid())
-  lifeStateId String @map("life_state_id")
-  dimensionId String @map("dimension_id")
-  score       Float  // 0.0 – 10.0
-
-  lifeState LifeState @relation(fields: [lifeStateId], references: [id], onDelete: Cascade)
-  dimension Dimension @relation(fields: [dimensionId], references: [id])
-
-  @@unique([lifeStateId, dimensionId])
-  @@index([lifeStateId])
-  @@index([dimensionId])
-  @@map("life_state_scores")
+type DimensionScore {
+  dimensionId String @db.ObjectId
+  score       Float
+  trend       String @default("stable")
+  notes       String?
 }
 
 // ─── LifeEvent ────────────────────────────────────────────────────────
-// Significant events in a user's life that affect their trajectory.
-// Used by the AI engine to provide context for score changes.
-//
-// Event type examples:
-//   new_job | promotion | layoff | graduation | marathon
-//   move_country | startup_launch | relationship_start | health_crisis
-
 model LifeEvent {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  type        String   // slug: "new_job", "marathon", etc.
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId @map("user_id")
+  type        String
   title       String
   description String?
   date        DateTime
-  impact      String?  // "positive" | "negative" | "neutral"
-  metadata    Json?    // Flexible extra data per event type
+  impact      String?
+  metadata    Json?
   createdAt   DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-  @@index([userId, date])
-  @@index([userId, type])
   @@map("life_events")
 }

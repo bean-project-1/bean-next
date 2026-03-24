@@ -1,63 +1,28 @@
-# =====================================================
-# BEAN — docker-compose for local development
-# =====================================================
+version: '3.8'
 
 services:
-  # ---- PostgreSQL Database ----
-  postgres:
-    image: postgres:16-alpine
-    container_name: bean_postgres
-    restart: unless-stopped
+  mongodb:
+    image: mongo:latest
+    container_name: bean-mongodb
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_USER: bean_user
-      POSTGRES_PASSWORD: bean_password
-      POSTGRES_DB: bean_db
+      - "27017:27017"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U bean_user -d bean_db']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb_data:/data/db
 
-  # ---- Web App (Next.js) ----
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder  # Use builder stage in dev for hot reload
-    container_name: bean_web
-    restart: unless-stopped
+  mongo-express:
+    image: mongo-express:latest
+    container_name: bean-mongo-express
+    restart: always
     ports:
-      - '3000:3000'
+      - "8081:8081"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://bean_user:bean_password@postgres:5432/bean_db
-    env_file:
-      - .env
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=pass
     depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./apps/web:/app/apps/web
-      - /app/apps/web/node_modules
-      - /app/apps/web/.next
-
-  # ---- AI Engine (Python FastAPI — future) ----
-  # ai-engine:
-  #   build:
-  #     context: ./services/ai-engine
-  #     dockerfile: Dockerfile
-  #   container_name: bean_ai_engine
-  #   restart: unless-stopped
-  #   ports:
-  #     - '8000:8000'
-  #   environment:
-  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
-  #   env_file:
-  #     - .env
+      - mongodb
 
 volumes:
-  postgres_data:
+  mongodb_data:

@@ -1,63 +1,59 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DnaModal from '../../../features/dashboard/components/DnaModal';
 import NodeSidePanel from '../../../features/dashboard/components/NodeSidePanel';
 import { LifeTree } from '../../../features/dashboard/components/life-tree/LifeTree';
 import { TreeData } from '../../../features/dashboard/components/life-tree/types';
 
-// Specialized Mock Data
-const MOCK_TREE_DATA: TreeData = {
-  growthScore: 63,
-  branches: [
-    {
-      id: 'b1',
-      goal: 'Ser Data Scientist',
-      progress: 65,
-      leaves: [
-        { id: 'l1', name: 'Python Basics', completed: true },
-        { id: 'l2', name: 'Advanced Stats', completed: true },
-        { id: 'l3', name: 'ML Project', completed: false },
-      ],
-    },
-    {
-      id: 'b2',
-      goal: 'Correr Maratón NYC',
-      progress: 40,
-      leaves: [
-        { id: 'l4', name: '5k Run', completed: true },
-        { id: 'l5', name: 'Training Plan', completed: true },
-        { id: 'l6', name: 'Half Marathon', completed: false },
-        { id: 'l7', name: 'Marathon', completed: false },
-      ],
-    },
-    {
-      id: 'b3',
-      goal: 'Viajar por Japón',
-      progress: 20,
-      leaves: [
-        { id: 'l8', name: 'Save Money', completed: true },
-        { id: 'l9', name: 'Book Flights', completed: false },
-      ],
-    },
-  ],
-};
-
 export default function HomePage() {
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<any>(null);
+  const [treeData, setTreeData] = useState<TreeData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTreeData = async () => {
+      try {
+        const res = await fetch('/api/life-tree');
+        if (res.ok) {
+          const data = await res.json();
+          setTreeData(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch tree data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTreeData();
+  }, []);
 
   const handleLeafClick = (id: string) => {
     console.log('Leaf clicked:', id);
-    // In a real app, this would open the leaf detail or mark as completed
+    // Logic to open side panel or details
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando tu BEAN...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!treeData) return null;
 
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <main className="flex-1 relative">
           <LifeTree 
-            data={MOCK_TREE_DATA}
+            data={treeData}
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
           />

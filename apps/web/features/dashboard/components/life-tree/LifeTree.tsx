@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { TreeData } from './types';
 import { Branch } from './Branch';
 
@@ -15,17 +16,72 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rootsRef = useRef<SVGGElement>(null);
+  const trunkRef = useRef<SVGPathElement>(null);
+  const seedRef = useRef<SVGGElement>(null);
+  const scoreRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline();
+
+    // 1. Initial UI fade-ins
+    tl.fromTo(scoreRef.current, 
+      { y: -20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
+    );
+
+    // 2. Trunk growth
+    if (trunkRef.current) {
+      const length = trunkRef.current.getTotalLength();
+      tl.fromTo(trunkRef.current,
+        { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
+        { strokeDashoffset: 0, opacity: 0.1, duration: 1.2, ease: "power1.inOut" },
+        "-=0.4"
+      );
+    }
+
+    // 3. Roots growth
+    if (rootsRef.current) {
+      const roots = rootsRef.current.querySelectorAll('path');
+      roots.forEach((path, i) => {
+        const length = (path as SVGPathElement).getTotalLength();
+        tl.fromTo(path,
+          { strokeDasharray: length, strokeDashoffset: length },
+          { strokeDashoffset: 0, duration: 2, ease: "power2.out" },
+          0.8 + i * 0.2
+        );
+      });
+    }
+
+    // 4. Seed appear
+    tl.fromTo(seedRef.current,
+      { scale: 0 },
+      { scale: 1, duration: 0.8, ease: "back.out(1.7)" },
+      0.5
+    );
+
+    // Breathing effect for the seed glow
+    gsap.to(".seed-glow", {
+      scale: 1.3,
+      opacity: 0.4,
+      duration: 3,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
+    });
+  }, { scope: containerRef });
+
   const handleLeafClickHandler = (id: string, name: string) => {
     setClickedLeafId(id === clickedLeafId ? null : id);
     onLeafClick?.(id);
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white relative font-sans overflow-hidden">
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-white relative font-sans overflow-hidden">
       {/* Top Score Indicator */}
-      <motion.div 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+      <div 
+        ref={scoreRef}
         className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-20 cursor-pointer group"
         onClick={onScoreClick}
       >
@@ -38,24 +94,17 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
             <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter">Bean Vitality</span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Global Status (if no leaf selected) */}
-      <AnimatePresence>
-        {!clickedLeafId && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-16 right-16 flex flex-col items-end pointer-events-none"
-          >
-            <span className="text-[32px] font-light text-slate-300 tracking-tighter uppercase tabular-nums">
-              {data.growthScore}<span className="text-sm ml-1">%</span>
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">BEAN VITALITY</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!clickedLeafId && (
+        <div className="absolute bottom-16 right-16 flex flex-col items-end pointer-events-none transition-opacity duration-300">
+          <span className="text-[32px] font-light text-slate-300 tracking-tighter uppercase tabular-nums">
+            {data.growthScore}<span className="text-sm ml-1">%</span>
+          </span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">BEAN VITALITY</span>
+        </div>
+      )}
 
       <svg
         viewBox="0 0 800 800"
@@ -63,37 +112,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Organic Roots */}
-        <g className="opacity-20 pointer-events-none">
-          <motion.path
-            d="M 400,450 C 380,550 320,600 250,700"
-            stroke="#8b5cf6"
-            strokeWidth="3"
-            fill="none"
-            strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2 }}
-          />
-          <motion.path
-            d="M 400,450 C 400,580 410,620 400,750"
-            stroke="#3b82f6"
-            strokeWidth="3"
-            fill="none"
-            strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2, delay: 0.2 }}
-          />
-          <motion.path
-            d="M 400,450 C 420,550 480,600 550,700"
-            stroke="#10b981"
-            strokeWidth="3"
-            fill="none"
-            strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2, delay: 0.4 }}
-          />
+        <g ref={rootsRef} className="opacity-20 pointer-events-none">
+          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#8b5cf6" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="3" fill="none" strokeLinecap="round" />
           
           <text x="250" y="720" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Identidad</text>
           <text x="400" y="770" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Capital Humano</text>
@@ -101,36 +123,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
         </g>
 
         {/* The Simple Trunk */}
-        <motion.path
+        <path
+          ref={trunkRef}
           d="M 400,450 L 400,350"
           stroke="#475569"
           strokeWidth="8"
           fill="none"
           strokeLinecap="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
           className="opacity-10 pointer-events-none"
         />
 
         {/* The Seed (BEAN) */}
-        <motion.g
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.5 }}
-          className="pointer-events-none"
-        >
-          <motion.circle
+        <g ref={seedRef} className="pointer-events-none" style={{ transformOrigin: "400px 450px" }}>
+          <circle
             cx="400"
             cy="450"
             r="15"
             fill="rgba(16, 185, 129, 0.2)"
-            animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            className="seed-glow"
+            style={{ transformOrigin: "400px 450px" }}
           />
           <circle cx="400" cy="450" r="8" fill="#10b981" />
           <text x="400" y="475" textAnchor="middle" className="text-[9px] font-bold fill-emerald-600 uppercase tracking-widest">Your BEAN</text>
-        </motion.g>
+        </g>
 
         {/* Dynamic Branches */}
         {data.branches.map((branch, i) => (

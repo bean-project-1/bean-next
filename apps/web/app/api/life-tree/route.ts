@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Dimension, DimensionScore } from '@prisma/client';
+import { Goal, GoalAction } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -12,33 +12,42 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // 1. Fetch User Goals with their Actions
+    const goals = await prisma.goal.findMany({
+      where: { userId: user.id },
+      include: {
+        actions: true
+      }
+    });
+
+    // 2. Fetch latest LifeState for the total growth score
     const latestState = await prisma.lifeState.findFirst({
       where: { userId: user.id },
       orderBy: { timestamp: 'desc' }
     });
 
-    const dimensions = await prisma.dimension.findMany();
-    const dimMap = dimensions.reduce((acc: Record<string, Dimension>, d: Dimension) => ({ ...acc, [d.id]: d }), {});
-
+    // 3. Map to TreeData structure (Branches = Goals)
     const treeData = {
       growthScore: latestState?.lifeScore || 0,
-      branches: latestState?.scores.map((s: DimensionScore) => {
-        const dim = dimMap[s.dimensionId];
-        return {
-          id: s.dimensionId,
-          goal: dim?.label || 'Dimension',
-          progress: s.score * 10,
-          leaves: [
-            { id: `${s.dimensionId}-l1`, name: 'Actividad Base', completed: true },
-            { id: `${s.dimensionId}-l2`, name: 'Próximo Paso', completed: false },
-          ]
-        };
-      }) || []
+      branches: goals.map((goal: Goal & { actions: GoalAction[] }) => ({
+        id: goal.id,
+        goal: goal.title,
+        progress: goal.progress,
+        leaves: goal.actions.map((action: GoalAction) => ({
+          id: action.id,
+          name: action.title,
+          completed: action.isCompleted
+        }))
+      }))
     };
 
     return NextResponse.json(treeData);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching life tree data:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      message: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }

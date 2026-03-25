@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { setUserCookie } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 // ── Validation ─────────────────────────────────────────
 const onboardingSchema = z.object({
   name: z.string().min(1),
@@ -75,58 +77,78 @@ export async function POST(req: NextRequest) {
       ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name } })
       : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name } }); })();
 
-    // 2. Upsert BeanProfile — v2 schema has no JSON blob columns
-    const profile = await prisma.beanProfile.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id },
-      update: {},
-    });
-
-    // 3. Persist dimension scores in the relational DimensionScore table
+    // 2. Persist dimension scores and attributes
     const dimScores = buildDimScores(data);
+    const dimensions = await prisma.dimension.findMany();
+    const dimMap = new Map(dimensions.map(d => [d.name, d.id]));
 
-    if (dimScores.length > 0) {
-      const dimensions = await prisma.dimension.findMany({
-        where: { name: { in: dimScores.map(d => d.key) } },
+    // 2.1 Create User Attributes (Skills, Interests, etc.)
+    // Clear old ones first (simple strategy for this iteration)
+    await prisma.userAttribute.deleteMany({ where: { userId: user.id } });
+
+    const attributeOps: any[] = [];
+
+    // Map skills to 'skills' dimension
+    if (data.skills.length && dimMap.has('skills')) {
+      const dimId = dimMap.get('skills')!;
+      data.skills.forEach(skill => {
+        attributeOps.push(prisma.userAttribute.create({
+          data: { userId: user.id, dimensionId: dimId, name: skill, category: 'skill' }
+        }));
       });
-      const dimMap = new Map(dimensions.map(d => [d.name, d.id]));
-
-      await Promise.all(
-        dimScores
-          .filter(ds => dimMap.has(ds.key))
-          .map(ds =>
-            prisma.dimensionScore.upsert({
-              where: {
-                profileId_dimensionId: {
-                  profileId: profile.id,
-                  dimensionId: dimMap.get(ds.key)!,
-                },
-              },
-              create: {
-                profileId: profile.id,
-                dimensionId: dimMap.get(ds.key)!,
-                score: ds.score,
-                trend: 'stable',
-              },
-              update: { score: ds.score },
-            })
-          )
-      );
     }
 
-    // 4. Create initial LifeState snapshot (no scores nested — kept simple)
+    // Map interests to 'interests' dimension
+    if (data.interests.length && dimMap.has('interests')) {
+      const dimId = dimMap.get('interests')!;
+      data.interests.forEach(interest => {
+        attributeOps.push(prisma.userAttribute.create({
+          data: { userId: user.id, dimensionId: dimId, name: interest, category: 'interest' }
+        }));
+      });
+    }
+
+    // Add profession as an attribute to 'career'
+    if (data.profession && dimMap.has('career')) {
+      attributeOps.push(prisma.userAttribute.create({
+        data: {
+          userId: user.id,
+          dimensionId: dimMap.get('career')!,
+          name: data.profession,
+          category: 'profession'
+        }
+      }));
+    }
+
+    await Promise.all(attributeOps);
+
+    // 3. Create initial LifeState snapshot with embedded scores
     const lifeScore =
       dimScores.length > 0
         ? (dimScores.reduce((s, d) => s + d.score, 0) / dimScores.length) * 10
         : data.lifeSatisfaction * 10;
 
     await prisma.lifeState.create({
-      data: { userId: user.id, lifeScore, triggeredBy: 'onboarding' },
+      data: {
+        userId: user.id,
+        lifeScore,
+        balanceScore: 0.5,     // Placeholder/Initial
+        alignmentScore: 0.5,   // Placeholder/Initial
+        energyIndex: 0.5,      // Placeholder/Initial
+        triggeredBy: 'onboarding',
+        scores: dimScores
+          .filter(ds => dimMap.has(ds.key))
+          .map(ds => ({
+            dimensionId: dimMap.get(ds.key)!,
+            score: ds.score,
+            trend: 'stable'
+          }))
+      },
     });
 
-    // 5. Set session cookie
+    // 4. Set session cookie
     const res = NextResponse.json(
-      { success: true as const, data: { userId: user.id, profileId: profile.id, isNewUser } },
+      { success: true as const, data: { userId: user.id, isNewUser } },
       { status: 201 }
     );
     setUserCookie(res, user.id);
@@ -161,14 +183,13 @@ export async function GET(req: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: {
-          include: {
-            // ← Deep include: scores with their Dimension metadata
-            dimensionScores: {
-              include: { dimension: true },
-            },
-          },
+        attributes: {
+          include: { dimension: true }
         },
+        lifeStates: {
+          orderBy: { timestamp: 'desc' },
+          take: 1
+        }
       },
     });
 
@@ -179,15 +200,43 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Extract latest state
+    const latestStateRaw = user.lifeStates[0] ?? null;
+    const allDimensions = await prisma.dimension.findMany();
+    const dimIdMap = new Map(allDimensions.map(d => [d.id, d]));
+
+    const latestState = latestStateRaw ? {
+      ...latestStateRaw,
+      scores: latestStateRaw.scores.map(s => ({
+        ...s,
+        dimension: dimIdMap.get(s.dimensionId)
+      }))
+    } : null;
+
     return NextResponse.json({
       success: true,
-      data: { user, profile: user.profile },
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          attributes: user.attributes
+        },
+        latestState,
+        dimensions: allDimensions
+      },
     });
 
   } catch (err) {
-    console.error('[GET /api/profile]', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[GET /api/profile]', msg);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { 
+        success: false, 
+        error: 'Internal server error',
+        detail: msg 
+      },
       { status: 500 }
     );
   }

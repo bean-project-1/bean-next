@@ -12,26 +12,49 @@ const CATEGORIES = [
 
 export function DNAView() {
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [attributes, setAttributes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [pct, setPct] = useState(0);
+  const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/profile')
+    fetch('/api/profile-v2')
       .then(r => r.json())
-      .then((json: { success: boolean; data?: { profile?: { dimensionScores: { dimension: { name: string }; score: number }[] } } }) => {
-        if (json.success && json.data?.profile?.dimensionScores) {
-          const scoreMap: Record<string, number> = {};
-          json.data.profile.dimensionScores.forEach((ds) => {
-            scoreMap[ds.dimension.name] = ds.score;
-          });
-          setScores(scoreMap);
-          const filled = ALL_DIMENSIONS.filter(d => (scoreMap[d.key] ?? 0) > 0).length;
-          setPct(Math.round((filled / ALL_DIMENSIONS.length) * 100));
+      .then((json: any) => {
+        console.log('API V2 Response:', json);
+        if (json.success && json.data) {
+          const { user, latestState, dimensions } = json.data;
+          console.log(`Attributes found: ${user.attributes?.length ?? 0}`);
+          console.log(`Dimensions found: ${dimensions?.length ?? 0}`);
+          
+          setAttributes(user.attributes || []);
+          
+          if (latestState?.scores && dimensions) {
+            console.log(`Scores found in LifeState: ${latestState.scores.length}`);
+            const scoreMap: Record<string, number> = {};
+            latestState.scores.forEach((ds: any) => {
+              const dimMetadata = dimensions.find((d: any) => d.id === ds.dimensionId);
+              if (dimMetadata) {
+                scoreMap[dimMetadata.name] = ds.score;
+              } else {
+                console.warn(`Dimension not found for ID: ${ds.dimensionId}`);
+              }
+            });
+            setScores(scoreMap);
+            const filled = ALL_DIMENSIONS.filter(d => (scoreMap[d.key] ?? 0) > 0).length;
+            setPct(Math.round((filled / ALL_DIMENSIONS.length) * 100));
+          }
+        } else {
+          setError(json.error || 'Failed to load profile');
         }
       })
-      .catch((err: any) => console.error(err))
+      .catch((err: any) => {
+        console.error('Fetch error:', err);
+        setError('Connection error');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -70,12 +93,23 @@ export function DNAView() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
+        <div className="mb-4 text-4xl">⚠️</div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Conexión</h2>
+        <p className="text-gray-500 mb-6 max-w-xs">{error === 'Not authenticated' ? 'Tu sesión ha expirado o no has iniciado sesión.' : error}</p>
+        <a href="/login" className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold">Ir al Login</a>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen px-6 py-8 bg-white">
       <div className="mb-8">
         <h1 className="text-3xl font-light text-gray-900 tracking-tight">Mi <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
         <p className="mt-1 text-sm text-gray-400 font-medium">
-          Tu huella única en las 19 dimensiones BEAN.
+          SYNC_DEBUG_V1 — Tu huella única en las 19 dimensiones BEAN.
           Actualiza tu perfil moviendo los indicadores.
         </p>
       </div>
@@ -158,10 +192,16 @@ export function DNAView() {
                   {dims.map((dim: any) => {
                     const score = scores[dim.key] ?? 0;
                     const hasData = score > 0;
+                    const dimAttributes = attributes.filter(a => 
+                      a.dimension?.name === dim.key || a.dimensionId === dim.id
+                    );
+
                     return (
-                      <div key={dim.key} className={`rounded-2xl border p-4 transition-all ${
-                        hasData ? `${c.border} bg-white shadow-sm` : 'border-gray-50 bg-gray-50/50'
-                      }`}>
+                      <div key={dim.key} 
+                        onClick={() => setSelectedDimKey(dim.key)}
+                        className={`group relative rounded-2xl border p-4 transition-all cursor-pointer hover:shadow-md ${
+                          hasData ? `${c.border} bg-white` : 'border-gray-50 bg-gray-50/50'
+                        }`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <span className="text-base flex-shrink-0">{dim.emoji}</span>
@@ -173,9 +213,30 @@ export function DNAView() {
                             {hasData ? `${score.toFixed(1)}` : '—'}
                           </span>
                         </div>
+                        
+                        {/* Attributes Chips (Mini list) */}
+                        {dimAttributes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {dimAttributes.slice(0, 3).map((attr, idx) => (
+                              <span key={idx} className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+                                attr.category === 'skill' ? 'bg-blue-50 text-blue-600' : 
+                                attr.category === 'interest' ? 'bg-orange-50 text-orange-600' :
+                                attr.category === 'value' ? 'bg-violet-50 text-violet-600' :
+                                'bg-gray-100 text-gray-500'
+                              }`}>
+                                {attr.name}
+                              </span>
+                            ))}
+                            {dimAttributes.length > 3 && (
+                              <span className="text-[8px] font-bold text-gray-300">+{dimAttributes.length - 3}</span>
+                            )}
+                          </div>
+                        )}
+
                         <input
                           type="range" min={0} max={10} step={0.5}
                           value={score}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={e => setScore(dim.key, parseFloat(e.target.value))}
                           className={`w-full h-1 cursor-pointer accent-gray-900 opacity-60 hover:opacity-100 transition-opacity`}
                         />
@@ -188,6 +249,86 @@ export function DNAView() {
           })}
         </div>
       </div>
+
+      {/* Dimension Detail Modal */}
+      {selectedDimKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setSelectedDimKey(null)}>
+          <div className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-8">
+              {(() => {
+                const dim = ALL_DIMENSIONS.find(d => d.key === selectedDimKey);
+                const score = scores[selectedDimKey] ?? 0;
+                const dimAttributes = attributes.filter(a => a.dimension?.name === selectedDimKey);
+                if (!dim) return null;
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-2xl bg-gray-50 flex items-center justify-center text-3xl shadow-sm border border-gray-100">
+                          {dim.emoji}
+                        </div>
+                        <div>
+                          <h2 className="text-3xl font-light text-gray-900 tracking-tight leading-none">{dim.label}</h2>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dim.cat}</span>
+                            <span className="h-1 w-1 rounded-full bg-gray-200" />
+                            <span className="text-xs font-bold text-gray-900">Score: {score.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedDimKey(null)}
+                        className="h-10 w-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400">
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Atributos & Evidencia</h3>
+                        {dimAttributes.length > 0 ? (
+                          <div className="grid gap-3">
+                            {dimAttributes.map((attr, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 group hover:border-gray-100 hover:bg-white transition-all shadow-sm hover:shadow-md">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-sm font-semibold text-gray-900">{attr.name}</span>
+                                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{attr.category}</span>
+                                </div>
+                                {attr.metadata && (
+                                  <div className="text-right">
+                                    {Object.entries(attr.metadata).map(([k, v]) => (
+                                      <div key={k} className="text-[10px] font-medium text-gray-500">
+                                        <span className="capitalize">{k}:</span> <span className="text-gray-900 font-bold">{String(v)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center rounded-3xl border-2 border-dashed border-gray-100">
+                            <p className="text-sm text-gray-400 font-medium italic">No hay atributos definidos.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-6 border-t border-gray-100">
+                        <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                          Estos atributos influyen en tu puntuación de {dim.label}. Puedes editarlos desde el coach o agregando nueva evidencia de vida.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

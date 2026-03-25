@@ -64,10 +64,8 @@ export default function HomePage() {
       
       {selectedObjective && (
         <NodeSidePanel
-          isOpen={!!selectedObjective}
+          node={selectedObjective}
           onClose={() => setSelectedObjective(null)}
-          title={selectedObjective.goal}
-          data={selectedObjective}
         />
       )}
     </div>

@@ -21,14 +21,7 @@ export interface User {
   avatarUrl?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface BeanProfile {
-  id: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  dimensionScores?: DimensionScore[];
+  attributes?: UserAttribute[];
 }
 
 // ─── Dimensions ───────────────────────────────────────────────────────
@@ -44,15 +37,12 @@ export interface Dimension {
 }
 
 export interface DimensionScore {
-  id: string;
-  profileId: string;
   dimensionId: string;
   score: number;           // 0.0 – 10.0
   trend: ScoreTrend;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  dimension?: Dimension;
+  confidence?: number;
+  dimension?: Dimension;   // Optional metadata for UI
 }
 
 // ─── Raw Inputs ───────────────────────────────────────────────────────
@@ -60,10 +50,25 @@ export interface DimensionScore {
 export interface DimensionInput {
   id: string;
   userId: string;
-  inputType: string;       // "exercise_hours_per_week", "skills", …
+  dimensionId: string;
+  inputType: string;       // "habit", "mood", "learning", "event"
+  subType?: string;        // "frequency", "level", etc
   valueJson: unknown;      // flexible JSON payload
   source: InputSource;
   createdAt: Date;
+}
+
+// ─── User Attributes (Source of Truth) ──────────────────────────────
+
+export interface UserAttribute {
+  id: string;
+  userId: string;
+  dimensionId: string;
+  name: string;            // "ciclismo", "familia", "backend"
+  category: string;        // "value", "interest", "skill", etc
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+  dimension?: Dimension;
 }
 
 // ─── Life State (Snapshots for Trajectory) ───────────────────────────
@@ -72,18 +77,13 @@ export interface LifeState {
   id: string;
   userId: string;
   lifeScore: number;       // 0–100 composite
+  balanceScore: number;
+  alignmentScore: number;
+  energyIndex: number;
   timestamp: Date;
   triggeredBy?: string;
-  notes?: string;
-  scores?: LifeStateScore[];
-}
-
-export interface LifeStateScore {
-  id: string;
-  lifeStateId: string;
-  dimensionId: string;
-  score: number;
-  dimension?: Dimension;
+  insights?: unknown;
+  scores: DimensionScore[];
 }
 
 // ─── Life Events ──────────────────────────────────────────────────────

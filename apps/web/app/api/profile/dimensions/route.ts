@@ -18,59 +18,28 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const updates: { key: string; score: number }[] = body.dimensionScores ?? [];
 
-    // Get the user's profile
-    const profile = await prisma.beanProfile.findUnique({ where: { userId } });
-    if (!profile) {
-      return NextResponse.json({ success: false, error: 'Profile not found' }, { status: 404 });
-    }
-
-    // Get all dimension records
-    const dimensions = await prisma.dimension.findMany({
-      where: { name: { in: updates.map(u => u.key) } },
-    });
-
+    // Get all dimension records to map names to IDs
+    const dimensions = await prisma.dimension.findMany();
     const dimMap = new Map(dimensions.map(d => [d.name, d.id]));
 
-    // Upsert each dimension score
-    await Promise.all(
-      updates
-        .filter(u => dimMap.has(u.key))
-        .map(u =>
-          prisma.dimensionScore.upsert({
-            where: {
-              profileId_dimensionId: {
-                profileId: profile.id,
-                dimensionId: dimMap.get(u.key)!,
-              },
-            },
-            create: {
-              profileId: profile.id,
-              dimensionId: dimMap.get(u.key)!,
-              score: Math.min(10, Math.max(0, u.score)),
-              trend: 'stable',
-            },
-            update: {
-              score: Math.min(10, Math.max(0, u.score)),
-            },
-          })
-        )
-    );
-
-    // Create a new LifeState snapshot
+    // Create a new LifeState snapshot with embedded scores
     const lifeScore = updates.reduce((sum, u) => sum + u.score, 0) / (updates.length || 1) * 10;
+    
     await prisma.lifeState.create({
       data: {
         userId,
         lifeScore,
+        balanceScore: 0.5,     // Placeholder
+        alignmentScore: 0.5,   // Placeholder
+        energyIndex: 0.5,      // Placeholder
         triggeredBy: 'dna_update',
-        scores: {
-          create: updates
-            .filter(u => dimMap.has(u.key))
-            .map(u => ({
-              dimensionId: dimMap.get(u.key)!,
-              score: u.score,
-            })),
-        },
+        scores: updates
+          .filter(u => dimMap.has(u.key))
+          .map(u => ({
+            dimensionId: dimMap.get(u.key)!,
+            score: u.score,
+            trend: 'stable'
+          })),
       },
     });
 

@@ -48,16 +48,16 @@ export const ALL_DIMENSIONS = [
   { key: 'career',               label: 'Career',                cat: 'capital',     emoji: '💼' },
   { key: 'income',               label: 'Income',                cat: 'capital',     emoji: '💰' },
   { key: 'social_capital',       label: 'Social Capital',        cat: 'capital',     emoji: '🤝' },
-  { key: 'physical_health',      label: 'Physical Health',       cat: 'capital',     emoji: '🏃' },
-  { key: 'emotional_resilience', label: 'Emotional Resilience',  cat: 'capital',     emoji: '🛡️' },
+  { key: 'physical_health',      label: 'Physical Health',       cat: 'capital',     emoji: '跑' },
+  { key: 'resilience',           label: 'Resilience',            cat: 'capital',     emoji: '🛡️' },
   // Experience
-  { key: 'job_satisfaction',     label: 'Job Satisfaction',      cat: 'experience',  emoji: '😊' },
+  { key: 'work_satisfaction',    label: 'Work Satisfaction',     cat: 'experience',  emoji: '😊' },
   { key: 'relationships',        label: 'Relationships',         cat: 'experience',  emoji: '💞' },
   { key: 'mental_wellbeing',     label: 'Mental Wellbeing',      cat: 'experience',  emoji: '🧘' },
   { key: 'free_time',            label: 'Free Time',             cat: 'experience',  emoji: '🕐' },
   { key: 'personal_growth',      label: 'Personal Growth',       cat: 'experience',  emoji: '🌱' },
-  { key: 'social_impact',        label: 'Social Impact',         cat: 'experience',  emoji: '🌍' },
-  { key: 'financial_stability',  label: 'Financial Stability',   cat: 'experience',  emoji: '🏦' },
+  { key: 'impact',               label: 'Impact',                cat: 'experience',  emoji: '🌍' },
+  { key: 'financial_security',   label: 'Financial Security',    cat: 'experience',  emoji: '🏦' },
 ] as const;
 
 export type DimKey = typeof ALL_DIMENSIONS[number]['key'];

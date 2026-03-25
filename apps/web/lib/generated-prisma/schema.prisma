@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated-prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+//
+// ───────────────── USERS ─────────────────
+//
+model User {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  email     String  @unique
+  name      String?
+  avatarUrl String? @map("avatar_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attributes      UserAttribute[]
+  dimensionInputs DimensionInput[]
+  lifeStates      LifeState[]
+  lifeEvents      LifeEvent[]
+  goals           Goal[]
+
+  @@map("users")
+}
+
+//
+// ───────────────── DIMENSIONS ─────────────────
+//
+model Dimension {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  label       String
+  category    String // identidad, capital, experiencia
+  description String?
+
+  sortOrder Int     @default(0) @map("sort_order")
+  isActive  Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attributes      UserAttribute[]
+  dimensionInputs DimensionInput[]
+
+  @@map("dimensions")
+}
+
+//
+// ───────────────── USER ATTRIBUTES (FUENTE DE VERDAD) ─────────────────
+//
+model UserAttribute {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String @map("user_id") @db.ObjectId
+  dimensionId String @map("dimension_id") @db.ObjectId
+
+  name     String // "ciclismo", "familia", "backend"
+  category String // "value", "interest", "skill", etc
+  metadata Json? // { level, frequency, importance }
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  dimension Dimension @relation(fields: [dimensionId], references: [id])
+
+  @@map("user_attributes")
+}
+
+//
+// ───────────────── DIMENSION INPUTS (EVENTOS / TRACKING) ─────────────────
+//
+model DimensionInput {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String @map("user_id") @db.ObjectId
+  dimensionId String @map("dimension_id") @db.ObjectId
+
+  inputType String // "habit", "mood", "learning", "event"
+  subType   String? // "frequency", "level", etc
+
+  valueJson Json @map("value_json")
+
+  source    String   @default("manual") // manual, system, integration
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  dimension Dimension @relation(fields: [dimensionId], references: [id])
+
+  @@map("dimension_inputs")
+}
+
+//
+// ───────────────── LIFE STATE (ADN CALCULADO) ─────────────────
+//
+model LifeState {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @map("user_id") @db.ObjectId
+
+  lifeScore      Float @map("life_score")
+  balanceScore   Float @map("balance_score")
+  alignmentScore Float @map("alignment_score")
+  energyIndex    Float @map("energy_index")
+
+  timestamp   DateTime @default(now())
+  triggeredBy String?  @map("triggered_by") // cron, user_action, etc
+
+  insights Json? // mensajes inteligentes para UI
+
+  scores DimensionScore[]
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("life_states")
+}
+
+type DimensionScore {
+  dimensionId String @db.ObjectId
+  score       Float
+  trend       String @default("stable") // up, down, stable
+  confidence  Float? // opcional (qué tan confiable es el cálculo)
+}
+
+//
+// ───────────────── LIFE EVENTS ─────────────────
+//
+model LifeEvent {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @map("user_id") @db.ObjectId
+
+  type        String // "job_change", "breakup", "achievement"
+  title       String
+  description String?
+
+  date   DateTime
+  impact Json? // impacto en dimensiones
+
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("life_events")
+}
+
+//
+// ───────────────── GOALS (RAMAS) ─────────────────
+//
+model Goal {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @map("user_id") @db.ObjectId
+
+  title       String
+  description String?
+
+  dimensionId String? @map("dimension_id") @db.ObjectId
+
+  progress Float  @default(0)
+  status   String @default("active") // active, completed, paused
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User         @relation(fields: [userId], references: [id])
+  actions GoalAction[]
+
+  @@map("goals")
+}
+
+//
+// ───────────────── GOAL ACTIONS (HOJAS) ─────────────────
+//
+model GoalAction {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  goalId String @map("goal_id") @db.ObjectId
+
+  title       String
+  isCompleted Boolean @default(false) @map("is_completed")
+
+  impact Json? // { health: +5, energy: +2 }
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  goal Goal @relation(fields: [goalId], references: [id])
+
+  @@map("goal_actions")
+}

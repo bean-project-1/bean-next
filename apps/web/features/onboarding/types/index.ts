@@ -1,20 +1,19 @@
-// =======================================================
-// BEAN — Onboarding Feature
-// apps/web/features/onboarding/types/index.ts
-// =======================================================
-export interface OnboardingStep {
-  id: string;
-  title: string;
-  subtitle: string;
-  isValid: (data: Partial<OnboardingFormData>) => boolean;
-}
+export type Method = 'welcome' | 'llm' | 'cv' | 'quiz' | 'coach';
+export type Phase = 'welcome' | 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'goals' | 'generating';
 
-export interface OnboardingFormData {
+export interface FormData {
+  name: string;
+  email: string;
   profession: string;
   skills: string[];
   interests: string[];
   exerciseFrequency: string;
   lifeSatisfaction: number;
-  values?: string[];
-  motivations?: string[];
+  goals: { title: string }[];
+}
+
+export interface DimExtra {
+  key: string;
+  label: string;
+  score: number;
 }

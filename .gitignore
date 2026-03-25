@@ -12,6 +12,8 @@ build/
 # Env files
 .env
 .env.*
+apps/web/.env
+apps/web/.env.*
 !.env.example
 
 # Logs

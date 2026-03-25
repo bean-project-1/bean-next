@@ -10,7 +10,7 @@ import type { DimensionScore } from '@bean/types';
  */
 export function calculateLifeScore(scores: DimensionScore[]): number {
   if (scores.length === 0) return 0;
-  const avg = scores.reduce((sum, s) => sum + s.value, 0) / scores.length;
+  const avg = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
   return Math.round((avg / 10) * 100);
 }
 
@@ -19,11 +19,11 @@ export function calculateLifeScore(scores: DimensionScore[]): number {
  */
 export function calculatePillarScore(
   scores: DimensionScore[],
-  dimensionKeys: string[]
+  dimensionNames: string[]
 ): number {
-  const pillarScores = scores.filter((s) => dimensionKeys.includes(s.key));
+  const pillarScores = scores.filter((s) => s.dimension?.name && dimensionNames.includes(s.dimension.name));
   if (pillarScores.length === 0) return 0;
-  const avg = pillarScores.reduce((sum, s) => sum + s.value, 0) / pillarScores.length;
+  const avg = pillarScores.reduce((sum, s) => sum + s.score, 0) / pillarScores.length;
   return Math.round(avg * 10) / 10;
 }
 

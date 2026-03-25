@@ -36,6 +36,12 @@ export default function HomePage() {
               Dashboard
             </Link>
             <Link
+              href="/login"
+              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+            >
+              Login
+            </Link>
+            <Link
               href="/onboarding"
               className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all hover:from-violet-700 hover:to-indigo-700"
             >

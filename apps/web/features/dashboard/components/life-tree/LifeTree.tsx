@@ -81,6 +81,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
     });
   }, { scope: containerRef });
 
+  // Debugging log for branch count
+  console.log("Number of branches:", data.branches.length);
+
   const handleLeafClickHandler = (id: string, name: string) => {
     setClickedLeafId(id === clickedLeafId ? null : id);
     onLeafClick?.(id);
@@ -120,26 +123,26 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
         className="w-full h-full max-w-[800px] max-h-[800px] cursor-default"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Organic Roots */}
-        <g ref={rootsRef} className="opacity-20 pointer-events-none">
-          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#8b5cf6" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="3" fill="none" strokeLinecap="round" />
+        {/* Organic Roots - Thicker for foundation */}
+        <g ref={rootsRef} className="opacity-10 pointer-events-none">
+          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#8b5cf6" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="8" fill="none" strokeLinecap="round" />
           
-          <text x="250" y="720" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Identidad</text>
-          <text x="400" y="770" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Capital Humano</text>
-          <text x="550" y="720" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Experiencia</text>
+          <text x="250" y="720" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Identidad</text>
+          <text x="400" y="770" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Capital Humano</text>
+          <text x="550" y="720" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Experiencia</text>
         </g>
 
-        {/* The Simple Trunk */}
+        {/* The Simple Trunk - Thicker */}
         <path
           ref={trunkRef}
           d="M 400,450 L 400,350"
           stroke="#475569"
-          strokeWidth="8"
+          strokeWidth="12"
           fill="none"
           strokeLinecap="round"
-          className="opacity-10 pointer-events-none"
+          className="opacity-5 pointer-events-none"
         />
 
         {/* The Seed (BEAN) */}

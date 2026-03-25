@@ -26,6 +26,51 @@ function getBezierPoint(t: number) {
 
 const BRANCH_PATH = `M ${CX},${START_Y} C ${CX + 20},${START_Y - 250} ${CX - 30},${END_Y + 350} ${CX + 10},${END_Y}`;
 
+/** Build a tapered polygon path around the bezier — wide at base, thin at tip */
+function buildTaperedPath(color: string, steps = 40): { left: string; right: string } {
+  const BASE_W = 38;  // half-width at bottom (perspective base)
+  const TIP_W = 3;    // half-width at top (vanishing point)
+
+  type Pt = { x: number; y: number };
+  const pts: Pt[] = [];
+  for (let i = 0; i <= steps; i++) {
+    pts.push(getBezierPoint(i / steps));
+  }
+
+  const left: string[] = [];
+  const right: string[] = [];
+
+  pts.forEach((p, i) => {
+    const t = i / steps;
+    const hw = BASE_W + (TIP_W - BASE_W) * t; // lerp from thick → thin
+
+    // Tangent from neighbouring point
+    const prev = pts[Math.max(0, i - 1)]!;
+    const next = pts[Math.min(steps, i + 1)]!;
+    const tx = next.x - prev.x;
+    const ty = next.y - prev.y;
+    const len = Math.hypot(tx, ty) || 1;
+    // Perpendicular normal (rotated 90°)
+    const nx = -ty / len;
+    const ny =  tx / len;
+
+    const lx = p.x + nx * hw;
+    const ly = p.y + ny * hw;
+    const rx = p.x - nx * hw;
+    const ry = p.y - ny * hw;
+
+    left.push(`${i === 0 ? 'M' : 'L'} ${lx.toFixed(1)},${ly.toFixed(1)}`);
+    right.unshift(`${rx.toFixed(1)},${ry.toFixed(1)}`);
+  });
+
+  // Closed shape: left edge forward + right edge reversed
+  return {
+    left: left.join(' '),
+    right: right.join(' '),
+  };
+}
+
+
 export function BranchDetailView({ branch, onClose }: Props) {
   // ── Pan / Zoom state ────────────────────────────────────
   const [vb, setVb] = useState({ x: 0, y: 0, w: SVG_W, h: SVG_H });
@@ -71,6 +116,11 @@ export function BranchDetailView({ branch, onClose }: Props) {
     '#f59e0b', '#22c55e', '#0ea5e9',
   ];
   const branchColor = colors[Math.abs(branch.id.charCodeAt(0) % colors.length)];
+
+  // Pre-compute tapered path once per render
+  const STEPS = 50;
+  const taper = buildTaperedPath(branchColor, STEPS);
+  const taperedD = `${taper.left} L ${taper.right.split(' ').join(' L ')} Z`;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white animate-fade-in overflow-hidden">
@@ -160,30 +210,55 @@ export function BranchDetailView({ branch, onClose }: Props) {
             META
           </text>
 
-          {/* Glow / shadow */}
+          {/* Tapered branch — wide at root, narrow at tip, faking perspective */}
           <defs>
+            <linearGradient id="branchGrad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%"  stopColor={branchColor} stopOpacity="0.18" />
+              <stop offset="60%" stopColor={branchColor} stopOpacity="0.09" />
+              <stop offset="100%" stopColor={branchColor} stopOpacity="0.04" />
+            </linearGradient>
             <filter id="glow">
-              <feGaussianBlur stdDeviation="6" result="coloredBlur" />
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
               <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
           </defs>
 
-          {/* Main branch path */}
+          {/* Shadow fill for depth */}
           <path
-            d={BRANCH_PATH}
-            stroke="#e2e8f0"
-            strokeWidth="8"
+            d={taperedD}
+            fill="url(#branchGrad)"
+            stroke="none"
+          />
+
+          {/* Outline edge — left side only, for the lit edge look */}
+          <path
+            d={taper.left}
             fill="none"
+            stroke={branchColor}
+            strokeWidth="1"
+            opacity="0.4"
             strokeLinecap="round"
           />
+
+          {/* Centre spine = original bezier, ultra-thin */}
           <path
             d={BRANCH_PATH}
             stroke={branchColor}
-            strokeWidth="4"
+            strokeWidth="1.5"
             fill="none"
             strokeLinecap="round"
-            opacity="0.35"
+            opacity="0.6"
             filter="url(#glow)"
+          />
+
+          {/* Floor-line gradient at the base for grounding */}
+          <ellipse
+            cx={CX}
+            cy={START_Y}
+            rx={38}
+            ry={8}
+            fill={branchColor}
+            opacity="0.12"
           />
 
           {/* Leaves along path */}
@@ -191,7 +266,7 @@ export function BranchDetailView({ branch, onClose }: Props) {
             const t = 0.1 + (i / Math.max(branch.leaves.length - 1, 1)) * 0.8;
             const pos = getBezierPoint(t);
             const side = i % 2 === 0 ? 1 : -1;
-            const leafX = pos.x + side * 90;
+            const leafX = pos.x + side * 140;
             const leafY = pos.y;
             const done = leaf.completed;
 
@@ -203,69 +278,71 @@ export function BranchDetailView({ branch, onClose }: Props) {
                   y1={pos.y}
                   x2={leafX}
                   y2={leafY}
-                  stroke={done ? branchColor : '#e2e8f0'}
-                  strokeWidth="1.5"
-                  strokeDasharray="4,3"
-                  opacity="0.6"
+                  stroke={done ? branchColor : '#94a3b8'}
+                  strokeWidth="2"
+                  strokeDasharray="5,3"
+                  opacity="0.8"
                 />
                 {/* Node circle */}
                 <circle
                   cx={pos.x}
                   cy={pos.y}
-                  r="5"
+                  r="9"
                   fill={done ? branchColor : '#e2e8f0'}
                   stroke="white"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                 />
                 {/* Leaf card */}
                 <rect
-                  x={leafX - 85}
-                  y={leafY - 22}
-                  width="170"
-                  height="44"
-                  rx="10"
+                  x={leafX - 125}
+                  y={leafY - 36}
+                  width="260"
+                  height="72"
+                  rx="14"
                   fill="white"
-                  stroke={done ? branchColor : '#e2e8f0'}
-                  strokeWidth="1.5"
+                  stroke={done ? branchColor : '#cbd5e1'}
+                  strokeWidth="2"
+                  style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.07))' }}
                 />
                 {/* Status dot */}
                 <circle
-                  cx={leafX - 68}
+                  cx={leafX - 105}
                   cy={leafY}
-                  r="6"
+                  r="10"
                   fill={done ? branchColor : '#f1f5f9'}
                   stroke={done ? branchColor : '#cbd5e1'}
-                  strokeWidth="1.5"
+                  strokeWidth="2"
                 />
                 {done && (
                   <text
-                    x={leafX - 68}
-                    y={leafY + 4}
+                    x={leafX - 105}
+                    y={leafY + 5}
                     textAnchor="middle"
-                    fontSize="8"
+                    fontSize="11"
                     fill="white"
                     fontWeight="900"
                   >✓</text>
                 )}
                 {/* Leaf title */}
                 <text
-                  x={leafX - 54}
-                  y={leafY - 4}
-                  fontSize="10"
-                  fill="#334155"
+                  x={leafX - 86}
+                  y={leafY - 8}
+                  fontSize="15"
+                  fill="#1e293b"
                   fontWeight="700"
                   fontFamily="sans-serif"
                 >
-                  {leaf.name.length > 18 ? leaf.name.slice(0, 18) + '…' : leaf.name}
+                  {leaf.name.length > 22 ? leaf.name.slice(0, 22) + '\u2026' : leaf.name}
                 </text>
                 <text
-                  x={leafX - 54}
-                  y={leafY + 10}
-                  fontSize="8"
-                  fill="#94a3b8"
+                  x={leafX - 86}
+                  y={leafY + 14}
+                  fontSize="13"
+                  fill={done ? branchColor : '#94a3b8'}
                   fontFamily="sans-serif"
+                  fontWeight="600"
                 >
-                  {done ? 'Completado' : 'Pendiente'}
+                  {done ? '✓ Completado' : '○ Pendiente'}
                 </text>
               </g>
             );

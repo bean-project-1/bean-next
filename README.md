@@ -37,9 +37,11 @@ bean/
 
 ---
 
-## Getting Started / Guía de Instalación desde Cero
+## 🚀 Guía Definitiva de Instalación (Paso a Paso)
 
-### 1. Prerrequisitos (¿Qué necesito instalar en mi máquina?)
+Sigue estos pasos cuidadosamente para levantar todo el proyecto desde cero en tu máquina local.
+
+### 1. Prerrequisitos
 Para correr este proyecto limpiamente, requieres:
 - **Node.js** (Versión 20 o superior).
 - **npm** (Versión 10 o superior - viene incluido con Node 20+).
@@ -47,94 +49,114 @@ Para correr este proyecto limpiamente, requieres:
 - Un clon de este repositorio.
 
 ### 2. Instalación de Dependencias
-
 Ejecuta el siguiente comando en la raíz del proyecto para descargar todas las dependencias del monorepo (usamos npm workspaces + Turborepo):
 ```bash
 npm install
 ```
 
-### 3. Variables de Entorno
-
-Toma el archivo `.env.example` en la raíz (o en `apps/web/.env`) y asegúrate de tener un archivo `.env`:
+### 3. Variables de Entorno (Crucial para el Login y Base de Datos)
+Toma el archivo `.env.example` en la raíz (o en `apps/web/.env`) y crea tu archivo `.env`:
 ```bash
 cp .env.example .env
 ```
-Asegúrate de que `DATABASE_URL` apunte a tu instancia de base de datos (por defecto: `mongodb://localhost:27017/bean_db`). Note que el proyecto usa MongoDB, no PostgreSQL.
+Asegúrate de que tu `.env` tenga estrictamente lo siguiente para que el proyecto conecte y te permita iniciar sesión:
+```ini
+# Base de Datos MongoDB (El parámetro directConnection=true es vital si usas Docker/Podman en Windows)
+DATABASE_URL="mongodb://localhost:27017/bean_db?replicaSet=rs0&directConnection=true"
 
-### 4. Arrancar la Base de Datos (MongoDB)
+# Autenticación (NextAuth)
+NEXTAUTH_SECRET="cualquier-texto-secreto-seguro"
+NEXTAUTH_URL="http://localhost:3000" # Cambiar a 3001 si tu puerto 3000 está ocupado
+```
 
+### 4. Arrancar las Bases de Datos (MongoDB y Mongo Express)
 Este proyecto requiere **MongoDB configurado como Replica Set** debido a los requerimientos de Prisma ORM. 
-Si tienes Docker Desktop (o Podman) instalado:
 
 ```bash
-# 1. Levantar el contenedor
-docker compose up -d mongodb
+# 1. Levantar el contenedor de Base de Datos Y el visor web (Mongo Express)
+docker compose up -d mongodb mongo-express
 # (Si usas Podman, cambia `docker compose` por `podman compose`)
 
-# 2. IMPORTANTE: Inicializar el Replica Set (Solo la primera vez)
+# 2. IMPORTANTE: Inicializar el Replica Set (Solo la primera vez que creas el contenedor)
 docker exec -it bean-mongodb mongosh --eval "rs.initiate()"
 # (En Podman: podman exec -it bean-mongodb mongosh --eval "rs.initiate()")
 ```
-*Alternativa sin Docker ni Podman*: Usa una cuenta gratuita en [MongoDB Atlas](https://www.mongodb.com/atlas/database), crea un cluster y pega el link de conexión en tu `.env`. No tendrías que descargar nada.
+*Alternativa sin Docker ni Podman*: Usa una cuenta gratuita en [MongoDB Atlas](https://www.mongodb.com/atlas/database), crea un cluster y pega el link de conexión en tu `.env`. 
 
-### 5. Configurar el Esquema de Prisma
-
-Sincroniza la estructura de la base de datos y genera el cliente de Prisma:
+### 5. Configurar el Esquema (Prisma)
+Una vez que la base de datos esté arriba, sincroniza la estructura ejecutando este comando desde la **raíz del proyecto**:
 ```bash
 npm run db:push
 ```
+Esto creará las colecciones en MongoDB y generará el Prisma Client localmente.
 
-### 6. Ejecutar la Aplicación Web
-
+### 6. Llenar la Base de Datos con Datos Fake (SEED)
+Para no empezar con la plataforma vacía, llenaremos información ficticia de prueba:
 ```bash
+# Ve a la carpeta web y corre el seed
+cd apps/web
+npm run db:seed
+```
+*Si tienes problemas con Typescript en Windows ejecutando esto, revisa que no haya errores de importación en `prisma/seed.ts`.*
+
+### 7. Ejecutar la Aplicación Frontend y Backend
+Regresa a la raíz del proyecto y enciende el entorno completo de desarrollo:
+```bash
+cd ../../
 npm run dev
 ```
-La aplicación web (Next.js) arrancará (típicamente en `http://localhost:3000` o `3001` si el puerto base está ocupado).
+La aplicación web (que sirve el frontend de React y el backend en Next.js App Router) arrancará en `http://localhost:3000` (o `3001`).
+
+---
+
+## 🗄️ ¿Cómo y dónde ver la Base de Datos?
+
+Tienes **3 opciones principales** para inspeccionar qué se está guardando:
+
+1. **Prisma Studio (La más fácil e integrada):**
+   Corre el comando `npm run db:studio` en la raíz. Se te abrirá una interfaz moderna en `http://localhost:5555` que lee inteligentemente tus modelos de Prisma.
+   
+2. **Mongo Express (Visor web crudo):**
+   Como lo levantamos en el paso 4, puedes entrar a **`http://localhost:8081`**.
+   - **Usuario:** `admin`
+   - **Contraseña:** `pass`
+   Aquí verás la base de datos exactamente como es en formato JSON.
+
+3. **MongoDB Compass o Extensiones de VSCode (Para Profesionales):**
+   Descarga la app de escritorio de MongoDB Compass y conéctate usando el mismo string de tu `.env`: `mongodb://localhost:27017/bean_db?directConnection=true`.
 
 ---
 
 ## 🛑 Problemas Frecuentes al Levantar (Troubleshooting)
 
 1. **`os error 10061` o "Connection Refused" con MongoDB**
-   - **Por qué pasa:** El contenedor de Docker no está corriendo o intentaste conectarte a localhost sin tener un servidor de bases de datos activo.
-   - **Solución:** Verifica que Docker o Podman estén corriendo. Ejecuta `docker compose up -d mongodb` o su equivalente en podman.
+   - **Por qué pasa:** Tus contenedores no están corriendo.
+   - **Solución:** Verifica que Docker o Podman Desktop estén abiertos y corre `docker compose up -d mongodb`.
 
-2. **La terminal se queda "pegada" o da Timeout cuando ejecuto `npm run db:push`**
-   - **Por qué pasa:** Prisma requiere que MongoDB sea un *Replica Set*. Tu contenedor probablemente arrancó, pero el Cluster interno nunca fue inicializado.
-   - **Solución:** Ejecuta el comando de inicialización sobre tu contenedor que está corriendo: `docker exec -it bean-mongodb mongosh --eval "rs.initiate()"`.
+2. **La terminal se queda "pegada", da Timeout en `db:push` o el Login se queda cargando infinito**
+   - **Por qué pasa:** Prisma requiere que MongoDB sea un *Replica Set*. O no corriste la inicialización o te falta un parámetro de conexión.
+   - **Solución:** Corre `docker exec -it bean-mongodb mongosh --eval "rs.initiate()"` y asegúrate que tu `DATABASE_URL` termine en `&directConnection=true`. También revisa que `NEXTAUTH_SECRET` exista.
 
 3. **`npm error code ENOWORKSPACES` al iniciar `npm run dev`**
-   - **Por qué pasa:** Next.js trata de instalar dependencias opcionales globalmente (como el motor `sharp` para optimización de imágenes) y no respeta el esquema de workspaces de npm en Turborepo.
-   - **Solución:** **No es fatal e ignóralo**. Fíjate en los logs de la terminal: si un par de líneas más abajo dice que fue exitoso (`✓ Ready in X.Xs`), significa que tu servidor web de Next.js arrancó tranquilamente. 
+   - **Por qué pasa:** Next.js trata de instalar dependencias opcionales (como `sharp`) y rompe momentáneamente con los npm workspaces.
+   - **Solución:** Ignóralo. Si abajo ves `✓ Ready in X.Xs`, significa que tu servidor arrancó sin problemas. 
 
 4. **El puerto 3000 está en uso**
-   - **Por qué pasa:** Tienes otra aplicación o servicio tomándolo.
-   - **Solución:** Next.js automáticamente intentará arrancar en el 3001. Abre `http://localhost:3001` en tu navegador.
+   - **Por qué pasa:** Tienes otro proyecto ocupándolo.
+   - **Solución:** Next.js usará el 3001 automáticamente. Entra a `http://localhost:3001`.
 
 ---
 
-## Environment Variables
-
-| Variable            | Description                          | Required |
-|---------------------|--------------------------------------|----------|
-| `DATABASE_URL`      | PostgreSQL connection string         | ✅       |
-| `OPENAI_API_KEY`    | OpenAI API key for AI features       | ✅       |
-| `NEXTAUTH_SECRET`   | NextAuth session secret              | ✅       |
-| `NEXTAUTH_URL`      | Base URL for auth callbacks          | ✅       |
-| `AI_ENGINE_URL`     | FastAPI AI engine URL (future)       | ❌       |
-| `AZURE_CLIENT_ID`   | Azure AD app ID (production)         | ❌       |
-
----
-
-## Development Workflow
+## 🛠️ Comandos Útiles del Monorepo (Development Workflow)
 
 ```bash
-npm run dev          # Start all dev servers
-npm run build        # Build all packages
-npm run lint         # Lint entire monorepo
-npm run format       # Prettier format all files
-npm run type-check   # TypeScript checks
-npm run db:studio    # Open Prisma Studio (DB GUI)
+npm run dev          # Arranca todos los servidores (Web, AI, etc.) en modo watch
+npm run build        # Construye todos los paquetes para producción
+npm run lint         # Ejecuta el linter en todo el repositorio
+npm run format       # Formatea el código con Prettier
+npm run type-check   # Valida tipado estricto de TypeScript
+npm run db:studio    # Abre la interfaz visual de base de datos de Prisma
+npm run db:push      # Empuja los cambios de schema.prisma hacia la base de datos
 ```
 
 ---

@@ -38,23 +38,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2 mb-8 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all">
               <span className="text-lg font-bold text-white">B</span>
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">BEAN</span>
+            <span className="text-2xl font-bold tracking-tight text-slate-900">BEAN</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-neutral-400">Enter your email to resume your life assessment.</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
+          <p className="text-slate-500 font-medium">Enter your email to resume your life assessment.</p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
+        <div className="bg-white/80 border border-slate-200/60 p-8 rounded-3xl backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">
+              <label htmlFor="email" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                 Email Address
               </label>
               <input
@@ -64,7 +64,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="daniel@bean.app"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-neutral-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all"
+                className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-sm"
               />
             </div>
 
@@ -75,17 +75,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-base font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:translate-y-0"
+              className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-base font-bold text-white shadow-lg shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:opacity-50 disabled:translate-y-0"
             >
               {loading ? 'Logging in...' : 'Enter Platform →'}
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            <p className="text-neutral-500 text-sm">
+          <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+            <p className="text-slate-500 text-sm font-medium">
               Don't have an account?{' '}
-              <Link href="/onboarding" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
-                Start Assessment
+              <Link href="/register" className="text-violet-600 hover:text-violet-700 font-bold transition-colors">
+                Create Account
               </Link>
             </p>
           </div>

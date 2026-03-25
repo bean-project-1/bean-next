@@ -55,20 +55,20 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
     <div className="w-full max-w-5xl">
       {/* ── Header ── */}
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-white">Tu ADN de vida</h1>
-        <p className="mt-2 text-neutral-400">
+        <h1 className="text-3xl font-bold text-slate-900">Tu ADN de vida</h1>
+        <p className="mt-2 text-slate-500">
           Así es como BEAN te ve. Completa las dimensiones que faltan para un perfil más preciso.
         </p>
       </div>
 
       {/* ── Completeness bar ── */}
-      <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-4 flex items-center gap-5">
+      <div className="mb-8 rounded-xl border border-slate-200 bg-white/[0.03] px-6 py-4 flex items-center gap-5">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-white">Completitud del perfil</span>
+            <span className="text-sm font-medium text-slate-900">Completitud del perfil</span>
             <span className="text-sm font-bold text-violet-400">{pct}%</span>
           </div>
-          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-2 rounded-full bg-white overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-500 transition-all duration-700"
               style={{ width: `${pct}%` }}
@@ -76,10 +76,10 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
           </div>
         </div>
         <div className="flex-shrink-0 text-right">
-          <p className="text-2xl font-bold text-white">
-            {filled}<span className="text-neutral-500 text-base font-normal">/{ALL_DIMENSIONS.length}</span>
+          <p className="text-2xl font-bold text-slate-900">
+            {filled}<span className="text-slate-500 text-base font-normal">/{ALL_DIMENSIONS.length}</span>
           </p>
-          <p className="text-xs text-neutral-500">Dimensiones</p>
+          <p className="text-xs text-slate-500">Dimensiones</p>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
         {/* ── DNA Panel ── */}
         <div className="flex-shrink-0 flex flex-col items-center">
           <div className="sticky top-8">
-            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-md shadow-2xl overflow-hidden">
+            <div className="relative rounded-2xl border border-slate-200 bg-white/[0.03] p-6 backdrop-blur-md shadow-2xl overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-violet-600/5 via-blue-600/5 to-emerald-600/5" />
               <DNADiagram scores={scores} />
 
@@ -100,7 +100,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
                   return (
                     <div key={cat} className="flex items-center gap-2">
                       <div className={`h-2 w-2 rounded-full ${c.bg}`} />
-                      <span className="text-xs text-neutral-500">{label}</span>
+                      <span className="text-xs text-slate-500">{label}</span>
                     </div>
                   );
                 })}
@@ -114,9 +114,9 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
                 const avg = dims.reduce((s, d) => s + (scores[d.key] ?? 0), 0) / dims.length;
                 const c = CAT_COLORS[cat];
                 return (
-                  <div key={cat} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div key={cat} className="rounded-xl border border-slate-200 bg-white/[0.03] p-3">
                     <p className={`text-lg font-bold ${c.text}`}>{avg.toFixed(1)}</p>
-                    <p className="text-[10px] text-neutral-600 mt-0.5">{label}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
                   </div>
                 );
               })}
@@ -147,22 +147,22 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
 
                     return (
                       <div key={dim.key} className={`rounded-xl border p-4 transition-all ${
-                        hasData ? `${c.border} bg-white/[0.04]` : 'border-white/8 bg-white/[0.02]'
+                        hasData ? `${c.border} bg-white` : 'border-slate-200 bg-white/[0.02]'
                       }`}>
                         {/* Row header */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-base">{dim.emoji}</span>
-                            <span className={`text-sm font-medium ${hasData ? 'text-white' : 'text-neutral-500'}`}>
+                            <span className={`text-sm font-medium ${hasData ? 'text-slate-900' : 'text-slate-500'}`}>
                               {dim.label}
                             </span>
                             {isFromForm && (
-                              <span className="text-[10px] rounded-full bg-white/10 px-2 py-0.5 text-neutral-500">
+                              <span className="text-[10px] rounded-full bg-white px-2 py-0.5 text-slate-500">
                                 del quiz
                               </span>
                             )}
                           </div>
-                          <span className={`text-sm font-bold ${hasData ? c.text : 'text-neutral-700'}`}>
+                          <span className={`text-sm font-bold ${hasData ? c.text : 'text-slate-400'}`}>
                             {hasData ? `${score.toFixed(1)}/10` : '—'}
                           </span>
                         </div>
@@ -170,7 +170,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
                         {/* Progress / Slider */}
                         {isFromForm ? (
                           /* From quiz — show read-only bar */
-                          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-1.5 rounded-full bg-white overflow-hidden">
                             <div className={`h-full rounded-full ${c.bg} transition-all duration-500`}
                               style={{ width: `${(score / 10) * 100}%`, opacity: 0.6 }} />
                           </div>
@@ -183,8 +183,8 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
                         ) : (
                           /* Empty — optional fill-in */
                           <div>
-                            <p className="text-xs text-neutral-600 mb-2">
-                              ¿Cómo calificarías esta dimensión? <span className="text-neutral-700">(opcional)</span>
+                            <p className="text-xs text-slate-400 mb-2">
+                              ¿Cómo calificarías esta dimensión? <span className="text-slate-400">(opcional)</span>
                             </p>
                             <input type="range" min={1} max={10} step={0.5}
                               defaultValue={5}
@@ -204,11 +204,11 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
           <div className="sticky bottom-6 pt-2">
             <button
               onClick={onSubmit}
-              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-sm font-bold text-white shadow-2xl shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/50"
+              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-sm font-bold text-slate-900 shadow-2xl shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/50"
             >
               Generar mi perfil BEAN ✨
             </button>
-            <p className="mt-2 text-center text-xs text-neutral-600">
+            <p className="mt-2 text-center text-xs text-slate-400">
               Puedes completar más dimensiones en cualquier momento desde tu perfil.
             </p>
           </div>

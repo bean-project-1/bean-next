@@ -22,6 +22,10 @@ const onboardingSchema = z.object({
   dimensionExtras: z
     .array(z.object({ key: z.string(), score: z.number().min(0).max(10) }))
     .default([]),
+  goals: z
+    .array(z.object({ title: z.string().min(1) }))
+    .max(3)
+    .default([]),
 });
 
 // Map onboarding fields → dimension keys + initial score
@@ -146,7 +150,23 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Set session cookie
+    // 4. Register any defined Goals from GoalPhase
+    if (data.goals.length > 0) {
+      await Promise.all(
+        data.goals.map(goal => 
+          prisma.goal.create({
+            data: {
+              userId: user.id,
+              title: goal.title,
+              status: 'active',
+              progress: 0,
+            }
+          })
+        )
+      );
+    }
+
+    // 5. Set session cookie
     const res = NextResponse.json(
       { success: true as const, data: { userId: user.id, isNewUser } },
       { status: 201 }
@@ -239,5 +259,36 @@ export async function GET(req: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+// ── PUT — Update basic user profile (name) ──
+export async function PUT(req: NextRequest) {
+  try {
+    const userId = req.cookies.get('bean_user_id')?.value;
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    const { name } = await req.json();
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { success: false, error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { name },
+    });
+
+    return NextResponse.json({ success: true, user });
+  } catch (err) {
+    console.error('[PUT /api/profile]', err);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

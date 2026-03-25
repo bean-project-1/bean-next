@@ -69,12 +69,12 @@ NEXTAUTH_SECRET="cualquier-texto-secreto-seguro"
 NEXTAUTH_URL="http://localhost:3000" # Cambiar a 3001 si tu puerto 3000 está ocupado
 ```
 
-### 4. Arrancar las Bases de Datos (MongoDB y Mongo Express)
+### 4. Arrancar la Base de Datos (MongoDB)
 Este proyecto requiere **MongoDB configurado como Replica Set** debido a los requerimientos de Prisma ORM. 
 
 ```bash
-# 1. Levantar el contenedor de Base de Datos Y el visor web (Mongo Express)
-docker compose up -d mongodb mongo-express
+# 1. Levantar el contenedor de Base de Datos
+docker compose up -d mongodb
 # (Si usas Podman, cambia `docker compose` por `podman compose`)
 
 # 2. IMPORTANTE: Inicializar el Replica Set (Solo la primera vez que creas el contenedor)
@@ -111,18 +111,12 @@ La aplicación web (que sirve el frontend de React y el backend en Next.js App R
 
 ## 🗄️ ¿Cómo y dónde ver la Base de Datos?
 
-Tienes **3 opciones principales** para inspeccionar qué se está guardando:
+Tienes **2 opciones principales** para inspeccionar qué se está guardando:
 
-1. **Prisma Studio (La más fácil e integrada):**
-   Corre el comando `npm run db:studio` en la raíz. Se te abrirá una interfaz moderna en `http://localhost:5555` que lee inteligentemente tus modelos de Prisma.
-   
-2. **Mongo Express (Visor web crudo):**
-   Como lo levantamos en el paso 4, puedes entrar a **`http://localhost:8081`**.
-   - **Usuario:** `admin`
-   - **Contraseña:** `pass`
-   Aquí verás la base de datos exactamente como es en formato JSON.
+1. **Prisma Studio (La más recomendada e integrada):**
+   Corre el comando `npm run db:studio` en la raíz. Se te abrirá una interfaz moderna en `http://localhost:5555` que lee inteligentemente tus modelos de Prisma y te permite editar todo fácilmente.
 
-3. **MongoDB Compass o Extensiones de VSCode (Para Profesionales):**
+2. **MongoDB Compass o Extensiones de VSCode (Para Profesionales):**
    Descarga la app de escritorio de MongoDB Compass y conéctate usando el mismo string de tu `.env`: `mongodb://localhost:27017/bean_db?directConnection=true`.
 
 ---

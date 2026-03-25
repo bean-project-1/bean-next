@@ -1,5 +1,5 @@
 export type Method = 'welcome' | 'llm' | 'cv' | 'quiz' | 'coach';
-export type Phase = 'welcome' | 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'generating';
+export type Phase = 'welcome' | 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'goals' | 'generating';
 
 export interface FormData {
   name: string;
@@ -9,6 +9,7 @@ export interface FormData {
   interests: string[];
   exerciseFrequency: string;
   lifeSatisfaction: number;
+  goals: { title: string }[];
 }
 
 export interface DimExtra {

@@ -9,13 +9,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // 1. Fetch User Goals with their Actions (Limit to 2 to match user expectation)
+    // 1. Fetch User Goals with their Actions (Dynamic to user's actual goals)
     const goals = await (prisma as any).goal.findMany({
       where: { userId },
       include: {
         actions: true
-      },
-      take: 2
+      }
     });
 
     // 2. Fetch latest LifeState for the total growth score

@@ -9,18 +9,18 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-/* ----- CSS Variables ----- */
+/* ----- CSS Variables (Light Theme) ----- */
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --muted: #71717a;
-  --muted-foreground: #a1a1aa;
-  --border: rgba(255, 255, 255, 0.08);
-  --card: rgba(255, 255, 255, 0.04);
+  --background: #fafafa;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: rgba(0, 0, 0, 0.08);
+  --card: rgba(255, 255, 255, 0.8);
   --primary: #7c1dff;
   --primary-foreground: #ffffff;
   --accent: #6366f1;
-  --radius: 0.75rem;
+  --radius: 1rem;
 }
 
 /* ----- Base Resets ----- */
@@ -56,22 +56,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* ----- Utility Classes ----- */
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent;
   }
 
   .glass {
-    @apply border border-white/10 bg-white/5 backdrop-blur-md;
+    @apply border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-xl shadow-slate-200/50;
   }
 
   .section-container {

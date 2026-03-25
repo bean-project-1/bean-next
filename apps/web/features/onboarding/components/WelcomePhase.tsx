@@ -22,8 +22,8 @@ export function WelcomePhase({ name, email, onName, onEmail, onNext }: Props) {
       <BeanLogo />
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white leading-tight">Hola, quiero conocerte.</h1>
-        <p className="mt-2 text-neutral-400">
+        <h1 className="text-3xl font-bold text-slate-900 leading-tight">Hola, quiero conocerte.</h1>
+        <p className="mt-2 text-slate-500">
           BEAN es tu plataforma de inteligencia de vida. Empecemos por lo básico.
         </p>
       </div>
@@ -54,7 +54,7 @@ export function WelcomePhase({ name, email, onName, onEmail, onNext }: Props) {
         </div>
       </OnboardingCard>
 
-      <p className="mt-4 text-center text-xs text-neutral-700">
+      <p className="mt-4 text-center text-xs text-slate-400">
         Tu información es privada y nunca se comparte.
       </p>
     </div>

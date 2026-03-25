@@ -6,4 +6,5 @@ export * from './CVPhase';
 export * from './CoachPhase';
 export * from './ReviewPhase';
 export * from './GeneratingScreen';
+export * from './GoalPhase';
 export * from './DNADiagram';

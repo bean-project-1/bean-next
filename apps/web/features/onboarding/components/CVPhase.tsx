@@ -30,8 +30,8 @@ export function CVPhase({ onDone, onBack }: Props) {
       <BackButton onClick={onBack} />
 
       <span className="text-3xl block mb-3">📄</span>
-      <h1 className="text-2xl font-bold text-white mb-1">Importa tu CV</h1>
-      <p className="text-sm text-neutral-400 mb-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Importa tu CV</h1>
+      <p className="text-sm text-slate-500 mb-6">
         Sube tu currículum en PDF o Word. Extraemos habilidades y experiencia automáticamente.
       </p>
 
@@ -47,7 +47,7 @@ export function CVPhase({ onDone, onBack }: Props) {
               ? 'border-violet-500 bg-violet-600/10'
               : file
                 ? 'border-violet-500/40 bg-violet-600/5'
-                : 'border-white/10 hover:border-white/20'
+                : 'border-slate-200 hover:border-slate-200'
           }`}
         >
           <input
@@ -57,14 +57,14 @@ export function CVPhase({ onDone, onBack }: Props) {
           {file ? (
             <>
               <span className="text-4xl">✅</span>
-              <p className="font-medium text-white">{file.name}</p>
-              <p className="text-xs text-neutral-400">{(file.size / 1024).toFixed(0)} KB · Listo para subir</p>
+              <p className="font-medium text-slate-900">{file.name}</p>
+              <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB · Listo para subir</p>
             </>
           ) : (
             <>
               <span className="text-4xl">📎</span>
-              <p className="font-medium text-white">Arrastra tu CV aquí</p>
-              <p className="text-xs text-neutral-500">PDF o DOCX · haz clic para seleccionar</p>
+              <p className="font-medium text-slate-900">Arrastra tu CV aquí</p>
+              <p className="text-xs text-slate-500">PDF o DOCX · haz clic para seleccionar</p>
             </>
           )}
         </div>
@@ -77,7 +77,7 @@ export function CVPhase({ onDone, onBack }: Props) {
           Continuar → Ver mi ADN de vida →
         </button>
 
-        <p className="mt-3 text-center text-xs text-neutral-600">
+        <p className="mt-3 text-center text-xs text-slate-400">
           Tu archivo no se almacena. Solo se usa para extraer datos del perfil.
         </p>
       </OnboardingCard>

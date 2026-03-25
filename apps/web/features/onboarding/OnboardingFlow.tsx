@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { WelcomePhase, MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GeneratingScreen } from './components';
+import { WelcomePhase, MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GoalPhase, GeneratingScreen } from './components';
 import { SKILL_SUGGESTIONS, INTEREST_SUGGESTIONS, PROFESSION_SUGGESTIONS } from './constants';
 import type { Phase, FormData, DimExtra } from './types';
 
 const INITIAL_FORM: FormData = {
   name: '', email: '', profession: '',
-  skills: [], interests: [], exerciseFrequency: '', lifeSatisfaction: 6,
+  skills: [], interests: [], exerciseFrequency: '', lifeSatisfaction: 6, goals: [],
 };
 
 export function OnboardingFlow() {
@@ -17,6 +17,24 @@ export function OnboardingFlow() {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [extras, setExtras] = useState<DimExtra[]>([]);
   const [error, setError] = useState('');
+
+  // Auto-fetch existing user session and skip Welcome phase
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data?.user) {
+          setForm(f => ({
+            ...f,
+            name: json.data.user.name || '',
+            email: json.data.user.email || ''
+          }));
+          // Jump straight to the method phase if session exists
+          setPhase('method');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const submit = useCallback(async () => {
     setError('');
@@ -108,6 +126,15 @@ export function OnboardingFlow() {
           <ReviewPhase
             form={form} extras={extras}
             onExtrasChange={setExtras}
+            onSubmit={() => setPhase('goals')}
+          />
+        )}
+
+        {phase === 'goals' && (
+          <GoalPhase 
+            goals={form.goals} 
+            onChange={(goals) => setForm(f => ({ ...f, goals }))}
+            onBack={() => setPhase('review')}
             onSubmit={submit}
           />
         )}

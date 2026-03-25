@@ -23,10 +23,10 @@ export function MethodPhase({ name, onSelect }: Props) {
       <BeanLogo />
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white leading-tight">
+        <h1 className="text-3xl font-bold text-slate-900 leading-tight">
           {firstName}¿cómo quieres compartir tu información?
         </h1>
-        <p className="mt-2 text-neutral-400">
+        <p className="mt-2 text-slate-500">
           Elige la forma que más te acomode. Todas llevan al mismo resultado.
         </p>
       </div>
@@ -41,14 +41,14 @@ export function MethodPhase({ name, onSelect }: Props) {
             className={`group relative flex flex-col items-start gap-3 rounded-2xl border p-6 text-left transition-all duration-200 ${
               hovered === m.id
                 ? 'border-violet-500/50 bg-violet-600/10 shadow-lg shadow-violet-500/10 -translate-y-0.5'
-                : 'border-white/10 bg-white/[0.03]'
+                : 'border-slate-200 bg-white/[0.03]'
             }`}
           >
             {/* Badge */}
             <span className={`absolute top-4 right-4 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
               m.id === 'quiz'
                 ? 'bg-violet-600/20 border-violet-500/30 text-violet-400'
-                : 'bg-white/5 border-white/10 text-neutral-500'
+                : 'bg-white border-slate-200 text-slate-500'
             }`}>
               {m.id === 'quiz' ? '★ ' : ''}{m.tag}
             </span>
@@ -56,12 +56,12 @@ export function MethodPhase({ name, onSelect }: Props) {
             <span className="text-3xl">{m.emoji}</span>
 
             <div>
-              <p className="font-semibold text-white">{m.title}</p>
-              <p className="mt-1 text-sm text-neutral-400 leading-relaxed">{m.subtitle}</p>
+              <p className="font-semibold text-slate-900">{m.title}</p>
+              <p className="mt-1 text-sm text-slate-500 leading-relaxed">{m.subtitle}</p>
             </div>
 
             <span className={`text-xs font-medium transition-colors ${
-              hovered === m.id ? 'text-violet-400' : 'text-neutral-600'
+              hovered === m.id ? 'text-violet-400' : 'text-slate-400'
             }`}>
               Seleccionar →
             </span>

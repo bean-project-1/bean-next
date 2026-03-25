@@ -26,8 +26,8 @@ export function DashboardView() {
           setProfile({ userId: user.id, name: user.name, email: user.email });
 
           const dbScores: Record<string, number> = {};
-          if (json.data.profile?.dimensionScores) {
-            json.data.profile.dimensionScores.forEach((ds: { dimension: { name: string }; score: number }) => {
+          if (json.data.latestState?.scores) {
+            json.data.latestState.scores.forEach((ds: { dimension: { name: string }; score: number }) => {
               dbScores[ds.dimension.name] = ds.score;
             });
           }
@@ -73,7 +73,7 @@ export function DashboardView() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-light text-gray-900 tracking-tight">
-            Hola{profile.name ? `, <span className="font-semibold text-gray-900">${profile.name.split(' ')[0]}</span>` : ''} 👋
+            Hola{profile.name ? <>, <span className="font-semibold text-gray-900">{profile.name.split(' ')[0]}</span></> : ''} 👋
           </h1>
           <p className="mt-1 text-sm text-gray-400 font-medium">
             {filled}/{ALL_DIMENSIONS.length} dimensiones completadas

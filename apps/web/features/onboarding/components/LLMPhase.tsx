@@ -21,8 +21,8 @@ export function LLMPhase({ onDone, onBack }: Props) {
       <BackButton onClick={onBack} />
 
       <span className="text-3xl block mb-3">🤖</span>
-      <h1 className="text-2xl font-bold text-white mb-1">Trae tu perfil de IA</h1>
-      <p className="text-sm text-neutral-400 mb-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Trae tu perfil de IA</h1>
+      <p className="text-sm text-slate-500 mb-6">
         Pide a ChatGPT/Claude:{' '}
         <span className="text-violet-400 italic">"Resúmeme mi perfil en 200 palabras"</span>{' '}
         y pega el resultado aquí.
@@ -39,9 +39,9 @@ export function LLMPhase({ onDone, onBack }: Props) {
             'Ejemplo:\nEres un ingeniero de software con 5 años de experiencia, ' +
             'especializado en Python y machine learning. Te interesa el emprendimiento y el fitness…'
           }
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-neutral-600 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-neutral-600 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
         />
-        <p className="mt-1.5 text-xs text-neutral-600">{text.length} caracteres</p>
+        <p className="mt-1.5 text-xs text-slate-400">{text.length} caracteres</p>
 
         <button
           onClick={() => onDone(text)}

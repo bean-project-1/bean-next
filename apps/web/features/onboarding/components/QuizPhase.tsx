@@ -35,7 +35,7 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
           <div className="mt-3 flex flex-wrap gap-2">
             {PROFESSION_SUGGESTIONS.slice(0, 6).map(s => (
               <button key={s} onClick={() => setForm(f => ({ ...f, profession: s }))}
-                className="rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-400 hover:border-violet-500/40 hover:text-violet-300 transition-all">
+                className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-500 hover:border-violet-500/40 hover:text-violet-300 transition-all">
                 {s}
               </button>
             ))}
@@ -77,7 +77,7 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
               className={`rounded-xl border p-4 text-sm font-medium transition-all ${
                 form.exerciseFrequency === opt
                   ? 'border-violet-500 bg-violet-600/25 text-violet-300'
-                  : 'border-white/10 bg-white/3 text-neutral-400 hover:text-white'
+                  : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'
               }`}>
               {opt}
             </button>
@@ -91,19 +91,19 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
       content: (
         <div>
           <div className="mb-8 flex items-end justify-between">
-            <span className="text-xs text-neutral-500">Para nada</span>
+            <span className="text-xs text-slate-500">Para nada</span>
             <div className="text-center">
               <span className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
                 {form.lifeSatisfaction}
               </span>
-              <p className="text-xs text-neutral-500 mt-1">de 10</p>
+              <p className="text-xs text-slate-500 mt-1">de 10</p>
             </div>
-            <span className="text-xs text-neutral-500">Excelente</span>
+            <span className="text-xs text-slate-500">Excelente</span>
           </div>
           <input type="range" min={0} max={10} step={1} value={form.lifeSatisfaction}
             onChange={e => setForm(f => ({ ...f, lifeSatisfaction: parseInt(e.target.value, 10) }))}
-            className="w-full h-2 appearance-none rounded-full bg-white/10 accent-violet-500 cursor-pointer" />
-          <div className="mt-3 flex justify-between text-xs text-neutral-700 select-none">
+            className="w-full h-2 appearance-none rounded-full bg-white accent-violet-500 cursor-pointer" />
+          <div className="mt-3 flex justify-between text-xs text-slate-400 select-none">
             {Array.from({ length: 11 }, (_, i) => <span key={i}>{i}</span>)}
           </div>
         </div>
@@ -122,14 +122,14 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
 
       <OnboardingCard>
         <span className="text-3xl block mb-3">{current.emoji}</span>
-        <h1 className="text-2xl font-bold text-white">{current.title}</h1>
-        <p className="mt-1.5 mb-6 text-sm text-neutral-400">{current.subtitle}</p>
+        <h1 className="text-2xl font-bold text-slate-900">{current.title}</h1>
+        <p className="mt-1.5 mb-6 text-sm text-slate-500">{current.subtitle}</p>
 
         <div className="min-h-[130px]">{current.content}</div>
 
         <div className="mt-8 flex items-center justify-between">
           {step > 0 ? (
-            <button onClick={() => setStep(s => s - 1)} className="text-sm text-neutral-500 hover:text-white transition-colors">
+            <button onClick={() => setStep(s => s - 1)} className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
               ← Atrás
             </button>
           ) : <div />}
@@ -143,7 +143,7 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
         </div>
       </OnboardingCard>
 
-      <p className="mt-3 text-center text-xs text-neutral-700">
+      <p className="mt-3 text-center text-xs text-slate-400">
         Paso {step + 1} de {STEPS.length}
       </p>
     </div>

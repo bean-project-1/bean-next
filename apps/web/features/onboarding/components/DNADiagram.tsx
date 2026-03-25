@@ -53,8 +53,8 @@ export function DNADiagram({ scores }: Props) {
           return `${x},${y}`;
         }).join(' ')}
         fill="none"
-        stroke="rgba(139,92,246,0.2)"
-        strokeWidth="2"
+        stroke="rgba(139,92,246,0.1)"
+        strokeWidth="1.5"
         strokeLinecap="round"
       />
 
@@ -66,8 +66,8 @@ export function DNADiagram({ scores }: Props) {
           return `${x},${y}`;
         }).join(' ')}
         fill="none"
-        stroke="rgba(59,130,246,0.2)"
-        strokeWidth="2"
+        stroke="rgba(59,130,246,0.1)"
+        strokeWidth="1.5"
         strokeLinecap="round"
       />
 
@@ -80,8 +80,8 @@ export function DNADiagram({ scores }: Props) {
         const score = scores[dim.key] ?? 0;
         const hasData = score > 0;
         const c = CAT_COLORS[dim.cat as keyof typeof CAT_COLORS];
-        const opacity = hasData ? 0.9 : 0.15;
-        const nodeR = hasData ? 5 + score * 0.35 : 3;
+        const opacity = hasData ? 0.8 : 0.1;
+        const nodeR = hasData ? 2 + (score / 100) * 4 : 1.5;
 
         return (
           <g key={dim.key}>

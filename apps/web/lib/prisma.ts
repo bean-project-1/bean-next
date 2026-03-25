@@ -5,7 +5,7 @@
 // Prevents multiple Prisma Client instances in development
 // (Next.js hot reload creates new module instances each time)
 // =======================================================
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from './generated-prisma';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

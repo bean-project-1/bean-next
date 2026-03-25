@@ -18,29 +18,26 @@ export function DNAView() {
   const [saved, setSaved] = useState(false);
   const [pct, setPct] = useState(0);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
+  const [dbDimensions, setDbDimensions] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [newAttrName, setNewAttrName] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     fetch('/api/profile-v2')
       .then(r => r.json())
       .then((json: any) => {
-        console.log('API V2 Response:', json);
         if (json.success && json.data) {
           const { user, latestState, dimensions } = json.data;
-          console.log(`Attributes found: ${user.attributes?.length ?? 0}`);
-          console.log(`Dimensions found: ${dimensions?.length ?? 0}`);
-          
           setAttributes(user.attributes || []);
+          setDbDimensions(dimensions || []);
           
           if (latestState?.scores && dimensions) {
-            console.log(`Scores found in LifeState: ${latestState.scores.length}`);
             const scoreMap: Record<string, number> = {};
             latestState.scores.forEach((ds: any) => {
               const dimMetadata = dimensions.find((d: any) => d.id === ds.dimensionId);
               if (dimMetadata) {
                 scoreMap[dimMetadata.name] = ds.score;
-              } else {
-                console.warn(`Dimension not found for ID: ${ds.dimensionId}`);
               }
             });
             setScores(scoreMap);
@@ -70,17 +67,61 @@ export function DNAView() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaved(false);
     try {
-      await fetch('/api/profile/dimensions', {
+      const response = await fetch('/api/profile/dimensions', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dimensionScores: Object.entries(scores).map(([key, score]) => ({ key, score })),
         }),
       });
-      setSaved(true);
-    } catch {}
+      const result = await response.json();
+      console.log('Save result:', result);
+      if (result.success) {
+        setSaved(true);
+      } else {
+        setError('Error al guardar: ' + (result.error || 'Intenta de nuevo') + (result.detail ? ` (${result.detail})` : ''));
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      setError('Error de red al guardar');
+    }
     setSaving(false);
+  };
+
+  const handleAddAttribute = async (dimKey: string) => {
+    if (!newAttrName.trim()) return;
+    
+    // Look up the DB ID for this dimension key
+    const dimDb = dbDimensions.find(d => d.name === dimKey);
+    if (!dimDb) {
+      alert('Error: No se encontró el ID de la dimensión en la base de datos.');
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      const response = await fetch('/api/profile/attributes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dimensionId: dimDb.id,
+          name: newAttrName,
+          category: 'other'
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setAttributes(prev => [...prev, result.data]);
+        setNewAttrName('');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (err) {
+      console.error('Add attr error:', err);
+    }
+    setIsAdding(false);
   };
 
   const filled = ALL_DIMENSIONS.filter(d => (scores[d.key] ?? 0) > 0).length;
@@ -109,7 +150,7 @@ export function DNAView() {
       <div className="mb-8">
         <h1 className="text-3xl font-light text-gray-900 tracking-tight">Mi <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
         <p className="mt-1 text-sm text-gray-400 font-medium">
-          SYNC_DEBUG_V1 — Tu huella única en las 19 dimensiones BEAN.
+          Tu huella única en las 19 dimensiones BEAN.
           Actualiza tu perfil moviendo los indicadores.
         </p>
       </div>
@@ -209,9 +250,6 @@ export function DNAView() {
                               {dim.label}
                             </span>
                           </div>
-                          <span className={`text-[10px] font-bold tabular-nums ${hasData ? 'text-gray-900' : 'text-gray-300'}`}>
-                            {hasData ? `${score.toFixed(1)}` : '—'}
-                          </span>
                         </div>
                         
                         {/* Attributes Chips (Mini list) */}
@@ -233,8 +271,12 @@ export function DNAView() {
                           </div>
                         )}
 
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Autopercepción</span>
+                          <span className="text-[10px] font-bold text-gray-900">{Math.round(score)}%</span>
+                        </div>
                         <input
-                          type="range" min={0} max={10} step={0.5}
+                          type="range" min={0} max={100} step={1}
                           value={score}
                           onClick={(e) => e.stopPropagation()}
                           onChange={e => setScore(dim.key, parseFloat(e.target.value))}
@@ -275,7 +317,7 @@ export function DNAView() {
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dim.cat}</span>
                             <span className="h-1 w-1 rounded-full bg-gray-200" />
-                            <span className="text-xs font-bold text-gray-900">Score: {score.toFixed(1)}</span>
+                             <span className="text-xs font-bold text-gray-900">Score: {Math.round(score)}%</span>
                           </div>
                         </div>
                       </div>
@@ -314,6 +356,26 @@ export function DNAView() {
                             <p className="text-sm text-gray-400 font-medium italic">No hay atributos definidos.</p>
                           </div>
                         )}
+                      </div>
+
+                      <div className="pt-6 border-t border-gray-100">
+                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Agregar Nuevo Atributo</h4>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Ej: Liderazgo, Python, Mindfulness..." 
+                            className="flex-1 px-4 py-2 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                            value={newAttrName}
+                            onChange={e => setNewAttrName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddAttribute(selectedDimKey)}
+                          />
+                          <button 
+                            onClick={() => handleAddAttribute(selectedDimKey)}
+                            disabled={isAdding || !newAttrName}
+                            className="px-6 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-bold hover:bg-black disabled:opacity-50 transition-all uppercase tracking-widest">
+                            {isAdding ? '...' : 'Agregar'}
+                          </button>
+                        </div>
                       </div>
 
                       <div className="pt-6 border-t border-gray-100">

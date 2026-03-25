@@ -24,48 +24,57 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
 
   useGSAP(() => {
     const tl = gsap.timeline();
-
     // 1. Initial UI fade-ins
     tl.fromTo(scoreRef.current, 
       { y: -20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
+      { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
     );
 
-    // 2. Trunk growth
+    // 2. Trunk growth with a slight wobble
     if (trunkRef.current) {
       const length = trunkRef.current.getTotalLength();
       tl.fromTo(trunkRef.current,
         { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
-        { strokeDashoffset: 0, opacity: 0.1, duration: 1.2, ease: "power1.inOut" },
-        "-=0.4"
+        { strokeDashoffset: 0, opacity: 0.2, duration: 1.5, ease: "slow(0.7, 0.7, false)" },
+        "-=0.5"
       );
     }
 
-    // 3. Roots growth
+    // 3. Roots growth sequentially
     if (rootsRef.current) {
       const roots = rootsRef.current.querySelectorAll('path');
       roots.forEach((path, i) => {
         const length = (path as SVGPathElement).getTotalLength();
         tl.fromTo(path,
-          { strokeDasharray: length, strokeDashoffset: length },
-          { strokeDashoffset: 0, duration: 2, ease: "power2.out" },
-          0.8 + i * 0.2
+          { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
+          { strokeDashoffset: 0, opacity: 1, duration: 2, ease: "power2.out" },
+          0.8 + i * 0.3
         );
       });
     }
 
-    // 4. Seed appear
+    // 4. Seed appear with a pop
     tl.fromTo(seedRef.current,
-      { scale: 0 },
-      { scale: 1, duration: 0.8, ease: "back.out(1.7)" },
-      0.5
+      { scale: 0, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 1.2, ease: "back.out(2)" },
+      0.6
     );
+
+    // Organic "Wind" Sway for the whole tree
+    gsap.to([trunkRef.current, rootsRef.current], {
+      rotate: "0.5deg",
+      duration: 4,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+      transformOrigin: "400px 450px"
+    });
 
     // Breathing effect for the seed glow
     gsap.to(".seed-glow", {
-      scale: 1.3,
-      opacity: 0.4,
-      duration: 3,
+      scale: 1.4,
+      opacity: 0.5,
+      duration: 4,
       repeat: -1,
       yoyo: true,
       ease: "sine.inOut"

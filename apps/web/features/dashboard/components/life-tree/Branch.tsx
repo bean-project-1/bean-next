@@ -57,22 +57,33 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
 
     const length = path.getTotalLength();
     
-    // Growth animation
+    // Growth animation with organic build
     gsap.fromTo(path,
-      { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
+      { strokeDasharray: length, strokeDashoffset: length, opacity: 0, strokeWidth: 1 },
       { 
         strokeDashoffset: 0, 
         opacity: 0.3, 
-        duration: 2, 
-        delay: 0.5 + index * 0.1, 
-        ease: "power2.out" 
+        strokeWidth: 3,
+        duration: 2.5, 
+        delay: 1.2 + index * 0.2, 
+        ease: "power2.inOut" 
       }
     );
 
+    // Subtle branch sway
+    gsap.to(path, {
+      rotate: index % 2 === 0 ? "1deg" : "-1deg",
+      duration: 5 + Math.random() * 3,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+      transformOrigin: `${startX}px ${startY}px`
+    });
+
     // Fade in text
     gsap.fromTo(textRef.current,
-      { opacity: 0, y: 10 },
-      { opacity: 0.6, y: 0, duration: 1, delay: 2, ease: "power2.out" }
+      { opacity: 0, x: endX > startX ? -10 : 10 },
+      { opacity: 0.6, x: 0, duration: 1.5, delay: 3, ease: "power2.out" }
     );
   }, [index]);
 

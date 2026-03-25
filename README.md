@@ -35,50 +35,81 @@ bean/
 
 ---
 
-## Getting Started
+---
 
-### Prerequisites
+## Getting Started / Guía de Instalación desde Cero
 
-- Node.js ≥ 20
-- npm ≥ 10
-- Docker & Docker Compose
-- PostgreSQL (or use Docker)
+### 1. Prerrequisitos (¿Qué necesito instalar en mi máquina?)
+Para correr este proyecto limpiamente, requieres:
+- **Node.js** (Versión 20 o superior).
+- **npm** (Versión 10 o superior - viene incluido con Node 20+).
+- **Docker Desktop** (o Podman Desktop) para correr la base de datos de manera local.
+- Un clon de este repositorio.
 
-### 1. Clone & Install
+### 2. Instalación de Dependencias
 
+Ejecuta el siguiente comando en la raíz del proyecto para descargar todas las dependencias del monorepo (usamos npm workspaces + Turborepo):
 ```bash
-git clone https://github.com/your-org/bean.git
-cd bean
 npm install
 ```
 
-### 2. Configure Environment
+### 3. Variables de Entorno
 
+Toma el archivo `.env.example` en la raíz (o en `apps/web/.env`) y asegúrate de tener un archivo `.env`:
 ```bash
 cp .env.example .env
-# Fill in your DATABASE_URL, OPENAI_API_KEY, etc.
 ```
+Asegúrate de que `DATABASE_URL` apunte a tu instancia de base de datos (por defecto: `mongodb://localhost:27017/bean_db`). Note que el proyecto usa MongoDB, no PostgreSQL.
 
-### 3. Start the Database
+### 4. Arrancar la Base de Datos (MongoDB)
+
+Este proyecto requiere **MongoDB configurado como Replica Set** debido a los requerimientos de Prisma ORM. 
+Si tienes Docker Desktop (o Podman) instalado:
 
 ```bash
-docker compose up postgres -d
+# 1. Levantar el contenedor
+docker compose up -d mongodb
+# (Si usas Podman, cambia `docker compose` por `podman compose`)
+
+# 2. IMPORTANTE: Inicializar el Replica Set (Solo la primera vez)
+docker exec -it bean-mongodb mongosh --eval "rs.initiate()"
+# (En Podman: podman exec -it bean-mongodb mongosh --eval "rs.initiate()")
 ```
+*Alternativa sin Docker ni Podman*: Usa una cuenta gratuita en [MongoDB Atlas](https://www.mongodb.com/atlas/database), crea un cluster y pega el link de conexión en tu `.env`. No tendrías que descargar nada.
 
-### 4. Run Database Migrations
+### 5. Configurar el Esquema de Prisma
 
+Sincroniza la estructura de la base de datos y genera el cliente de Prisma:
 ```bash
-npm run db:push     # push schema (dev)
-# or
-npm run db:migrate  # create migration files
+npm run db:push
 ```
 
-### 5. Start Development Server
+### 6. Ejecutar la Aplicación Web
 
 ```bash
 npm run dev
-# → http://localhost:3000
 ```
+La aplicación web (Next.js) arrancará (típicamente en `http://localhost:3000` o `3001` si el puerto base está ocupado).
+
+---
+
+## 🛑 Problemas Frecuentes al Levantar (Troubleshooting)
+
+1. **`os error 10061` o "Connection Refused" con MongoDB**
+   - **Por qué pasa:** El contenedor de Docker no está corriendo o intentaste conectarte a localhost sin tener un servidor de bases de datos activo.
+   - **Solución:** Verifica que Docker o Podman estén corriendo. Ejecuta `docker compose up -d mongodb` o su equivalente en podman.
+
+2. **La terminal se queda "pegada" o da Timeout cuando ejecuto `npm run db:push`**
+   - **Por qué pasa:** Prisma requiere que MongoDB sea un *Replica Set*. Tu contenedor probablemente arrancó, pero el Cluster interno nunca fue inicializado.
+   - **Solución:** Ejecuta el comando de inicialización sobre tu contenedor que está corriendo: `docker exec -it bean-mongodb mongosh --eval "rs.initiate()"`.
+
+3. **`npm error code ENOWORKSPACES` al iniciar `npm run dev`**
+   - **Por qué pasa:** Next.js trata de instalar dependencias opcionales globalmente (como el motor `sharp` para optimización de imágenes) y no respeta el esquema de workspaces de npm en Turborepo.
+   - **Solución:** **No es fatal e ignóralo**. Fíjate en los logs de la terminal: si un par de líneas más abajo dice que fue exitoso (`✓ Ready in X.Xs`), significa que tu servidor web de Next.js arrancó tranquilamente. 
+
+4. **El puerto 3000 está en uso**
+   - **Por qué pasa:** Tienes otra aplicación o servicio tomándolo.
+   - **Solución:** Next.js automáticamente intentará arrancar en el 3001. Abre `http://localhost:3001` en tu navegador.
 
 ---
 

@@ -8,7 +8,6 @@
 
 import OpenAI from 'openai';
 import type {
-  BeanProfile,
   AnalysisRequest,
   AnalysisResponse,
   Insight,
@@ -17,6 +16,10 @@ import type {
   DimensionView,
   DimensionCategory,
 } from '@bean/types';
+
+interface BeanProfile {
+  dimensionScores: DimensionView[];
+}
 
 // Initialize OpenAI client (lazy — only if API key present)
 const getOpenAIClient = (): OpenAI => {
@@ -98,7 +101,7 @@ export async function generateInsights(request: AnalysisRequest): Promise<Insigh
   //   model: process.env.OPENAI_MODEL ?? 'gpt-4-turbo-preview',
   //   messages: [
   //     { role: 'system', content: buildSystemPrompt() },
-  //     { role: 'user', content: buildProfilePrompt(request.profile) },
+  //     { role: 'user', content: buildProfilePrompt({ dimensionScores: [] }) },
   //   ],
   //   response_format: { type: 'json_object' },
   // });

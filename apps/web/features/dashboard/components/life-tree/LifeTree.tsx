@@ -3,16 +3,17 @@
 import React, { useState, useRef } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { TreeData } from './types';
+import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
 
 interface LifeTreeProps {
   data: TreeData;
   onLeafClick?: (leafId: string) => void;
   onScoreClick?: () => void;
+  onBranchClick?: (branch: BranchData) => void;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: LifeTreeProps) => {
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
 
@@ -169,6 +170,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick }: LifeTreeProps) => 
             clickedLeafId={clickedLeafId}
             onClick={handleLeafClickHandler}
             onHover={setHoveredLeafName}
+            onBranchClick={(b) => onBranchClick?.(b)}
           />
         ))}
       </svg>

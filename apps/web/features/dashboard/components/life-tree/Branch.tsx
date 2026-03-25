@@ -13,9 +13,10 @@ interface BranchProps {
   clickedLeafId: string | null;
   onClick: (leafId: string, name: string) => void;
   onHover: (name: string | null) => void;
+  onBranchClick: (branch: BranchType) => void;
 }
 
-export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, onHover }: BranchProps) => {
+export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, onHover, onBranchClick }: BranchProps) => {
   const pathRef = useRef<SVGPathElement>(null);
   const textRef = useRef<SVGTextElement>(null);
 
@@ -96,6 +97,17 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
         strokeWidth="3"
         fill="none"
         strokeLinecap="round"
+      />
+
+      {/* Invisible thick hitbox for easy clicking */}
+      <path
+        d={pathContent}
+        stroke="transparent"
+        strokeWidth="30"
+        fill="none"
+        strokeLinecap="round"
+        className="cursor-pointer"
+        onClick={() => onBranchClick(branch)}
       />
       
       {/* Branch Label */}

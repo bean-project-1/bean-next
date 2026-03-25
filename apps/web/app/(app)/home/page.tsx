@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import DnaModal from '../../../features/dashboard/components/DnaModal';
 import NodeSidePanel from '../../../features/dashboard/components/NodeSidePanel';
 import { LifeTree } from '../../../features/dashboard/components/life-tree/LifeTree';
-import { TreeData } from '../../../features/dashboard/components/life-tree/types';
+import { BranchDetailView } from '../../../features/dashboard/components/life-tree/BranchDetailView';
+import { TreeData, Branch } from '../../../features/dashboard/components/life-tree/types';
 
 export default function HomePage() {
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<any>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [treeData, setTreeData] = useState<TreeData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,11 +58,19 @@ export default function HomePage() {
             data={treeData}
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
+            onBranchClick={(b) => setSelectedBranch(b)}
           />
         </main>
       </div>
 
       <DnaModal isOpen={isDnaOpen} onClose={() => setIsDnaOpen(false)} />
+
+      {selectedBranch && (
+        <BranchDetailView
+          branch={selectedBranch}
+          onClose={() => setSelectedBranch(null)}
+        />
+      )}
       
       {selectedObjective && (
         <NodeSidePanel

@@ -203,7 +203,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\dhdiazga\\OneDrive - Telefonica\\Documentos\\Desarrollos\\bean-next\\apps\\web\\lib\\generated-prisma",
+      "value": "C:\\Users\\ssbegambrepo\\Documents\\Desarrollos\\Bean\\bean-next\\apps\\web\\lib\\generated-prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -217,7 +217,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\dhdiazga\\OneDrive - Telefonica\\Documentos\\Desarrollos\\bean-next\\apps\\web\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\ssbegambrepo\\Documents\\Desarrollos\\Bean\\bean-next\\apps\\web\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -231,6 +231,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mongodb",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

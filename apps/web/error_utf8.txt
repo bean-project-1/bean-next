@@ -1,0 +1,76 @@
+﻿­ƒî▒ BEAN Seed v2 (19 dimensiones correctas)
+
+node.exe : TypeError: 
+Cannot read 
+properties of 
+undefined (reading 
+'upsert')
+En línea: 1 Carácter: 
+1
++ & "C:\Users\ssbegamb
+repo\nodejs/node.exe" 
+"C:\Users\ssbegambrepo
+\node ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (TypeError:   
+  Cann...ading 'up    
+sert'):String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+    at C:\Users\ssbega
+mbrepo\Documents\Desar
+rollos\Bean\bean-next\
+apps\web\prisma\seed.t
+s:46:38
+    at step (C:\Users\
+ssbegambrepo\Documents
+\Desarrollos\Bean\bean
+-next\apps\web\prisma\
+seed.ts:44:23)
+    at Object.next (C:
+\Users\ssbegambrepo\Do
+cuments\Desarrollos\Be
+an\bean-next\apps\web\
+prisma\seed.ts:25:53)
+    at C:\Users\ssbega
+mbrepo\Documents\Desar
+rollos\Bean\bean-next\
+apps\web\prisma\seed.t
+s:19:71
+    at new Promise 
+(<anonymous>)
+    at __awaiter (C:\U
+sers\ssbegambrepo\Docu
+ments\Desarrollos\Bean
+\bean-next\apps\web\pr
+isma\seed.ts:15:12)
+    at main (C:\Users\
+ssbegambrepo\Documents
+\Desarrollos\Bean\bean
+-next\apps\web\prisma\
+seed.ts:80:12)
+    at 
+Object.<anonymous> (C:
+\Users\ssbegambrepo\Do
+cuments\Desarrollos\Be
+an\bean-next\apps\web\
+prisma\seed.ts:279:1)
+    at 
+Module._compile (node:
+internal/modules/cjs/l
+oader:1829:14)
+    at 
+Module.m._compile (C:\
+Users\ssbegambrepo\Doc
+uments\Desarrollos\Bea
+n\bean-next\apps\web\n
+ode_modules\ts-node\sr
+c\index.ts:1618:23)

@@ -19,7 +19,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rootsRef = useRef<SVGGElement>(null);
-  const trunkRef = useRef<SVGPathElement>(null);
+  const trunkRef = useRef<SVGGElement>(null);
   const seedRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
@@ -31,12 +31,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
     );
 
-    // 2. Trunk growth with a slight wobble
+    // 2. Trunk growth from root upward
     if (trunkRef.current) {
-      const length = trunkRef.current.getTotalLength();
       tl.fromTo(trunkRef.current,
-        { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
-        { strokeDashoffset: 0, opacity: 0.2, duration: 1.5, ease: "slow(0.7, 0.7, false)" },
+        { scaleY: 0, transformOrigin: "400px 452px", opacity: 0 },
+        { scaleY: 1, opacity: 1, duration: 1.5, ease: "power2.out" },
         "-=0.5"
       );
     }
@@ -54,32 +53,24 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       });
     }
 
-    // 4. Seed appear with a pop
-    tl.fromTo(seedRef.current,
-      { scale: 0, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 1.2, ease: "back.out(2)" },
-      0.6
-    );
+    // 4. Seed appear with a soft pop
+    if (seedRef.current) {
+      tl.fromTo(seedRef.current,
+        { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 1.5, ease: "back.out(1.7)" },
+        0.8
+      );
 
-    // Organic "Wind" Sway for the whole tree
-    gsap.to([trunkRef.current, rootsRef.current], {
-      rotate: "0.5deg",
-      duration: 4,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-      transformOrigin: "400px 450px"
-    });
-
-    // Breathing effect for the seed glow
-    gsap.to(".seed-glow", {
-      scale: 1.4,
-      opacity: 0.5,
-      duration: 4,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
+      // Soft breathing effect for the seed
+      gsap.to(".seed-glow", {
+        scale: 1.2,
+        opacity: 0.6,
+        duration: 3,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+      });
+    }
   }, { scope: containerRef });
 
   // Debugging log for branch count
@@ -124,6 +115,36 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         className="w-full h-full max-w-[800px] max-h-[800px] cursor-default"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          {/* Wood gradient: darker edges, light center highlight */}
+          <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3b1f0a" />
+            <stop offset="25%" stopColor="#7c4a1e" />
+            <stop offset="50%" stopColor="#a0632e" />
+            <stop offset="75%" stopColor="#7c4a1e" />
+            <stop offset="100%" stopColor="#3b1f0a" />
+          </linearGradient>
+          {/* Soft center highlight */}
+          <linearGradient id="trunkSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="40%" stopColor="rgba(255,210,160,0.12)" />
+            <stop offset="60%" stopColor="rgba(255,210,160,0.12)" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+
+          {/* Seed Gradient: Organic Emerald Glow */}
+          <radialGradient id="seedGrad" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="70%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#065f46" />
+          </radialGradient>
+          
+          <radialGradient id="seedHaze" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.4)" />
+            <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" />
+          </radialGradient>
+        </defs>
+
         {/* Organic Roots - Thicker for foundation */}
         <g ref={rootsRef} className="opacity-10 pointer-events-none">
           <path d="M 400,450 C 380,550 320,600 250,700" stroke="#8b5cf6" strokeWidth="8" fill="none" strokeLinecap="round" />
@@ -135,32 +156,45 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           <text x="550" y="720" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Experiencia</text>
         </g>
 
-        {/* The Simple Trunk - Thicker */}
-        <path
-          ref={trunkRef}
-          d="M 400,450 L 400,350"
-          stroke="#475569"
-          strokeWidth="12"
-          fill="none"
-          strokeLinecap="round"
-          className="opacity-5 pointer-events-none"
-        />
-
-        {/* The Seed (BEAN) */}
-        <g ref={seedRef} className="pointer-events-none" style={{ transformOrigin: "400px 450px" }}>
-          <circle
-            cx="400"
-            cy="450"
-            r="15"
-            fill="rgba(16, 185, 129, 0.2)"
-            className="seed-glow"
-            style={{ transformOrigin: "400px 450px" }}
+        {/* Realistic Trunk - tapered, wood gradient, bark texture */}
+        <g ref={trunkRef} className="pointer-events-none">
+          {/* Main tapered body: wider at base, narrower at top */}
+          <path
+            d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z"
+            fill="url(#trunkGrad)"
           />
-          <circle cx="400" cy="450" r="8" fill="#10b981" />
-          <text x="400" y="475" textAnchor="middle" className="text-[9px] font-bold fill-emerald-600 uppercase tracking-widest">Your BEAN</text>
+          {/* Center sheen overlay */}
+          <path
+            d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z"
+            fill="url(#trunkSheen)"
+          />
+          {/* Bark texture lines */}
+          <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+          <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
+          <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+          {/* Knot detail */}
+          <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
+          <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
         </g>
 
-        {/* Dynamic Branches */}
+        {/* The Seed (BEAN) - Aesthetic & Organic */}
+        <g ref={seedRef} transform="translate(400, 450)" className="pointer-events-none">
+          {/* External soft glow */}
+          <circle r="25" fill="url(#seedHaze)" className="seed-glow" />
+          
+          {/* Animated Bean Shape */}
+          <path 
+            d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
+            fill="url(#seedGrad)"
+            stroke="#059669"
+            strokeWidth="0.5"
+          />
+          
+          {/* Small internal highlight for "glossy" look */}
+          <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
+
+          <text y="35" textAnchor="middle" className="text-[10px] font-bold fill-emerald-600/60 uppercase tracking-widest">BEAN</text>
+        </g>        {/* Dynamic Branches */}
         {data.branches.map((branch, i) => (
           <Branch
             key={branch.id}

@@ -34,15 +34,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
       }
     );
 
-    // Organic Sway
-    const swayAmount = 4 + Math.random() * 4;
-    gsap.to(containerRef.current, {
-      rotate: `+=${swayAmount}`,
-      duration: 2 + Math.random() * 2,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
+
   }, [delay]); // Only re-run appear if delay changes (unlikely)
 
   useGSAP(() => {
@@ -126,15 +118,48 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
         </g>
       )}
 
-      {/* The Leaf Path */}
+      <defs>
+        <linearGradient id={`leafGrad-${leaf.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+          <stop offset="50%" stopColor="transparent" stopOpacity="0" />
+          <stop offset="100%" stopColor="black" stopOpacity="0.1" />
+        </linearGradient>
+      </defs>
+
+      {/* The Realistic Leaf Body */}
       <path
         ref={pathRef}
-        d="M 0,0 C 10,-25 50,-25 60,0 C 50,25 10,25 0,0"
+        d="M 0,0 C 5,-15 25,-22 45,-15 C 65,-8 75,0 80,0 C 75,5 65,15 45,22 C 25,22 5,15 0,0 Z"
         fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
-        stroke={isSelected ? "#fff" : "rgba(255,255,255,0.2)"}
-        strokeWidth={isSelected ? 3 : 1}
-        style={{ transformOrigin: "center" }}
+        stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
+        strokeWidth={isSelected ? 2 : 0.5}
+        className="transition-all duration-300"
       />
+      
+      {/* Depth Overlay */}
+      <path
+        d="M 0,0 C 5,-15 25,-22 45,-15 C 65,-8 75,0 80,0 C 75,5 65,15 45,22 C 25,22 5,15 0,0 Z"
+        fill={`url(#leafGrad-${leaf.id})`}
+        pointerEvents="none"
+      />
+
+      {/* Central Vein (Nervadura Central) */}
+      <path
+        d="M 0,0 C 20,0 50,0 75,0"
+        stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
+        strokeWidth="1"
+        fill="none"
+        opacity="0.6"
+        pointerEvents="none"
+      />
+
+      {/* Lateral Veins */}
+      <g opacity="0.4" pointerEvents="none">
+        <path d="M 15,0 C 18,-6 25,-8 30,-10" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+        <path d="M 15,0 C 18,6 25,8 30,10" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+        <path d="M 35,0 C 38,-5 45,-6 50,-8" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+        <path d="M 35,0 C 38,5 45,6 50,8" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+      </g>
     </g>
   );
 };

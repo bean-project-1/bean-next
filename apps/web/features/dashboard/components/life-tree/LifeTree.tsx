@@ -70,6 +70,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         yoyo: true,
         ease: "sine.inOut"
       });
+
+      // 5. Fade in the new seed label ("¡Tú BEAN!")
+      tl.to("#seed-label-group", { opacity: 1, duration: 1.5, ease: "power2.out" }, 2.2);
     }
   }, { scope: containerRef });
 
@@ -145,15 +148,39 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           </radialGradient>
         </defs>
 
-        {/* Organic Roots - Thicker for foundation */}
-        <g ref={rootsRef} className="opacity-10 pointer-events-none">
-          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#8b5cf6" strokeWidth="8" fill="none" strokeLinecap="round" />
-          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="8" fill="none" strokeLinecap="round" />
-          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="8" fill="none" strokeLinecap="round" />
+        {/* Ground / Soil Mound */}
+        <ellipse 
+          cx="400" cy="454" rx="70" ry="12" 
+          fill="#2d1a0e" 
+          opacity="0.6" 
+          filter="blur(6px)"
+        />
+        <ellipse 
+          cx="400" cy="452" rx="50" ry="8" 
+          fill="#1a0f08" 
+          opacity="0.8" 
+        />
+
+        {/* Realistic Roots - Wood textured */}
+        <g ref={rootsRef} className="pointer-events-none">
+          {/* Identity Root (Amber/Golden Glow) */}
+          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#f59e0b" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+          <path d="M 400,454 C 385,550 325,600 250,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
+          <path d="M 400,454 C 385,550 325,600 250,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
           
-          <text x="250" y="720" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Identidad</text>
-          <text x="400" y="770" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Capital Humano</text>
-          <text x="550" y="720" textAnchor="middle" className="text-[10px] fill-slate-300 font-bold uppercase tracking-widest">Experiencia</text>
+          {/* Human Capital Root (Blue Glow) */}
+          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+          <path d="M 400,454 C 400,580 410,620 400,750" stroke="#4a2810" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M 400,454 C 400,580 410,620 400,750" stroke="#7c4a1e" strokeWidth="5" fill="none" strokeLinecap="round" />
+
+          {/* Experience Root (Green Glow) */}
+          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+          <path d="M 400,454 C 415,550 475,600 550,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
+          <path d="M 400,454 C 415,550 475,600 550,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
+          
+          <text x="250" y="728" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Identidad</text>
+          <text x="400" y="785" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Capital Humano</text>
+          <text x="550" y="728" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Experiencia</text>
         </g>
 
         {/* Realistic Trunk - tapered, wood gradient, bark texture */}
@@ -192,9 +219,51 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           
           {/* Small internal highlight for "glossy" look */}
           <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
+        </g>
 
-          <text y="35" textAnchor="middle" className="text-[10px] font-bold fill-emerald-600/60 uppercase tracking-widest">BEAN</text>
-        </g>        {/* Dynamic Branches */}
+        {/* Interaction hint / Label for the Seed - ¡Tú BEAN! */}
+        <g 
+          className="cursor-default select-none pointer-events-none opacity-0"
+          id="seed-label-group"
+        >
+          <text 
+            x="485" 
+            y="432" 
+            className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
+            style={{ 
+              filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))',
+              textShadow: '0 0 20px rgba(249, 115, 22, 0.2)'
+            }}
+          >
+            Tu BEAN!
+          </text>
+          
+          {/* Stylized Curved Arrow pointing to the seed (400, 450) */}
+          <path 
+            d="M 480,442 C 465,445 445,448 425,449" 
+            stroke="#f97316" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeLinecap="round"
+            markerEnd="url(#arrowhead)" 
+            opacity="0.8"
+          />
+          
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="6"
+              markerHeight="6"
+              refX="5"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
+            </marker>
+          </defs>
+        </g>
+        
+        {/* Dynamic Branches */}
         {data.branches.map((branch, i) => (
           <Branch
             key={branch.id}

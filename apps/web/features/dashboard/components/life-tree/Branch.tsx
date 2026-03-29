@@ -74,8 +74,26 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
   const getBezierPoint = (t: number) => {
     const mt = 1 - t;
     return {
-      x: mt*mt*mt*startX + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*endX,
-      y: mt*mt*mt*startY + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*endY,
+      x: mt * mt * mt * startX + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * endX,
+      y: mt * mt * mt * startY + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * endY,
+    };
+  };
+
+  const getSubBranchPoint = (t: number) => {
+    const mt = 1 - t;
+    return {
+      x: mt * mt * sbX + 2 * mt * t * sbCpX + t * t * sbEndX,
+      y: mt * mt * sbY + 2 * mt * t * sbCpY + t * t * sbEndY,
+    };
+  };
+
+  const getTwigPoint = (t: number) => {
+    const mt = 1 - t;
+    const cpX = tX + Math.cos(twigRad) * twigLen * 0.5;
+    const cpY = tY + Math.sin(twigRad) * twigLen * 0.5;
+    return {
+      x: mt * mt * tX + 2 * mt * t * cpX + t * t * twigEndX,
+      y: mt * mt * tY + 2 * mt * t * cpY + t * t * twigEndY,
     };
   };
 
@@ -200,18 +218,41 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
         {branch.goal}
       </text>
 
-      {/* Render Leaves */}
+      {/* Render Leaves - Distributed organically across main branch, sub-branch and twig */}
       {branch.leaves.map((leaf, i) => {
-        const t = 0.3 + (i / (branch.leaves.length || 1)) * 0.6;
-        const pos = getBezierPoint(t);
+        let pos;
+        let leafAngle;
+        
+        // Distribution logic: 50% main branch, 30% sub-branch, 20% twig
+        const dist = i / branch.leaves.length;
+        
+        if (dist < 0.5) {
+          // Main branch leaves (spread from 0.4 to 0.95)
+          const t = 0.4 + (dist / 0.5) * 0.55;
+          pos = getBezierPoint(t);
+          leafAngle = angle + 90 + (i % 2 === 0 ? 35 : -35);
+        } else if (dist < 0.8) {
+          // Sub-branch leaves
+          const t = 0.2 + ((dist - 0.5) / 0.3) * 0.7;
+          pos = getSubBranchPoint(t);
+          const sAngle = (subRad * 180) / Math.PI;
+          leafAngle = sAngle + 90 + (i % 2 === 0 ? 40 : -40);
+        } else {
+          // Twig leaves
+          const t = 0.3 + ((dist - 0.8) / 0.2) * 0.6;
+          pos = getTwigPoint(t);
+          const tAngle = (twigRad * 180) / Math.PI;
+          leafAngle = tAngle + 90 + (i % 2 === 0 ? 45 : -45);
+        }
+
         return (
           <Leaf
             key={leaf.id}
             leaf={leaf}
             x={pos.x}
             y={pos.y}
-            angle={angle + 90 + (i % 2 === 0 ? 30 : -30)}
-            delay={1.5 + index * 0.1 + i * 0.1}
+            angle={leafAngle + (Math.random() * 10 - 5)} // Slight variation
+            delay={1.5 + index * 0.1 + i * 0.08}
             isSelected={clickedLeafId === leaf.id}
             onHover={onHover}
             onClick={onClick}

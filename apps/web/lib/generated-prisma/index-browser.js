@@ -198,8 +198,12 @@ exports.Prisma.GoalActionScalarFieldEnum = {
   goalId: 'goalId',
   title: 'title',
   isCompleted: 'isCompleted',
+  targetDate: 'targetDate',
+  dimensions: 'dimensions',
+  attributes: 'attributes',
   impact: 'impact',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {

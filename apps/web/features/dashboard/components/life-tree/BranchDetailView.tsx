@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Branch } from './types';
 
 interface Props {
   branch: Branch;
   onClose: () => void;
+  onDelete?: (id: string) => Promise<void>;
+  onToggleAction?: (id: string, data: { completed?: boolean; targetDate?: string; dimensions?: string[]; attributes?: string[] }) => Promise<void>;
+  onDeleteAction?: (id: string) => Promise<void>;
+  onLeafClick?: (id: string) => void;
+  onAddAction?: (goalId: string, name: string, data?: { targetDate?: string; dimensions?: string[]; attributes?: string[] }) => Promise<any>;
 }
 
 const SVG_W = 600;
@@ -71,7 +76,30 @@ function buildTaperedPath(color: string, steps = 40): { left: string; right: str
 }
 
 
-export function BranchDetailView({ branch, onClose }: Props) {
+export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, onDeleteAction, onLeafClick, onAddAction }: Props) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [selectedDims, setSelectedDims] = useState<string[]>([]);
+  const [selectedAttrs, setSelectedAttrs] = useState<string[]>([]);
+  const [userAttributes, setUserAttributes] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data.user.attributes) {
+          setUserAttributes(json.data.user.attributes);
+        }
+      })
+      .catch(err => console.error('Error fetching user attributes:', err));
+  }, []);
+
+  const AVAILABLE_DIMENSIONS = [
+    'Espiritualidad', 'Salud', 'Carrera', 'Finanzas', 'Social', 'Intelecto', 'Emocional'
+  ];
+
   // ── Pan / Zoom state ────────────────────────────────────
   const [vb, setVb] = useState({ x: 0, y: 0, w: SVG_W, h: SVG_H });
   const dragging = useRef(false);
@@ -131,10 +159,10 @@ export function BranchDetailView({ branch, onClose }: Props) {
           <h2 className="text-xl font-bold text-slate-900">{branch.goal}</h2>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400 font-medium">
+          <span className="text-sm text-slate-400 font-medium whitespace-nowrap">
             {branch.leaves.length} actividades
           </span>
-          <div className="flex gap-1">
+          <div className="hidden md:flex gap-1">
             <button
               onClick={() => setVb({ x: 0, y: 0, w: SVG_W, h: SVG_H })}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
@@ -150,12 +178,42 @@ export function BranchDetailView({ branch, onClose }: Props) {
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors"
             >－</button>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors"
-          >
-            ✕ Cerrar
-          </button>
+          
+          <div className="flex items-center gap-2">
+            {onAddAction && (
+              <button
+                onClick={() => setIsAdding(true)}
+                className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center gap-2"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span className="hidden sm:inline">Añadir Actividad</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={async () => {
+                  if (confirm('¿Estás seguro de que quieres eliminar esta meta por completo?')) {
+                    await onDelete(branch.id);
+                  }
+                }}
+                className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-100 transition-colors flex items-center gap-2"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
+                </svg>
+                <span className="hidden sm:inline">Eliminar Meta</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors"
+            >
+              ✕ Cerrar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -271,7 +329,17 @@ export function BranchDetailView({ branch, onClose }: Props) {
             const done = leaf.completed;
 
             return (
-              <g key={leaf.id}>
+              <g 
+                key={leaf.id} 
+                className="cursor-pointer"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Leaf card clicked (onClick):', leaf.id);
+                  onLeafClick?.(leaf.id);
+                }}
+                pointerEvents="all"
+              >
                 {/* Connector */}
                 <line
                   x1={pos.x}
@@ -303,26 +371,34 @@ export function BranchDetailView({ branch, onClose }: Props) {
                   stroke={done ? branchColor : '#cbd5e1'}
                   strokeWidth="2"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.07))' }}
+                  pointerEvents="all"
                 />
-                {/* Status dot */}
-                <circle
-                  cx={leafX - 105}
-                  cy={leafY}
-                  r="10"
-                  fill={done ? branchColor : '#f1f5f9'}
-                  stroke={done ? branchColor : '#cbd5e1'}
-                  strokeWidth="2"
-                />
-                {done && (
-                  <text
-                    x={leafX - 105}
-                    y={leafY + 5}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill="white"
-                    fontWeight="900"
-                  >✓</text>
-                )}
+                
+                {/* Status Toggle Button Area */}
+                <g 
+                  className="cursor-pointer" 
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleAction?.(leaf.id, { completed: !done });
+                  }}
+                >
+                  <circle
+                    cx={leafX - 105}
+                    cy={leafY}
+                    r="12"
+                    fill={done ? branchColor : '#f8fafc'}
+                    stroke={done ? branchColor : '#cbd5e1'}
+                    strokeWidth="2"
+                    pointerEvents="all"
+                  />
+                  {done ? (
+                    <text x={leafX - 105} y={leafY + 4} textAnchor="middle" fontSize="10" fill="white" fontWeight="900" pointerEvents="none">✓</text>
+                  ) : (
+                    <circle cx={leafX - 105} cy={leafY} r="4" fill="#cbd5e1" pointerEvents="none" />
+                  )}
+                </g>
+
                 {/* Leaf title */}
                 <text
                   x={leafX - 86}
@@ -331,19 +407,37 @@ export function BranchDetailView({ branch, onClose }: Props) {
                   fill="#1e293b"
                   fontWeight="700"
                   fontFamily="sans-serif"
+                  pointerEvents="none"
                 >
-                  {leaf.name.length > 22 ? leaf.name.slice(0, 22) + '\u2026' : leaf.name}
+                  {leaf.name.length > 20 ? leaf.name.slice(0, 20) + '\u2026' : leaf.name}
                 </text>
                 <text
                   x={leafX - 86}
                   y={leafY + 14}
-                  fontSize="13"
+                  fontSize="11"
                   fill={done ? branchColor : '#94a3b8'}
                   fontFamily="sans-serif"
-                  fontWeight="600"
+                  fontWeight="700"
+                  className="uppercase tracking-widest"
+                  pointerEvents="none"
                 >
-                  {done ? '✓ Completado' : '○ Pendiente'}
+                  {done ? 'Completado' : 'Pendiente'}
                 </text>
+
+                {/* Delete Button Area - Using a dedicated rect for larger hit area */}
+                <g 
+                  className="cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('¿Eliminar esta actividad?')) {
+                      onDeleteAction?.(leaf.id);
+                    }
+                  }}
+                >
+                  <circle cx={leafX + 105} cy={leafY - 18} r="12" fill="#fee2e2" pointerEvents="all" />
+                  <text x={leafX + 105} y={leafY - 14} textAnchor="middle" fontSize="11" fill="#ef4444" fontWeight="bold" pointerEvents="none">✕</text>
+                </g>
               </g>
             );
           })}
@@ -371,6 +465,127 @@ export function BranchDetailView({ branch, onClose }: Props) {
           Scroll para zoom · Arrastra para moverte
         </span>
       </div>
+      {/* ── Add Activity Overlay ── */}
+      {isAdding && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Nueva Actividad</h3>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nombre</label>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="¿Qué vas a hacer?"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all shadow-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">¿Cuándo?</label>
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={e => setNewDate(e.target.value)}
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Dimensiones de impacto</label>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABLE_DIMENSIONS.map(dim => (
+                    <button
+                      key={dim}
+                      onClick={() => {
+                        setSelectedDims(prev => 
+                          prev.includes(dim) ? prev.filter(d => d !== dim) : [...prev, dim]
+                        );
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                        selectedDims.includes(dim)
+                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-100'
+                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      {dim}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Attributes Selection */}
+              {userAttributes.length > 0 && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Tus Atributos / Skills relacionados</label>
+                  <div className="flex flex-wrap gap-2">
+                    {userAttributes
+                      .filter(attr => selectedDims.length === 0 || selectedDims.some(d => attr.dimension.name.toLowerCase().includes(d.toLowerCase())))
+                      .map(attr => (
+                      <button
+                        key={attr.id}
+                        onClick={() => {
+                          setSelectedAttrs(prev => 
+                            prev.includes(attr.name) ? prev.filter(a => a !== attr.name) : [...prev, attr.name]
+                          );
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                          selectedAttrs.includes(attr.name)
+                          ? 'bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-100'
+                          : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-200'
+                        }`}
+                      >
+                        {attr.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewName('');
+                  setNewDate('');
+                  setSelectedDims([]);
+                  setSelectedAttrs([]);
+                }}
+                className="py-3 rounded-xl text-sm font-bold text-slate-400 hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={!newName.trim() || isSubmitting}
+                onClick={async () => {
+                  if (!newName.trim() || isSubmitting) return;
+                  setIsSubmitting(true);
+                  await onAddAction?.(branch.id, newName.trim(), {
+                    targetDate: newDate || undefined,
+                    dimensions: selectedDims,
+                    attributes: selectedAttrs
+                  });
+                  setIsSubmitting(false);
+                  setNewName('');
+                  setNewDate('');
+                  setSelectedDims([]);
+                  setSelectedAttrs([]);
+                  setIsAdding(false);
+                }}
+                className="py-3 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-all shadow-lg shadow-emerald-200"
+              >
+                {isSubmitting ? 'Añadiendo...' : 'Añadir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,32 +18,33 @@ const stats = [
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col">
+    <main className="mesh-gradient flex min-h-screen flex-col bg-[#020617] selection:bg-violet-500/30">
       {/* ---- Navigation ---- */}
-      <nav className="border-b border-white/5 px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-              <span className="text-sm font-bold text-white">B</span>
+      <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#020617]/50 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/20">
+              <span className="text-base font-black text-white">B</span>
             </div>
-            <span className="text-lg font-bold text-white">BEAN</span>
+            <span className="text-xl font-bold tracking-tight text-white">BEAN</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="text-sm text-neutral-400 transition-colors hover:text-white"
+              className="text-sm font-medium text-neutral-400 transition-colors hover:text-white"
             >
               Dashboard
             </Link>
+            <div className="h-4 w-px bg-white/10" />
             <Link
               href="/login"
-              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+              className="text-sm font-medium text-neutral-400 transition-colors hover:text-white"
             >
               Login
             </Link>
             <Link
               href="/onboarding"
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all hover:from-violet-700 hover:to-indigo-700"
+              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:scale-105 hover:from-violet-500 hover:to-indigo-500 active:scale-95 shadow-lg shadow-violet-600/20"
             >
               Get Started
             </Link>
@@ -52,76 +53,104 @@ export default function HomePage() {
       </nav>
 
       {/* ---- Hero ---- */}
-      <section className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+      <section className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center">
+        {/* Decorative backdrop glow */}
+        <div className="absolute top-1/2 left-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/20 blur-[120px]" />
+        
         <div className="animate-slide-up max-w-4xl">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm text-violet-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-xs font-semibold tracking-wider text-violet-300 uppercase">
+            <span className="flex h-2 w-2 items-center justify-center">
+              <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-violet-400 opacity-75" />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-violet-400" />
+            </span>
             Life Intelligence Platform
           </div>
 
           {/* Headline */}
-          <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Understand your{' '}
-            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              life trajectory
+          <h1 className="mb-8 text-6xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-7xl lg:text-8xl">
+            Engineer your{' '}
+            <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+              ideal life
             </span>
           </h1>
 
           {/* Sub-headline */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-neutral-400 sm:text-xl">
-            BEAN analyzes your identity, capital, and wellbeing to generate a personalized life
-            score and AI-powered insights — so you can make better decisions about what matters
-            most.
+          <p className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-neutral-400 sm:text-xl">
+            BEAN uses advanced AI to synthesize your identity, professional capital, and wellbeing into a unified intelligence engine. Make decisions backed by data, not guesswork.
           </p>
 
-          {/* CTA */}
+          {/* CTA Group */}
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/onboarding"
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 hover:from-violet-700 hover:to-indigo-700 hover:shadow-violet-500/40"
+              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-white px-8 py-4 text-base font-bold text-black transition-all hover:bg-neutral-100 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]"
             >
-              Start your life assessment →
+              Start Life Assessment
+              <span className="transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-xl border border-white/15 bg-white/5 px-8 py-4 text-base font-medium text-white backdrop-blur-sm transition-all hover:bg-white/10"
+              className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20"
             >
-              View demo dashboard
+              Explore Dashboard
             </Link>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-12">
+        <div className="mt-20 flex flex-wrap items-center justify-center gap-16">
           {stats.map((s) => (
-            <div key={s.label} className="flex flex-col items-center gap-1">
-              <span className="text-3xl font-bold text-white">{s.value}</span>
-              <span className="text-sm text-neutral-500">{s.label}</span>
+            <div key={s.label} className="flex flex-col items-center gap-2">
+              <span className="text-4xl font-black tracking-tighter text-white">
+                {s.value}
+              </span>
+              <span className="text-xs font-bold tracking-widest text-neutral-500 uppercase">
+                {s.label}
+              </span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ---- Dimensions ---- */}
-      <section className="border-t border-white/5 px-6 py-24">
+      {/* ---- Pillars ---- */}
+      <section className="relative border-t border-white/5 px-6 py-32">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold text-white">Three pillars. One life score.</h2>
-            <p className="text-neutral-400">
-              BEAN measures what matters across all dimensions of a fulfilling life.
+          <div className="mb-20 text-center">
+            <h2 className="mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl">The DNA of Intelligence</h2>
+            <p className="mx-auto max-w-xl text-neutral-400">
+              Our framework analyzes three core resonance fields to build your unique life profile.
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {dimensions.map((d) => (
+          <div className="grid gap-8 md:grid-cols-3">
+            {dimensions.map((d, i) => (
               <div
                 key={d.label}
-                className="group rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-md transition-all hover:-translate-y-1 hover:border-violet-500/30 hover:bg-white/8"
+                className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br p-8 transition-all hover:-translate-y-2 hover:border-white/20 ${
+                  i === 0 ? 'hover:shadow-violet-500/10' : 
+                  i === 1 ? 'hover:shadow-blue-500/10' : 
+                  'hover:shadow-emerald-500/10'
+                }`}
               >
-                <div className="mb-4 text-4xl">{d.icon}</div>
-                <h3 className="mb-2 text-xl font-semibold text-white">{d.label}</h3>
-                <p className="text-neutral-400">{d.desc}</p>
+                {/* Accent Glow */}
+                <div className={`absolute -right-4 -top-4 h-24 w-24 blur-3xl opacity-0 transition-opacity group-hover:opacity-40 ${
+                  i === 0 ? 'bg-violet-500' : 
+                  i === 1 ? 'bg-blue-500' : 
+                  'bg-emerald-500'
+                }`} />
+
+                <div className="relative z-10">
+                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner ${
+                    i === 0 ? 'bg-violet-500/10 text-violet-400' : 
+                    i === 1 ? 'bg-blue-500/10 text-blue-400' : 
+                    'bg-emerald-500/10 text-emerald-400'
+                  }`}>
+                    {d.icon}
+                  </div>
+                  <h3 className="mb-3 text-2xl font-bold text-white tracking-tight">{d.label}</h3>
+                  <p className="text-neutral-400 leading-relaxed text-sm">{d.desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -129,8 +158,17 @@ export default function HomePage() {
       </section>
 
       {/* ---- Footer ---- */}
-      <footer className="border-t border-white/5 px-6 py-8 text-center text-sm text-neutral-600">
-        © {new Date().getFullYear()} BEAN — Life Intelligence Platform. Built with ♥ and AI.
+      <footer className="border-t border-white/5 px-6 py-12 text-center">
+        <div className="mx-auto max-w-7xl flex flex-col items-center justify-between gap-6 sm:flex-row">
+          <p className="text-sm font-medium text-neutral-500">
+            © {new Date().getFullYear()} BEAN — Life Intelligence. Engineered for growth.
+          </p>
+          <div className="flex gap-8 text-neutral-500">
+            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Privacy</span>
+            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Terms</span>
+            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Docs</span>
+          </div>
+        </div>
       </footer>
     </main>
   );

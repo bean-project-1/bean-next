@@ -26,6 +26,9 @@ const onboardingSchema = z.object({
     .array(z.object({ title: z.string().min(1) }))
     .max(3)
     .default([]),
+  
+  extractedAttributes: z.array(z.any()).optional(),
+  extractedInputs: z.array(z.any()).optional(),
 });
 
 // Map onboarding fields → dimension keys + initial score
@@ -124,7 +127,40 @@ export async function POST(req: NextRequest) {
       }));
     }
 
+    // 2.2 Add AI extracted attributes
+    if (data.extractedAttributes?.length) {
+      data.extractedAttributes.forEach((attr: any) => {
+        if (dimMap.has(attr.dimension)) {
+          attributeOps.push(prisma.userAttribute.create({
+            data: {
+              userId: user.id,
+              dimensionId: dimMap.get(attr.dimension)!,
+              name: attr.name,
+              category: attr.category || 'other',
+              metadata: attr.metadata || {}
+            }
+          }));
+        }
+      });
+    }
+
     await Promise.all(attributeOps);
+
+    // 2.3 Add AI extracted inputs
+    if (data.extractedInputs?.length) {
+      const inputOps = data.extractedInputs
+        .filter((input: any) => dimMap.has(input.dimension))
+        .map((input: any) => prisma.dimensionInput.create({
+          data: {
+            userId: user.id,
+            dimensionId: dimMap.get(input.dimension)!,
+            inputType: input.inputType || 'event',
+            valueJson: input.valueJson || {},
+            source: 'ai_onboarding'
+          }
+        }));
+      await Promise.all(inputOps);
+    }
 
     // 3. Create initial LifeState snapshot with embedded scores
     const lifeScore =

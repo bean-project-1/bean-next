@@ -10,6 +10,8 @@ export interface FormData {
   exerciseFrequency: string;
   lifeSatisfaction: number;
   goals: { title: string }[];
+  extractedAttributes?: any[];
+  extractedInputs?: any[];
 }
 
 export interface DimExtra {

@@ -12,6 +12,7 @@ interface Props {
   form: FormData;
   extras: DimExtra[];
   onExtrasChange: (ex: DimExtra[]) => void;
+  onFormChange?: (f: Partial<FormData>) => void;
   onSubmit: () => void;
 }
 
@@ -33,7 +34,7 @@ const CATEGORIES = [
   { cat: 'experience', label: 'Life Experience' },
 ] as const;
 
-export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
+export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubmit }: Props) {
   // Build score map
   const scores: Record<string, number> = {};
   Object.entries(FORM_DERIVED).forEach(([key, fn]) => {
@@ -82,6 +83,53 @@ export function ReviewPhase({ form, extras, onExtrasChange, onSubmit }: Props) {
           <p className="text-xs text-slate-500">Dimensiones</p>
         </div>
       </div>
+      {/* ── AI Extracted Insights ── */}
+      {(form.extractedAttributes?.length || form.extractedInputs?.length) && (
+        <div className="mb-8 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">✨</span>
+            <h2 className="text-sm font-bold text-violet-400 uppercase tracking-widest">
+              Lo que la IA detectó en tu perfil
+            </h2>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {form.extractedAttributes?.map((attr: any, i: number) => (
+              <div key={`attr-${i}`} className="group relative flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 border border-slate-100 shadow-sm pr-8">
+                <span className="text-[10px] uppercase font-bold text-slate-400">{attr.dimension}</span>
+                <span className="text-xs font-semibold text-slate-800">{attr.name}</span>
+                <button 
+                  onClick={() => {
+                    const next = form.extractedAttributes?.filter((_, index) => index !== i);
+                    onFormChange?.({ extractedAttributes: next });
+                  }}
+                  className="absolute right-1 p-1 hover:text-red-500 text-slate-300 transition-colors"
+                >
+                  <span className="text-xs">✕</span>
+                </button>
+              </div>
+            ))}
+            {form.extractedInputs?.map((input: any, i: number) => (
+              <div key={`input-${i}`} className="relative flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1.5 border border-violet-200 shadow-sm pr-8">
+                <span className="text-[10px] uppercase font-bold text-violet-500">{input.inputType}</span>
+                <span className="text-xs font-semibold text-violet-700">{input.dimension}</span>
+                <button 
+                  onClick={() => {
+                    const next = form.extractedInputs?.filter((_, index) => index !== i);
+                    onFormChange?.({ extractedInputs: next });
+                  }}
+                  className="absolute right-1 p-1 hover:text-red-500 text-violet-400 transition-colors"
+                >
+                  <span className="text-xs">✕</span>
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-[10px] text-slate-400 italic">
+            * Estos datos se guardarán como rasgos y eventos en tu línea de vida. Puedes eliminar los que no sean correctos.
+          </p>
+        </div>
+      )}
 
       {/* ── Main layout: DNA + List ── */}
       <div className="flex flex-col lg:flex-row gap-8">

@@ -60,13 +60,41 @@ export function OnboardingFlow() {
     }
   }, [form, extras, router]);
 
-  const handleLLMDone = (text: string) => {
-    const lower = text.toLowerCase();
-    const skills = SKILL_SUGGESTIONS.filter(s => lower.includes(s.toLowerCase()));
-    const interests = INTEREST_SUGGESTIONS.filter(s => lower.includes(s.toLowerCase()));
-    const profession = PROFESSION_SUGGESTIONS.find(p => lower.includes(p.toLowerCase().split(' ')[0]!)) ?? '';
-    setForm(f => ({ ...f, profession, skills, interests }));
-    setPhase('review');
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const handleLLMDone = async (text: string) => {
+    setIsExtracting(true);
+    try {
+      const res = await fetch('/api/onboarding/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const json = await res.json();
+      
+      if (json.success && json.data) {
+        const { attributes = [], inputs = [] } = json.data;
+        
+        // Map extracted attributes back to form fields for visual review
+        const extractedSkills = attributes.filter((a: any) => a.dimension === 'skills').map((a: any) => a.name);
+        const extractedInterests = attributes.filter((a: any) => a.dimension === 'interests').map((a: any) => a.name);
+        const extractedProfession = attributes.find((a: any) => a.dimension === 'career' || a.category === 'profession')?.name || '';
+
+        setForm(f => ({ 
+          ...f, 
+          profession: extractedProfession || f.profession, 
+          skills: Array.from(new Set([...f.skills, ...extractedSkills])), 
+          interests: Array.from(new Set([...f.interests, ...extractedInterests])),
+          extractedAttributes: attributes,
+          extractedInputs: inputs
+        }));
+      }
+    } catch (err) {
+      console.error('Extraction error:', err);
+    } finally {
+      setIsExtracting(false);
+      setPhase('review');
+    }
   };
 
   if (phase === 'generating') return <GeneratingScreen name={form.name} />;
@@ -107,7 +135,7 @@ export function OnboardingFlow() {
         )}
 
         {phase === 'llm' && (
-          <LLMPhase onDone={handleLLMDone} onBack={() => setPhase('method')} />
+          <LLMPhase onDone={handleLLMDone} onBack={() => setPhase('method')} loading={isExtracting} />
         )}
 
         {phase === 'cv' && (
@@ -126,6 +154,7 @@ export function OnboardingFlow() {
           <ReviewPhase
             form={form} extras={extras}
             onExtrasChange={setExtras}
+            onFormChange={(f) => setForm(prev => ({ ...prev, ...f }))}
             onSubmit={() => setPhase('goals')}
           />
         )}

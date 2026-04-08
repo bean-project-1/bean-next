@@ -10,9 +10,10 @@ import { BeanLogo, BackButton, OnboardingCard } from './shared';
 interface Props {
   onDone: (text: string) => void;
   onBack: () => void;
+  loading?: boolean;
 }
 
-export function LLMPhase({ onDone, onBack }: Props) {
+export function LLMPhase({ onDone, onBack, loading }: Props) {
   const [text, setText] = useState('');
 
   return (
@@ -45,10 +46,17 @@ export function LLMPhase({ onDone, onBack }: Props) {
 
         <button
           onClick={() => onDone(text)}
-          disabled={text.trim().length < 50}
-          className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={text.trim().length < 50 || loading}
+          className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Continuar → Ver mi ADN de vida ✨
+          {loading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              Procesando con IA...
+            </>
+          ) : (
+            'Continuar → Ver mi ADN de vida ✨'
+          )}
         </button>
       </OnboardingCard>
     </div>

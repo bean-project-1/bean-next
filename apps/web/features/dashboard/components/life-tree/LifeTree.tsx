@@ -53,6 +53,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       });
     }
 
+
     // 4. Seed appear with a soft pop
     if (seedRef.current) {
       tl.fromTo(seedRef.current,
@@ -113,6 +114,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         </div>
       )}
 
+      {hoveredLeafName && (
+        <div className="absolute top-32 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/10 backdrop-blur-sm rounded-full pointer-events-none shadow-sm">
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">{hoveredLeafName}</span>
+        </div>
+      )}
+
       <svg
         viewBox="0 0 800 800"
         className="w-full h-full max-w-[800px] max-h-[800px] cursor-default"
@@ -148,7 +155,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           </radialGradient>
         </defs>
 
-        {/* Ground / Soil Mound */}
+        {/* 1. Ground / Soil Mound */}
         <ellipse 
           cx="400" cy="454" rx="70" ry="12" 
           fill="#2d1a0e" 
@@ -161,20 +168,23 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           opacity="0.8" 
         />
 
-        {/* Realistic Roots - Wood textured */}
-        <g ref={rootsRef} className="pointer-events-none">
-          {/* Identity Root (Amber/Golden Glow) */}
-          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#f59e0b" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+        {/* 2. Realistic Roots - Wood textured */}
+        <g 
+          ref={rootsRef} 
+          className="pointer-events-none"
+        >
+          {/* Identity Root (Brown with Golden Shading) */}
+          <path d="M 400,450 C 380,550 320,600 250,700" stroke="#f59e0b" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 385,550 325,600 250,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 385,550 325,600 250,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
           
-          {/* Human Capital Root (Blue Glow) */}
-          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+          {/* Human Capital Root (Brown with Blue Shading) */}
+          <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 400,580 410,620 400,750" stroke="#4a2810" strokeWidth="8" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 400,580 410,620 400,750" stroke="#7c4a1e" strokeWidth="5" fill="none" strokeLinecap="round" />
 
-          {/* Experience Root (Green Glow) */}
-          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="12" fill="none" opacity="0.08" filter="blur(4px)" />
+          {/* Experience Root (Brown with Emerald Shading) */}
+          <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 415,550 475,600 550,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 415,550 475,600 550,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
           
@@ -183,52 +193,36 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           <text x="550" y="728" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Experiencia</text>
         </g>
 
-        {/* Realistic Trunk - tapered, wood gradient, bark texture */}
+        {/* 3. Realistic Trunk */}
         <g ref={trunkRef} className="pointer-events-none">
-          {/* Main tapered body: wider at base, narrower at top */}
-          <path
-            d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z"
-            fill="url(#trunkGrad)"
-          />
-          {/* Center sheen overlay */}
-          <path
-            d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z"
-            fill="url(#trunkSheen)"
-          />
-          {/* Bark texture lines */}
+          <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
+          <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
           <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
           <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
           <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-          {/* Knot detail */}
           <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
           <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
         </g>
 
-        {/* The Seed (BEAN) - Aesthetic & Organic */}
+        {/* 4. The Seed (BEAN) */}
         <g ref={seedRef} transform="translate(400, 450)" className="pointer-events-none">
-          {/* External soft glow */}
           <circle r="25" fill="url(#seedHaze)" className="seed-glow" />
-          
-          {/* Animated Bean Shape */}
           <path 
             d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
             fill="url(#seedGrad)"
             stroke="#059669"
             strokeWidth="0.5"
           />
-          
-          {/* Small internal highlight for "glossy" look */}
           <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
         </g>
 
-        {/* Interaction hint / Label for the Seed - ¡Tú BEAN! */}
+        {/* 6. Interaction Hint / Label - Tu BEAN! */}
         <g 
           className="cursor-default select-none pointer-events-none opacity-0"
           id="seed-label-group"
         >
           <text 
-            x="485" 
-            y="432" 
+            x="485" y="432" 
             className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
             style={{ 
               filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))',
@@ -237,32 +231,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           >
             Tu BEAN!
           </text>
-          
-          {/* Stylized Curved Arrow pointing to the seed (400, 450) */}
-          <path 
-            d="M 480,442 C 465,445 445,448 425,449" 
-            stroke="#f97316" 
-            strokeWidth="2" 
-            fill="none" 
-            strokeLinecap="round"
-            markerEnd="url(#arrowhead)" 
-            opacity="0.8"
-          />
-          
+          <path d="M 480,442 C 465,445 445,448 425,449" stroke="#f97316" strokeWidth="2" fill="none" strokeLinecap="round" markerEnd="url(#arrowhead)" opacity="0.8" />
           <defs>
-            <marker
-              id="arrowhead"
-              markerWidth="6"
-              markerHeight="6"
-              refX="5"
-              refY="3"
-              orient="auto"
-            >
+            <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
               <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
             </marker>
           </defs>
         </g>
-        
+
         {/* Dynamic Branches */}
         {data.branches.map((branch, i) => (
           <Branch

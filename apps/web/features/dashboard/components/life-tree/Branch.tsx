@@ -219,7 +219,9 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
       </text>
 
       {/* Render Leaves - Distributed organically across main branch, sub-branch and twig */}
-      {branch.leaves.map((leaf, i) => {
+      {/* Render Leaves - Distributed organically across main branch, sub-branch and twig */}
+      {/* Render Leaves - Memoized to prevent re-randomization on every render */}
+      {useMemo(() => branch.leaves.map((leaf, i) => {
         let pos;
         let leafAngle;
         
@@ -251,14 +253,14 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
             leaf={leaf}
             x={pos.x}
             y={pos.y}
-            angle={leafAngle + (Math.random() * 10 - 5)} // Slight variation
+            angle={leafAngle + (Math.random() * 10 - 5)} // Variation is now stable
             delay={1.5 + index * 0.1 + i * 0.08}
             isSelected={clickedLeafId === leaf.id}
             onHover={onHover}
             onClick={onClick}
           />
         );
-      })}
+      }), [branch.leaves, angle, subRad, twigRad, clickedLeafId, onClick, onHover, index])}
     </g>
   );
 };

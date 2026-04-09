@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
@@ -14,6 +15,7 @@ interface LifeTreeProps {
 }
 
 export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: LifeTreeProps) => {
+  const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
 
@@ -40,17 +42,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       );
     }
 
-    // 3. Roots growth sequentially
+    // 3. Set roots initial state (hidden)
     if (rootsRef.current) {
       const roots = rootsRef.current.querySelectorAll('path');
-      roots.forEach((path, i) => {
+      roots.forEach((path) => {
         const length = (path as SVGPathElement).getTotalLength();
-        tl.fromTo(path,
-          { strokeDasharray: length, strokeDashoffset: length, opacity: 0 },
-          { strokeDashoffset: 0, opacity: 1, duration: 2, ease: "power2.out" },
-          0.8 + i * 0.3
-        );
+        gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
       });
+      gsap.set(rootsRef.current, { opacity: 0 });
     }
 
 
@@ -62,18 +61,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         0.8
       );
 
-      // Soft breathing effect for the seed
-      gsap.to(".seed-glow", {
-        scale: 1.2,
-        opacity: 0.6,
-        duration: 3,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-      });
 
-      // 5. Fade in the new seed label ("¡Tú BEAN!")
-      tl.to("#seed-label-group", { opacity: 1, duration: 1.5, ease: "power2.out" }, 2.2);
+      // 5. Fade in the seed label ("Tu BEAN!")
+      tl.to("#seed-label-group", { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
     }
   }, { scope: containerRef });
 
@@ -86,7 +76,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-white relative font-sans overflow-hidden">
+    <div ref={containerRef} className="w-full min-h-screen flex items-center justify-center bg-white relative font-sans overflow-visible pb-32 pt-20">
       {/* Top Score Indicator */}
       <div 
         ref={scoreRef}
@@ -106,7 +96,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
 
       {/* Global Status (if no leaf selected) */}
       {!clickedLeafId && (
-        <div className="absolute bottom-16 right-16 flex flex-col items-end pointer-events-none transition-opacity duration-300">
+        <div className="fixed bottom-16 right-10 flex flex-col items-end pointer-events-none transition-opacity duration-300 z-30">
           <span className="text-[32px] font-light text-slate-300 tracking-tighter uppercase tabular-nums">
             {data.growthScore}<span className="text-sm ml-1">%</span>
           </span>
@@ -149,10 +139,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
             <stop offset="100%" stopColor="#065f46" />
           </radialGradient>
           
-          <radialGradient id="seedHaze" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.4)" />
-            <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" />
-          </radialGradient>
         </defs>
 
         {/* 1. Ground / Soil Mound */}
@@ -177,20 +163,19 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           <path d="M 400,450 C 380,550 320,600 250,700" stroke="#f59e0b" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 385,550 325,600 250,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 385,550 325,600 250,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
+          <text x="250" y="730" className="text-[12px] font-bold fill-slate-400 uppercase tracking-[0.2em] opacity-0" textAnchor="middle">Identidad</text>
           
           {/* Human Capital Root (Brown with Blue Shading) */}
           <path d="M 400,450 C 400,580 410,620 400,750" stroke="#3b82f6" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 400,580 410,620 400,750" stroke="#4a2810" strokeWidth="8" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 400,580 410,620 400,750" stroke="#7c4a1e" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <text x="400" y="780" className="text-[12px] font-bold fill-slate-400 uppercase tracking-[0.2em] opacity-0" textAnchor="middle">Capital Humano</text>
 
           {/* Experience Root (Brown with Emerald Shading) */}
           <path d="M 400,450 C 420,550 480,600 550,700" stroke="#10b981" strokeWidth="22" fill="none" opacity="0.35" filter="blur(10px)" />
           <path d="M 400,454 C 415,550 475,600 550,700" stroke="#4a2810" strokeWidth="7" fill="none" strokeLinecap="round" />
           <path d="M 400,454 C 415,550 475,600 550,700" stroke="#7c4a1e" strokeWidth="4" fill="none" strokeLinecap="round" />
-          
-          <text x="250" y="728" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Identidad</text>
-          <text x="400" y="785" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Capital Humano</text>
-          <text x="550" y="728" textAnchor="middle" className="text-[10px] fill-slate-400 font-bold uppercase tracking-widest">Experiencia</text>
+          <text x="550" y="730" className="text-[12px] font-bold fill-slate-400 uppercase tracking-[0.2em] opacity-0" textAnchor="middle">Experiencia</text>
         </g>
 
         {/* 3. Realistic Trunk */}
@@ -205,8 +190,54 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         </g>
 
         {/* 4. The Seed (BEAN) */}
-        <g ref={seedRef} transform="translate(400, 450)" className="pointer-events-none">
-          <circle r="25" fill="url(#seedHaze)" className="seed-glow" />
+        <g 
+          ref={seedRef} 
+          transform="translate(400, 450)" 
+          className="cursor-pointer group"
+          onClick={() => router.push('/dna')}
+          onMouseEnter={(e) => {
+            gsap.to(e.currentTarget.querySelector('path'), { scale: 1.1, duration: 0.3, ease: 'power2.out' });
+            
+            // Deploy roots
+            if (rootsRef.current) {
+              gsap.to(rootsRef.current, { opacity: 1, duration: 0.5 });
+              const paths = rootsRef.current.querySelectorAll('path');
+              const labels = rootsRef.current.querySelectorAll('text');
+              
+              paths.forEach((path, i) => {
+                gsap.to(path, { 
+                  strokeDashoffset: 0, 
+                  duration: 1.5, 
+                  delay: i * 0.1, 
+                  ease: "power2.out" 
+                });
+              });
+              
+              labels.forEach((label, i) => {
+                gsap.to(label, { opacity: 0.6, duration: 0.8, delay: 0.5 + i * 0.2 });
+              });
+            }
+          }}
+          onMouseLeave={(e) => {
+            gsap.to(e.currentTarget.querySelector('path'), { scale: 1, duration: 0.3, ease: 'power2.out' });
+            
+            // Retract roots
+            if (rootsRef.current) {
+              const paths = rootsRef.current.querySelectorAll('path');
+              const labels = rootsRef.current.querySelectorAll('text');
+              
+              paths.forEach((path) => {
+                const length = (path as SVGPathElement).getTotalLength();
+                gsap.to(path, { strokeDashoffset: length, duration: 0.8, ease: "power2.in" });
+              });
+              
+              labels.forEach((label) => {
+                gsap.to(label, { opacity: 0, duration: 0.4 });
+              });
+              gsap.to(rootsRef.current, { opacity: 0, duration: 0.8, delay: 0.4 });
+            }
+          }}
+        >
           <path 
             d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
             fill="url(#seedGrad)"
@@ -239,6 +270,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
           </defs>
         </g>
 
+
         {/* Dynamic Branches */}
         {data.branches.map((branch, i) => (
           <Branch
@@ -255,7 +287,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       </svg>
 
       {/* Legend */}
-      <div className="absolute bottom-10 left-10 flex flex-col gap-2 bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none">
+      <div className="fixed bottom-10 left-20 sm:left-64 flex flex-col gap-2 bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">
         <div className="flex items-center gap-3">
           <div className="w-4 h-2 rounded-full bg-emerald-500 shadow-sm" />
           <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Completado</span>
@@ -263,6 +295,38 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
         <div className="flex items-center gap-3">
           <div className="w-4 h-2 rounded-full bg-slate-200 shadow-sm" />
           <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pendiente</span>
+        </div>
+      </div>
+
+      {/* Branch Labels HTML Overlay (Zoom Resilient) */}
+      <div className="absolute inset-0 pointer-events-none overflow-visible">
+        <div className="relative w-full h-full max-w-[800px] aspect-square mx-auto">
+          {data.branches.map((branch, i) => {
+            const startAngle = -160;
+            const endAngle = -20;
+            const step = data.branches.length > 1 ? (endAngle - startAngle) / (data.branches.length - 1) : 0;
+            const angle = startAngle + i * step;
+            const length = 180 + (branch.progress / 100) * 120;
+            const rad = (angle * Math.PI) / 180;
+            const endX = 400 + Math.cos(rad) * length;
+            const endY = 350 + Math.sin(rad) * length;
+            
+            return (
+              <div 
+                key={branch.id}
+                className="absolute flex flex-col items-center"
+                style={{ 
+                  left: `${(endX / 800) * 100}%`, 
+                  top: `${(endY / 800) * 100}%`,
+                  transform: `translate(${endX > 400 ? '20px' : '-100%'}, -20px)`
+                }}
+              >
+                <span className="text-[10px] font-black text-slate-500 bg-white/60 px-2 py-0.5 rounded shadow-sm whitespace-nowrap uppercase tracking-tighter">
+                  {branch.goal}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

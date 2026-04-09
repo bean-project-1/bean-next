@@ -207,16 +207,7 @@ export const Branch = ({ branch, index, totalBranches, clickedLeafId, onClick, o
         onClick={() => onBranchClick(branch)}
       />
 
-      {/* Branch Label */}
-      <text
-        ref={textRef}
-        x={endX + (endX > startX ? 22 : -22)}
-        y={endY - 12}
-        textAnchor={endX > startX ? 'start' : 'end'}
-        className="text-[11px] font-bold fill-slate-500 uppercase tracking-tighter"
-      >
-        {branch.goal}
-      </text>
+      {/* Branch Label - Moved to LifeTree HTML Overlay */}
 
       {/* Render Leaves - Distributed organically across main branch, sub-branch and twig */}
       {/* Render Leaves - Distributed organically across main branch, sub-branch and twig */}

@@ -14,5 +14,12 @@ export type { ProgressBarProps } from './components/ProgressBar';
 export { LifeScore } from './components/LifeScore';
 export type { LifeScoreProps } from './components/LifeScore';
 
-export { RadarChart } from './components/RadarChart';
+export * from './components/RadarChart';
+export * from './components/BeanLogo';
+export * from './components/BackButton';
+export * from './components/InputField';
+export * from './components/TagInput';
+export * from './components/PrimaryButton';
+export * from './components/StepDots';
+export * from './components/OnboardingCard';
 export type { RadarChartProps, RadarDataPoint } from './components/RadarChart';

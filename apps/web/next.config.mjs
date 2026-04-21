@@ -16,7 +16,7 @@ const nextConfig = {
   },
 
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ['@prisma/client', 'openai'],
   },
 };
 

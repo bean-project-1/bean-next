@@ -9,6 +9,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { AICoachModal } from '@/features/dashboard/components/AICoachModal';
 
 const NAV = [
   { href: '/home',      icon: '🌳', label: 'Mi Árbol'   },
@@ -22,8 +24,11 @@ const NAV = [
 
 function Sidebar() {
   const path = usePathname();
+  const [coachOpen, setCoachOpen] = useState(false);
+
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col items-center gap-2 border-r border-gray-100 bg-white py-5 sm:w-56 sm:items-start sm:px-4">
+    <>
+      <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col items-center gap-2 border-r border-gray-100 bg-white py-5 sm:w-56 sm:items-start sm:px-4">
       {/* Logo */}
       <Link href="/home" className="mb-6 flex items-center gap-3 px-1 sm:px-0">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-600 shadow-sm">
@@ -49,6 +54,15 @@ function Sidebar() {
             </Link>
           );
         })}
+        
+        {/* Botón Mágico AI Coach */}
+        <button 
+          onClick={() => setCoachOpen(true)}
+          className="group mt-4 flex w-full items-center justify-center sm:justify-start gap-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-2 py-2.5 text-sm text-white shadow-md shadow-violet-500/20 transition-all hover:-translate-y-px hover:shadow-violet-500/40 sm:px-3"
+        >
+          <span className="text-base">🧠</span>
+          <span className="hidden font-semibold sm:block">Coach AI</span>
+        </button>
       </nav>
 
       {/* Footer */}
@@ -61,7 +75,11 @@ function Sidebar() {
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+
+      {/* Modal Renderizado Condicionalmente */}
+      {coachOpen && <AICoachModal onClose={() => setCoachOpen(false)} />}
+    </>
   );
 }
 

@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 //
 // ───────────────── DIMENSIONS (19 CORRECTAS) ─────────────────
-//
+//podman exec -it bean-mongodb mongosh --eval "rs.initiate()"
 const DIMENSIONS = [
   // 🌱 IDENTIDAD
   { name: 'values', label: 'Core Values', category: 'identity' },
@@ -78,10 +78,10 @@ async function main() {
     { dimension: 'values', name: 'Libertad', category: 'value', metadata: { importance: 95 } },
     { dimension: 'values', name: 'Impacto Social', category: 'value', metadata: { importance: 90 } },
     { dimension: 'values', name: 'Autenticidad', category: 'value', metadata: { importance: 85 } },
-    
+
     { dimension: 'personality', name: 'Introvertido', category: 'trait', metadata: { level: 70 } },
     { dimension: 'personality', name: 'Analítico', category: 'trait', metadata: { level: 90 } },
-    
+
     { dimension: 'interests', name: 'Ciclismo', category: 'interest', metadata: { frequency: '4x/week' } },
     { dimension: 'interests', name: 'IA & Futuro', category: 'interest' },
     { dimension: 'interests', name: 'Filosofía', category: 'interest' },

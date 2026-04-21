@@ -13,12 +13,29 @@ export const dynamic = 'force-dynamic';
 const onboardingSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
-  profession: z.string().default(''),
-  skills: z.array(z.string()).default([]),
+  // identidad
+  values: z.array(z.string()).default([]),
+  personality: z.string().default(''),
   interests: z.array(z.string()).default([]),
+  purpose: z.number().min(0).max(10).default(5),
+  motivations: z.string().default(''),
+  // capital
+  knowledge: z.number().min(0).max(10).default(5),
+  skills: z.array(z.string()).default([]),
+  profession: z.string().default(''),
+  income: z.string().default(''),
+  socialCapital: z.number().min(0).max(10).default(5),
   exerciseFrequency: z.string().default(''),
+  resilience: z.number().min(0).max(10).default(5),
+  // experiencia
+  workSatisfaction: z.number().min(0).max(10).default(5),
+  relationships: z.number().min(0).max(10).default(5),
   lifeSatisfaction: z.number().min(0).max(10).default(5),
-  // Extra dimension scores from the Review phase sliders
+  freeTime: z.string().default(''),
+  personalGrowth: z.number().min(0).max(10).default(5),
+  impact: z.number().min(0).max(10).default(5),
+  financialSecurity: z.number().min(0).max(10).default(5),
+  // review + goals
   dimensionExtras: z
     .array(z.object({ key: z.string(), score: z.number().min(0).max(10) }))
     .default([]),
@@ -34,30 +51,56 @@ function buildDimScores(
 ): { key: string; score: number }[] {
   const results: { key: string; score: number }[] = [];
 
-  if (data.profession)
-    results.push({ key: 'career', score: 7 });
-  if (data.skills.length)
-    results.push({ key: 'skills', score: Math.min(10, 5 + data.skills.length * 0.5) });
-  if (data.interests.length)
-    results.push({ key: 'interests', score: Math.min(10, 5 + data.interests.length * 0.5) });
+  const push = (key: string, score: number) => results.push({ key, score: Math.max(0, Math.min(10, score)) });
+
+  // ── IDENTIDAD ────────────────────────────────────────
+  if (data.values?.length)    push('values',       Math.min(10, 4 + data.values.length * 1.2));
+  if (data.personality)       push('personality',  7);   // categorical → fixed signal
+  if (data.interests?.length) push('interests',    Math.min(10, 4 + data.interests.length * 1));
+  if (data.purpose !== undefined)    push('purpose',     data.purpose);
+  if (data.motivations)       push('motivations',  7);   // categorical → fixed signal
+
+  // ── CAPITAL ──────────────────────────────────────────
+  if (data.knowledge !== undefined)  push('knowledge',      data.knowledge);
+  if (data.skills?.length)    push('skills',        Math.min(10, 4 + data.skills.length * 0.8));
+  if (data.profession)        push('career',        7);
+  if (data.income) {
+    const incomeMap: Record<string, number> = { none: 1, basic: 3, medium: 6, high: 8, very_high: 10 };
+    push('income', incomeMap[data.income] ?? 5);
+  }
+  if (data.socialCapital !== undefined) push('social_capital', data.socialCapital);
   if (data.exerciseFrequency) {
     const map: Record<string, number> = {
-      Rarely: 2, '1–2x/week': 5, '3–4x/week': 7, '5+x/week': 9, Daily: 10,
+      'Rara vez': 2, '1–2x/semana': 4, '3–4x/semana': 7, '5+x/semana': 9, 'Diario': 10,
+      // Legacy english labels (backwards compat)
+      'Rarely': 2, '1–2x/week': 4, '3–4x/week': 7, '5+x/week': 9, 'Daily': 10,
     };
-    results.push({ key: 'physical_health', score: map[data.exerciseFrequency] ?? 5 });
+    push('physical_health', map[data.exerciseFrequency] ?? 5);
   }
-  if (data.lifeSatisfaction !== undefined && data.lifeSatisfaction !== null)
-    results.push({ key: 'mental_wellbeing', score: data.lifeSatisfaction });
+  if (data.resilience !== undefined) push('resilience', data.resilience);
+
+  // ── EXPERIENCIA ───────────────────────────────────────
+  if (data.workSatisfaction !== undefined) push('work_satisfaction', data.workSatisfaction);
+  if (data.relationships !== undefined)    push('relationships',     data.relationships);
+  if (data.lifeSatisfaction !== undefined) push('mental_wellbeing',  data.lifeSatisfaction);
+  if (data.freeTime) {
+    const ftMap: Record<string, number> = { none: 1, little: 3, some: 6, plenty: 9 };
+    push('free_time', ftMap[data.freeTime] ?? 4);
+  }
+  if (data.personalGrowth !== undefined)   push('personal_growth',  data.personalGrowth);
+  if (data.impact !== undefined)           push('impact',           data.impact);
+  if (data.financialSecurity !== undefined) push('financial_security', data.financialSecurity);
 
   // Merge extras from the Review phase (extras override auto-derived)
-  const extraKeys = new Set(data.dimensionExtras.map(e => e.key));
+  const extraKeys = new Set((data.dimensionExtras ?? []).map((e: {key: string}) => e.key));
   const base = results.filter(r => !extraKeys.has(r.key));
-  const extras = data.dimensionExtras
-    .filter(e => e.score > 0)
-    .map(e => ({ key: e.key, score: e.score }));
+  const extras = (data.dimensionExtras ?? [])
+    .filter((e: {score: number}) => e.score > 0)
+    .map((e: {key: string; score: number}) => ({ key: e.key, score: e.score }));
 
   return [...base, ...extras];
 }
+
 
 // ── POST — Onboarding: create User + BeanProfile + DimensionScores ──
 export async function POST(req: NextRequest) {

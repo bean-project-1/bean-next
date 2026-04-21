@@ -4,7 +4,41 @@
 // =======================================================
 import type { Method } from '../types';
 
-export const EXERCISE_OPTIONS = ['Rarely', '1–2x/week', '3–4x/week', '5+x/week', 'Daily'];
+export const EXERCISE_OPTIONS = ['Rara vez', '1–2x/semana', '3–4x/semana', '5+x/semana', 'Diario'];
+
+export const VALUES_SUGGESTIONS = [
+  'Familia', 'Libertad', 'Impacto', 'Honestidad', 'Creatividad', 'Lealtad',
+  'Crecimiento', 'Seguridad', 'Aventura', 'Salud', 'Justicia', 'Comunidad',
+];
+
+export const PERSONALITY_OPTIONS = [
+  { id: 'explorer',   emoji: '🧭', label: 'Explorador',  desc: 'Me lanzo a lo nuevo con entusiasmo' },
+  { id: 'analyst',    emoji: '🔬', label: 'Analítico',   desc: 'Necesito entender antes de actuar' },
+  { id: 'empathic',   emoji: '💞', label: 'Empático',    desc: 'Lo que más me importa son las personas' },
+  { id: 'pragmatic',  emoji: '⚡', label: 'Pragmático',  desc: 'Me enfoco en resultados concretos' },
+];
+
+export const MOTIVATION_OPTIONS = [
+  { id: 'achievement',    emoji: '🏆', label: 'Logros',          desc: 'Superar metas y desafíos' },
+  { id: 'recognition',    emoji: '👏', label: 'Reconocimiento',  desc: 'Ser valorado por los demás' },
+  { id: 'connection',     emoji: '🤝', label: 'Conexión',        desc: 'Construir relaciones profundas' },
+  { id: 'autonomy',       emoji: '🕊️', label: 'Autonomía',       desc: 'Tener libertad para decidir' },
+];
+
+export const INCOME_OPTIONS = [
+  { id: 'none',    label: 'Sin ingresos activos',  score: 1 },
+  { id: 'basic',   label: 'Ingresos básicos',       score: 3 },
+  { id: 'medium',  label: 'Ingresos medios',        score: 6 },
+  { id: 'high',    label: 'Ingresos altos',         score: 8 },
+  { id: 'very_high', label: 'Ingresos muy altos',   score: 10 },
+];
+
+export const FREE_TIME_OPTIONS = [
+  { id: 'none',    label: 'Casi ninguno',     score: 1 },
+  { id: 'little',  label: 'Poco (< 3h/sem)',  score: 3 },
+  { id: 'some',    label: 'Algo (3–8h/sem)',  score: 6 },
+  { id: 'plenty',  label: 'Bastante (> 8h)',  score: 9 },
+];
 
 export const SKILL_SUGGESTIONS = [
   'JavaScript', 'Python', 'Design', 'Sales', 'Writing', 'Leadership',

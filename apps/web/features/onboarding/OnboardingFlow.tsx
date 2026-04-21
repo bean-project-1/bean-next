@@ -7,8 +7,17 @@ import { SKILL_SUGGESTIONS, INTEREST_SUGGESTIONS, PROFESSION_SUGGESTIONS } from 
 import type { Phase, FormData, DimExtra } from './types';
 
 const INITIAL_FORM: FormData = {
-  name: '', email: '', profession: '',
-  skills: [], interests: [], exerciseFrequency: '', lifeSatisfaction: 6, goals: [],
+  name: '', email: '',
+  // identidad
+  values: [], personality: '', interests: [], purpose: 5, motivations: '',
+  // capital
+  knowledge: 5, skills: [], profession: '', income: '', socialCapital: 5,
+  exerciseFrequency: '', resilience: 5,
+  // experiencia
+  workSatisfaction: 5, relationships: 5, lifeSatisfaction: 5,
+  freeTime: '', personalGrowth: 5, impact: 5, financialSecurity: 5,
+  // metas
+  goals: [],
 };
 
 export function OnboardingFlow() {

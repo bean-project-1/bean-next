@@ -34,15 +34,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
       }
     );
 
-    // Organic Sway
-    const swayAmount = 4 + Math.random() * 4;
-    gsap.to(containerRef.current, {
-      rotate: `+=${swayAmount}`,
-      duration: 2 + Math.random() * 2,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
+
   }, [delay]); // Only re-run appear if delay changes (unlikely)
 
   useGSAP(() => {
@@ -67,74 +59,108 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
   }, [isSelected]);
 
   return (
-    <g
-      ref={containerRef}
-      style={{ transformOrigin: "0 0", cursor: 'pointer' }}
-      transform={`translate(${x}, ${y}) rotate(${angle})`}
-      className="group"
-      onMouseEnter={() => {
-        onHover(leaf.name);
-        gsap.to(pathRef.current, { scale: 1.1, duration: 0.2 });
-      }}
-      onMouseLeave={() => {
-        onHover(null);
-        gsap.to(pathRef.current, { scale: 1, duration: 0.2 });
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(leaf.id, leaf.name);
-      }}
-    >
-      {/* Sticky/Hover Activity Label */}
-      {isSelected && (
-        <g ref={labelRef} transform="translate(30, -40)">
-          <rect
-            width={leaf.name.length * 8 + 24}
-            height="26"
-            rx="13"
-            fill={leaf.completed ? "#059669" : "#334155"}
-            stroke="#ffffff"
-            strokeWidth="2"
-            className="drop-shadow-xl"
-          />
-          <text
-            x="12"
-            y="17"
-            className="text-[13px] fill-white font-bold tracking-tight select-none"
-          >
-            {leaf.name}
-          </text>
-        </g>
-      )}
+    <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+      <g
+        ref={containerRef}
+        style={{ transformOrigin: "0 0", cursor: 'pointer' }}
+        className="group"
+        onMouseEnter={() => {
+          onHover(leaf.name);
+          gsap.to(pathRef.current, { scale: 1.1, duration: 0.2 });
+        }}
+        onMouseLeave={() => {
+          onHover(null);
+          gsap.to(pathRef.current, { scale: 1, duration: 0.2 });
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(leaf.id, leaf.name);
+        }}
+      >
+        {/* Sticky/Hover Activity Label */}
+        {isSelected && (
+          <g ref={labelRef} transform="translate(30, -40)">
+            <rect
+              width={leaf.name.length * 8 + 24}
+              height="26"
+              rx="13"
+              fill={leaf.completed ? "#059669" : "#334155"}
+              stroke="#ffffff"
+              strokeWidth="2"
+              className="drop-shadow-xl"
+            />
+            <text
+              x="12"
+              y="17"
+              className="text-[13px] fill-white font-bold tracking-tight select-none"
+            >
+              {leaf.name}
+            </text>
+          </g>
+        )}
 
-      {/* Hover-only label (if not selected) */}
-      {!isSelected && (
-        <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" transform="translate(30, -35)">
-          <rect
-            width={leaf.name.length * 7 + 20}
-            height="22"
-            rx="11"
-            fill="rgba(15, 23, 42, 0.9)"
-          />
-          <text
-            x="10"
-            y="15"
-            className="text-[11px] fill-white font-bold tracking-tight"
-          >
-            {leaf.name}
-          </text>
-        </g>
-      )}
+        {/* Hover-only label (if not selected) */}
+        {!isSelected && (
+          <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" transform="translate(30, -35)">
+            <rect
+              width={leaf.name.length * 7 + 20}
+              height="22"
+              rx="11"
+              fill="rgba(15, 23, 42, 0.9)"
+            />
+            <text
+              x="10"
+              y="15"
+              className="text-[11px] fill-white font-bold tracking-tight"
+            >
+              {leaf.name}
+            </text>
+          </g>
+        )}
 
-      {/* The Leaf Path */}
-      <path
-        ref={pathRef}
-        d="M 0,0 C 10,-25 50,-25 60,0 C 50,25 10,25 0,0"
-        fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
-        stroke={isSelected ? "#fff" : "rgba(255,255,255,0.2)"}
-        strokeWidth={isSelected ? 3 : 1}
-        style={{ transformOrigin: "center" }}
-      />
+        <defs>
+          <linearGradient id={`leafGrad-${leaf.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+            <stop offset="50%" stopColor="transparent" stopOpacity="0" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.1" />
+          </linearGradient>
+        </defs>
+
+        {/* The Realistic Leaf Body */}
+        <path
+          ref={pathRef}
+          d="M 0,0 C 5,-15 25,-22 45,-15 C 65,-8 75,0 80,0 C 75,5 65,15 45,22 C 25,22 5,15 0,0 Z"
+          fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
+          stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
+          strokeWidth={isSelected ? 2 : 0.5}
+          className="transition-all duration-300"
+        />
+        
+        {/* Depth Overlay */}
+        <path
+          d="M 0,0 C 5,-15 25,-22 45,-15 C 65,-8 75,0 80,0 C 75,5 65,15 45,22 C 25,22 5,15 0,0 Z"
+          fill={`url(#leafGrad-${leaf.id})`}
+          pointerEvents="none"
+        />
+
+        {/* Central Vein (Nervadura Central) */}
+        <path
+          d="M 0,0 C 20,0 50,0 75,0"
+          stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
+          strokeWidth="1"
+          fill="none"
+          opacity="0.6"
+          pointerEvents="none"
+        />
+
+        {/* Lateral Veins */}
+        <g opacity="0.4" pointerEvents="none">
+          <path d="M 15,0 C 18,-6 25,-8 30,-10" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+          <path d="M 15,0 C 18,6 25,8 30,10" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+          <path d="M 35,0 C 38,-5 45,-6 50,-8" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+          <path d="M 35,0 C 38,5 45,6 50,8" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.5" fill="none" />
+        </g>
+      </g>
     </g>
   );
 };

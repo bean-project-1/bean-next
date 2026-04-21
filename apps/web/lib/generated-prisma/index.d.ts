@@ -7843,7 +7843,7 @@ export namespace Prisma {
     progress: number
     status: string
     createdAt: Date
-    updatedAt: Date
+    updatedAt: Date | null
     _count: GoalCountAggregateOutputType | null
     _avg: GoalAvgAggregateOutputType | null
     _sum: GoalSumAggregateOutputType | null
@@ -7914,7 +7914,7 @@ export namespace Prisma {
       progress: number
       status: string
       createdAt: Date
-      updatedAt: Date
+      updatedAt: Date | null
     }, ExtArgs["result"]["goal"]>
     composites: {}
   }
@@ -8693,7 +8693,9 @@ export namespace Prisma {
     goalId: string | null
     title: string | null
     isCompleted: boolean | null
+    targetDate: Date | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type GoalActionMaxAggregateOutputType = {
@@ -8701,7 +8703,9 @@ export namespace Prisma {
     goalId: string | null
     title: string | null
     isCompleted: boolean | null
+    targetDate: Date | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type GoalActionCountAggregateOutputType = {
@@ -8709,8 +8713,12 @@ export namespace Prisma {
     goalId: number
     title: number
     isCompleted: number
+    targetDate: number
+    dimensions: number
+    attributes: number
     impact: number
     createdAt: number
+    updatedAt: number
     _all: number
   }
 
@@ -8720,7 +8728,9 @@ export namespace Prisma {
     goalId?: true
     title?: true
     isCompleted?: true
+    targetDate?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type GoalActionMaxAggregateInputType = {
@@ -8728,7 +8738,9 @@ export namespace Prisma {
     goalId?: true
     title?: true
     isCompleted?: true
+    targetDate?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type GoalActionCountAggregateInputType = {
@@ -8736,8 +8748,12 @@ export namespace Prisma {
     goalId?: true
     title?: true
     isCompleted?: true
+    targetDate?: true
+    dimensions?: true
+    attributes?: true
     impact?: true
     createdAt?: true
+    updatedAt?: true
     _all?: true
   }
 
@@ -8818,8 +8834,12 @@ export namespace Prisma {
     goalId: string
     title: string
     isCompleted: boolean
+    targetDate: Date | null
+    dimensions: string[]
+    attributes: string[]
     impact: JsonValue | null
     createdAt: Date
+    updatedAt: Date | null
     _count: GoalActionCountAggregateOutputType | null
     _min: GoalActionMinAggregateOutputType | null
     _max: GoalActionMaxAggregateOutputType | null
@@ -8844,8 +8864,12 @@ export namespace Prisma {
     goalId?: boolean
     title?: boolean
     isCompleted?: boolean
+    targetDate?: boolean
+    dimensions?: boolean
+    attributes?: boolean
     impact?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     goal?: boolean | GoalDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["goalAction"]>
 
@@ -8855,8 +8879,12 @@ export namespace Prisma {
     goalId?: boolean
     title?: boolean
     isCompleted?: boolean
+    targetDate?: boolean
+    dimensions?: boolean
+    attributes?: boolean
     impact?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
   }
 
   export type GoalActionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8873,8 +8901,12 @@ export namespace Prisma {
       goalId: string
       title: string
       isCompleted: boolean
+      targetDate: Date | null
+      dimensions: string[]
+      attributes: string[]
       impact: Prisma.JsonValue | null
       createdAt: Date
+      updatedAt: Date | null
     }, ExtArgs["result"]["goalAction"]>
     composites: {}
   }
@@ -9272,8 +9304,12 @@ export namespace Prisma {
     readonly goalId: FieldRef<"GoalAction", 'String'>
     readonly title: FieldRef<"GoalAction", 'String'>
     readonly isCompleted: FieldRef<"GoalAction", 'Boolean'>
+    readonly targetDate: FieldRef<"GoalAction", 'DateTime'>
+    readonly dimensions: FieldRef<"GoalAction", 'String[]'>
+    readonly attributes: FieldRef<"GoalAction", 'String[]'>
     readonly impact: FieldRef<"GoalAction", 'Json'>
     readonly createdAt: FieldRef<"GoalAction", 'DateTime'>
+    readonly updatedAt: FieldRef<"GoalAction", 'DateTime'>
   }
     
 
@@ -9722,8 +9758,12 @@ export namespace Prisma {
     goalId: 'goalId',
     title: 'title',
     isCompleted: 'isCompleted',
+    targetDate: 'targetDate',
+    dimensions: 'dimensions',
+    attributes: 'attributes',
     impact: 'impact',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   };
 
   export type GoalActionScalarFieldEnum = (typeof GoalActionScalarFieldEnum)[keyof typeof GoalActionScalarFieldEnum]
@@ -10283,7 +10323,7 @@ export namespace Prisma {
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
-    updatedAt?: DateTimeFilter<"Goal"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"Goal"> | Date | string | null
     user?: XOR<UserRelationFilter, UserWhereInput>
     actions?: GoalActionListRelationFilter
   }
@@ -10314,7 +10354,7 @@ export namespace Prisma {
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
-    updatedAt?: DateTimeFilter<"Goal"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"Goal"> | Date | string | null
     user?: XOR<UserRelationFilter, UserWhereInput>
     actions?: GoalActionListRelationFilter
   }, "id">
@@ -10348,7 +10388,7 @@ export namespace Prisma {
     progress?: FloatWithAggregatesFilter<"Goal"> | number
     status?: StringWithAggregatesFilter<"Goal"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Goal"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Goal"> | Date | string
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"Goal"> | Date | string | null
   }
 
   export type GoalActionWhereInput = {
@@ -10359,8 +10399,12 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+    dimensions?: StringNullableListFilter<"GoalAction">
+    attributes?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     goal?: XOR<GoalRelationFilter, GoalWhereInput>
   }
 
@@ -10369,8 +10413,12 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     isCompleted?: SortOrder
+    targetDate?: SortOrder
+    dimensions?: SortOrder
+    attributes?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     goal?: GoalOrderByWithRelationInput
   }
 
@@ -10382,8 +10430,12 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+    dimensions?: StringNullableListFilter<"GoalAction">
+    attributes?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     goal?: XOR<GoalRelationFilter, GoalWhereInput>
   }, "id">
 
@@ -10392,8 +10444,12 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     isCompleted?: SortOrder
+    targetDate?: SortOrder
+    dimensions?: SortOrder
+    attributes?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     _count?: GoalActionCountOrderByAggregateInput
     _max?: GoalActionMaxOrderByAggregateInput
     _min?: GoalActionMinOrderByAggregateInput
@@ -10407,8 +10463,12 @@ export namespace Prisma {
     goalId?: StringWithAggregatesFilter<"GoalAction"> | string
     title?: StringWithAggregatesFilter<"GoalAction"> | string
     isCompleted?: BoolWithAggregatesFilter<"GoalAction"> | boolean
+    targetDate?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
+    dimensions?: StringNullableListFilter<"GoalAction">
+    attributes?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableWithAggregatesFilter<"GoalAction">
     createdAt?: DateTimeWithAggregatesFilter<"GoalAction"> | Date | string
+    updatedAt?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
   }
 
   export type UserCreateInput = {
@@ -10886,7 +10946,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
     user: UserCreateNestedOneWithoutGoalsInput
     actions?: GoalActionCreateNestedManyWithoutGoalInput
   }
@@ -10900,7 +10960,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
     actions?: GoalActionUncheckedCreateNestedManyWithoutGoalInput
   }
 
@@ -10911,7 +10971,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     actions?: GoalActionUpdateManyWithoutGoalNestedInput
   }
@@ -10924,7 +10984,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actions?: GoalActionUncheckedUpdateManyWithoutGoalNestedInput
   }
 
@@ -10937,7 +10997,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalUpdateManyMutationInput = {
@@ -10947,7 +11007,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalUncheckedUpdateManyInput = {
@@ -10958,15 +11018,19 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalActionCreateInput = {
     id?: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
     goal: GoalCreateNestedOneWithoutActionsInput
   }
 
@@ -10975,15 +11039,23 @@ export namespace Prisma {
     goalId: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalActionUpdateInput = {
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     goal?: GoalUpdateOneRequiredWithoutActionsNestedInput
   }
 
@@ -10991,8 +11063,12 @@ export namespace Prisma {
     goalId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalActionCreateManyInput = {
@@ -11000,23 +11076,35 @@ export namespace Prisma {
     goalId: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalActionUpdateManyMutationInput = {
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalActionUncheckedUpdateManyInput = {
     goalId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -11521,6 +11609,18 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    isSet?: boolean
+  }
+
   export type GoalActionListRelationFilter = {
     every?: GoalActionWhereInput
     some?: GoalActionWhereInput
@@ -11575,6 +11675,29 @@ export namespace Prisma {
     progress?: SortOrder
   }
 
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
   export type GoalRelationFilter = {
     is?: GoalWhereInput
     isNot?: GoalWhereInput
@@ -11585,8 +11708,12 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     isCompleted?: SortOrder
+    targetDate?: SortOrder
+    dimensions?: SortOrder
+    attributes?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type GoalActionMaxOrderByAggregateInput = {
@@ -11594,7 +11721,9 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     isCompleted?: SortOrder
+    targetDate?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type GoalActionMinOrderByAggregateInput = {
@@ -11602,7 +11731,9 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     isCompleted?: SortOrder
+    targetDate?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type UserAttributeCreateNestedManyWithoutUserInput = {
@@ -12054,6 +12185,11 @@ export namespace Prisma {
     connect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+    unset?: boolean
+  }
+
   export type UserUpdateOneRequiredWithoutGoalsNestedInput = {
     create?: XOR<UserCreateWithoutGoalsInput, UserUncheckedCreateWithoutGoalsInput>
     connectOrCreate?: UserCreateOrConnectWithoutGoalsInput
@@ -12090,10 +12226,28 @@ export namespace Prisma {
     deleteMany?: GoalActionScalarWhereInput | GoalActionScalarWhereInput[]
   }
 
+  export type GoalActionCreatedimensionsInput = {
+    set: string[]
+  }
+
+  export type GoalActionCreateattributesInput = {
+    set: string[]
+  }
+
   export type GoalCreateNestedOneWithoutActionsInput = {
     create?: XOR<GoalCreateWithoutActionsInput, GoalUncheckedCreateWithoutActionsInput>
     connectOrCreate?: GoalCreateOrConnectWithoutActionsInput
     connect?: GoalWhereUniqueInput
+  }
+
+  export type GoalActionUpdatedimensionsInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type GoalActionUpdateattributesInput = {
+    set?: string[]
+    push?: string | string[]
   }
 
   export type GoalUpdateOneRequiredWithoutActionsNestedInput = {
@@ -12305,6 +12459,33 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    isSet?: boolean
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
   export type UserAttributeCreateWithoutUserInput = {
     id?: string
     name: string
@@ -12433,7 +12614,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
     actions?: GoalActionCreateNestedManyWithoutGoalInput
   }
 
@@ -12445,7 +12626,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
     actions?: GoalActionUncheckedCreateNestedManyWithoutGoalInput
   }
 
@@ -12607,7 +12788,7 @@ export namespace Prisma {
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
-    updatedAt?: DateTimeFilter<"Goal"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"Goal"> | Date | string | null
   }
 
   export type UserAttributeCreateWithoutDimensionInput = {
@@ -13138,16 +13319,24 @@ export namespace Prisma {
     id?: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalActionUncheckedCreateWithoutGoalInput = {
     id?: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalActionCreateOrConnectWithoutGoalInput = {
@@ -13218,8 +13407,12 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+    dimensions?: StringNullableListFilter<"GoalAction">
+    attributes?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
+    updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
   }
 
   export type GoalCreateWithoutActionsInput = {
@@ -13230,7 +13423,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
     user: UserCreateNestedOneWithoutGoalsInput
   }
 
@@ -13243,7 +13436,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalCreateOrConnectWithoutActionsInput = {
@@ -13269,7 +13462,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
   }
 
@@ -13281,7 +13474,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type FloatNullableFilter<$PrismaModel = never> = {
@@ -13346,7 +13539,7 @@ export namespace Prisma {
     progress?: number
     status?: string
     createdAt?: Date | string
-    updatedAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type UserAttributeUpdateWithoutUserInput = {
@@ -13470,7 +13663,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actions?: GoalActionUpdateManyWithoutGoalNestedInput
   }
 
@@ -13481,7 +13674,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actions?: GoalActionUncheckedUpdateManyWithoutGoalNestedInput
   }
 
@@ -13492,7 +13685,7 @@ export namespace Prisma {
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type UserAttributeCreateManyDimensionInput = {
@@ -13576,29 +13769,45 @@ export namespace Prisma {
     id?: string
     title: string
     isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type GoalActionUpdateWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalActionUncheckedUpdateWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type GoalActionUncheckedUpdateManyWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type NestedFloatNullableFilter<$PrismaModel = never> = {

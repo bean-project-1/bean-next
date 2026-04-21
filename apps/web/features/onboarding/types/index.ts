@@ -28,6 +28,8 @@ export interface FormData {
   financialSecurity: number; // 0-10 slider
   // ── Metas ──────────────────────────────────────────
   goals: { title: string }[];
+  extractedAttributes?: any[];
+  extractedInputs?: any[];
 }
 
 export interface DimExtra {

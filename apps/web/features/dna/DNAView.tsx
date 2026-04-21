@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ALL_DIMENSIONS, CAT_COLORS } from '../onboarding/constants';
+import { useState } from 'react';
+import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
+import { useProfile } from '../../hooks/useProfile';
 
 const CATEGORIES = [
   { cat: 'identity',   label: 'Identity'         },
@@ -11,120 +12,40 @@ const CATEGORIES = [
 ] as const;
 
 export function DNAView() {
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [attributes, setAttributes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [pct, setPct] = useState(0);
+  const {
+    scores, setScores, attributes, dbDimensions, loading, saving, saved, error, pct, filledCount,
+    updateScores, addAttribute
+  } = useProfile();
+
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
-  const [dbDimensions, setDbDimensions] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [newAttrName, setNewAttrName] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [addingAttr, setAddingAttr] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/profile-v2')
-      .then(r => r.json())
-      .then((json: any) => {
-        if (json.success && json.data) {
-          const { user, latestState, dimensions } = json.data;
-          setAttributes(user.attributes || []);
-          setDbDimensions(dimensions || []);
-          
-          if (latestState?.scores && dimensions) {
-            const scoreMap: Record<string, number> = {};
-            latestState.scores.forEach((ds: any) => {
-              const dimMetadata = dimensions.find((d: any) => d.id === ds.dimensionId);
-              if (dimMetadata) {
-                scoreMap[dimMetadata.name] = ds.score;
-              }
-            });
-            setScores(scoreMap);
-            const filled = ALL_DIMENSIONS.filter(d => (scoreMap[d.key] ?? 0) > 0).length;
-            setPct(Math.round((filled / ALL_DIMENSIONS.length) * 100));
-          }
-        } else {
-          setError(json.error || 'Failed to load profile');
-        }
-      })
-      .catch((err: any) => {
-        console.error('Fetch error:', err);
-        setError('Connection error');
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const setScore = (key: string, score: number) => {
-    setScores(prev => {
-      const newScores = { ...prev, [key]: score };
-      const filled = ALL_DIMENSIONS.filter(d => (newScores[d.key] ?? 0) > 0).length;
-      setPct(Math.round((filled / ALL_DIMENSIONS.length) * 100));
-      return newScores;
-    });
-    setSaved(false);
+  const handleLocalScoreChange = (key: string, score: number) => {
+    setScores(prev => ({ ...prev, [key]: score }));
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    try {
-      const response = await fetch('/api/profile/dimensions', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dimensionScores: Object.entries(scores).map(([key, score]) => ({ key, score })),
-        }),
-      });
-      const result = await response.json();
-      console.log('Save result:', result);
-      if (result.success) {
-        setSaved(true);
-      } else {
-        setError('Error al guardar: ' + (result.error || 'Intenta de nuevo') + (result.detail ? ` (${result.detail})` : ''));
-      }
-    } catch (err) {
-      console.error('Save error:', err);
-      setError('Error de red al guardar');
-    }
-    setSaving(false);
+    await updateScores(scores);
   };
 
-  const handleAddAttribute = async (dimKey: string) => {
+  const handleAddAttributeLocal = async (dimKey: string) => {
     if (!newAttrName.trim()) return;
-    
-    // Look up the DB ID for this dimension key
     const dimDb = dbDimensions.find(d => d.name === dimKey);
     if (!dimDb) {
-      alert('Error: No se encontró el ID de la dimensión en la base de datos.');
+      alert('Error: No se encontró el ID de la dimensión');
       return;
     }
 
-    setIsAdding(true);
-    try {
-      const response = await fetch('/api/profile/attributes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dimensionId: dimDb.id,
-          name: newAttrName,
-          category: 'other'
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setAttributes(prev => [...prev, result.data]);
-        setNewAttrName('');
-      } else {
-        alert('Error: ' + result.error);
-      }
-    } catch (err) {
-      console.error('Add attr error:', err);
+    setAddingAttr(true);
+    const res = await addAttribute(dimDb.id, newAttrName, 'other');
+    if (res.success) {
+      setNewAttrName('');
+    } else {
+      alert('Error: ' + res.error);
     }
-    setIsAdding(false);
+    setAddingAttr(false);
   };
-
-  const filled = ALL_DIMENSIONS.filter(d => (scores[d.key] ?? 0) > 0).length;
 
   if (loading) {
     return (
@@ -138,7 +59,7 @@ export function DNAView() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
         <div className="mb-4 text-4xl">⚠️</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Conexión</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Perfil</h2>
         <p className="text-gray-500 mb-6 max-w-xs">{error === 'Not authenticated' ? 'Tu sesión ha expirado o no has iniciado sesión.' : error}</p>
         <a href="/login" className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold">Ir al Login</a>
       </div>
@@ -167,7 +88,7 @@ export function DNAView() {
           </div>
         </div>
         <div className="flex-shrink-0 text-right">
-          <p className="text-3xl font-light text-gray-900 leading-none">{filled}<span className="text-base font-normal text-gray-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
+          <p className="text-3xl font-light text-gray-900 leading-none">{filledCount}<span className="text-base font-normal text-gray-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Dimensiones</p>
         </div>
       </div>
@@ -279,7 +200,7 @@ export function DNAView() {
                           type="range" min={0} max={100} step={1}
                           value={score}
                           onClick={(e) => e.stopPropagation()}
-                          onChange={e => setScore(dim.key, parseFloat(e.target.value))}
+                          onChange={e => handleLocalScoreChange(dim.key, parseFloat(e.target.value))}
                           className={`w-full h-1 cursor-pointer accent-gray-900 opacity-60 hover:opacity-100 transition-opacity`}
                         />
                       </div>
@@ -367,13 +288,13 @@ export function DNAView() {
                             className="flex-1 px-4 py-2 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                             value={newAttrName}
                             onChange={e => setNewAttrName(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleAddAttribute(selectedDimKey)}
+                            onKeyDown={e => e.key === 'Enter' && handleAddAttributeLocal(selectedDimKey)}
                           />
                           <button 
-                            onClick={() => handleAddAttribute(selectedDimKey)}
-                            disabled={isAdding || !newAttrName}
+                            onClick={() => handleAddAttributeLocal(selectedDimKey)}
+                            disabled={addingAttr || !newAttrName}
                             className="px-6 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-bold hover:bg-black disabled:opacity-50 transition-all uppercase tracking-widest">
-                            {isAdding ? '...' : 'Agregar'}
+                            {addingAttr ? '...' : 'Agregar'}
                           </button>
                         </div>
                       </div>

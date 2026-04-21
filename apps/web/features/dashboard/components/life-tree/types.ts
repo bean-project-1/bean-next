@@ -2,6 +2,9 @@ export type Leaf = {
   id: string;
   name: string;
   completed: boolean;
+  targetDate?: string;
+  dimensions?: string[];
+  attributes?: string[];
 };
 
 export type Branch = {

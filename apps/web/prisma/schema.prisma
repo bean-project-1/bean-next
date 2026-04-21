@@ -163,7 +163,7 @@ model Goal {
   status      String   @default("active") // active, completed, paused
 
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
 
   user        User       @relation(fields: [userId], references: [id])
   actions     GoalAction[]
@@ -181,9 +181,14 @@ model GoalAction {
   title       String
   isCompleted Boolean  @default(false) @map("is_completed")
 
+  targetDate  DateTime? @map("target_date")
+  dimensions  String[]
+  attributes  String[]
+
   impact      Json?    // { health: +5, energy: +2 }
 
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
 
   goal        Goal @relation(fields: [goalId], references: [id])
 

@@ -2,25 +2,33 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Rocket, Lightbulb, Users, Dumbbell, Globe, Target } from 'lucide-react';
-import { Node } from 'reactflow';
+import { X, BookOpen, Rocket, Lightbulb, Dumbbell, Globe, Target, Trash2 } from 'lucide-react';
 
 interface NodeSidePanelProps {
-  node: Node | null;
+  node: any; // Can be dimension or branch/goal
   onClose: () => void;
+  onDelete?: (id: string) => void;
 }
 
-const NodeSidePanel = ({ node, onClose }: NodeSidePanelProps) => {
+const NodeSidePanel = ({ node, onClose, onDelete }: NodeSidePanelProps) => {
   if (!node) return null;
 
   const getIcon = () => {
-    switch (node.id) {
-      case 'branch-career': return <Rocket />;
-      case 'branch-health': return <Dumbbell />;
-      case 'branch-impact': return <Globe />;
+    // If it's a branch/goal
+    if (node.goal) return <Target />;
+    
+    // If it's a dimension
+    switch (node.id || node.key) {
+      case 'career': return <Rocket />;
+      case 'physical_health': return <Dumbbell />;
+      case 'impact': return <Globe />;
       default: return <Lightbulb />;
     }
   };
+
+  const title = node.goal || node.label || node.data?.label || 'Detail';
+  const description = node.description || node.data?.description;
+  const isGoal = !!node.goal;
 
   return (
     <AnimatePresence>
@@ -36,7 +44,7 @@ const NodeSidePanel = ({ node, onClose }: NodeSidePanelProps) => {
               <div className="p-2 bg-gray-900 text-white rounded-lg">
                 {getIcon()}
               </div>
-              <h3 className="font-bold text-gray-900">{node.data.label}</h3>
+              <h3 className="font-bold text-gray-900 line-clamp-1">{title}</h3>
             </div>
             <button 
               onClick={onClose}
@@ -48,9 +56,9 @@ const NodeSidePanel = ({ node, onClose }: NodeSidePanelProps) => {
 
           <div className="p-6 space-y-8">
             <section>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Description</h4>
-              <p className="text-gray-600 text-sm leading-relaxed leading-relaxed font-medium">
-                {node.data.description || `Explore your trajectory in ${node.data.label}. This dimension covers the growth and impact you've made throughout your journey.`}
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Descripción</h4>
+              <p className="text-gray-600 text-sm leading-relaxed font-medium">
+                {description || `Explora tu trayectoria en ${title}. Esta dimensión cubre el crecimiento e impacto que has tenido en tu camino.`}
               </p>
             </section>
 
@@ -85,9 +93,22 @@ const NodeSidePanel = ({ node, onClose }: NodeSidePanelProps) => {
             </section>
           </div>
 
-          <div className="mt-auto p-6 border-t border-gray-50">
-            <button className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg hover:bg-green-700 transition-colors">
-              Edit Dimension
+          <div className="mt-auto p-6 space-y-3 border-t border-gray-50">
+            {isGoal && onDelete && (
+              <button 
+                onClick={() => {
+                  if (confirm('¿Estás seguro de que quieres eliminar esta meta?')) {
+                    onDelete(node.id);
+                  }
+                }}
+                className="w-full py-4 bg-rose-50 text-rose-600 font-bold rounded-2xl border border-rose-100 hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+              >
+                <Trash2 size={18} />
+                Eliminar Meta
+              </button>
+            )}
+            <button className="w-full py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-lg hover:bg-black transition-colors">
+              {isGoal ? 'Ver Progreso' : 'Ver Dimensión'}
             </button>
           </div>
         </motion.div>

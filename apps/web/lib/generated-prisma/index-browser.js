@@ -220,6 +220,22 @@ exports.Prisma.TaskScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ChatSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  context: 'context',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChatMessageScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  role: 'role',
+  content: 'content',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -240,7 +256,9 @@ exports.Prisma.ModelName = {
   LifeEvent: 'LifeEvent',
   Goal: 'Goal',
   GoalAction: 'GoalAction',
-  Task: 'Task'
+  Task: 'Task',
+  ChatSession: 'ChatSession',
+  ChatMessage: 'ChatMessage'
 };
 
 /**

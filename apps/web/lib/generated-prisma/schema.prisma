@@ -25,6 +25,7 @@ model User {
   lifeStates      LifeState[]
   lifeEvents      LifeEvent[]
   goals           Goal[]
+  chatSessions    ChatSession[]
 
   @@map("users")
 }
@@ -218,4 +219,34 @@ model Task {
   goalAction GoalAction @relation(fields: [goalActionId], references: [id])
 
   @@map("tasks")
+}
+
+//
+// ───────────────── CHAT & COACH ─────────────────
+//
+model ChatSession {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @map("user_id") @db.ObjectId
+  context String // e.g. "global", "goal_123", "insights"
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages ChatMessage[]
+  user     User          @relation(fields: [userId], references: [id])
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String @map("session_id") @db.ObjectId
+  role      String // "user", "assistant", "system"
+  content   String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@map("chat_messages")
 }

@@ -48,6 +48,7 @@ export function PermanentAIChat({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [pendingBranch, setPendingBranch] = useState<BranchData | null>(null);
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [branchCreated, setBranchCreated] = useState(false);
@@ -62,15 +63,23 @@ export function PermanentAIChat({
   useEffect(() => {
     const loadSession = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const res = await fetch(`/api/ai/chat?context=${encodeURIComponent(context)}`);
         const data = await res.json();
         if (data.success) {
           setSessionId(data.data.id);
           setMessages(data.data.messages.filter((m: any) => m.role !== 'system'));
+        } else {
+          // Non-fatal: we can still send, POST will create session
+          console.warn('Could not pre-load session:', data.error);
+          if (data.error === 'Not authenticated') {
+            setLoadError('Tu sesión ha expirado. Por favor recarga la página.');
+          }
         }
       } catch (e) {
         console.error('Failed to load chat session:', e);
+        // Non-fatal: continue without pre-loaded session
       } finally {
         setIsLoading(false);
       }
@@ -114,7 +123,7 @@ export function PermanentAIChat({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isSending || !sessionId) return;
+    if (!input.trim() || isSending) return;
 
     const userMsg = input.trim();
     setInput('');
@@ -126,18 +135,23 @@ export function PermanentAIChat({
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: userMsg })
+        body: JSON.stringify({
+          sessionId,       // may be null — server will create one
+          context,         // passed so server can create session with correct context
+          message: userMsg
+        })
       });
 
       const data = await res.json();
       if (data.success) {
-        const assistantMsg: Message = { role: 'assistant', content: data.reply };
-        setMessages(prev => [...prev, assistantMsg]);
-        if (data.branchData) {
-          setPendingBranch(data.branchData);
-        }
+        if (!sessionId && data.sessionId) setSessionId(data.sessionId);
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        if (data.branchData) setPendingBranch(data.branchData);
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Ocurrió un error. Por favor intenta de nuevo.' }]);
+        const errorMsg = data.error === 'Not authenticated'
+          ? 'Tu sesión ha expirado. Por favor recarga la página.'
+          : `Error: ${data.detail ?? data.error ?? 'Intenta de nuevo.'}`;
+        setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
       }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error de red. Intenta de nuevo.' }]);
@@ -256,6 +270,12 @@ export function PermanentAIChat({
       </div>
 
       {/* Input Area */}
+      {loadError ? (
+        <div className="p-4 bg-red-50 border-t border-red-100 text-center">
+          <p className="text-xs text-red-600 font-medium">{loadError}</p>
+          <button onClick={() => window.location.reload()} className="mt-2 text-xs font-bold text-red-700 underline">Recargar página</button>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-white border-t border-slate-100 flex gap-2 shrink-0">
         <input
           type="text"
@@ -276,6 +296,7 @@ export function PermanentAIChat({
           </svg>
         </button>
       </form>
+      )}
     </div>
   );
 }

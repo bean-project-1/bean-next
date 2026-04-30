@@ -44,15 +44,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { sessionId, message } = await req.json();
-    if (!sessionId || !message?.trim()) {
-      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    const { sessionId, message, context } = await req.json();
+    if (!message?.trim()) {
+      return NextResponse.json({ success: false, error: 'Missing message' }, { status: 400 });
     }
 
-    // 1. Load the session + history + user DNA
+    // 1. Resolve or create session
+    let resolvedSessionId = sessionId;
+    if (!resolvedSessionId) {
+      // Create a new session if none provided
+      const ctx = context ?? 'insights';
+      const newSession = await prisma.chatSession.create({
+        data: { userId, context: ctx }
+      });
+      resolvedSessionId = newSession.id;
+    }
     const [session, user] = await Promise.all([
       prisma.chatSession.findUnique({
-        where: { id: sessionId },
+        where: { id: resolvedSessionId },
         include: { messages: { orderBy: { createdAt: 'asc' } } }
       }),
       prisma.user.findUnique({
@@ -125,7 +134,7 @@ REGLAS DE FORMATO:
 
     // 4. Save user message first
     await prisma.chatMessage.create({
-      data: { sessionId, role: 'user', content: message }
+      data: { sessionId: resolvedSessionId, role: 'user', content: message }
     });
 
     // 5. Build full messages array for AI
@@ -176,12 +185,16 @@ REGLAS DE FORMATO:
 
     // 8. Save assistant reply (clean version)
     await prisma.chatMessage.create({
-      data: { sessionId, role: 'assistant', content: cleanReply }
+      data: { sessionId: resolvedSessionId, role: 'assistant', content: cleanReply }
     });
 
-    return NextResponse.json({ success: true, reply: cleanReply, branchData });
-  } catch (error) {
-    console.error('POST /api/ai/chat Error:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: true, reply: cleanReply, branchData, sessionId: resolvedSessionId });
+  } catch (error: any) {
+    console.error('POST /api/ai/chat Error:', error?.message ?? error);
+    return NextResponse.json({
+      success: false,
+      error: 'Internal Server Error',
+      detail: process.env.NODE_ENV !== 'production' ? (error?.message ?? String(error)) : undefined
+    }, { status: 500 });
   }
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ALL_DIMENSIONS, CAT_COLORS } from '../onboarding/constants';
 import {
-  SpiderChart,
+  AttributesWordMap,
   PillarCard,
   LifeScoreRing,
   DashboardEmptyState,
@@ -15,6 +15,7 @@ export function DashboardView() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [dimScores, setDimScores] = useState<DimScore[]>([]);
+  const [attributes, setAttributes] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'dimensions'>('overview');
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export function DashboardView() {
         if (json.success) {
           const { user } = json.data;
           setProfile({ userId: user.id, name: user.name, email: user.email });
+          setAttributes(user.attributes || []);
 
           const dbScores: Record<string, number> = {};
           if (json.data.latestState?.scores) {
@@ -121,20 +123,10 @@ export function DashboardView() {
 
             <div className="lg:col-span-2 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest opacity-40">Radar de dimensiones</h2>
-                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">{filled} DATA POINTS</span>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest opacity-40">Mapa de Características</h2>
+                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">{attributes.length} ATRIBUTOS</span>
               </div>
-              {filled > 2
-                ? <SpiderChart dims={dimScores.filter(d => d.score > 0)} />
-                : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <p className="text-gray-400 text-sm font-medium">Completa más dimensiones para ver el radar</p>
-                    <a href="/dna" className="mt-3 text-xs font-bold text-green-600 hover:text-green-700">
-                      Completar mi ADN →
-                    </a>
-                  </div>
-                )
-              }
+              <AttributesWordMap attributes={attributes} />
             </div>
           </div>
 

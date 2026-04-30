@@ -13,21 +13,20 @@ const CATEGORIES = [
 
 export function DNAView() {
   const {
-    scores, setScores, attributes, dbDimensions, loading, saving, saved, error, pct, filledCount,
-    updateScores, addAttribute
+    attributes, dbDimensions, loading, error, addAttribute
   } = useProfile();
 
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
   const [newAttrName, setNewAttrName] = useState('');
   const [addingAttr, setAddingAttr] = useState(false);
 
-  const handleLocalScoreChange = (key: string, score: number) => {
-    setScores(prev => ({ ...prev, [key]: score }));
-  };
+  const attributesCount = ALL_DIMENSIONS.reduce((acc, dim) => {
+    acc[dim.key] = attributes.filter(a => a.dimension?.name === dim.key || a.dimensionId === dim.id).length;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const handleSave = async () => {
-    await updateScores(scores);
-  };
+  const filledCount = Object.values(attributesCount).filter(c => c > 0).length;
+  const pct = Math.round((filledCount / ALL_DIMENSIONS.length) * 100);
 
   const handleAddAttributeLocal = async (dimKey: string) => {
     if (!newAttrName.trim()) return;
@@ -71,8 +70,7 @@ export function DNAView() {
       <div className="mb-8">
         <h1 className="text-3xl font-light text-gray-900 tracking-tight">Mi <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
         <p className="mt-1 text-sm text-gray-400 font-medium">
-          Tu huella única en las 19 dimensiones BEAN.
-          Actualiza tu perfil moviendo los indicadores.
+          Tus características, habilidades y valores en las 19 dimensiones BEAN.
         </p>
       </div>
 
@@ -98,7 +96,7 @@ export function DNAView() {
           <div className="sticky top-8">
             <div className="relative rounded-3xl border border-gray-100 bg-white p-8 shadow-2xl shadow-gray-200/50 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-green-50/20 via-transparent to-transparent pointer-events-none" />
-              <DNADiagram scores={scores} />
+              <DNADiagram attributesCount={attributesCount} />
 
               <div className="mt-8 space-y-2">
                 {CATEGORIES.map(({ cat, label }) => {
@@ -109,30 +107,20 @@ export function DNAView() {
                   };
                   const cColor = colors[cat] ?? 'bg-gray-500';
                   const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
-                  const avg = dims.reduce((s: number, d: any) => s + (scores[d.key] ?? 0), 0) / dims.length;
+                  const catCount = dims.reduce((s: number, d: any) => s + (attributesCount[d.key] ?? 0), 0);
+                  
                   return (
                     <div key={cat} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className={`h-2 w-2 rounded-full ${cColor}`} />
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
                       </div>
-                      <span className={`text-xs font-bold text-gray-900`}>{avg.toFixed(1)}</span>
+                      <span className={`text-xs font-bold text-gray-900`}>{catCount} ítems</span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`mt-6 w-full rounded-2xl py-4 text-sm font-bold transition-all shadow-xl active:scale-95 ${
-                saved
-                  ? 'bg-green-100 text-green-700 border border-green-200'
-                  : 'bg-gray-900 text-white hover:bg-black shadow-gray-900/10'
-              }`}>
-              {saving ? 'Guardando…' : saved ? '✓ Perfil Guardado' : 'Guardar ADN'}
-            </button>
           </div>
         </div>
 
@@ -152,8 +140,8 @@ export function DNAView() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {dims.map((dim: any) => {
-                    const score = scores[dim.key] ?? 0;
-                    const hasData = score > 0;
+                    const count = attributesCount[dim.key] ?? 0;
+                    const hasData = count > 0;
                     const dimAttributes = attributes.filter(a => 
                       a.dimension?.name === dim.key || a.dimensionId === dim.id
                     );
@@ -174,8 +162,8 @@ export function DNAView() {
                         </div>
                         
                         {/* Attributes Chips (Mini list) */}
-                        {dimAttributes.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-3">
+                        {dimAttributes.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mb-1">
                             {dimAttributes.slice(0, 3).map((attr, idx) => (
                               <span key={idx} className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
                                 attr.category === 'skill' ? 'bg-blue-50 text-blue-600' : 
@@ -190,19 +178,11 @@ export function DNAView() {
                               <span className="text-[8px] font-bold text-gray-300">+{dimAttributes.length - 3}</span>
                             )}
                           </div>
+                        ) : (
+                          <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">
+                            Sin características
+                          </div>
                         )}
-
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Autopercepción</span>
-                          <span className="text-[10px] font-bold text-gray-900">{Math.round(score)}%</span>
-                        </div>
-                        <input
-                          type="range" min={0} max={100} step={1}
-                          value={score}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={e => handleLocalScoreChange(dim.key, parseFloat(e.target.value))}
-                          className={`w-full h-1 cursor-pointer accent-gray-900 opacity-60 hover:opacity-100 transition-opacity`}
-                        />
                       </div>
                     );
                   })}
@@ -222,9 +202,8 @@ export function DNAView() {
             <div className="p-8">
               {(() => {
                 const dim = ALL_DIMENSIONS.find(d => d.key === selectedDimKey);
-                const score = scores[selectedDimKey] ?? 0;
-                const dimAttributes = attributes.filter(a => a.dimension?.name === selectedDimKey);
                 if (!dim) return null;
+                const dimAttributes = attributes.filter(a => a.dimension?.name === selectedDimKey);
                 
                 return (
                   <>
@@ -237,8 +216,6 @@ export function DNAView() {
                           <h2 className="text-3xl font-light text-gray-900 tracking-tight leading-none">{dim.label}</h2>
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dim.cat}</span>
-                            <span className="h-1 w-1 rounded-full bg-gray-200" />
-                             <span className="text-xs font-bold text-gray-900">Score: {Math.round(score)}%</span>
                           </div>
                         </div>
                       </div>
@@ -301,7 +278,7 @@ export function DNAView() {
 
                       <div className="pt-6 border-t border-gray-100">
                         <p className="text-xs text-gray-400 font-medium leading-relaxed">
-                          Estos atributos influyen en tu puntuación de {dim.label}. Puedes editarlos desde el coach o agregando nueva evidencia de vida.
+                          Estos atributos construyen tu identidad en la dimensión de {dim.label}. Puedes documentarlos desde el coach o al cumplir tus metas.
                         </p>
                       </div>
                     </div>

@@ -15,7 +15,7 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   
-  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, error } = useLifeTree();
+  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateTask, error } = useLifeTree();
 
   const handleLeafClick = (id: string) => {
     console.log('handleLeafClick triggered for ID:', id);
@@ -62,6 +62,20 @@ export default function HomePage() {
       setSelectedAction(null);
     } else {
       alert('Error: ' + res.error);
+    }
+  };
+
+  const handleToggleTask = async (taskId: string, isCompleted: boolean) => {
+    if (!updateTask) return;
+    const res = await updateTask(taskId, isCompleted);
+    if (res.success) {
+      // Update selected action tasks optimistic UI
+      if (selectedAction) {
+        const newTasks = selectedAction.tasks.map((t: any) => t.id === taskId ? { ...t, isCompleted } : t);
+        setSelectedAction({ ...selectedAction, tasks: newTasks });
+      }
+    } else {
+      alert('Error al actualizar la tarea: ' + res.error);
     }
   };
 
@@ -123,6 +137,7 @@ export default function HomePage() {
           onClose={() => setSelectedAction(null)}
           onDelete={handleDeleteAction}
           onToggle={handleToggleAction}
+          onToggleTask={handleToggleTask}
         />
       )}
     </div>

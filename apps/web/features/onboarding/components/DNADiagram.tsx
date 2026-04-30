@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { ALL_DIMENSIONS, CAT_COLORS } from '../constants';
 
 interface Props {
-  scores: Record<string, number>;
+  attributesCount: Record<string, number>;
 }
 
 const W = 200;
@@ -17,7 +17,7 @@ const CX = W / 2;
 const AMP = 60;
 const ROW_H = (H - 40) / (ALL_DIMENSIONS.length - 1);
 
-export function DNADiagram({ scores }: Props) {
+export function DNADiagram({ attributesCount }: Props) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -77,11 +77,11 @@ export function DNADiagram({ scores }: Props) {
         const sinVal = Math.sin(i * 0.7 + phase);
         const lx = CX + AMP * sinVal;
         const rx = CX - AMP * sinVal;
-        const score = scores[dim.key] ?? 0;
-        const hasData = score > 0;
+        const count = attributesCount[dim.key] ?? 0;
+        const hasData = count > 0;
         const c = CAT_COLORS[dim.cat as keyof typeof CAT_COLORS];
         const opacity = hasData ? 0.8 : 0.1;
-        const nodeR = hasData ? 2 + (score / 100) * 4 : 1.5;
+        const nodeR = hasData ? 2 + Math.min(count, 5) : 1.5;
 
         return (
           <g key={dim.key}>

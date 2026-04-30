@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
     const goals = await (prisma as any).goal.findMany({
       where: { userId },
       include: {
-        actions: true
+        actions: {
+          include: { tasks: true }
+        }
       }
     });
 
@@ -36,7 +38,9 @@ export async function GET(req: NextRequest) {
           completed: action.isCompleted,
           targetDate: action.targetDate,
           dimensions: action.dimensions || [],
-          attributes: action.attributes || []
+          attributes: action.attributes || [],
+          description: action.description,
+          tasks: action.tasks || []
         }))
       }))
     };

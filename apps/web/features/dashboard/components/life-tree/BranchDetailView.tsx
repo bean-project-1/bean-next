@@ -158,8 +158,8 @@ export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, on
           <div className="h-3 w-3 rounded-full" style={{ background: branchColor }} />
           <h2 className="text-xl font-bold text-slate-900">{branch.goal}</h2>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400 font-medium whitespace-nowrap">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <span className="hidden sm:inline text-sm text-slate-400 font-medium whitespace-nowrap">
             {branch.leaves.length} actividades
           </span>
           <div className="hidden md:flex gap-1">
@@ -183,7 +183,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, on
             {onAddAction && (
               <button
                 onClick={() => setIsAdding(true)}
-                className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center gap-2"
+                className="rounded-xl bg-emerald-50 p-2 sm:px-4 sm:py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-100 transition-colors flex items-center gap-2"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -199,7 +199,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, on
                     await onDelete(branch.id);
                   }
                 }}
-                className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-100 transition-colors flex items-center gap-2"
+                className="rounded-xl bg-rose-50 p-2 sm:px-4 sm:py-2 text-sm font-bold text-rose-600 hover:bg-rose-100 transition-colors flex items-center gap-2"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
@@ -209,9 +209,10 @@ export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, on
             )}
             <button
               onClick={onClose}
-              className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors"
+              className="rounded-xl bg-slate-100 p-2 sm:px-4 sm:py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 transition-colors"
             >
-              ✕ Cerrar
+              <span className="sm:hidden">✕</span>
+              <span className="hidden sm:inline">✕ Cerrar</span>
             </button>
           </div>
         </div>
@@ -467,8 +468,8 @@ export function BranchDetailView({ branch, onClose, onDelete, onToggleAction, on
       </div>
       {/* ── Add Activity Overlay ── */}
       {isAdding && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-white rounded-3xl p-5 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-6">Nueva Actividad</h3>
             
             <div className="space-y-6">

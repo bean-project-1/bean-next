@@ -75,6 +75,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
     onLeafClick?.(id);
   };
 
+  const getQualitativeState = (score: number) => {
+    if (score < 30) return 'Brotando';
+    if (score < 70) return 'Creciendo';
+    return 'Floreciendo';
+  };
+
+  const lifeState = getQualitativeState(data.growthScore);
+
   return (
     <div ref={containerRef} className="w-full min-h-screen flex items-center justify-center bg-white relative font-sans overflow-visible pb-32 pt-20">
       {/* Top Score Indicator */}
@@ -85,22 +93,22 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       >
         <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-slate-100 px-6 py-3 rounded-2xl shadow-sm group-hover:shadow-md transition-all">
           <div className="w-10 h-10 rounded-full border-2 border-emerald-500 flex items-center justify-center bg-emerald-50/50">
-            <span className="text-sm font-bold text-slate-800">{data.growthScore}</span>
+            <span className="text-xl">🌱</span>
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Life Growth</span>
-            <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter">Bean Vitality</span>
+            <span className="text-[11px] text-emerald-600 font-bold uppercase tracking-widest">{lifeState}</span>
           </div>
         </div>
       </div>
 
       {/* Global Status (if no leaf selected) */}
       {!clickedLeafId && (
-        <div className="fixed bottom-16 right-10 flex flex-col items-end pointer-events-none transition-opacity duration-300 z-30">
-          <span className="text-[32px] font-light text-slate-300 tracking-tighter uppercase tabular-nums">
-            {data.growthScore}<span className="text-sm ml-1">%</span>
+        <div className="fixed bottom-24 sm:bottom-16 right-4 sm:right-10 flex flex-col items-end pointer-events-none transition-opacity duration-300 z-30">
+          <span className="text-2xl sm:text-3xl font-light text-slate-400 tracking-tight uppercase">
+            {lifeState}
           </span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">BEAN VITALITY</span>
+          <span className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">ESTADO ACTUAL</span>
         </div>
       )}
 
@@ -287,14 +295,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
       </svg>
 
       {/* Legend */}
-      <div className="fixed bottom-10 left-20 sm:left-64 flex flex-col gap-2 bg-white/50 p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-2 rounded-full bg-emerald-500 shadow-sm" />
-          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Completado</span>
+      <div className="fixed bottom-24 sm:bottom-10 left-4 sm:left-64 flex flex-col gap-2 bg-white/50 p-3 sm:p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-3 h-1.5 sm:w-4 sm:h-2 rounded-full bg-emerald-500 shadow-sm" />
+          <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-widest">Completado</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-2 rounded-full bg-slate-200 shadow-sm" />
-          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pendiente</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-3 h-1.5 sm:w-4 sm:h-2 rounded-full bg-slate-200 shadow-sm" />
+          <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pendiente</span>
         </div>
       </div>
 

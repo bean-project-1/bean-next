@@ -5,6 +5,8 @@ export type Leaf = {
   targetDate?: string;
   dimensions?: string[];
   attributes?: string[];
+  description?: string;
+  tasks?: any[];
 };
 
 export type Branch = {

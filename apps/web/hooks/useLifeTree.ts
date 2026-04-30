@@ -101,6 +101,26 @@ export function useLifeTree() {
     }
   };
 
+  const updateTask = async (id: string, isCompleted: boolean) => {
+    try {
+      const res = await fetch(`/api/profile/goals/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted }),
+      });
+      if (res.ok) {
+        await fetchTree();
+        return { success: true };
+      } else {
+        const err = await res.json();
+        return { success: false, error: err.error };
+      }
+    } catch (err) {
+      console.error('Failed to update task:', err);
+      return { success: false, error: 'Error de red' };
+    }
+  };
+
   useEffect(() => {
     fetchTree();
   }, [fetchTree]);
@@ -113,6 +133,7 @@ export function useLifeTree() {
     deleteAction,
     updateAction,
     addAction,
+    updateTask,
     refresh: fetchTree
   };
 }

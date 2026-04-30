@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { PrimaryButton, InputField } from '@bean/ui';
 
 interface Message {
@@ -70,6 +70,20 @@ export function AICoachModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const renderFormattedText = (text: string) => {
+    return text.split('\n').map((line, i, arr) => (
+      <React.Fragment key={i}>
+        {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={j} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>;
+          }
+          return part;
+        })}
+        {i !== arr.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   if (success) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -83,8 +97,8 @@ export function AICoachModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-2xl h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-2xl h-full sm:h-[80vh] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center gap-3">
@@ -107,13 +121,13 @@ export function AICoachModal({ onClose }: { onClose: () => void }) {
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[75%] rounded-2xl px-5 py-3 text-sm ${
+                className={`max-w-[75%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                   msg.role === 'user' 
                     ? 'bg-violet-600 text-white rounded-tr-sm' 
-                    : 'bg-white border border-slate-200 text-slate-700 shadow-sm rounded-tl-sm whitespace-pre-wrap'
+                    : 'bg-white border border-slate-200 text-slate-700 shadow-sm rounded-tl-sm'
                 }`}
               >
-                {msg.content}
+                {renderFormattedText(msg.content)}
               </div>
             </div>
           ))}

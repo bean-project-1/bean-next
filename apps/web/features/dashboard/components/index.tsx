@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ALL_DIMENSIONS, CAT_COLORS } from '../../onboarding/constants';
 
+export * from './AttributesWordMap';
+
 // ── Types ──────────────────────────────────────────────
 export interface DimScore { key: string; label: string; score: number; cat: string; }
 export interface DashboardProfile { userId: string; name?: string; email?: string; }

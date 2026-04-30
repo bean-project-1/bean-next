@@ -14,7 +14,6 @@ import { AICoachModal } from '@/features/dashboard/components/AICoachModal';
 
 const NAV = [
   { href: '/home',      icon: '🌳', label: 'Mi Árbol'   },
-  { href: '/path',      icon: '🌱', label: 'Mi Camino'  },
   { href: '/future',    icon: '✨', label: 'Mi Futuro'  },
   { href: '/dna',       icon: '🧬', label: 'Mi ADN'     },
   { href: '/dashboard', icon: '📊', label: 'Dashboard'  },
@@ -28,7 +27,8 @@ function Sidebar() {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col items-center gap-2 border-r border-gray-100 bg-white py-5 sm:w-56 sm:items-start sm:px-4">
+      {/* Sidebar (Desktop Only) */}
+      <aside className="hidden sm:flex fixed left-0 top-0 z-40 h-screen w-56 flex-col items-start gap-2 border-r border-gray-100 bg-white py-5 px-4">
       {/* Logo */}
       <Link href="/home" className="mb-6 flex items-center gap-3 px-1 sm:px-0">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-600 shadow-sm">
@@ -58,24 +58,57 @@ function Sidebar() {
         {/* Botón Mágico AI Coach */}
         <button 
           onClick={() => setCoachOpen(true)}
-          className="group mt-4 flex w-full items-center justify-center sm:justify-start gap-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-2 py-2.5 text-sm text-white shadow-md shadow-violet-500/20 transition-all hover:-translate-y-px hover:shadow-violet-500/40 sm:px-3"
+          className="group mt-4 flex w-full items-center justify-start gap-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-sm text-white shadow-md shadow-violet-500/20 transition-all hover:-translate-y-px hover:shadow-violet-500/40"
         >
           <span className="text-base">🧠</span>
-          <span className="hidden font-semibold sm:block">Coach AI</span>
+          <span className="font-semibold">Coach AI</span>
         </button>
       </nav>
 
       {/* Footer */}
-      <div className="mt-auto hidden w-full border-t border-gray-100 pt-4 sm:block">
-        <div className="flex items-center gap-2.5 rounded-xl p-2 hover:bg-gray-50 transition-colors cursor-pointer">
-          <div className="h-7 w-7 rounded-full bg-gray-200 flex-shrink-0" />
+      <div className="mt-auto w-full border-t border-gray-100 pt-4">
+        <Link href="/profile" className="flex items-center gap-2.5 rounded-xl p-2 hover:bg-gray-50 transition-colors cursor-pointer">
+          <div className="h-7 w-7 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-xs">👤</div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-xs font-semibold text-gray-900">Mi perfil</p>
             <p className="text-[10px] text-gray-400">BEAN v1</p>
           </div>
-        </div>
+        </Link>
       </div>
       </aside>
+
+      {/* Bottom Navigation (Mobile Only) */}
+      <nav className="sm:hidden fixed bottom-0 left-0 w-full z-40 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 py-2 pb-safe flex items-center justify-around">
+        {NAV.slice(0, 2).map(n => {
+          const active = path === n.href || path.startsWith(n.href + '/');
+          return (
+            <Link key={n.href} href={n.href} className="flex flex-col items-center gap-1 p-2 w-16">
+              <span className={`text-xl transition-transform ${active ? 'scale-110' : 'opacity-70'}`}>{n.icon}</span>
+              <span className={`text-[9px] font-bold ${active ? 'text-green-600' : 'text-slate-400'}`}>{n.label.split(' ')[1] || n.label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Floating Coach Button Center */}
+        <div className="relative -top-5">
+          <button 
+            onClick={() => setCoachOpen(true)}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30 transition-transform active:scale-95"
+          >
+            <span className="text-2xl">🧠</span>
+          </button>
+        </div>
+
+        {NAV.slice(2, 4).map(n => {
+          const active = path === n.href || path.startsWith(n.href + '/');
+          return (
+            <Link key={n.href} href={n.href} className="flex flex-col items-center gap-1 p-2 w-16">
+              <span className={`text-xl transition-transform ${active ? 'scale-110' : 'opacity-70'}`}>{n.icon}</span>
+              <span className={`text-[9px] font-bold ${active ? 'text-green-600' : 'text-slate-400'}`}>{n.label.split(' ')[1] || n.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* Modal Renderizado Condicionalmente */}
       {coachOpen && <AICoachModal onClose={() => setCoachOpen(false)} />}
@@ -87,8 +120,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-white">
       <Sidebar />
-      {/* Content area — offset for sidebar */}
-      <main className="flex-1 pl-16 sm:pl-56 bg-white min-h-screen">
+      {/* Content area — offset for sidebar on desktop, padding bottom for nav on mobile */}
+      <main className="flex-1 w-full sm:pl-56 pb-20 sm:pb-0 bg-white min-h-screen relative">
         {children}
       </main>
     </div>

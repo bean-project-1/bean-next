@@ -197,11 +197,25 @@ exports.Prisma.GoalActionScalarFieldEnum = {
   id: 'id',
   goalId: 'goalId',
   title: 'title',
+  description: 'description',
   isCompleted: 'isCompleted',
   targetDate: 'targetDate',
   dimensions: 'dimensions',
   attributes: 'attributes',
   impact: 'impact',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  goalActionId: 'goalActionId',
+  title: 'title',
+  description: 'description',
+  isCompleted: 'isCompleted',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  estimatedHours: 'estimatedHours',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -225,7 +239,8 @@ exports.Prisma.ModelName = {
   LifeState: 'LifeState',
   LifeEvent: 'LifeEvent',
   Goal: 'Goal',
-  GoalAction: 'GoalAction'
+  GoalAction: 'GoalAction',
+  Task: 'Task'
 };
 
 /**

@@ -32,12 +32,22 @@ FORMATO JSON OBLIGATORIO DE SALIDA (sin Markdown ni backticks, solo el JSON raw)
   "dimension": "nombre_de_la_dimension_en_ingles",
   "actions": [
     {
-      "title": "Nombre de la tarea/habilidad/curso",
-      "impact": {"career": 5, "knowledge": 3}
+      "title": "Nombre de la accion/habilidad/curso",
+      "description": "Explicación detallada de lo que el usuario debe hacer para esta acción.",
+      "impact": {"career": 5, "knowledge": 3},
+      "tasks": [
+        {
+          "title": "Nombre de la tarea o paso medible",
+          "description": "Descripción detallada de cómo ejecutar este paso específico",
+          "startDate": "2026-05-01T00:00:00Z",
+          "endDate": "2026-05-05T00:00:00Z",
+          "estimatedHours": 10.5
+        }
+      ]
     }
   ]
 }
-Nota: El campo dimension debe ser uno de los originales (ej. "career", "knowledge", "skills", "values").`
+Nota: El campo dimension debe ser uno de los originales (ej. "career", "knowledge", "skills", "values"). Asume fechas relativas al día de hoy para startDate y endDate en formato ISO8601.`
     };
 
     const conversation = chatHistory.map((msg: any) => ({
@@ -102,8 +112,19 @@ Nota: El campo dimension debe ser uno de los originales (ej. "career", "knowledg
           data: {
             goalId: newGoal.id,
             title: action.title,
+            description: action.description,
             isCompleted: false,
             impact: action.impact || {},
+            tasks: {
+              create: (action.tasks || []).map((task: any) => ({
+                title: task.title,
+                description: task.description,
+                isCompleted: false,
+                startDate: task.startDate ? new Date(task.startDate) : null,
+                endDate: task.endDate ? new Date(task.endDate) : null,
+                estimatedHours: task.estimatedHours || 0,
+              }))
+            }
           }
         });
       }

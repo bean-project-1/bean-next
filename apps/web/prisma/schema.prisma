@@ -179,6 +179,7 @@ model GoalAction {
   goalId      String   @db.ObjectId @map("goal_id")
 
   title       String
+  description String?
   isCompleted Boolean  @default(false) @map("is_completed")
 
   targetDate  DateTime? @map("target_date")
@@ -191,6 +192,30 @@ model GoalAction {
   updatedAt   DateTime? @updatedAt @map("updated_at")
 
   goal        Goal @relation(fields: [goalId], references: [id])
+  tasks       Task[]
 
   @@map("goal_actions")
+}
+
+//
+// ───────────────── TASKS (PASOS MEDIBLES) ─────────────────
+//
+model Task {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  goalActionId    String   @db.ObjectId @map("goal_action_id")
+
+  title           String
+  description     String?
+  isCompleted     Boolean  @default(false) @map("is_completed")
+
+  startDate       DateTime? @map("start_date")
+  endDate         DateTime? @map("end_date")
+  estimatedHours  Float?    @map("estimated_hours")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+
+  goalAction      GoalAction @relation(fields: [goalActionId], references: [id])
+
+  @@map("tasks")
 }

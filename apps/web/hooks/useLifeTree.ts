@@ -101,6 +101,26 @@ export function useLifeTree() {
     }
   };
 
+  const updateGoal = async (id: string, data: { goal?: string; description?: string }) => {
+    try {
+      const res = await fetch(`/api/profile/goals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        await fetchTree();
+        return { success: true };
+      } else {
+        const err = await res.json();
+        return { success: false, error: err.error };
+      }
+    } catch (err) {
+      console.error('Failed to update goal:', err);
+      return { success: false, error: 'Error de red' };
+    }
+  };
+
   const updateTask = async (id: string, isCompleted: boolean) => {
     try {
       const res = await fetch(`/api/profile/goals/tasks/${id}`, {
@@ -133,6 +153,7 @@ export function useLifeTree() {
     deleteAction,
     updateAction,
     addAction,
+    updateGoal,
     updateTask,
     refresh: fetchTree
   };

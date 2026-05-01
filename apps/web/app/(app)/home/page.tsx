@@ -15,7 +15,7 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   
-  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateTask, error } = useLifeTree();
+  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, error } = useLifeTree();
 
   const handleLeafClick = (id: string) => {
     console.log('handleLeafClick triggered for ID:', id);
@@ -115,6 +115,10 @@ export default function HomePage() {
             branch={branch}
             onClose={() => setSelectedBranchId(null)}
             onDelete={handleDeleteGoal}
+            onUpdateGoal={async (id, data) => {
+              const res = await updateGoal(id, data);
+              if (!res.success) alert('Error: ' + res.error);
+            }}
             onToggleAction={handleToggleAction}
             onDeleteAction={handleDeleteAction}
             onLeafClick={handleLeafClick}

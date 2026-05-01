@@ -12,6 +12,7 @@ export type Leaf = {
 export type Branch = {
   id: string;
   goal: string;
+  description?: string;
   progress: number;
   leaves: Leaf[];
 };

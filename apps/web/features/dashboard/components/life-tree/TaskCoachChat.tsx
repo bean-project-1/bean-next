@@ -14,149 +14,173 @@ interface TaskCoachChatProps {
   onCloseMobile?: () => void;
 }
 
+const QUICK_QUESTIONS = [
+  '¿Cómo empiezo?',
+  'Dame los pasos concretos',
+  '¿Cuánto tiempo me tomará?',
+  'Tengo dudas, ayúdame',
+];
+
+function renderFormatted(text: string) {
+  return text.split('\n').map((line, i, arr) => (
+    <React.Fragment key={i}>
+      {line.split(/(\*\*.*?\*\*)/g).map((part, j) =>
+        part.startsWith('**') && part.endsWith('**')
+          ? <strong key={j} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>
+          : part
+      )}
+      {i !== arr.length - 1 && <br />}
+    </React.Fragment>
+  ));
+}
+
 export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobile }: TaskCoachChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load from sessionStorage on mount or taskId change
+  // Load from sessionStorage
   useEffect(() => {
     const saved = sessionStorage.getItem(`coach-chat-${taskId}`);
-    if (saved) {
-      setMessages(JSON.parse(saved));
-    } else {
-      setMessages([]);
-    }
+    setMessages(saved ? JSON.parse(saved) : []);
   }, [taskId]);
 
-  // Save to sessionStorage whenever messages change
+  // Persist on change
   useEffect(() => {
     if (messages.length > 0) {
       sessionStorage.setItem(`coach-chat-${taskId}`, JSON.stringify(messages));
     }
   }, [messages, taskId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMsg = input.trim();
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
     setInput('');
-    const newMessages: Message[] = [...messages, { role: 'user', content: userMsg }];
-    setMessages(newMessages);
+    const next: Message[] = [...messages, { role: 'user', content: trimmed }];
+    setMessages(next);
     setIsLoading(true);
-
     try {
       const res = await fetch('/api/ai/task-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskTitle,
-          taskDescription,
-          messages: newMessages
-        }),
+        body: JSON.stringify({ taskTitle, taskDescription, messages: next }),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
-      } else {
-        const err = await res.json();
-        console.error('Error from AI:', err);
-        setMessages([...newMessages, { role: 'assistant', content: 'Lo siento, hubo un error de conexión con mi cerebro. Intenta de nuevo.' }]);
-      }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      setMessages([...newMessages, { role: 'assistant', content: 'Error de red. Por favor intenta de nuevo.' }]);
+      const data = await res.json();
+      const reply = res.ok ? data.reply : 'Lo siento, hubo un error. Intenta de nuevo.';
+      setMessages([...next, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages([...next, { role: 'assistant', content: 'Error de red. Por favor intenta de nuevo.' }]);
     } finally {
       setIsLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
-  };
-
-  const renderFormattedText = (text: string) => {
-    return text.split('\n').map((line, i, arr) => (
-      <React.Fragment key={i}>
-        {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
-          if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={j} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>;
-          }
-          return part;
-        })}
-        {i !== arr.length - 1 && <br />}
-      </React.Fragment>
-    ));
   };
 
   return (
     <div className="w-full h-full flex flex-col bg-white">
-      <div className="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🤖</span>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Coach de Tarea</span>
-            <span className="text-sm font-bold text-slate-700 leading-tight line-clamp-1">{taskTitle}</span>
-          </div>
+      {/* Header */}
+      <div className="shrink-0 px-5 py-3 border-b border-slate-100 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-lg shadow-sm shrink-0">
+          🤖
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Coach — Guía de tarea</p>
+          <p className="text-sm font-bold text-slate-800 truncate leading-tight">{taskTitle}</p>
         </div>
         {onCloseMobile && (
-          <button onClick={onCloseMobile} className="lg:hidden p-2 bg-slate-50 text-slate-500 rounded-full hover:bg-slate-100">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <button
+            onClick={onCloseMobile}
+            className="lg:hidden w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors shrink-0"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         )}
       </div>
-      
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/60">
         {messages.length === 0 && (
-          <div className="text-center text-xs text-slate-400 italic mt-4">
-            Pregúntame cómo empezar o pídemelo paso a paso.
+          <div className="flex flex-col items-center text-center pt-6 pb-2 gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center text-3xl">
+              💬
+            </div>
+            <div>
+              <p className="font-bold text-slate-700 text-sm mb-1">¿En qué te ayudo?</p>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto">
+                Puedo explicarte cómo hacer esta tarea, darte un plan paso a paso o resolver tus dudas.
+              </p>
+            </div>
+            {/* Quick suggestions */}
+            <div className="flex flex-col gap-2 w-full">
+              {QUICK_QUESTIONS.map(q => (
+                <button
+                  key={q}
+                  onClick={() => send(q)}
+                  className="w-full text-left px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-600 font-medium hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-all"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
+
         {messages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-              msg.role === 'user' 
-                ? 'bg-emerald-500 text-white rounded-br-none' 
-                : 'bg-white border border-slate-100 text-slate-600 rounded-bl-none shadow-sm'
+          <div key={idx} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'assistant' && (
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs shrink-0 mb-0.5">🤖</div>
+            )}
+            <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              msg.role === 'user'
+                ? 'bg-violet-600 text-white rounded-br-none shadow-sm'
+                : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none shadow-sm'
             }`}>
-              {renderFormattedText(msg.content)}
+              {renderFormatted(msg.content)}
             </div>
           </div>
         ))}
+
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-slate-100 text-slate-400 rounded-2xl rounded-bl-none px-4 py-2 text-sm shadow-sm flex gap-1 items-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-bounce delay-75" />
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-bounce delay-150" />
+          <div className="flex items-end gap-2 justify-start">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs shrink-0">🤖</div>
+            <div className="bg-white border border-slate-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1.5 items-center">
+              {[0, 75, 150].map(d => (
+                <div key={d} className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />
+              ))}
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-slate-100 flex gap-2 shrink-0">
+      {/* Input */}
+      <form
+        onSubmit={e => { e.preventDefault(); send(input); }}
+        className="shrink-0 p-3 bg-white border-t border-slate-100 flex gap-2"
+      >
         <input
+          ref={inputRef}
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Escribe tu duda o pide los pasos..."
-          className="flex-1 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-slate-700 placeholder-slate-400 outline-none transition-all"
+          onChange={e => setInput(e.target.value)}
+          placeholder="Escribe tu pregunta..."
           disabled={isLoading}
+          className="flex-1 bg-slate-50 border border-slate-200 focus:border-violet-400 focus:ring-1 focus:ring-violet-400/20 rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 outline-none transition-all"
         />
-        <button 
+        <button
           type="submit"
           disabled={!input.trim() || isLoading}
-          className="bg-emerald-500 text-white px-4 py-2 rounded-xl disabled:opacity-50 hover:bg-emerald-600 transition-colors flex items-center justify-center shadow-sm"
+          className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl disabled:opacity-40 transition-colors flex items-center justify-center shadow-sm"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
         </button>
       </form>
     </div>

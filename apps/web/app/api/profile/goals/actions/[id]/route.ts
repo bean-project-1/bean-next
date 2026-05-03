@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 // DELETE - Remove a goal action
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const prisma = new PrismaClient();
   const { id } = params;
 
   try {
@@ -16,7 +15,7 @@ export async function DELETE(
     }
 
     // 1. Verify ownership (via goal)
-    const action = await (prisma as any).goalAction.findUnique({
+    const action = await prisma.goalAction.findUnique({
       where: { id },
       include: { goal: true }
     });
@@ -25,10 +24,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Action not found or unauthorized' }, { status: 404 });
     }
 
-    // 2. Delete the action
-    await (prisma as any).goalAction.delete({
-      where: { id },
-    });
+    // 2. Cascaded delete
+    await prisma.$transaction([
+      // a. Delete all Tasks associated with THIS action
+      prisma.task.deleteMany({
+        where: { goalActionId: id }
+      }),
+      // b. Delete all SUB-ACTIONS (children) of this action
+      prisma.goalAction.deleteMany({
+        where: { parentId: id }
+      }),
+      // c. Delete the action itself
+      prisma.goalAction.delete({
+        where: { id },
+      })
+    ]);
 
     return NextResponse.json({ success: true, message: 'Action deleted successfully' });
   } catch (error: any) {
@@ -38,8 +48,6 @@ export async function DELETE(
       error: 'Internal Server Error',
       detail: error.message 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -48,7 +56,6 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const prisma = new PrismaClient();
   const { id } = params;
 
   try {
@@ -60,7 +67,7 @@ export async function PATCH(
     const { isCompleted, title, targetDate, dimensions, attributes } = await req.json();
 
     // 1. Verify ownership (via goal)
-    const action = await (prisma as any).goalAction.findUnique({
+    const action = await prisma.goalAction.findUnique({
       where: { id },
       include: { goal: true }
     });
@@ -70,7 +77,7 @@ export async function PATCH(
     }
 
     // 2. Update the action
-    const updated = await (prisma as any).goalAction.update({
+    const updated = await prisma.goalAction.update({
       where: { id },
       data: {
         isCompleted: typeof isCompleted === 'boolean' ? isCompleted : action.isCompleted,
@@ -89,7 +96,5 @@ export async function PATCH(
       error: 'Internal Server Error',
       detail: error.message 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

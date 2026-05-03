@@ -2,9 +2,6 @@ import { PrismaClient } from '../lib/generated-prisma';
 
 const prisma = new PrismaClient();
 
-//
-// ───────────────── DIMENSIONS (19 CORRECTAS) ─────────────────
-//podman exec -it bean-mongodb mongosh --eval "rs.initiate()"
 const DIMENSIONS = [
   // 🌱 IDENTIDAD
   { name: 'values', label: 'Core Values', category: 'identity' },
@@ -32,112 +29,43 @@ const DIMENSIONS = [
   { name: 'financial_security', label: 'Financial Security', category: 'experience' },
 ];
 
-async function main() {
-  console.log('🌱 BEAN Seed v2 (19 dimensiones correctas)\n');
+async function clearData() {
+  console.log('🧹 Cleaning up existing data...');
+  await prisma.task.deleteMany({});
+  await prisma.goalAction.deleteMany({ where: { parentId: { not: null } } });
+  await prisma.goalAction.deleteMany({});
+  await prisma.goal.deleteMany({});
+  await prisma.userAttribute.deleteMany({});
+  await prisma.dimensionInput.deleteMany({});
+  await prisma.lifeState.deleteMany({});
+  await prisma.chatMessage.deleteMany({});
+  await prisma.chatSession.deleteMany({});
+  await prisma.suggestedPath.deleteMany({});
+  await prisma.user.deleteMany({});
+}
 
-  //
-  // ───────────────── 1. DIMENSIONS ─────────────────
-  //
+async function createDimensions() {
+  console.log('📐 Creating Dimensions...');
   const dimensionMap: Record<string, string> = {};
-
   for (let i = 0; i < DIMENSIONS.length; i++) {
     const dim = DIMENSIONS[i];
-    const index = i;
     const d = await prisma.dimension.upsert({
       where: { name: dim.name },
-      update: { ...dim, sortOrder: index + 1 },
-      create: {
-        ...dim,
-        sortOrder: index + 1,
-        description: dim.label,
-      },
+      update: { ...dim, sortOrder: i + 1 },
+      create: { ...dim, sortOrder: i + 1, description: dim.label },
     });
-
     dimensionMap[dim.name] = d.id;
   }
+  return dimensionMap;
+}
 
-  //
-  // ───────────────── 2. USER ─────────────────
-  //
-  const user = await prisma.user.upsert({
-    where: { email: 'daniel@bean.app' },
-    update: {},
-    create: {
-      email: 'daniel@bean.app',
-      name: 'Daniel BEAN',
-    },
+async function seedUser(email: string, name: string, attributes: any[], goals: any[], dimensionMap: Record<string, string>) {
+  console.log(`👤 Seeding user: ${name} (${email})`);
+  const user = await prisma.user.create({
+    data: { email, name }
   });
 
-  //
-  // ───────────────── 3. USER ATTRIBUTES (ADN) ─────────────────
-  //
-  console.log('Creating User Attributes...');
-
-  const attributes = [
-    // Identidad
-    { dimension: 'values', name: 'Libertad', category: 'value', metadata: { importance: 95 } },
-    { dimension: 'values', name: 'Impacto Social', category: 'value', metadata: { importance: 90 } },
-    { dimension: 'values', name: 'Autenticidad', category: 'value', metadata: { importance: 85 } },
-
-    { dimension: 'personality', name: 'Introvertido', category: 'trait', metadata: { level: 70 } },
-    { dimension: 'personality', name: 'Analítico', category: 'trait', metadata: { level: 90 } },
-
-    { dimension: 'interests', name: 'Ciclismo', category: 'interest', metadata: { frequency: '4x/week' } },
-    { dimension: 'interests', name: 'IA & Futuro', category: 'interest' },
-    { dimension: 'interests', name: 'Filosofía', category: 'interest' },
-
-    { dimension: 'purpose', name: 'Democratizar Tecnología', category: 'goal' },
-    { dimension: 'purpose', name: 'Sostenibilidad', category: 'goal' },
-
-    { dimension: 'motivations', name: 'Curiosidad', category: 'driver' },
-    { dimension: 'motivations', name: 'Reconocimiento', category: 'driver' },
-
-    // Capital
-    { dimension: 'knowledge', name: 'Arquitectura de Software', category: 'expertise', metadata: { level: 'Senior' } },
-    { dimension: 'knowledge', name: 'Historia Moderna', category: 'expertise' },
-
-    { dimension: 'skills', name: 'Backend (Node.js/Go)', category: 'skill', metadata: { level: 90 } },
-    { dimension: 'skills', name: 'React/Next.js', category: 'skill', metadata: { level: 85 } },
-    { dimension: 'skills', name: 'Public Speaking', category: 'skill', metadata: { level: 60 } },
-
-    { dimension: 'career', name: 'Senior Developer', category: 'role' },
-    { dimension: 'career', name: 'Team Lead', category: 'aspiration' },
-
-    { dimension: 'income', name: 'Sueldo Base', category: 'source' },
-    { dimension: 'income', name: 'Inversiones', category: 'source' },
-
-    { dimension: 'social_capital', name: 'Mentores Tech', category: 'network' },
-    { dimension: 'social_capital', name: 'Comunidad Open Source', category: 'network' },
-
-    { dimension: 'physical_health', name: 'Resistencia (Endurance)', category: 'skill', metadata: { level: 75 } },
-    { dimension: 'physical_health', name: 'Buena Nutrición', category: 'habit' },
-
-    { dimension: 'resilience', name: 'Adaptabilidad', category: 'trait' },
-    { dimension: 'resilience', name: 'Gestión de Estrés', category: 'skill', metadata: { level: 80 } },
-
-    // Experiencia
-    { dimension: 'work_satisfaction', name: 'Autonomía', category: 'factor', metadata: { satisfaction: 9 } },
-    { dimension: 'work_satisfaction', name: 'Reto Técnico', category: 'factor', metadata: { satisfaction: 10 } },
-
-    { dimension: 'relationships', name: 'Familia', category: 'vital', metadata: { quality: 10 } },
-    { dimension: 'relationships', name: 'Amigos Cercanos', category: 'vital' },
-
-    { dimension: 'mental_wellbeing', name: 'Meditación', category: 'habit', metadata: { frequency: 'Daily' } },
-    { dimension: 'mental_wellbeing', name: 'Lectura', category: 'habit' },
-
-    { dimension: 'free_time', name: 'Gaming', category: 'hobby' },
-    { dimension: 'free_time', name: 'Series/Cine', category: 'hobby' },
-
-    { dimension: 'personal_growth', name: 'Escribir un Blog', category: 'project' },
-    { dimension: 'personal_growth', name: 'Aprender Piano', category: 'aspiration' },
-
-    { dimension: 'impact', name: 'Voluntariado Tech', category: 'action' },
-    { dimension: 'impact', name: 'Donaciones Locales', category: 'action' },
-
-    { dimension: 'financial_security', name: 'Fondo de Emergencia', category: 'status', metadata: { completed: true } },
-    { dimension: 'financial_security', name: 'Plan de Retiro', category: 'status' },
-  ];
-
+  // DNA
   for (const attr of attributes) {
     await prisma.userAttribute.create({
       data: {
@@ -145,135 +73,221 @@ async function main() {
         dimensionId: dimensionMap[attr.dimension],
         name: attr.name,
         category: attr.category,
-        metadata: attr.metadata,
-      },
+        metadata: attr.metadata || {}
+      }
     });
   }
 
-  //
-  // ───────────────── 4. DIMENSION INPUTS (EVENTOS) ─────────────────
-  //
-  console.log('Creating Inputs...');
-
-  const inputs = [
-    {
-      dimension: 'physical_health',
-      inputType: 'activity',
-      valueJson: { activity: 'cycling', duration: 120 },
-    },
-    {
-      dimension: 'career',
-      inputType: 'learning',
-      valueJson: { topic: 'machine learning', hours: 3 },
-    },
-    {
-      dimension: 'mental_wellbeing',
-      inputType: 'mood',
-      valueJson: { mood: 'stressed', level: 60 },
-    },
-  ];
-
-  for (const input of inputs) {
-    await prisma.dimensionInput.create({
-      data: {
-        userId: user.id,
-        dimensionId: dimensionMap[input.dimension],
-        inputType: input.inputType,
-        valueJson: input.valueJson,
-      },
-    });
-  }
-
-  //
-  // ───────────────── 5. GOALS (RAMAS) ─────────────────
-  //
-  console.log('Creating Goals...');
-
-  const goals = [
-    {
-      title: 'Ser Data Scientist',
-      dimension: 'career',
-      progress: 65,
-      actions: [
-        { title: 'Python Basics', isCompleted: true, impact: { career: 3 } },
-        { title: 'ML Project', isCompleted: false, impact: { career: 5 } },
-      ],
-    },
-    {
-      title: 'Correr Maratón',
-      dimension: 'physical_health',
-      progress: 40,
-      actions: [
-        { title: 'Run 10km', isCompleted: true, impact: { health: 3 } },
-        { title: 'Half Marathon', isCompleted: false, impact: { health: 5 } },
-      ],
-    },
-  ];
-
-  for (const g of goals) {
+  // Goals
+  for (const goalData of goals) {
     const goal = await prisma.goal.create({
       data: {
         userId: user.id,
-        title: g.title,
-        dimensionId: dimensionMap[g.dimension],
-        progress: g.progress,
-      },
+        title: goalData.title,
+        dimensionId: dimensionMap[goalData.dimension],
+        description: goalData.description,
+        progress: goalData.progress || 0,
+      }
     });
 
-    for (const action of g.actions) {
-      await prisma.goalAction.create({
-        data: {
+    if (goalData.phases) {
+      for (const phaseData of goalData.phases) {
+        const phase = await prisma.goalAction.create({
+          data: {
+            goalId: goal.id,
+            type: 'phase',
+            title: phaseData.title,
+            isCompleted: phaseData.isCompleted || false,
+          }
+        });
+
+        if (phaseData.tasks) {
+          await prisma.goalAction.createMany({
+            data: phaseData.tasks.map((t: any) => ({
+              goalId: goal.id,
+              type: 'task',
+              title: t.title,
+              parentId: phase.id,
+              isCompleted: t.isCompleted || false,
+              effort: t.effort || 1,
+            }))
+          });
+        }
+      }
+    }
+
+    if (goalData.habits) {
+      await prisma.goalAction.createMany({
+        data: goalData.habits.map((h: any) => ({
           goalId: goal.id,
-          ...action,
-        },
+          type: 'habit',
+          title: h.title,
+          frequency: h.frequency,
+          consistency: h.consistency || 0,
+          streak: h.streak || 0,
+        }))
       });
     }
   }
 
-  //
-  // ───────────────── 6. LIFE STATE (ADN MOCK) ─────────────────
-  //
-  console.log('Creating LifeState...');
-
+  // Life State
   await prisma.lifeState.create({
     data: {
       userId: user.id,
-      lifeScore: 72,
-      balanceScore: 60,
-      alignmentScore: 80,
-      energyIndex: 65,
-
-      insights: {
-        message: 'Buen progreso en carrera, pero necesitas equilibrar bienestar',
-        focus: 'balance',
-      },
-
+      lifeScore: 70,
+      balanceScore: 65,
+      alignmentScore: 75,
+      energyIndex: 80,
+      insights: { message: `Hola ${name.split(' ')[0]}, tu ADN está listo para crecer.` },
       scores: [
-        {
-          dimensionId: dimensionMap['career'],
-          score: 80,
-          trend: 'up',
-        },
-        {
-          dimensionId: dimensionMap['physical_health'],
-          score: 65,
-          trend: 'up',
-        },
-        {
-          dimensionId: dimensionMap['mental_wellbeing'],
-          score: 55,
-          trend: 'down',
-        },
-        {
-          dimensionId: dimensionMap['work_satisfaction'],
-          score: 75,
-          trend: 'stable',
-        },
-      ],
-    },
+        { dimensionId: dimensionMap['career'] || '', score: 60, trend: 'stable' }
+      ]
+    }
   });
 
-  console.log('\n✅ Seed completo y consistente 🌳');
+  return user;
+}
+
+async function main() {
+  await clearData();
+  const dimensionMap = await createDimensions();
+
+  // 1. DANIEL - The Tech Architect
+  await seedUser(
+    'daniel@bean.app', 
+    'Daniel BEAN',
+    [
+      { dimension: 'values', name: 'Libertad', category: 'value', metadata: { importance: 95 } },
+      { dimension: 'values', name: 'Impacto Social', category: 'value', metadata: { importance: 90 } },
+      { dimension: 'interests', name: 'IA & Futuro', category: 'interest' },
+      { dimension: 'skills', name: 'Fullstack Dev', category: 'skill', metadata: { level: 90 } },
+    ],
+    [
+      {
+        title: 'Ser Data Scientist',
+        dimension: 'career',
+        description: 'Expertise en análisis de datos.',
+        progress: 30,
+        phases: [
+          { title: 'Fundamentos Python', isCompleted: true, tasks: [{ title: 'Curso Pandas', isCompleted: true }] }
+        ]
+      }
+    ],
+    dimensionMap
+  );
+
+  // 2. ELENA - The Wellness Specialist
+  await seedUser(
+    'elena@bean.app',
+    'Elena Nature',
+    [
+      { dimension: 'values', name: 'Sostenibilidad', category: 'value', metadata: { importance: 98 } },
+      { dimension: 'values', name: 'Paz Interior', category: 'value', metadata: { importance: 92 } },
+      { dimension: 'interests', name: 'Yoga & Meditación', category: 'interest', metadata: { frequency: 'Daily' } },
+      { dimension: 'interests', name: 'Botánica', category: 'interest' },
+      { dimension: 'physical_health', name: 'Flexibilidad', category: 'skill', metadata: { level: 85 } },
+      { dimension: 'mental_wellbeing', name: 'Mindfulness', category: 'practice' },
+    ],
+    [
+      {
+        title: 'Vivir en un Hogar Residuo Cero',
+        dimension: 'personal_growth',
+        description: 'Eliminar el plástico y crear un santuario sostenible.',
+        progress: 15,
+        phases: [
+          { 
+            title: 'Auditoría de Residuos', 
+            isCompleted: true, 
+            tasks: [{ title: 'Identificar plásticos de un solo uso', isCompleted: true }] 
+          },
+          { 
+            title: 'Sistema de Compostaje', 
+            tasks: [{ title: 'Comprar vermicompostador', effort: 2 }] 
+          }
+        ],
+        habits: [
+          { title: 'Comprar a granel', frequency: { type: 'weekly', value: 1 }, consistency: 0.9 }
+        ]
+      }
+    ],
+    dimensionMap
+  );
+
+  // 3. MARCUS - The Hustler
+  await seedUser(
+    'marcus@bean.app',
+    'Marcus Growth',
+    [
+      { dimension: 'values', name: 'Ambición', category: 'value', metadata: { importance: 95 } },
+      { dimension: 'values', name: 'Eficiencia', category: 'value', metadata: { importance: 90 } },
+      { dimension: 'interests', name: 'FinTech', category: 'interest' },
+      { dimension: 'interests', name: 'Biohacking', category: 'interest' },
+      { dimension: 'income', name: 'Trading', category: 'skill', metadata: { level: 70 } },
+      { dimension: 'social_capital', name: 'Venture Capitalist Network', category: 'network' },
+    ],
+    [
+      {
+        title: 'Lanzar SaaS de Productividad con IA',
+        dimension: 'career',
+        description: 'Llegar a $5,000 de MRR en 6 meses.',
+        progress: 40,
+        phases: [
+          { 
+            title: 'MVP Development', 
+            isCompleted: true, 
+            tasks: [{ title: 'Setup landing page', isCompleted: true }] 
+          },
+          { 
+            title: 'Beta Testing', 
+            tasks: [{ title: 'Conseguir 100 usuarios beta', effort: 5 }] 
+          }
+        ],
+        habits: [
+          { title: 'Cold Outreach (10 emails/día)', frequency: { type: 'daily', value: 10 }, consistency: 0.6 }
+        ]
+      }
+    ],
+    dimensionMap
+  );
+
+  // 4. SOFIA - The Creative
+  await seedUser(
+    'sofia@bean.app',
+    'Sofia Harmony',
+    [
+      { dimension: 'values', name: 'Expresión Creativa', category: 'value', metadata: { importance: 99 } },
+      { dimension: 'values', name: 'Libertad de Movimiento', category: 'value', metadata: { importance: 88 } },
+      { dimension: 'interests', name: 'Producción Musical', category: 'interest' },
+      { dimension: 'interests', name: 'Ilustración Digital', category: 'interest' },
+      { dimension: 'skills', name: 'Piano Jazz', category: 'skill', metadata: { level: 80 } },
+      { dimension: 'skills', name: 'Ableton Live', category: 'skill', metadata: { level: 75 } },
+    ],
+    [
+      {
+        title: 'Publicar Álbum Lo-Fi en Spotify',
+        dimension: 'personal_growth',
+        description: 'Componer, mezclar y lanzar 8 tracks originales.',
+        progress: 60,
+        phases: [
+          { 
+            title: 'Composición de Melodías', 
+            isCompleted: true, 
+            tasks: [{ title: 'Grabar 10 demos de piano', isCompleted: true }] 
+          },
+          { 
+            title: 'Mezcla y Masterización', 
+            tasks: [{ title: 'Masterizar track principal', effort: 4 }] 
+          }
+        ],
+        habits: [
+          { title: 'Sesión de creación nocturna', frequency: { type: 'daily', value: 1 }, consistency: 0.75 }
+        ]
+      }
+    ],
+    dimensionMap
+  );
+
+  console.log('\n🚀 Multi-User Seed Completo 🌳');
 }
 
 main()

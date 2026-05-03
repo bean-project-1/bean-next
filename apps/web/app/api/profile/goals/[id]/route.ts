@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const prisma = new PrismaClient();
   const { id } = params;
 
   try {
@@ -15,23 +14,36 @@ export async function DELETE(
     }
 
     // 1. Verify ownership
-    const goal = await (prisma as any).goal.findUnique({
+    const goal = await prisma.goal.findUnique({
       where: { id },
+      include: { actions: { include: { tasks: true } } }
     });
 
     if (!goal || goal.userId !== userId) {
       return NextResponse.json({ error: 'Goal not found or unauthorized' }, { status: 404 });
     }
 
-    // 2. Delete actions first (manual cascade if not in schema)
-    await (prisma as any).goalAction.deleteMany({
-      where: { goalId: id },
-    });
-
-    // 3. Delete the goal
-    await (prisma as any).goal.delete({
-      where: { id },
-    });
+    // 2. Cascaded delete
+    const actionIds = goal.actions.map(a => a.id);
+    
+    await prisma.$transaction([
+      // a. Delete all Tasks associated with these actions
+      prisma.task.deleteMany({
+        where: { goalActionId: { in: actionIds } }
+      }),
+      // b. Delete all Sub-actions (nested) first to satisfy recursive relation
+      prisma.goalAction.deleteMany({
+        where: { goalId: id, parentId: { not: null } }
+      }),
+      // c. Delete all remaining GoalActions for this goal (including parents and habits)
+      prisma.goalAction.deleteMany({
+        where: { goalId: id }
+      }),
+      // d. Delete the Goal itself
+      prisma.goal.delete({
+        where: { id }
+      })
+    ]);
 
     return NextResponse.json({ success: true, message: 'Goal deleted successfully' });
   } catch (error: any) {
@@ -41,15 +53,12 @@ export async function DELETE(
       error: 'Internal Server Error',
       detail: error.message 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const prisma = new PrismaClient();
   const { id } = params;
 
   try {
@@ -62,7 +71,7 @@ export async function PATCH(
     const { goal, description } = body;
 
     // Verify ownership
-    const existing = await (prisma as any).goal.findUnique({
+    const existing = await prisma.goal.findUnique({
       where: { id },
     });
 
@@ -71,7 +80,7 @@ export async function PATCH(
     }
 
     // Update the goal
-    const updated = await (prisma as any).goal.update({
+    const updated = await prisma.goal.update({
       where: { id },
       data: {
         title: goal !== undefined ? goal : undefined,
@@ -87,7 +96,5 @@ export async function PATCH(
       error: 'Internal Server Error',
       detail: error.message 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

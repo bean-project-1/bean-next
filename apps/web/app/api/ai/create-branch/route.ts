@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         data: {
           goalId: newGoal.id,
           title: activity.title,
+          type: 'task', // Default type for AI actions
           description: activity.description ?? '',
           isCompleted: false,
           dimensions: matchedDimension ? [matchedDimension.name] : [],

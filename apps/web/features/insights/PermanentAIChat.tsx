@@ -87,36 +87,6 @@ export function PermanentAIChat({
     loadSession();
   }, [context]);
 
-  // Auto-send initialMessage if chat is empty
-  useEffect(() => {
-    if (!isLoading && sessionId && initialMessage && messages.length === 0 && !didAutoSend) {
-      setDidAutoSend(true);
-      setInput(initialMessage);
-      // slight delay so UI settles before sending
-      setTimeout(() => {
-        setInput('');
-        const userMsg = initialMessage;
-        const optimisticMsg: Message = { role: 'user', content: userMsg };
-        setMessages([optimisticMsg]);
-        setIsSending(true);
-        fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, message: userMsg })
-        })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-              if (data.branchData) setPendingBranch(data.branchData);
-            }
-          })
-          .catch(console.error)
-          .finally(() => setIsSending(false));
-      }, 300);
-    }
-  }, [isLoading, sessionId, initialMessage, messages.length, didAutoSend]);
-
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
@@ -211,7 +181,15 @@ export function PermanentAIChat({
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center mt-2">
-              {['¿Qué caminos de vida se alinean con mi perfil?', 'Analiza mi estado actual', 'Quiero explorar una nueva meta'].map(q => (
+              {initialMessage && (
+                <button
+                  onClick={() => { setInput(initialMessage); }}
+                  className="px-4 py-2 bg-violet-600 border border-violet-500 text-white rounded-xl text-sm hover:bg-violet-700 transition-all shadow-sm font-bold animate-in zoom-in-95 duration-500"
+                >
+                  🚀 {initialMessage}
+                </button>
+              )}
+              {['¿Qué caminos de vida se alinean con mi perfil?', 'Analiza mi estado actual'].map(q => (
                 <button
                   key={q}
                   onClick={() => { setInput(q); }}

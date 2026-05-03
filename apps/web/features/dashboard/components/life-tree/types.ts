@@ -1,12 +1,22 @@
+export type LeafType = 'phase' | 'task' | 'habit' | 'milestone';
+
 export type Leaf = {
   id: string;
-  name: string;
+  name: string; // matches GoalAction.title
+  type: LeafType;
   completed: boolean;
+  parentId?: string;
+  
+  // habits
+  frequency?: any;
+  streak?: number;
+  consistency?: number;
+
   targetDate?: string;
   dimensions?: string[];
   attributes?: string[];
   description?: string;
-  tasks?: any[];
+  tasks?: any[]; // sub-tasks (Task model)
 };
 
 export type Branch = {

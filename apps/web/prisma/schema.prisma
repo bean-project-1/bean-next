@@ -26,8 +26,35 @@ model User {
   lifeEvents       LifeEvent[]
   goals            Goal[]
   chatSessions     ChatSession[]
+  suggestedPaths   SuggestedPath[]
 
   @@map("users")
+}
+
+// ... (intermediate models)
+
+//
+// ───────────────── SUGGESTED PATHS ─────────────────
+//
+model SuggestedPath {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId @map("user_id")
+
+  title         String
+  emoji         String
+  alignment     Int
+  tagline       String
+  description   String?
+  dimensionName String?   @map("dimension_name")
+  reasons       String[]
+  starterQuestion String?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("suggested_paths")
 }
 
 //
@@ -37,7 +64,7 @@ model Dimension {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique
   label       String
-  category    String   // identidad, capital, experiencia
+  category    String   // identity, capital, experience
   description String?
 
   sortOrder   Int      @default(0) @map("sort_order")
@@ -53,15 +80,15 @@ model Dimension {
 }
 
 //
-// ───────────────── USER ATTRIBUTES (FUENTE DE VERDAD) ─────────────────
+// ───────────────── USER ATTRIBUTES ─────────────────
 //
 model UserAttribute {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @db.ObjectId @map("user_id")
   dimensionId String   @db.ObjectId @map("dimension_id")
 
-  name        String   // "ciclismo", "familia", "backend"
-  category    String   // "value", "interest", "skill", etc
+  name        String
+  category    String   // value, skill, interest, etc
   metadata    Json?    // { level, frequency, importance }
 
   createdAt   DateTime @default(now()) @map("created_at")
@@ -73,19 +100,19 @@ model UserAttribute {
 }
 
 //
-// ───────────────── DIMENSION INPUTS (EVENTOS / TRACKING) ─────────────────
+// ───────────────── DIMENSION INPUTS ─────────────────
 //
 model DimensionInput {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @db.ObjectId @map("user_id")
   dimensionId String   @db.ObjectId @map("dimension_id")
 
-  inputType   String   // "habit", "mood", "learning", "event"
-  subType     String?  // "frequency", "level", etc
+  inputType   String   // habit, mood, learning, event
+  subType     String?
 
   valueJson   Json     @map("value_json")
 
-  source      String   @default("manual") // manual, system, integration
+  source      String   @default("manual")
   createdAt   DateTime @default(now()) @map("created_at")
 
   user        User      @relation(fields: [userId], references: [id])
@@ -95,25 +122,25 @@ model DimensionInput {
 }
 
 //
-// ───────────────── LIFE STATE (ADN CALCULADO) ─────────────────
+// ───────────────── LIFE STATE ─────────────────
 //
 model LifeState {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @db.ObjectId @map("user_id")
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId @map("user_id")
 
-  lifeScore   Float    @map("life_score")
-  balanceScore Float   @map("balance_score")
-  alignmentScore Float @map("alignment_score")
-  energyIndex Float    @map("energy_index")
+  lifeScore      Float    @map("life_score")
+  balanceScore   Float    @map("balance_score")
+  alignmentScore Float    @map("alignment_score")
+  energyIndex    Float    @map("energy_index")
 
-  timestamp   DateTime @default(now())
-  triggeredBy String?  @map("triggered_by") // cron, user_action, etc
+  timestamp      DateTime @default(now())
+  triggeredBy    String?  @map("triggered_by")
 
-  insights    Json?    // mensajes inteligentes para UI
+  insights       Json?
 
-  scores      DimensionScore[]
+  scores         DimensionScore[]
 
-  user        User @relation(fields: [userId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
 
   @@map("life_states")
 }
@@ -121,8 +148,8 @@ model LifeState {
 type DimensionScore {
   dimensionId String @db.ObjectId
   score       Float
-  trend       String @default("stable") // up, down, stable
-  confidence  Float? // opcional (qué tan confiable es el cálculo)
+  trend       String @default("stable")
+  confidence  Float?
 }
 
 //
@@ -132,12 +159,12 @@ model LifeEvent {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @db.ObjectId @map("user_id")
 
-  type        String   // "job_change", "breakup", "achievement"
+  type        String
   title       String
   description String?
 
   date        DateTime
-  impact      Json?    // impacto en dimensiones
+  impact      Json?
 
   metadata    Json?
 
@@ -160,8 +187,19 @@ model Goal {
 
   dimensionId String?  @db.ObjectId @map("dimension_id")
 
+  // 🎯 outcome
+  target      Json?
+  deadline    DateTime?
+
+  // ⚙️ contexto
+  constraints Json?    // { timePerWeek, budget, energy }
+
+  // 📊 inteligencia
+  readinessScore Float? @map("readiness_score")
+  alignmentScore Float? @map("alignment_score")
+
   progress    Float    @default(0)
-  status      String   @default("active") // active, completed, paused
+  status      String   @default("active")
 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime? @updatedAt @map("updated_at")
@@ -173,7 +211,7 @@ model Goal {
 }
 
 //
-// ───────────────── GOAL ACTIONS (HOJAS) ─────────────────
+// ───────────────── GOAL ACTIONS (SISTEMA FLEXIBLE) ─────────────────
 //
 model GoalAction {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -181,13 +219,31 @@ model GoalAction {
 
   title       String
   description String?
+
+  // 🔥 clave
+  type        String   // phase | task | habit | milestone
+
+  parentId    String?  @db.ObjectId @map("parent_id")
+  parent      GoalAction? @relation("SubActions", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subActions  GoalAction[] @relation("SubActions")
+
   isCompleted Boolean  @default(false) @map("is_completed")
 
   targetDate  DateTime? @map("target_date")
   dimensions  String[]
   attributes  String[]
 
-  impact      Json?    // { health: +5, energy: +2 }
+  // 🔁 hábitos
+  frequency   Json?    // { type: daily/weekly, value: number }
+  streak      Int?     // opcional
+  consistency Float?   // %
+
+  // ⚙️ ejecución
+  effort      Int?     // 1–5
+  estimatedHours Float? @map("estimated_hours")
+  dependsOn   String[] @map("depends_on") // ids de otras actions
+
+  impact      Json?
 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime? @updatedAt @map("updated_at")
@@ -199,7 +255,7 @@ model GoalAction {
 }
 
 //
-// ───────────────── TASKS (PASOS MEDIBLES) ─────────────────
+// ───────────────── TASKS (SUBPASOS OPCIONALES) ─────────────────
 //
 model Task {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -207,13 +263,14 @@ model Task {
 
   title           String
   description     String?
+
   isCompleted     Boolean  @default(false) @map("is_completed")
 
   startDate       DateTime? @map("start_date")
   endDate         DateTime? @map("end_date")
   estimatedHours  Float?    @map("estimated_hours")
 
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime? @updatedAt @map("updated_at")
 
   goalAction      GoalAction @relation(fields: [goalActionId], references: [id])
@@ -222,31 +279,32 @@ model Task {
 }
 
 //
-// ───────────────── CHAT & COACH ─────────────────
+// ───────────────── CHAT ─────────────────
 //
 model ChatSession {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId @map("user_id")
-  context   String   // e.g. "global", "goal_123", "insights"
-  
+  context   String
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   messages  ChatMessage[]
-  user      User     @relation(fields: [userId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
 
   @@map("chat_sessions")
 }
 
 model ChatMessage {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  sessionId     String   @db.ObjectId @map("session_id")
-  role          String   // "user", "assistant", "system"
-  content       String
-  
-  createdAt     DateTime @default(now()) @map("created_at")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String   @db.ObjectId @map("session_id")
 
-  session       ChatSession @relation(fields: [sessionId], references: [id])
+  role      String
+  content   String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session   ChatSession @relation(fields: [sessionId], references: [id])
 
   @@map("chat_messages")
 }

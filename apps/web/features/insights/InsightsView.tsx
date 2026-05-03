@@ -4,10 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { PermanentAIChat } from './PermanentAIChat';
 
 interface LifePath {
+  id?: string;
   title: string;
   emoji: string;
   alignment: number;
   tagline: string;
+  description?: string;
+  dimensionName?: string;
   reasons: string[];
   starterQuestion: string;
 }
@@ -53,39 +56,56 @@ function PathCard({
 
   return (
     <div
-      className={`relative shrink-0 w-64 sm:w-72 rounded-3xl overflow-hidden border transition-all duration-300 cursor-pointer select-none
-        ${active ? `${g.border} shadow-xl shadow-${g.glow} scale-[1.02]` : 'border-slate-100 shadow-sm hover:shadow-md hover:scale-[1.01]'}
-        bg-white`}
+      className={`relative shrink-0 w-72 sm:w-80 h-[280px] rounded-[32px] overflow-hidden border transition-all duration-500 cursor-pointer select-none
+        ${active ? `${g.border} shadow-2xl shadow-${g.glow} -translate-y-2` : 'border-slate-100 shadow-lg hover:shadow-xl hover:-translate-y-1'}
+        bg-white group`}
       onClick={() => onExplore(path, index)}
     >
-      <div className={`h-1.5 w-full bg-gradient-to-r ${g.from} ${g.to}`} />
-      <div className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${g.from} ${g.to} flex items-center justify-center text-xl shadow-md`}>
+      {/* Top Gradient Bar */}
+      <div className={`h-2 w-full bg-gradient-to-r ${g.from} ${g.to}`} />
+      
+      {/* Dimension Badge */}
+      {path.dimensionName && (
+        <div className="absolute top-5 right-5 z-10">
+          <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter ${g.badge} backdrop-blur-md bg-opacity-90 shadow-sm`}>
+            {path.dimensionName}
+          </span>
+        </div>
+      )}
+
+      <div className="p-6 h-full flex flex-col">
+        <div className="flex items-center gap-4 mb-4">
+          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${g.from} ${g.to} flex items-center justify-center text-3xl shadow-lg transform group-hover:scale-110 transition-transform duration-500`}>
             {path.emoji}
           </div>
           <div className="overflow-hidden">
-            <h3 className="font-bold text-slate-900 text-sm leading-tight truncate">{path.title}</h3>
-            <p className="text-[11px] text-slate-400 truncate">{path.tagline}</p>
+            <h3 className="font-extrabold text-slate-900 text-base leading-tight line-clamp-2">{path.title}</h3>
+            <p className="text-[12px] font-medium text-slate-400 mt-0.5 truncate">{path.tagline}</p>
           </div>
         </div>
 
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Alineación</span>
-            <span className={`text-xs font-bold ${g.text}`}>{path.alignment}%</span>
+        {/* Description */}
+        {path.description && (
+          <p className="text-[12px] text-slate-500 line-clamp-3 mb-auto leading-relaxed font-medium">
+            {path.description}
+          </p>
+        )}
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ADN Match</span>
+            <span className={`text-sm font-black ${g.text}`}>{path.alignment}%</span>
           </div>
-          <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div className={`h-full rounded-full ${g.bar} transition-all duration-700`} style={{ width: `${path.alignment}%` }} />
+          <div className="h-2 rounded-full bg-slate-100 overflow-hidden shadow-inner">
+            <div className={`h-full rounded-full ${g.bar} transition-all duration-1000 ease-out`} style={{ width: `${path.alignment}%` }} />
           </div>
         </div>
 
-        <button
-          onClick={e => { e.stopPropagation(); onExplore(path, index); }}
-          className={`w-full py-2 bg-gradient-to-r ${g.from} ${g.to} text-white text-[11px] font-bold rounded-xl transition-all hover:opacity-90 active:scale-95`}
-        >
-          Explorar →
-        </button>
+        <div className={`mt-4 pt-4 border-t border-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+           <span className={`text-[11px] font-bold ${g.text} flex items-center gap-1`}>
+             Ver detalles <span className="text-base">→</span>
+           </span>
+        </div>
       </div>
     </div>
   );
@@ -95,8 +115,14 @@ function PathCard({
 // PathDetailPanel (slide-in detail + dedicated chat)
 // ─────────────────────────────────────────────────────────
 function PathDetailPanel({
-  path, index, onClose, onBranchCreated
-}: { path: LifePath; index: number; onClose: () => void; onBranchCreated: () => void }) {
+  path, index, onClose, onBranchCreated, onReplace
+}: { 
+  path: LifePath; 
+  index: number; 
+  onClose: () => void; 
+  onBranchCreated: () => void;
+  onReplace: (path: LifePath) => void;
+}) {
   const g = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
   // Use a path-specific chat context so each path has its own conversation
   const chatContext = `path_${path.title.toLowerCase().replace(/\s+/g, '_').slice(0, 30)}`;
@@ -132,31 +158,56 @@ function PathDetailPanel({
               <p className="text-[10px] text-slate-400 truncate">{path.tagline}</p>
             </div>
           </div>
-          <span className={`ml-auto shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${g.badge}`}>
-            {path.alignment}% alineado
-          </span>
+          <div className="ml-auto flex items-center gap-2">
+            {path.dimensionName && (
+              <span className={`text-[9px] font-bold px-2 py-1 rounded-full ${g.badge}`}>
+                {path.dimensionName}
+              </span>
+            )}
+            <span className={`text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600`}>
+              {path.alignment}% alineado
+            </span>
+          </div>
         </div>
 
         {/* Path detail summary */}
-        <div className={`shrink-0 mx-4 mt-4 rounded-2xl ${g.light} border ${g.border} p-4`}>
-          <p className={`text-[10px] font-bold uppercase tracking-widest ${g.text} mb-2`}>Por qué este camino te va</p>
-          <div className="space-y-2">
-            {path.reasons.map((r, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <span className={`text-sm ${g.text} shrink-0 mt-px`}>✓</span>
-                <span className="text-xs text-slate-700 leading-relaxed">{r}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Alignment bar */}
-          <div className="mt-3 pt-3 border-t border-white/60">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Nivel de alineación</span>
-              <span className={`text-xs font-bold ${g.text}`}>{path.alignment}%</span>
+        <div className="shrink-0 overflow-y-auto max-h-[40vh] p-4 bg-slate-50/50">
+          {path.description && (
+            <div className="mb-4">
+              <p className="text-xs text-slate-600 leading-relaxed italic">
+                "{path.description}"
+              </p>
             </div>
-            <div className="h-2 rounded-full bg-white/70 overflow-hidden">
-              <div className={`h-full rounded-full ${g.bar} transition-all duration-1000`} style={{ width: `${path.alignment}%` }} />
+          )}
+
+          <div className={`rounded-2xl ${g.light} border ${g.border} p-4`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${g.text}`}>Por qué este camino te va</p>
+              <button 
+                onClick={() => onReplace(path)}
+                className="text-[9px] font-bold text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1"
+              >
+                ↻ Reemplazar idea
+              </button>
+            </div>
+            <div className="space-y-2">
+              {path.reasons.map((r, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className={`text-sm ${g.text} shrink-0 mt-px`}>✓</span>
+                  <span className="text-xs text-slate-700 leading-relaxed">{r}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Alignment bar */}
+            <div className="mt-3 pt-3 border-t border-white/60">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Alineación con tu ADN</span>
+                <span className={`text-xs font-bold ${g.text}`}>{path.alignment}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/70 overflow-hidden">
+                <div className={`h-full rounded-full ${g.bar} transition-all duration-1000`} style={{ width: `${path.alignment}%` }} />
+              </div>
             </div>
           </div>
         </div>
@@ -190,18 +241,21 @@ function PathsCarousel({ paths, onExplore, activePath }: {
   activePath: string | null;
 }) {
   return (
-    <div className="relative">
+    <div className="relative w-full overflow-hidden">
       <div
-        className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none' }}
+        className="flex gap-6 overflow-x-auto pb-10 px-5 sm:px-8 snap-x snap-mandatory no-scrollbar"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {paths.map((path, i) => (
-          <div key={i} className="snap-start">
+          <div key={i} className="snap-center first:pl-0 last:pr-20">
             <PathCard path={path} index={i} onExplore={onExplore} active={activePath === path.title} />
           </div>
         ))}
       </div>
-      <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white to-transparent" />
+      
+      {/* Fade Edges */}
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-white to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-white to-transparent z-10" />
     </div>
   );
 }
@@ -237,10 +291,34 @@ export function InsightsView() {
       .finally(() => setPathsLoading(false));
   }, []);
 
+  const handleReplacePath = async (pathToReplace: LifePath) => {
+    if (!pathToReplace.id) return;
+    
+    // Optimistic loading or just blocking interaction
+    setPathsLoading(true);
+    try {
+      const res = await fetch('/api/ai/insights/paths', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ replaceId: pathToReplace.id })
+      });
+      const data = await res.json();
+      if (data.success && data.path) {
+        // Update the paths list, replacing the old one with the new one
+        setPaths(prev => prev.map(p => p.id === pathToReplace.id ? data.path : p));
+        setSelectedPath(null); // Close panel to refresh view
+      }
+    } catch (err) {
+      console.error('Failed to replace path:', err);
+    } finally {
+      setPathsLoading(false);
+    }
+  };
+
   const handleRegeneratePaths = () => {
     setPathsLoading(true);
     setPathsError(false);
-    fetch('/api/ai/insights/paths').then(r => r.json())
+    fetch('/api/ai/insights/paths?regenerate=true').then(r => r.json())
       .then(d => { if (d.success && d.paths?.length) setPaths(d.paths); else setPathsError(true); })
       .catch(() => setPathsError(true))
       .finally(() => setPathsLoading(false));
@@ -294,41 +372,45 @@ export function InsightsView() {
       </div>
 
       {/* ── Paths Carousel ──────────────────────────────── */}
-      <div className="px-5 sm:px-8 py-5 border-b border-slate-100">
-        <div className="flex items-center justify-between mb-3">
+      <div className="py-8 border-b border-slate-100 overflow-hidden">
+        <div className="px-5 sm:px-8 mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-slate-800">Caminos Sugeridos</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Basados en tu ADN · Toca uno para ver el detalle</p>
+            <h2 className="text-base font-black text-slate-900 tracking-tight">Caminos de Vida Sugeridos</h2>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Proyecciones de IA basadas en tu ADN único</p>
           </div>
           {!pathsLoading && paths.length > 0 && (
-            <button onClick={handleRegeneratePaths} className="text-xs text-slate-400 hover:text-violet-600 transition-colors">
-              ↻ Regenerar
+            <button 
+              onClick={handleRegeneratePaths} 
+              className="text-xs font-bold text-violet-500 hover:text-violet-700 bg-violet-50 px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 active:scale-95"
+            >
+              ↻ Regenerar todo
             </button>
           )}
         </div>
 
         {pathsLoading && (
-          <div className="flex gap-3">
+          <div className="px-5 sm:px-8 flex gap-6 overflow-hidden">
             {[0, 1, 2].map(i => (
-              <div key={i} className="shrink-0 w-64 sm:w-72 h-48 rounded-3xl bg-slate-100 animate-pulse" />
+              <div key={i} className="shrink-0 w-72 sm:w-80 h-[280px] rounded-[32px] bg-slate-50 animate-pulse border border-slate-100" />
             ))}
           </div>
         )}
 
         {!pathsLoading && pathsError && (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-            <p className="text-slate-500 text-sm font-medium mb-3">
+          <div className="mx-5 sm:mx-8 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-2xl">🌱</div>
+            <p className="text-slate-500 text-sm font-bold mb-4">
               {attributes.length === 0
-                ? 'Agrega características en tu ADN para ver caminos sugeridos 🌱'
-                : 'No se pudieron generar caminos. Intenta de nuevo.'}
+                ? 'Agrega características en tu ADN para ver caminos sugeridos'
+                : 'No pudimos proyectar caminos en este momento.'}
             </p>
             {attributes.length === 0 ? (
-              <a href="/dna" className="text-sm font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-4 py-2 rounded-xl transition-colors">
+              <a href="/dna" className="inline-flex text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 px-6 py-3 rounded-2xl transition-all shadow-md active:scale-95">
                 🧬 Completar mi ADN →
               </a>
             ) : (
-              <button onClick={handleRegeneratePaths} className="text-sm font-bold text-violet-600 bg-violet-50 px-4 py-2 rounded-xl">
-                ↻ Reintentar
+              <button onClick={handleRegeneratePaths} className="inline-flex text-sm font-bold text-violet-600 bg-white border border-violet-200 px-6 py-3 rounded-2xl transition-all shadow-sm active:scale-95">
+                ↻ Reintentar Proyección
               </button>
             )}
           </div>
@@ -372,6 +454,7 @@ export function InsightsView() {
           path={selectedPath.path}
           index={selectedPath.index}
           onClose={() => setSelectedPath(null)}
+          onReplace={handleReplacePath}
           onBranchCreated={() => {
             setBranchCreated(true);
             setSelectedPath(null);

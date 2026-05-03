@@ -31,15 +31,22 @@ export async function GET(req: NextRequest) {
       branches: goals.map((goal: any) => ({
         id: goal.id,
         goal: goal.title,
+        description: goal.description,
         progress: goal.progress || 0,
         leaves: (goal.actions || []).map((action: any) => ({
           id: action.id,
           name: action.title,
+          type: action.type,
+          parentId: action.parentId,
           completed: action.isCompleted,
           targetDate: action.targetDate,
+          estimatedHours: action.estimatedHours || 0,
           dimensions: action.dimensions || [],
           attributes: action.attributes || [],
           description: action.description,
+          frequency: action.frequency,
+          streak: action.streak,
+          consistency: action.consistency,
           tasks: action.tasks || []
         }))
       }))

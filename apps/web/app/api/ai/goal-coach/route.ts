@@ -1,43 +1,61 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const userId = req.cookies.get('bean_user_id')?.value;
     const body = await req.json();
-    const { messages, userEmail = 'daniel@bean.app' } = body;
+    const { messages, userEmail } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Missing or invalid messages' }, { status: 400 });
     }
 
-    // Fetch the user's "DNA"
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-      include: {
-        attributes: { include: { dimension: true } }
-      }
-    });
+    // Resolve user
+    let user = null;
+    if (userId) {
+      user = await prisma.user.findUnique({ 
+        where: { id: userId },
+        include: { attributes: { include: { dimension: true } } }
+      });
+    }
+    
+    if (!user && userEmail) {
+      user = await prisma.user.findUnique({ 
+        where: { email: userEmail },
+        include: { attributes: { include: { dimension: true } } }
+      });
+    }
+
+    // Fallback for dev
+    if (!user) {
+      user = await prisma.user.findFirst({
+        include: { attributes: { include: { dimension: true } } }
+      });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const dnaSummary = user.attributes
-      .map(attr => `- ${attr.dimension.name} (${attr.category}): ${attr.name}`)
+      .map(attr => `- ${attr.dimension.label}: ${attr.name} (${attr.category})`)
       .join('\n');
 
     const systemPrompt = {
       role: 'system',
-      content: `Eres BEAN Coach, un asistente de IA experto en desarrollo personal y profesional. 
-El usuario quiere crear un nuevo objetivo en su vida. 
-Debes actuar como un "sparring" o coach: haz preguntas breves y directas sobre la viabilidad, 
-los recursos, o el tiempo que el usuario tiene para lograr este objetivo. 
-No hagas más de 1 o 2 preguntas a la vez para no abrochar al usuario.
+      content: `Eres el BEAN Goal Architect, un coach de vida de élite. 
+Tu misión es ayudar al usuario a definir y pulir un OBJETIVO CLARO para su Árbol de Vida.
 
-Aquí tienes el "ADN" (perfil) del usuario para que personalices tus consejos:
+CONTEXTO DEL USUARIO (ADN):
 ${dnaSummary}
 
-Si sientes que el objetivo ya está claro, dile al usuario que estás listo para generar su plan detallado.`
+REGLAS DE CONVERSACIÓN:
+1. FOCO TOTAL: Mantente 100% enfocado en la meta que el usuario propone. No te desvíes.
+2. USA EL ADN: Conecta la meta con sus valores, habilidades o intereses registrados. Ej: "Dado que valoras la Libertad, ¿cómo te ayuda este proyecto a conseguirla?"
+3. BREVEDAD: Tus respuestas deben ser cortas, directas y potentes (máximo 3 párrafos cortos).
+4. PREGUNTAS CLAVE: Haz 1 sola pregunta estratégica a la vez que ayude a definir el "Qué", el "Por qué" o el "Cómo".
+5. LISTO PARA ACTUAR: Cuando sientas que la meta tiene suficiente detalle (título, descripción clara y urgencia), dile al usuario que estás listo para "plantar la rama" en su Árbol de Vida.`
     };
 
     const openAiMessages = [systemPrompt, ...messages];

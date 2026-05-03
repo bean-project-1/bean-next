@@ -124,6 +124,21 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SuggestedPathScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  emoji: 'emoji',
+  alignment: 'alignment',
+  tagline: 'tagline',
+  description: 'description',
+  dimensionName: 'dimensionName',
+  reasons: 'reasons',
+  starterQuestion: 'starterQuestion',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.DimensionScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -187,6 +202,11 @@ exports.Prisma.GoalScalarFieldEnum = {
   title: 'title',
   description: 'description',
   dimensionId: 'dimensionId',
+  target: 'target',
+  deadline: 'deadline',
+  constraints: 'constraints',
+  readinessScore: 'readinessScore',
+  alignmentScore: 'alignmentScore',
   progress: 'progress',
   status: 'status',
   createdAt: 'createdAt',
@@ -198,10 +218,18 @@ exports.Prisma.GoalActionScalarFieldEnum = {
   goalId: 'goalId',
   title: 'title',
   description: 'description',
+  type: 'type',
+  parentId: 'parentId',
   isCompleted: 'isCompleted',
   targetDate: 'targetDate',
   dimensions: 'dimensions',
   attributes: 'attributes',
+  frequency: 'frequency',
+  streak: 'streak',
+  consistency: 'consistency',
+  effort: 'effort',
+  estimatedHours: 'estimatedHours',
+  dependsOn: 'dependsOn',
   impact: 'impact',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -249,6 +277,7 @@ exports.Prisma.QueryMode = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  SuggestedPath: 'SuggestedPath',
   Dimension: 'Dimension',
   UserAttribute: 'UserAttribute',
   DimensionInput: 'DimensionInput',

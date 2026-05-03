@@ -24,6 +24,11 @@ export type DimensionScore = $Result.DefaultSelection<Prisma.$DimensionScorePayl
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model SuggestedPath
+ * 
+ */
+export type SuggestedPath = $Result.DefaultSelection<Prisma.$SuggestedPathPayload>
+/**
  * Model Dimension
  * 
  */
@@ -173,6 +178,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs>;
+
+  /**
+   * `prisma.suggestedPath`: Exposes CRUD operations for the **SuggestedPath** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SuggestedPaths
+    * const suggestedPaths = await prisma.suggestedPath.findMany()
+    * ```
+    */
+  get suggestedPath(): Prisma.SuggestedPathDelegate<ExtArgs>;
 
   /**
    * `prisma.dimension`: Exposes CRUD operations for the **Dimension** model.
@@ -715,6 +730,7 @@ export namespace Prisma {
 
   export const ModelName: {
     User: 'User',
+    SuggestedPath: 'SuggestedPath',
     Dimension: 'Dimension',
     UserAttribute: 'UserAttribute',
     DimensionInput: 'DimensionInput',
@@ -740,7 +756,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "dimension" | "userAttribute" | "dimensionInput" | "lifeState" | "lifeEvent" | "goal" | "goalAction" | "task" | "chatSession" | "chatMessage"
+      modelProps: "user" | "suggestedPath" | "dimension" | "userAttribute" | "dimensionInput" | "lifeState" | "lifeEvent" | "goal" | "goalAction" | "task" | "chatSession" | "chatMessage"
       txIsolationLevel: never
     }
     model: {
@@ -815,6 +831,80 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      SuggestedPath: {
+        payload: Prisma.$SuggestedPathPayload<ExtArgs>
+        fields: Prisma.SuggestedPathFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SuggestedPathFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SuggestedPathFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          findFirst: {
+            args: Prisma.SuggestedPathFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SuggestedPathFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          findMany: {
+            args: Prisma.SuggestedPathFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>[]
+          }
+          create: {
+            args: Prisma.SuggestedPathCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          createMany: {
+            args: Prisma.SuggestedPathCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SuggestedPathDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          update: {
+            args: Prisma.SuggestedPathUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          deleteMany: {
+            args: Prisma.SuggestedPathDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SuggestedPathUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SuggestedPathUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SuggestedPathPayload>
+          }
+          aggregate: {
+            args: Prisma.SuggestedPathAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSuggestedPath>
+          }
+          groupBy: {
+            args: Prisma.SuggestedPathGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SuggestedPathGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.SuggestedPathFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.SuggestedPathAggregateRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          count: {
+            args: Prisma.SuggestedPathCountArgs<ExtArgs>
+            result: $Utils.Optional<SuggestedPathCountAggregateOutputType> | number
           }
         }
       }
@@ -1712,6 +1802,7 @@ export namespace Prisma {
     lifeEvents: number
     goals: number
     chatSessions: number
+    suggestedPaths: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1721,6 +1812,7 @@ export namespace Prisma {
     lifeEvents?: boolean | UserCountOutputTypeCountLifeEventsArgs
     goals?: boolean | UserCountOutputTypeCountGoalsArgs
     chatSessions?: boolean | UserCountOutputTypeCountChatSessionsArgs
+    suggestedPaths?: boolean | UserCountOutputTypeCountSuggestedPathsArgs
   }
 
   // Custom InputTypes
@@ -1774,6 +1866,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountChatSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ChatSessionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountSuggestedPathsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SuggestedPathWhereInput
   }
 
 
@@ -1853,10 +1952,12 @@ export namespace Prisma {
    */
 
   export type GoalActionCountOutputType = {
+    subActions: number
     tasks: number
   }
 
   export type GoalActionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    subActions?: boolean | GoalActionCountOutputTypeCountSubActionsArgs
     tasks?: boolean | GoalActionCountOutputTypeCountTasksArgs
   }
 
@@ -1869,6 +1970,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the GoalActionCountOutputType
      */
     select?: GoalActionCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * GoalActionCountOutputType without action
+   */
+  export type GoalActionCountOutputTypeCountSubActionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GoalActionWhereInput
   }
 
   /**
@@ -2157,6 +2265,7 @@ export namespace Prisma {
     lifeEvents?: boolean | User$lifeEventsArgs<ExtArgs>
     goals?: boolean | User$goalsArgs<ExtArgs>
     chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
+    suggestedPaths?: boolean | User$suggestedPathsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -2177,6 +2286,7 @@ export namespace Prisma {
     lifeEvents?: boolean | User$lifeEventsArgs<ExtArgs>
     goals?: boolean | User$goalsArgs<ExtArgs>
     chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
+    suggestedPaths?: boolean | User$suggestedPathsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -2189,6 +2299,7 @@ export namespace Prisma {
       lifeEvents: Prisma.$LifeEventPayload<ExtArgs>[]
       goals: Prisma.$GoalPayload<ExtArgs>[]
       chatSessions: Prisma.$ChatSessionPayload<ExtArgs>[]
+      suggestedPaths: Prisma.$SuggestedPathPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2566,6 +2677,7 @@ export namespace Prisma {
     lifeEvents<T extends User$lifeEventsArgs<ExtArgs> = {}>(args?: Subset<T, User$lifeEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LifeEventPayload<ExtArgs>, T, "findMany"> | Null>
     goals<T extends User$goalsArgs<ExtArgs> = {}>(args?: Subset<T, User$goalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany"> | Null>
     chatSessions<T extends User$chatSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$chatSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany"> | Null>
+    suggestedPaths<T extends User$suggestedPathsArgs<ExtArgs> = {}>(args?: Subset<T, User$suggestedPathsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3047,6 +3159,26 @@ export namespace Prisma {
   }
 
   /**
+   * User.suggestedPaths
+   */
+  export type User$suggestedPathsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    where?: SuggestedPathWhereInput
+    orderBy?: SuggestedPathOrderByWithRelationInput | SuggestedPathOrderByWithRelationInput[]
+    cursor?: SuggestedPathWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SuggestedPathScalarFieldEnum | SuggestedPathScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3058,6 +3190,1042 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SuggestedPath
+   */
+
+  export type AggregateSuggestedPath = {
+    _count: SuggestedPathCountAggregateOutputType | null
+    _avg: SuggestedPathAvgAggregateOutputType | null
+    _sum: SuggestedPathSumAggregateOutputType | null
+    _min: SuggestedPathMinAggregateOutputType | null
+    _max: SuggestedPathMaxAggregateOutputType | null
+  }
+
+  export type SuggestedPathAvgAggregateOutputType = {
+    alignment: number | null
+  }
+
+  export type SuggestedPathSumAggregateOutputType = {
+    alignment: number | null
+  }
+
+  export type SuggestedPathMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    title: string | null
+    emoji: string | null
+    alignment: number | null
+    tagline: string | null
+    description: string | null
+    dimensionName: string | null
+    starterQuestion: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+  }
+
+  export type SuggestedPathMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    title: string | null
+    emoji: string | null
+    alignment: number | null
+    tagline: string | null
+    description: string | null
+    dimensionName: string | null
+    starterQuestion: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+  }
+
+  export type SuggestedPathCountAggregateOutputType = {
+    id: number
+    userId: number
+    title: number
+    emoji: number
+    alignment: number
+    tagline: number
+    description: number
+    dimensionName: number
+    reasons: number
+    starterQuestion: number
+    isActive: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type SuggestedPathAvgAggregateInputType = {
+    alignment?: true
+  }
+
+  export type SuggestedPathSumAggregateInputType = {
+    alignment?: true
+  }
+
+  export type SuggestedPathMinAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    emoji?: true
+    alignment?: true
+    tagline?: true
+    description?: true
+    dimensionName?: true
+    starterQuestion?: true
+    isActive?: true
+    createdAt?: true
+  }
+
+  export type SuggestedPathMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    emoji?: true
+    alignment?: true
+    tagline?: true
+    description?: true
+    dimensionName?: true
+    starterQuestion?: true
+    isActive?: true
+    createdAt?: true
+  }
+
+  export type SuggestedPathCountAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    emoji?: true
+    alignment?: true
+    tagline?: true
+    description?: true
+    dimensionName?: true
+    reasons?: true
+    starterQuestion?: true
+    isActive?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type SuggestedPathAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SuggestedPath to aggregate.
+     */
+    where?: SuggestedPathWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SuggestedPaths to fetch.
+     */
+    orderBy?: SuggestedPathOrderByWithRelationInput | SuggestedPathOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SuggestedPathWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SuggestedPaths from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SuggestedPaths.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SuggestedPaths
+    **/
+    _count?: true | SuggestedPathCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SuggestedPathAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SuggestedPathSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SuggestedPathMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SuggestedPathMaxAggregateInputType
+  }
+
+  export type GetSuggestedPathAggregateType<T extends SuggestedPathAggregateArgs> = {
+        [P in keyof T & keyof AggregateSuggestedPath]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSuggestedPath[P]>
+      : GetScalarType<T[P], AggregateSuggestedPath[P]>
+  }
+
+
+
+
+  export type SuggestedPathGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SuggestedPathWhereInput
+    orderBy?: SuggestedPathOrderByWithAggregationInput | SuggestedPathOrderByWithAggregationInput[]
+    by: SuggestedPathScalarFieldEnum[] | SuggestedPathScalarFieldEnum
+    having?: SuggestedPathScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SuggestedPathCountAggregateInputType | true
+    _avg?: SuggestedPathAvgAggregateInputType
+    _sum?: SuggestedPathSumAggregateInputType
+    _min?: SuggestedPathMinAggregateInputType
+    _max?: SuggestedPathMaxAggregateInputType
+  }
+
+  export type SuggestedPathGroupByOutputType = {
+    id: string
+    userId: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description: string | null
+    dimensionName: string | null
+    reasons: string[]
+    starterQuestion: string | null
+    isActive: boolean
+    createdAt: Date
+    _count: SuggestedPathCountAggregateOutputType | null
+    _avg: SuggestedPathAvgAggregateOutputType | null
+    _sum: SuggestedPathSumAggregateOutputType | null
+    _min: SuggestedPathMinAggregateOutputType | null
+    _max: SuggestedPathMaxAggregateOutputType | null
+  }
+
+  type GetSuggestedPathGroupByPayload<T extends SuggestedPathGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SuggestedPathGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SuggestedPathGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SuggestedPathGroupByOutputType[P]>
+            : GetScalarType<T[P], SuggestedPathGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SuggestedPathSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    title?: boolean
+    emoji?: boolean
+    alignment?: boolean
+    tagline?: boolean
+    description?: boolean
+    dimensionName?: boolean
+    reasons?: boolean
+    starterQuestion?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["suggestedPath"]>
+
+
+  export type SuggestedPathSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    title?: boolean
+    emoji?: boolean
+    alignment?: boolean
+    tagline?: boolean
+    description?: boolean
+    dimensionName?: boolean
+    reasons?: boolean
+    starterQuestion?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+  }
+
+  export type SuggestedPathInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $SuggestedPathPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SuggestedPath"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      title: string
+      emoji: string
+      alignment: number
+      tagline: string
+      description: string | null
+      dimensionName: string | null
+      reasons: string[]
+      starterQuestion: string | null
+      isActive: boolean
+      createdAt: Date
+    }, ExtArgs["result"]["suggestedPath"]>
+    composites: {}
+  }
+
+  type SuggestedPathGetPayload<S extends boolean | null | undefined | SuggestedPathDefaultArgs> = $Result.GetResult<Prisma.$SuggestedPathPayload, S>
+
+  type SuggestedPathCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SuggestedPathFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: SuggestedPathCountAggregateInputType | true
+    }
+
+  export interface SuggestedPathDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SuggestedPath'], meta: { name: 'SuggestedPath' } }
+    /**
+     * Find zero or one SuggestedPath that matches the filter.
+     * @param {SuggestedPathFindUniqueArgs} args - Arguments to find a SuggestedPath
+     * @example
+     * // Get one SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SuggestedPathFindUniqueArgs>(args: SelectSubset<T, SuggestedPathFindUniqueArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one SuggestedPath that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {SuggestedPathFindUniqueOrThrowArgs} args - Arguments to find a SuggestedPath
+     * @example
+     * // Get one SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SuggestedPathFindUniqueOrThrowArgs>(args: SelectSubset<T, SuggestedPathFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first SuggestedPath that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathFindFirstArgs} args - Arguments to find a SuggestedPath
+     * @example
+     * // Get one SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SuggestedPathFindFirstArgs>(args?: SelectSubset<T, SuggestedPathFindFirstArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first SuggestedPath that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathFindFirstOrThrowArgs} args - Arguments to find a SuggestedPath
+     * @example
+     * // Get one SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SuggestedPathFindFirstOrThrowArgs>(args?: SelectSubset<T, SuggestedPathFindFirstOrThrowArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more SuggestedPaths that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SuggestedPaths
+     * const suggestedPaths = await prisma.suggestedPath.findMany()
+     * 
+     * // Get first 10 SuggestedPaths
+     * const suggestedPaths = await prisma.suggestedPath.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const suggestedPathWithIdOnly = await prisma.suggestedPath.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SuggestedPathFindManyArgs>(args?: SelectSubset<T, SuggestedPathFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a SuggestedPath.
+     * @param {SuggestedPathCreateArgs} args - Arguments to create a SuggestedPath.
+     * @example
+     * // Create one SuggestedPath
+     * const SuggestedPath = await prisma.suggestedPath.create({
+     *   data: {
+     *     // ... data to create a SuggestedPath
+     *   }
+     * })
+     * 
+     */
+    create<T extends SuggestedPathCreateArgs>(args: SelectSubset<T, SuggestedPathCreateArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many SuggestedPaths.
+     * @param {SuggestedPathCreateManyArgs} args - Arguments to create many SuggestedPaths.
+     * @example
+     * // Create many SuggestedPaths
+     * const suggestedPath = await prisma.suggestedPath.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SuggestedPathCreateManyArgs>(args?: SelectSubset<T, SuggestedPathCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SuggestedPath.
+     * @param {SuggestedPathDeleteArgs} args - Arguments to delete one SuggestedPath.
+     * @example
+     * // Delete one SuggestedPath
+     * const SuggestedPath = await prisma.suggestedPath.delete({
+     *   where: {
+     *     // ... filter to delete one SuggestedPath
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SuggestedPathDeleteArgs>(args: SelectSubset<T, SuggestedPathDeleteArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one SuggestedPath.
+     * @param {SuggestedPathUpdateArgs} args - Arguments to update one SuggestedPath.
+     * @example
+     * // Update one SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SuggestedPathUpdateArgs>(args: SelectSubset<T, SuggestedPathUpdateArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more SuggestedPaths.
+     * @param {SuggestedPathDeleteManyArgs} args - Arguments to filter SuggestedPaths to delete.
+     * @example
+     * // Delete a few SuggestedPaths
+     * const { count } = await prisma.suggestedPath.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SuggestedPathDeleteManyArgs>(args?: SelectSubset<T, SuggestedPathDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SuggestedPaths.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SuggestedPaths
+     * const suggestedPath = await prisma.suggestedPath.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SuggestedPathUpdateManyArgs>(args: SelectSubset<T, SuggestedPathUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SuggestedPath.
+     * @param {SuggestedPathUpsertArgs} args - Arguments to update or create a SuggestedPath.
+     * @example
+     * // Update or create a SuggestedPath
+     * const suggestedPath = await prisma.suggestedPath.upsert({
+     *   create: {
+     *     // ... data to create a SuggestedPath
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SuggestedPath we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SuggestedPathUpsertArgs>(args: SelectSubset<T, SuggestedPathUpsertArgs<ExtArgs>>): Prisma__SuggestedPathClient<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+    /**
+     * Find zero or more SuggestedPaths that matches the filter.
+     * @param {SuggestedPathFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const suggestedPath = await prisma.suggestedPath.findRaw({
+     *   filter: { age: { $gt: 25 } } 
+     * })
+     */
+    findRaw(args?: SuggestedPathFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a SuggestedPath.
+     * @param {SuggestedPathAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const suggestedPath = await prisma.suggestedPath.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: SuggestedPathAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
+
+
+    /**
+     * Count the number of SuggestedPaths.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathCountArgs} args - Arguments to filter SuggestedPaths to count.
+     * @example
+     * // Count the number of SuggestedPaths
+     * const count = await prisma.suggestedPath.count({
+     *   where: {
+     *     // ... the filter for the SuggestedPaths we want to count
+     *   }
+     * })
+    **/
+    count<T extends SuggestedPathCountArgs>(
+      args?: Subset<T, SuggestedPathCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SuggestedPathCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SuggestedPath.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SuggestedPathAggregateArgs>(args: Subset<T, SuggestedPathAggregateArgs>): Prisma.PrismaPromise<GetSuggestedPathAggregateType<T>>
+
+    /**
+     * Group by SuggestedPath.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SuggestedPathGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SuggestedPathGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SuggestedPathGroupByArgs['orderBy'] }
+        : { orderBy?: SuggestedPathGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SuggestedPathGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSuggestedPathGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SuggestedPath model
+   */
+  readonly fields: SuggestedPathFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SuggestedPath.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SuggestedPathClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SuggestedPath model
+   */ 
+  interface SuggestedPathFieldRefs {
+    readonly id: FieldRef<"SuggestedPath", 'String'>
+    readonly userId: FieldRef<"SuggestedPath", 'String'>
+    readonly title: FieldRef<"SuggestedPath", 'String'>
+    readonly emoji: FieldRef<"SuggestedPath", 'String'>
+    readonly alignment: FieldRef<"SuggestedPath", 'Int'>
+    readonly tagline: FieldRef<"SuggestedPath", 'String'>
+    readonly description: FieldRef<"SuggestedPath", 'String'>
+    readonly dimensionName: FieldRef<"SuggestedPath", 'String'>
+    readonly reasons: FieldRef<"SuggestedPath", 'String[]'>
+    readonly starterQuestion: FieldRef<"SuggestedPath", 'String'>
+    readonly isActive: FieldRef<"SuggestedPath", 'Boolean'>
+    readonly createdAt: FieldRef<"SuggestedPath", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SuggestedPath findUnique
+   */
+  export type SuggestedPathFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter, which SuggestedPath to fetch.
+     */
+    where: SuggestedPathWhereUniqueInput
+  }
+
+  /**
+   * SuggestedPath findUniqueOrThrow
+   */
+  export type SuggestedPathFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter, which SuggestedPath to fetch.
+     */
+    where: SuggestedPathWhereUniqueInput
+  }
+
+  /**
+   * SuggestedPath findFirst
+   */
+  export type SuggestedPathFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter, which SuggestedPath to fetch.
+     */
+    where?: SuggestedPathWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SuggestedPaths to fetch.
+     */
+    orderBy?: SuggestedPathOrderByWithRelationInput | SuggestedPathOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SuggestedPaths.
+     */
+    cursor?: SuggestedPathWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SuggestedPaths from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SuggestedPaths.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SuggestedPaths.
+     */
+    distinct?: SuggestedPathScalarFieldEnum | SuggestedPathScalarFieldEnum[]
+  }
+
+  /**
+   * SuggestedPath findFirstOrThrow
+   */
+  export type SuggestedPathFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter, which SuggestedPath to fetch.
+     */
+    where?: SuggestedPathWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SuggestedPaths to fetch.
+     */
+    orderBy?: SuggestedPathOrderByWithRelationInput | SuggestedPathOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SuggestedPaths.
+     */
+    cursor?: SuggestedPathWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SuggestedPaths from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SuggestedPaths.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SuggestedPaths.
+     */
+    distinct?: SuggestedPathScalarFieldEnum | SuggestedPathScalarFieldEnum[]
+  }
+
+  /**
+   * SuggestedPath findMany
+   */
+  export type SuggestedPathFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter, which SuggestedPaths to fetch.
+     */
+    where?: SuggestedPathWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SuggestedPaths to fetch.
+     */
+    orderBy?: SuggestedPathOrderByWithRelationInput | SuggestedPathOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SuggestedPaths.
+     */
+    cursor?: SuggestedPathWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SuggestedPaths from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SuggestedPaths.
+     */
+    skip?: number
+    distinct?: SuggestedPathScalarFieldEnum | SuggestedPathScalarFieldEnum[]
+  }
+
+  /**
+   * SuggestedPath create
+   */
+  export type SuggestedPathCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SuggestedPath.
+     */
+    data: XOR<SuggestedPathCreateInput, SuggestedPathUncheckedCreateInput>
+  }
+
+  /**
+   * SuggestedPath createMany
+   */
+  export type SuggestedPathCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SuggestedPaths.
+     */
+    data: SuggestedPathCreateManyInput | SuggestedPathCreateManyInput[]
+  }
+
+  /**
+   * SuggestedPath update
+   */
+  export type SuggestedPathUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SuggestedPath.
+     */
+    data: XOR<SuggestedPathUpdateInput, SuggestedPathUncheckedUpdateInput>
+    /**
+     * Choose, which SuggestedPath to update.
+     */
+    where: SuggestedPathWhereUniqueInput
+  }
+
+  /**
+   * SuggestedPath updateMany
+   */
+  export type SuggestedPathUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SuggestedPaths.
+     */
+    data: XOR<SuggestedPathUpdateManyMutationInput, SuggestedPathUncheckedUpdateManyInput>
+    /**
+     * Filter which SuggestedPaths to update
+     */
+    where?: SuggestedPathWhereInput
+  }
+
+  /**
+   * SuggestedPath upsert
+   */
+  export type SuggestedPathUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SuggestedPath to update in case it exists.
+     */
+    where: SuggestedPathWhereUniqueInput
+    /**
+     * In case the SuggestedPath found by the `where` argument doesn't exist, create a new SuggestedPath with this data.
+     */
+    create: XOR<SuggestedPathCreateInput, SuggestedPathUncheckedCreateInput>
+    /**
+     * In case the SuggestedPath was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SuggestedPathUpdateInput, SuggestedPathUncheckedUpdateInput>
+  }
+
+  /**
+   * SuggestedPath delete
+   */
+  export type SuggestedPathDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
+    /**
+     * Filter which SuggestedPath to delete.
+     */
+    where: SuggestedPathWhereUniqueInput
+  }
+
+  /**
+   * SuggestedPath deleteMany
+   */
+  export type SuggestedPathDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SuggestedPaths to delete
+     */
+    where?: SuggestedPathWhereInput
+  }
+
+  /**
+   * SuggestedPath findRaw
+   */
+  export type SuggestedPathFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * SuggestedPath aggregateRaw
+   */
+  export type SuggestedPathAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * SuggestedPath without action
+   */
+  export type SuggestedPathDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SuggestedPath
+     */
+    select?: SuggestedPathSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SuggestedPathInclude<ExtArgs> | null
   }
 
 
@@ -8023,10 +9191,14 @@ export namespace Prisma {
   }
 
   export type GoalAvgAggregateOutputType = {
+    readinessScore: number | null
+    alignmentScore: number | null
     progress: number | null
   }
 
   export type GoalSumAggregateOutputType = {
+    readinessScore: number | null
+    alignmentScore: number | null
     progress: number | null
   }
 
@@ -8036,6 +9208,9 @@ export namespace Prisma {
     title: string | null
     description: string | null
     dimensionId: string | null
+    deadline: Date | null
+    readinessScore: number | null
+    alignmentScore: number | null
     progress: number | null
     status: string | null
     createdAt: Date | null
@@ -8048,6 +9223,9 @@ export namespace Prisma {
     title: string | null
     description: string | null
     dimensionId: string | null
+    deadline: Date | null
+    readinessScore: number | null
+    alignmentScore: number | null
     progress: number | null
     status: string | null
     createdAt: Date | null
@@ -8060,6 +9238,11 @@ export namespace Prisma {
     title: number
     description: number
     dimensionId: number
+    target: number
+    deadline: number
+    constraints: number
+    readinessScore: number
+    alignmentScore: number
     progress: number
     status: number
     createdAt: number
@@ -8069,10 +9252,14 @@ export namespace Prisma {
 
 
   export type GoalAvgAggregateInputType = {
+    readinessScore?: true
+    alignmentScore?: true
     progress?: true
   }
 
   export type GoalSumAggregateInputType = {
+    readinessScore?: true
+    alignmentScore?: true
     progress?: true
   }
 
@@ -8082,6 +9269,9 @@ export namespace Prisma {
     title?: true
     description?: true
     dimensionId?: true
+    deadline?: true
+    readinessScore?: true
+    alignmentScore?: true
     progress?: true
     status?: true
     createdAt?: true
@@ -8094,6 +9284,9 @@ export namespace Prisma {
     title?: true
     description?: true
     dimensionId?: true
+    deadline?: true
+    readinessScore?: true
+    alignmentScore?: true
     progress?: true
     status?: true
     createdAt?: true
@@ -8106,6 +9299,11 @@ export namespace Prisma {
     title?: true
     description?: true
     dimensionId?: true
+    target?: true
+    deadline?: true
+    constraints?: true
+    readinessScore?: true
+    alignmentScore?: true
     progress?: true
     status?: true
     createdAt?: true
@@ -8205,6 +9403,11 @@ export namespace Prisma {
     title: string
     description: string | null
     dimensionId: string | null
+    target: JsonValue | null
+    deadline: Date | null
+    constraints: JsonValue | null
+    readinessScore: number | null
+    alignmentScore: number | null
     progress: number
     status: string
     createdAt: Date
@@ -8236,6 +9439,11 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     dimensionId?: boolean
+    target?: boolean
+    deadline?: boolean
+    constraints?: boolean
+    readinessScore?: boolean
+    alignmentScore?: boolean
     progress?: boolean
     status?: boolean
     createdAt?: boolean
@@ -8252,6 +9460,11 @@ export namespace Prisma {
     title?: boolean
     description?: boolean
     dimensionId?: boolean
+    target?: boolean
+    deadline?: boolean
+    constraints?: boolean
+    readinessScore?: boolean
+    alignmentScore?: boolean
     progress?: boolean
     status?: boolean
     createdAt?: boolean
@@ -8276,6 +9489,11 @@ export namespace Prisma {
       title: string
       description: string | null
       dimensionId: string | null
+      target: Prisma.JsonValue | null
+      deadline: Date | null
+      constraints: Prisma.JsonValue | null
+      readinessScore: number | null
+      alignmentScore: number | null
       progress: number
       status: string
       createdAt: Date
@@ -8679,6 +9897,11 @@ export namespace Prisma {
     readonly title: FieldRef<"Goal", 'String'>
     readonly description: FieldRef<"Goal", 'String'>
     readonly dimensionId: FieldRef<"Goal", 'String'>
+    readonly target: FieldRef<"Goal", 'Json'>
+    readonly deadline: FieldRef<"Goal", 'DateTime'>
+    readonly constraints: FieldRef<"Goal", 'Json'>
+    readonly readinessScore: FieldRef<"Goal", 'Float'>
+    readonly alignmentScore: FieldRef<"Goal", 'Float'>
     readonly progress: FieldRef<"Goal", 'Float'>
     readonly status: FieldRef<"Goal", 'String'>
     readonly createdAt: FieldRef<"Goal", 'DateTime'>
@@ -9049,8 +10272,24 @@ export namespace Prisma {
 
   export type AggregateGoalAction = {
     _count: GoalActionCountAggregateOutputType | null
+    _avg: GoalActionAvgAggregateOutputType | null
+    _sum: GoalActionSumAggregateOutputType | null
     _min: GoalActionMinAggregateOutputType | null
     _max: GoalActionMaxAggregateOutputType | null
+  }
+
+  export type GoalActionAvgAggregateOutputType = {
+    streak: number | null
+    consistency: number | null
+    effort: number | null
+    estimatedHours: number | null
+  }
+
+  export type GoalActionSumAggregateOutputType = {
+    streak: number | null
+    consistency: number | null
+    effort: number | null
+    estimatedHours: number | null
   }
 
   export type GoalActionMinAggregateOutputType = {
@@ -9058,8 +10297,14 @@ export namespace Prisma {
     goalId: string | null
     title: string | null
     description: string | null
+    type: string | null
+    parentId: string | null
     isCompleted: boolean | null
     targetDate: Date | null
+    streak: number | null
+    consistency: number | null
+    effort: number | null
+    estimatedHours: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9069,8 +10314,14 @@ export namespace Prisma {
     goalId: string | null
     title: string | null
     description: string | null
+    type: string | null
+    parentId: string | null
     isCompleted: boolean | null
     targetDate: Date | null
+    streak: number | null
+    consistency: number | null
+    effort: number | null
+    estimatedHours: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9080,10 +10331,18 @@ export namespace Prisma {
     goalId: number
     title: number
     description: number
+    type: number
+    parentId: number
     isCompleted: number
     targetDate: number
     dimensions: number
     attributes: number
+    frequency: number
+    streak: number
+    consistency: number
+    effort: number
+    estimatedHours: number
+    dependsOn: number
     impact: number
     createdAt: number
     updatedAt: number
@@ -9091,13 +10350,33 @@ export namespace Prisma {
   }
 
 
+  export type GoalActionAvgAggregateInputType = {
+    streak?: true
+    consistency?: true
+    effort?: true
+    estimatedHours?: true
+  }
+
+  export type GoalActionSumAggregateInputType = {
+    streak?: true
+    consistency?: true
+    effort?: true
+    estimatedHours?: true
+  }
+
   export type GoalActionMinAggregateInputType = {
     id?: true
     goalId?: true
     title?: true
     description?: true
+    type?: true
+    parentId?: true
     isCompleted?: true
     targetDate?: true
+    streak?: true
+    consistency?: true
+    effort?: true
+    estimatedHours?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -9107,8 +10386,14 @@ export namespace Prisma {
     goalId?: true
     title?: true
     description?: true
+    type?: true
+    parentId?: true
     isCompleted?: true
     targetDate?: true
+    streak?: true
+    consistency?: true
+    effort?: true
+    estimatedHours?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -9118,10 +10403,18 @@ export namespace Prisma {
     goalId?: true
     title?: true
     description?: true
+    type?: true
+    parentId?: true
     isCompleted?: true
     targetDate?: true
     dimensions?: true
     attributes?: true
+    frequency?: true
+    streak?: true
+    consistency?: true
+    effort?: true
+    estimatedHours?: true
+    dependsOn?: true
     impact?: true
     createdAt?: true
     updatedAt?: true
@@ -9166,6 +10459,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: GoalActionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: GoalActionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: GoalActionMinAggregateInputType
@@ -9196,6 +10501,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: GoalActionCountAggregateInputType | true
+    _avg?: GoalActionAvgAggregateInputType
+    _sum?: GoalActionSumAggregateInputType
     _min?: GoalActionMinAggregateInputType
     _max?: GoalActionMaxAggregateInputType
   }
@@ -9205,14 +10512,24 @@ export namespace Prisma {
     goalId: string
     title: string
     description: string | null
+    type: string
+    parentId: string | null
     isCompleted: boolean
     targetDate: Date | null
     dimensions: string[]
     attributes: string[]
+    frequency: JsonValue | null
+    streak: number | null
+    consistency: number | null
+    effort: number | null
+    estimatedHours: number | null
+    dependsOn: string[]
     impact: JsonValue | null
     createdAt: Date
     updatedAt: Date | null
     _count: GoalActionCountAggregateOutputType | null
+    _avg: GoalActionAvgAggregateOutputType | null
+    _sum: GoalActionSumAggregateOutputType | null
     _min: GoalActionMinAggregateOutputType | null
     _max: GoalActionMaxAggregateOutputType | null
   }
@@ -9236,13 +10553,23 @@ export namespace Prisma {
     goalId?: boolean
     title?: boolean
     description?: boolean
+    type?: boolean
+    parentId?: boolean
     isCompleted?: boolean
     targetDate?: boolean
     dimensions?: boolean
     attributes?: boolean
+    frequency?: boolean
+    streak?: boolean
+    consistency?: boolean
+    effort?: boolean
+    estimatedHours?: boolean
+    dependsOn?: boolean
     impact?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    parent?: boolean | GoalAction$parentArgs<ExtArgs>
+    subActions?: boolean | GoalAction$subActionsArgs<ExtArgs>
     goal?: boolean | GoalDefaultArgs<ExtArgs>
     tasks?: boolean | GoalAction$tasksArgs<ExtArgs>
     _count?: boolean | GoalActionCountOutputTypeDefaultArgs<ExtArgs>
@@ -9254,16 +10581,26 @@ export namespace Prisma {
     goalId?: boolean
     title?: boolean
     description?: boolean
+    type?: boolean
+    parentId?: boolean
     isCompleted?: boolean
     targetDate?: boolean
     dimensions?: boolean
     attributes?: boolean
+    frequency?: boolean
+    streak?: boolean
+    consistency?: boolean
+    effort?: boolean
+    estimatedHours?: boolean
+    dependsOn?: boolean
     impact?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
   export type GoalActionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    parent?: boolean | GoalAction$parentArgs<ExtArgs>
+    subActions?: boolean | GoalAction$subActionsArgs<ExtArgs>
     goal?: boolean | GoalDefaultArgs<ExtArgs>
     tasks?: boolean | GoalAction$tasksArgs<ExtArgs>
     _count?: boolean | GoalActionCountOutputTypeDefaultArgs<ExtArgs>
@@ -9272,6 +10609,8 @@ export namespace Prisma {
   export type $GoalActionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "GoalAction"
     objects: {
+      parent: Prisma.$GoalActionPayload<ExtArgs> | null
+      subActions: Prisma.$GoalActionPayload<ExtArgs>[]
       goal: Prisma.$GoalPayload<ExtArgs>
       tasks: Prisma.$TaskPayload<ExtArgs>[]
     }
@@ -9280,10 +10619,18 @@ export namespace Prisma {
       goalId: string
       title: string
       description: string | null
+      type: string
+      parentId: string | null
       isCompleted: boolean
       targetDate: Date | null
       dimensions: string[]
       attributes: string[]
+      frequency: Prisma.JsonValue | null
+      streak: number | null
+      consistency: number | null
+      effort: number | null
+      estimatedHours: number | null
+      dependsOn: string[]
       impact: Prisma.JsonValue | null
       createdAt: Date
       updatedAt: Date | null
@@ -9650,6 +10997,8 @@ export namespace Prisma {
    */
   export interface Prisma__GoalActionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    parent<T extends GoalAction$parentArgs<ExtArgs> = {}>(args?: Subset<T, GoalAction$parentArgs<ExtArgs>>): Prisma__GoalActionClient<$Result.GetResult<Prisma.$GoalActionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    subActions<T extends GoalAction$subActionsArgs<ExtArgs> = {}>(args?: Subset<T, GoalAction$subActionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalActionPayload<ExtArgs>, T, "findMany"> | Null>
     goal<T extends GoalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, GoalDefaultArgs<ExtArgs>>): Prisma__GoalClient<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     tasks<T extends GoalAction$tasksArgs<ExtArgs> = {}>(args?: Subset<T, GoalAction$tasksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -9685,10 +11034,18 @@ export namespace Prisma {
     readonly goalId: FieldRef<"GoalAction", 'String'>
     readonly title: FieldRef<"GoalAction", 'String'>
     readonly description: FieldRef<"GoalAction", 'String'>
+    readonly type: FieldRef<"GoalAction", 'String'>
+    readonly parentId: FieldRef<"GoalAction", 'String'>
     readonly isCompleted: FieldRef<"GoalAction", 'Boolean'>
     readonly targetDate: FieldRef<"GoalAction", 'DateTime'>
     readonly dimensions: FieldRef<"GoalAction", 'String[]'>
     readonly attributes: FieldRef<"GoalAction", 'String[]'>
+    readonly frequency: FieldRef<"GoalAction", 'Json'>
+    readonly streak: FieldRef<"GoalAction", 'Int'>
+    readonly consistency: FieldRef<"GoalAction", 'Float'>
+    readonly effort: FieldRef<"GoalAction", 'Int'>
+    readonly estimatedHours: FieldRef<"GoalAction", 'Float'>
+    readonly dependsOn: FieldRef<"GoalAction", 'String[]'>
     readonly impact: FieldRef<"GoalAction", 'Json'>
     readonly createdAt: FieldRef<"GoalAction", 'DateTime'>
     readonly updatedAt: FieldRef<"GoalAction", 'DateTime'>
@@ -10015,6 +11372,41 @@ export namespace Prisma {
      * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
      */
     options?: InputJsonValue
+  }
+
+  /**
+   * GoalAction.parent
+   */
+  export type GoalAction$parentArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalAction
+     */
+    select?: GoalActionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalActionInclude<ExtArgs> | null
+    where?: GoalActionWhereInput
+  }
+
+  /**
+   * GoalAction.subActions
+   */
+  export type GoalAction$subActionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalAction
+     */
+    select?: GoalActionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalActionInclude<ExtArgs> | null
+    where?: GoalActionWhereInput
+    orderBy?: GoalActionOrderByWithRelationInput | GoalActionOrderByWithRelationInput[]
+    cursor?: GoalActionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: GoalActionScalarFieldEnum | GoalActionScalarFieldEnum[]
   }
 
   /**
@@ -12970,6 +14362,24 @@ export namespace Prisma {
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+  export const SuggestedPathScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    title: 'title',
+    emoji: 'emoji',
+    alignment: 'alignment',
+    tagline: 'tagline',
+    description: 'description',
+    dimensionName: 'dimensionName',
+    reasons: 'reasons',
+    starterQuestion: 'starterQuestion',
+    isActive: 'isActive',
+    createdAt: 'createdAt'
+  };
+
+  export type SuggestedPathScalarFieldEnum = (typeof SuggestedPathScalarFieldEnum)[keyof typeof SuggestedPathScalarFieldEnum]
+
+
   export const DimensionScalarFieldEnum: {
     id: 'id',
     name: 'name',
@@ -13048,6 +14458,11 @@ export namespace Prisma {
     title: 'title',
     description: 'description',
     dimensionId: 'dimensionId',
+    target: 'target',
+    deadline: 'deadline',
+    constraints: 'constraints',
+    readinessScore: 'readinessScore',
+    alignmentScore: 'alignmentScore',
     progress: 'progress',
     status: 'status',
     createdAt: 'createdAt',
@@ -13062,10 +14477,18 @@ export namespace Prisma {
     goalId: 'goalId',
     title: 'title',
     description: 'description',
+    type: 'type',
+    parentId: 'parentId',
     isCompleted: 'isCompleted',
     targetDate: 'targetDate',
     dimensions: 'dimensions',
     attributes: 'attributes',
+    frequency: 'frequency',
+    streak: 'streak',
+    consistency: 'consistency',
+    effort: 'effort',
+    estimatedHours: 'estimatedHours',
+    dependsOn: 'dependsOn',
     impact: 'impact',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -13222,6 +14645,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventListRelationFilter
     goals?: GoalListRelationFilter
     chatSessions?: ChatSessionListRelationFilter
+    suggestedPaths?: SuggestedPathListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -13237,6 +14661,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventOrderByRelationAggregateInput
     goals?: GoalOrderByRelationAggregateInput
     chatSessions?: ChatSessionOrderByRelationAggregateInput
+    suggestedPaths?: SuggestedPathOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -13255,6 +14680,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventListRelationFilter
     goals?: GoalListRelationFilter
     chatSessions?: ChatSessionListRelationFilter
+    suggestedPaths?: SuggestedPathListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -13279,6 +14705,98 @@ export namespace Prisma {
     avatarUrl?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+  }
+
+  export type SuggestedPathWhereInput = {
+    AND?: SuggestedPathWhereInput | SuggestedPathWhereInput[]
+    OR?: SuggestedPathWhereInput[]
+    NOT?: SuggestedPathWhereInput | SuggestedPathWhereInput[]
+    id?: StringFilter<"SuggestedPath"> | string
+    userId?: StringFilter<"SuggestedPath"> | string
+    title?: StringFilter<"SuggestedPath"> | string
+    emoji?: StringFilter<"SuggestedPath"> | string
+    alignment?: IntFilter<"SuggestedPath"> | number
+    tagline?: StringFilter<"SuggestedPath"> | string
+    description?: StringNullableFilter<"SuggestedPath"> | string | null
+    dimensionName?: StringNullableFilter<"SuggestedPath"> | string | null
+    reasons?: StringNullableListFilter<"SuggestedPath">
+    starterQuestion?: StringNullableFilter<"SuggestedPath"> | string | null
+    isActive?: BoolFilter<"SuggestedPath"> | boolean
+    createdAt?: DateTimeFilter<"SuggestedPath"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type SuggestedPathOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    emoji?: SortOrder
+    alignment?: SortOrder
+    tagline?: SortOrder
+    description?: SortOrder
+    dimensionName?: SortOrder
+    reasons?: SortOrder
+    starterQuestion?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type SuggestedPathWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SuggestedPathWhereInput | SuggestedPathWhereInput[]
+    OR?: SuggestedPathWhereInput[]
+    NOT?: SuggestedPathWhereInput | SuggestedPathWhereInput[]
+    userId?: StringFilter<"SuggestedPath"> | string
+    title?: StringFilter<"SuggestedPath"> | string
+    emoji?: StringFilter<"SuggestedPath"> | string
+    alignment?: IntFilter<"SuggestedPath"> | number
+    tagline?: StringFilter<"SuggestedPath"> | string
+    description?: StringNullableFilter<"SuggestedPath"> | string | null
+    dimensionName?: StringNullableFilter<"SuggestedPath"> | string | null
+    reasons?: StringNullableListFilter<"SuggestedPath">
+    starterQuestion?: StringNullableFilter<"SuggestedPath"> | string | null
+    isActive?: BoolFilter<"SuggestedPath"> | boolean
+    createdAt?: DateTimeFilter<"SuggestedPath"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type SuggestedPathOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    emoji?: SortOrder
+    alignment?: SortOrder
+    tagline?: SortOrder
+    description?: SortOrder
+    dimensionName?: SortOrder
+    reasons?: SortOrder
+    starterQuestion?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    _count?: SuggestedPathCountOrderByAggregateInput
+    _avg?: SuggestedPathAvgOrderByAggregateInput
+    _max?: SuggestedPathMaxOrderByAggregateInput
+    _min?: SuggestedPathMinOrderByAggregateInput
+    _sum?: SuggestedPathSumOrderByAggregateInput
+  }
+
+  export type SuggestedPathScalarWhereWithAggregatesInput = {
+    AND?: SuggestedPathScalarWhereWithAggregatesInput | SuggestedPathScalarWhereWithAggregatesInput[]
+    OR?: SuggestedPathScalarWhereWithAggregatesInput[]
+    NOT?: SuggestedPathScalarWhereWithAggregatesInput | SuggestedPathScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SuggestedPath"> | string
+    userId?: StringWithAggregatesFilter<"SuggestedPath"> | string
+    title?: StringWithAggregatesFilter<"SuggestedPath"> | string
+    emoji?: StringWithAggregatesFilter<"SuggestedPath"> | string
+    alignment?: IntWithAggregatesFilter<"SuggestedPath"> | number
+    tagline?: StringWithAggregatesFilter<"SuggestedPath"> | string
+    description?: StringNullableWithAggregatesFilter<"SuggestedPath"> | string | null
+    dimensionName?: StringNullableWithAggregatesFilter<"SuggestedPath"> | string | null
+    reasons?: StringNullableListFilter<"SuggestedPath">
+    starterQuestion?: StringNullableWithAggregatesFilter<"SuggestedPath"> | string | null
+    isActive?: BoolWithAggregatesFilter<"SuggestedPath"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"SuggestedPath"> | Date | string
   }
 
   export type DimensionWhereInput = {
@@ -13666,6 +15184,11 @@ export namespace Prisma {
     title?: StringFilter<"Goal"> | string
     description?: StringNullableFilter<"Goal"> | string | null
     dimensionId?: StringNullableFilter<"Goal"> | string | null
+    target?: JsonNullableFilter<"Goal">
+    deadline?: DateTimeNullableFilter<"Goal"> | Date | string | null
+    constraints?: JsonNullableFilter<"Goal">
+    readinessScore?: FloatNullableFilter<"Goal"> | number | null
+    alignmentScore?: FloatNullableFilter<"Goal"> | number | null
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
@@ -13680,6 +15203,11 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     dimensionId?: SortOrder
+    target?: SortOrder
+    deadline?: SortOrder
+    constraints?: SortOrder
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -13697,6 +15225,11 @@ export namespace Prisma {
     title?: StringFilter<"Goal"> | string
     description?: StringNullableFilter<"Goal"> | string | null
     dimensionId?: StringNullableFilter<"Goal"> | string | null
+    target?: JsonNullableFilter<"Goal">
+    deadline?: DateTimeNullableFilter<"Goal"> | Date | string | null
+    constraints?: JsonNullableFilter<"Goal">
+    readinessScore?: FloatNullableFilter<"Goal"> | number | null
+    alignmentScore?: FloatNullableFilter<"Goal"> | number | null
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
@@ -13711,6 +15244,11 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     dimensionId?: SortOrder
+    target?: SortOrder
+    deadline?: SortOrder
+    constraints?: SortOrder
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -13731,6 +15269,11 @@ export namespace Prisma {
     title?: StringWithAggregatesFilter<"Goal"> | string
     description?: StringNullableWithAggregatesFilter<"Goal"> | string | null
     dimensionId?: StringNullableWithAggregatesFilter<"Goal"> | string | null
+    target?: JsonNullableWithAggregatesFilter<"Goal">
+    deadline?: DateTimeNullableWithAggregatesFilter<"Goal"> | Date | string | null
+    constraints?: JsonNullableWithAggregatesFilter<"Goal">
+    readinessScore?: FloatNullableWithAggregatesFilter<"Goal"> | number | null
+    alignmentScore?: FloatNullableWithAggregatesFilter<"Goal"> | number | null
     progress?: FloatWithAggregatesFilter<"Goal"> | number
     status?: StringWithAggregatesFilter<"Goal"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Goal"> | Date | string
@@ -13745,13 +15288,23 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     description?: StringNullableFilter<"GoalAction"> | string | null
+    type?: StringFilter<"GoalAction"> | string
+    parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
+    frequency?: JsonNullableFilter<"GoalAction">
+    streak?: IntNullableFilter<"GoalAction"> | number | null
+    consistency?: FloatNullableFilter<"GoalAction"> | number | null
+    effort?: IntNullableFilter<"GoalAction"> | number | null
+    estimatedHours?: FloatNullableFilter<"GoalAction"> | number | null
+    dependsOn?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
     updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+    parent?: XOR<GoalActionNullableRelationFilter, GoalActionWhereInput> | null
+    subActions?: GoalActionListRelationFilter
     goal?: XOR<GoalRelationFilter, GoalWhereInput>
     tasks?: TaskListRelationFilter
   }
@@ -13761,13 +15314,23 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    type?: SortOrder
+    parentId?: SortOrder
     isCompleted?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
+    frequency?: SortOrder
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
+    dependsOn?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    parent?: GoalActionOrderByWithRelationInput
+    subActions?: GoalActionOrderByRelationAggregateInput
     goal?: GoalOrderByWithRelationInput
     tasks?: TaskOrderByRelationAggregateInput
   }
@@ -13780,13 +15343,23 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     description?: StringNullableFilter<"GoalAction"> | string | null
+    type?: StringFilter<"GoalAction"> | string
+    parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
+    frequency?: JsonNullableFilter<"GoalAction">
+    streak?: IntNullableFilter<"GoalAction"> | number | null
+    consistency?: FloatNullableFilter<"GoalAction"> | number | null
+    effort?: IntNullableFilter<"GoalAction"> | number | null
+    estimatedHours?: FloatNullableFilter<"GoalAction"> | number | null
+    dependsOn?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
     updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+    parent?: XOR<GoalActionNullableRelationFilter, GoalActionWhereInput> | null
+    subActions?: GoalActionListRelationFilter
     goal?: XOR<GoalRelationFilter, GoalWhereInput>
     tasks?: TaskListRelationFilter
   }, "id">
@@ -13796,16 +15369,26 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    type?: SortOrder
+    parentId?: SortOrder
     isCompleted?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
+    frequency?: SortOrder
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
+    dependsOn?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: GoalActionCountOrderByAggregateInput
+    _avg?: GoalActionAvgOrderByAggregateInput
     _max?: GoalActionMaxOrderByAggregateInput
     _min?: GoalActionMinOrderByAggregateInput
+    _sum?: GoalActionSumOrderByAggregateInput
   }
 
   export type GoalActionScalarWhereWithAggregatesInput = {
@@ -13816,10 +15399,18 @@ export namespace Prisma {
     goalId?: StringWithAggregatesFilter<"GoalAction"> | string
     title?: StringWithAggregatesFilter<"GoalAction"> | string
     description?: StringNullableWithAggregatesFilter<"GoalAction"> | string | null
+    type?: StringWithAggregatesFilter<"GoalAction"> | string
+    parentId?: StringNullableWithAggregatesFilter<"GoalAction"> | string | null
     isCompleted?: BoolWithAggregatesFilter<"GoalAction"> | boolean
     targetDate?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
+    frequency?: JsonNullableWithAggregatesFilter<"GoalAction">
+    streak?: IntNullableWithAggregatesFilter<"GoalAction"> | number | null
+    consistency?: FloatNullableWithAggregatesFilter<"GoalAction"> | number | null
+    effort?: IntNullableWithAggregatesFilter<"GoalAction"> | number | null
+    estimatedHours?: FloatNullableWithAggregatesFilter<"GoalAction"> | number | null
+    dependsOn?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableWithAggregatesFilter<"GoalAction">
     createdAt?: DateTimeWithAggregatesFilter<"GoalAction"> | Date | string
     updatedAt?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
@@ -14033,6 +15624,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -14048,6 +15640,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -14062,6 +15655,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -14076,6 +15670,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -14101,6 +15696,106 @@ export namespace Prisma {
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathCreateInput = {
+    id?: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutSuggestedPathsInput
+  }
+
+  export type SuggestedPathUncheckedCreateInput = {
+    id?: string
+    userId: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type SuggestedPathUpdateInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutSuggestedPathsNestedInput
+  }
+
+  export type SuggestedPathUncheckedUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathCreateManyInput = {
+    id?: string
+    userId: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type SuggestedPathUpdateManyMutationInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathUncheckedUpdateManyInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DimensionCreateInput = {
@@ -14496,6 +16191,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -14510,6 +16210,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -14521,6 +16226,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14534,6 +16244,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14547,6 +16262,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -14557,6 +16277,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14568,6 +16293,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14578,13 +16308,22 @@ export namespace Prisma {
     id?: string
     title: string
     description?: string | null
+    type: string
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    parent?: GoalActionCreateNestedOneWithoutSubActionsInput
+    subActions?: GoalActionCreateNestedManyWithoutParentInput
     goal: GoalCreateNestedOneWithoutActionsInput
     tasks?: TaskCreateNestedManyWithoutGoalActionInput
   }
@@ -14594,26 +16333,44 @@ export namespace Prisma {
     goalId: string
     title: string
     description?: string | null
+    type: string
+    parentId?: string | null
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    subActions?: GoalActionUncheckedCreateNestedManyWithoutParentInput
     tasks?: TaskUncheckedCreateNestedManyWithoutGoalActionInput
   }
 
   export type GoalActionUpdateInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parent?: GoalActionUpdateOneWithoutSubActionsNestedInput
+    subActions?: GoalActionUpdateManyWithoutParentNestedInput
     goal?: GoalUpdateOneRequiredWithoutActionsNestedInput
     tasks?: TaskUpdateManyWithoutGoalActionNestedInput
   }
@@ -14622,13 +16379,22 @@ export namespace Prisma {
     goalId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subActions?: GoalActionUncheckedUpdateManyWithoutParentNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutGoalActionNestedInput
   }
 
@@ -14637,10 +16403,18 @@ export namespace Prisma {
     goalId: string
     title: string
     description?: string | null
+    type: string
+    parentId?: string | null
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
@@ -14649,10 +16423,17 @@ export namespace Prisma {
   export type GoalActionUpdateManyMutationInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -14662,10 +16443,18 @@ export namespace Prisma {
     goalId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -14941,6 +16730,12 @@ export namespace Prisma {
     none?: ChatSessionWhereInput
   }
 
+  export type SuggestedPathListRelationFilter = {
+    every?: SuggestedPathWhereInput
+    some?: SuggestedPathWhereInput
+    none?: SuggestedPathWhereInput
+  }
+
   export type UserAttributeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -14962,6 +16757,10 @@ export namespace Prisma {
   }
 
   export type ChatSessionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SuggestedPathOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -15054,9 +16853,97 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
   export type BoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type UserRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type SuggestedPathCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    emoji?: SortOrder
+    alignment?: SortOrder
+    tagline?: SortOrder
+    description?: SortOrder
+    dimensionName?: SortOrder
+    reasons?: SortOrder
+    starterQuestion?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SuggestedPathAvgOrderByAggregateInput = {
+    alignment?: SortOrder
+  }
+
+  export type SuggestedPathMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    emoji?: SortOrder
+    alignment?: SortOrder
+    tagline?: SortOrder
+    description?: SortOrder
+    dimensionName?: SortOrder
+    starterQuestion?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SuggestedPathMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    emoji?: SortOrder
+    alignment?: SortOrder
+    tagline?: SortOrder
+    description?: SortOrder
+    dimensionName?: SortOrder
+    starterQuestion?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SuggestedPathSumOrderByAggregateInput = {
+    alignment?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DimensionCountOrderByAggregateInput = {
@@ -15102,30 +16989,6 @@ export namespace Prisma {
   export type DimensionSumOrderByAggregateInput = {
     sortOrder?: SortOrder
   }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
   export type JsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -15137,11 +17000,6 @@ export namespace Prisma {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     isSet?: boolean
-  }
-
-  export type UserRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
   }
 
   export type DimensionRelationFilter = {
@@ -15387,6 +17245,18 @@ export namespace Prisma {
     isSet?: boolean
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
   export type GoalActionListRelationFilter = {
     every?: GoalActionWhereInput
     some?: GoalActionWhereInput
@@ -15403,6 +17273,11 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     dimensionId?: SortOrder
+    target?: SortOrder
+    deadline?: SortOrder
+    constraints?: SortOrder
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -15410,6 +17285,8 @@ export namespace Prisma {
   }
 
   export type GoalAvgOrderByAggregateInput = {
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
   }
 
@@ -15419,6 +17296,9 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     dimensionId?: SortOrder
+    deadline?: SortOrder
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -15431,6 +17311,9 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     dimensionId?: SortOrder
+    deadline?: SortOrder
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
@@ -15438,6 +17321,8 @@ export namespace Prisma {
   }
 
   export type GoalSumOrderByAggregateInput = {
+    readinessScore?: SortOrder
+    alignmentScore?: SortOrder
     progress?: SortOrder
   }
 
@@ -15456,12 +17341,38 @@ export namespace Prisma {
     isSet?: boolean
   }
 
-  export type StringNullableListFilter<$PrismaModel = never> = {
-    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    has?: string | StringFieldRefInput<$PrismaModel> | null
-    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
-    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
-    isEmpty?: boolean
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
+  export type GoalActionNullableRelationFilter = {
+    is?: GoalActionWhereInput | null
+    isNot?: GoalActionWhereInput | null
   }
 
   export type GoalRelationFilter = {
@@ -15484,13 +17395,28 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    type?: SortOrder
+    parentId?: SortOrder
     isCompleted?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
+    frequency?: SortOrder
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
+    dependsOn?: SortOrder
     impact?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type GoalActionAvgOrderByAggregateInput = {
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
   }
 
   export type GoalActionMaxOrderByAggregateInput = {
@@ -15498,8 +17424,14 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    type?: SortOrder
+    parentId?: SortOrder
     isCompleted?: SortOrder
     targetDate?: SortOrder
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -15509,21 +17441,39 @@ export namespace Prisma {
     goalId?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    type?: SortOrder
+    parentId?: SortOrder
     isCompleted?: SortOrder
     targetDate?: SortOrder
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  export type GoalActionSumOrderByAggregateInput = {
+    streak?: SortOrder
+    consistency?: SortOrder
+    effort?: SortOrder
+    estimatedHours?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
     isSet?: boolean
   }
 
@@ -15577,23 +17527,6 @@ export namespace Prisma {
 
   export type TaskSumOrderByAggregateInput = {
     estimatedHours?: SortOrder
-  }
-
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-    isSet?: boolean
   }
 
   export type ChatMessageListRelationFilter = {
@@ -15701,6 +17634,13 @@ export namespace Prisma {
     connect?: ChatSessionWhereUniqueInput | ChatSessionWhereUniqueInput[]
   }
 
+  export type SuggestedPathCreateNestedManyWithoutUserInput = {
+    create?: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput> | SuggestedPathCreateWithoutUserInput[] | SuggestedPathUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SuggestedPathCreateOrConnectWithoutUserInput | SuggestedPathCreateOrConnectWithoutUserInput[]
+    createMany?: SuggestedPathCreateManyUserInputEnvelope
+    connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+  }
+
   export type UserAttributeUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<UserAttributeCreateWithoutUserInput, UserAttributeUncheckedCreateWithoutUserInput> | UserAttributeCreateWithoutUserInput[] | UserAttributeUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutUserInput | UserAttributeCreateOrConnectWithoutUserInput[]
@@ -15741,6 +17681,13 @@ export namespace Prisma {
     connectOrCreate?: ChatSessionCreateOrConnectWithoutUserInput | ChatSessionCreateOrConnectWithoutUserInput[]
     createMany?: ChatSessionCreateManyUserInputEnvelope
     connect?: ChatSessionWhereUniqueInput | ChatSessionWhereUniqueInput[]
+  }
+
+  export type SuggestedPathUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput> | SuggestedPathCreateWithoutUserInput[] | SuggestedPathUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SuggestedPathCreateOrConnectWithoutUserInput | SuggestedPathCreateOrConnectWithoutUserInput[]
+    createMany?: SuggestedPathCreateManyUserInputEnvelope
+    connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -15840,6 +17787,20 @@ export namespace Prisma {
     deleteMany?: ChatSessionScalarWhereInput | ChatSessionScalarWhereInput[]
   }
 
+  export type SuggestedPathUpdateManyWithoutUserNestedInput = {
+    create?: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput> | SuggestedPathCreateWithoutUserInput[] | SuggestedPathUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SuggestedPathCreateOrConnectWithoutUserInput | SuggestedPathCreateOrConnectWithoutUserInput[]
+    upsert?: SuggestedPathUpsertWithWhereUniqueWithoutUserInput | SuggestedPathUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: SuggestedPathCreateManyUserInputEnvelope
+    set?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    disconnect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    delete?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    update?: SuggestedPathUpdateWithWhereUniqueWithoutUserInput | SuggestedPathUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: SuggestedPathUpdateManyWithWhereWithoutUserInput | SuggestedPathUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
+  }
+
   export type UserAttributeUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<UserAttributeCreateWithoutUserInput, UserAttributeUncheckedCreateWithoutUserInput> | UserAttributeCreateWithoutUserInput[] | UserAttributeUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutUserInput | UserAttributeCreateOrConnectWithoutUserInput[]
@@ -15924,6 +17885,55 @@ export namespace Prisma {
     deleteMany?: ChatSessionScalarWhereInput | ChatSessionScalarWhereInput[]
   }
 
+  export type SuggestedPathUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput> | SuggestedPathCreateWithoutUserInput[] | SuggestedPathUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SuggestedPathCreateOrConnectWithoutUserInput | SuggestedPathCreateOrConnectWithoutUserInput[]
+    upsert?: SuggestedPathUpsertWithWhereUniqueWithoutUserInput | SuggestedPathUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: SuggestedPathCreateManyUserInputEnvelope
+    set?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    disconnect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    delete?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+    update?: SuggestedPathUpdateWithWhereUniqueWithoutUserInput | SuggestedPathUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: SuggestedPathUpdateManyWithWhereWithoutUserInput | SuggestedPathUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
+  }
+
+  export type SuggestedPathCreatereasonsInput = {
+    set: string[]
+  }
+
+  export type UserCreateNestedOneWithoutSuggestedPathsInput = {
+    create?: XOR<UserCreateWithoutSuggestedPathsInput, UserUncheckedCreateWithoutSuggestedPathsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSuggestedPathsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type SuggestedPathUpdatereasonsInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
+  export type UserUpdateOneRequiredWithoutSuggestedPathsNestedInput = {
+    create?: XOR<UserCreateWithoutSuggestedPathsInput, UserUncheckedCreateWithoutSuggestedPathsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSuggestedPathsInput
+    upsert?: UserUpsertWithoutSuggestedPathsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSuggestedPathsInput, UserUpdateWithoutSuggestedPathsInput>, UserUncheckedUpdateWithoutSuggestedPathsInput>
+  }
+
   export type UserAttributeCreateNestedManyWithoutDimensionInput = {
     create?: XOR<UserAttributeCreateWithoutDimensionInput, UserAttributeUncheckedCreateWithoutDimensionInput> | UserAttributeCreateWithoutDimensionInput[] | UserAttributeUncheckedCreateWithoutDimensionInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutDimensionInput | UserAttributeCreateOrConnectWithoutDimensionInput[]
@@ -15950,18 +17960,6 @@ export namespace Prisma {
     connectOrCreate?: DimensionInputCreateOrConnectWithoutDimensionInput | DimensionInputCreateOrConnectWithoutDimensionInput[]
     createMany?: DimensionInputCreateManyDimensionInputEnvelope
     connect?: DimensionInputWhereUniqueInput | DimensionInputWhereUniqueInput[]
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type UserAttributeUpdateManyWithoutDimensionNestedInput = {
@@ -16155,6 +18153,15 @@ export namespace Prisma {
     unset?: boolean
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+    unset?: boolean
+  }
+
   export type UserUpdateOneRequiredWithoutGoalsNestedInput = {
     create?: XOR<UserCreateWithoutGoalsInput, UserUncheckedCreateWithoutGoalsInput>
     connectOrCreate?: UserCreateOrConnectWithoutGoalsInput
@@ -16199,6 +18206,23 @@ export namespace Prisma {
     set: string[]
   }
 
+  export type GoalActionCreatedependsOnInput = {
+    set: string[]
+  }
+
+  export type GoalActionCreateNestedOneWithoutSubActionsInput = {
+    create?: XOR<GoalActionCreateWithoutSubActionsInput, GoalActionUncheckedCreateWithoutSubActionsInput>
+    connectOrCreate?: GoalActionCreateOrConnectWithoutSubActionsInput
+    connect?: GoalActionWhereUniqueInput
+  }
+
+  export type GoalActionCreateNestedManyWithoutParentInput = {
+    create?: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput> | GoalActionCreateWithoutParentInput[] | GoalActionUncheckedCreateWithoutParentInput[]
+    connectOrCreate?: GoalActionCreateOrConnectWithoutParentInput | GoalActionCreateOrConnectWithoutParentInput[]
+    createMany?: GoalActionCreateManyParentInputEnvelope
+    connect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+  }
+
   export type GoalCreateNestedOneWithoutActionsInput = {
     create?: XOR<GoalCreateWithoutActionsInput, GoalUncheckedCreateWithoutActionsInput>
     connectOrCreate?: GoalCreateOrConnectWithoutActionsInput
@@ -16210,6 +18234,13 @@ export namespace Prisma {
     connectOrCreate?: TaskCreateOrConnectWithoutGoalActionInput | TaskCreateOrConnectWithoutGoalActionInput[]
     createMany?: TaskCreateManyGoalActionInputEnvelope
     connect?: TaskWhereUniqueInput | TaskWhereUniqueInput[]
+  }
+
+  export type GoalActionUncheckedCreateNestedManyWithoutParentInput = {
+    create?: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput> | GoalActionCreateWithoutParentInput[] | GoalActionUncheckedCreateWithoutParentInput[]
+    connectOrCreate?: GoalActionCreateOrConnectWithoutParentInput | GoalActionCreateOrConnectWithoutParentInput[]
+    createMany?: GoalActionCreateManyParentInputEnvelope
+    connect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
   }
 
   export type TaskUncheckedCreateNestedManyWithoutGoalActionInput = {
@@ -16227,6 +18258,44 @@ export namespace Prisma {
   export type GoalActionUpdateattributesInput = {
     set?: string[]
     push?: string | string[]
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+    unset?: boolean
+  }
+
+  export type GoalActionUpdatedependsOnInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type GoalActionUpdateOneWithoutSubActionsNestedInput = {
+    create?: XOR<GoalActionCreateWithoutSubActionsInput, GoalActionUncheckedCreateWithoutSubActionsInput>
+    connectOrCreate?: GoalActionCreateOrConnectWithoutSubActionsInput
+    upsert?: GoalActionUpsertWithoutSubActionsInput
+    disconnect?: boolean
+    delete?: GoalActionWhereInput | boolean
+    connect?: GoalActionWhereUniqueInput
+    update?: XOR<XOR<GoalActionUpdateToOneWithWhereWithoutSubActionsInput, GoalActionUpdateWithoutSubActionsInput>, GoalActionUncheckedUpdateWithoutSubActionsInput>
+  }
+
+  export type GoalActionUpdateManyWithoutParentNestedInput = {
+    create?: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput> | GoalActionCreateWithoutParentInput[] | GoalActionUncheckedCreateWithoutParentInput[]
+    connectOrCreate?: GoalActionCreateOrConnectWithoutParentInput | GoalActionCreateOrConnectWithoutParentInput[]
+    upsert?: GoalActionUpsertWithWhereUniqueWithoutParentInput | GoalActionUpsertWithWhereUniqueWithoutParentInput[]
+    createMany?: GoalActionCreateManyParentInputEnvelope
+    set?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    disconnect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    delete?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    connect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    update?: GoalActionUpdateWithWhereUniqueWithoutParentInput | GoalActionUpdateWithWhereUniqueWithoutParentInput[]
+    updateMany?: GoalActionUpdateManyWithWhereWithoutParentInput | GoalActionUpdateManyWithWhereWithoutParentInput[]
+    deleteMany?: GoalActionScalarWhereInput | GoalActionScalarWhereInput[]
   }
 
   export type GoalUpdateOneRequiredWithoutActionsNestedInput = {
@@ -16251,6 +18320,20 @@ export namespace Prisma {
     deleteMany?: TaskScalarWhereInput | TaskScalarWhereInput[]
   }
 
+  export type GoalActionUncheckedUpdateManyWithoutParentNestedInput = {
+    create?: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput> | GoalActionCreateWithoutParentInput[] | GoalActionUncheckedCreateWithoutParentInput[]
+    connectOrCreate?: GoalActionCreateOrConnectWithoutParentInput | GoalActionCreateOrConnectWithoutParentInput[]
+    upsert?: GoalActionUpsertWithWhereUniqueWithoutParentInput | GoalActionUpsertWithWhereUniqueWithoutParentInput[]
+    createMany?: GoalActionCreateManyParentInputEnvelope
+    set?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    disconnect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    delete?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    connect?: GoalActionWhereUniqueInput | GoalActionWhereUniqueInput[]
+    update?: GoalActionUpdateWithWhereUniqueWithoutParentInput | GoalActionUpdateWithWhereUniqueWithoutParentInput[]
+    updateMany?: GoalActionUpdateManyWithWhereWithoutParentInput | GoalActionUpdateManyWithWhereWithoutParentInput[]
+    deleteMany?: GoalActionScalarWhereInput | GoalActionScalarWhereInput[]
+  }
+
   export type TaskUncheckedUpdateManyWithoutGoalActionNestedInput = {
     create?: XOR<TaskCreateWithoutGoalActionInput, TaskUncheckedCreateWithoutGoalActionInput> | TaskCreateWithoutGoalActionInput[] | TaskUncheckedCreateWithoutGoalActionInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutGoalActionInput | TaskCreateOrConnectWithoutGoalActionInput[]
@@ -16269,15 +18352,6 @@ export namespace Prisma {
     create?: XOR<GoalActionCreateWithoutTasksInput, GoalActionUncheckedCreateWithoutTasksInput>
     connectOrCreate?: GoalActionCreateOrConnectWithoutTasksInput
     connect?: GoalActionWhereUniqueInput
-  }
-
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-    unset?: boolean
   }
 
   export type GoalActionUpdateOneRequiredWithoutTasksNestedInput = {
@@ -16571,6 +18645,18 @@ export namespace Prisma {
     isSet?: boolean
   }
 
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -16583,18 +18669,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
-    isSet?: boolean
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
     isSet?: boolean
   }
 
@@ -16612,6 +18686,23 @@ export namespace Prisma {
     _sum?: NestedFloatNullableFilter<$PrismaModel>
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
     isSet?: boolean
   }
 
@@ -16740,6 +18831,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -16752,6 +18848,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -16791,6 +18892,43 @@ export namespace Prisma {
 
   export type ChatSessionCreateManyUserInputEnvelope = {
     data: ChatSessionCreateManyUserInput | ChatSessionCreateManyUserInput[]
+  }
+
+  export type SuggestedPathCreateWithoutUserInput = {
+    id?: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type SuggestedPathUncheckedCreateWithoutUserInput = {
+    id?: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type SuggestedPathCreateOrConnectWithoutUserInput = {
+    where: SuggestedPathWhereUniqueInput
+    create: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput>
+  }
+
+  export type SuggestedPathCreateManyUserInputEnvelope = {
+    data: SuggestedPathCreateManyUserInput | SuggestedPathCreateManyUserInput[]
   }
 
   export type UserAttributeUpsertWithWhereUniqueWithoutUserInput = {
@@ -16939,6 +19077,11 @@ export namespace Prisma {
     title?: StringFilter<"Goal"> | string
     description?: StringNullableFilter<"Goal"> | string | null
     dimensionId?: StringNullableFilter<"Goal"> | string | null
+    target?: JsonNullableFilter<"Goal">
+    deadline?: DateTimeNullableFilter<"Goal"> | Date | string | null
+    constraints?: JsonNullableFilter<"Goal">
+    readinessScore?: FloatNullableFilter<"Goal"> | number | null
+    alignmentScore?: FloatNullableFilter<"Goal"> | number | null
     progress?: FloatFilter<"Goal"> | number
     status?: StringFilter<"Goal"> | string
     createdAt?: DateTimeFilter<"Goal"> | Date | string
@@ -16970,6 +19113,114 @@ export namespace Prisma {
     context?: StringFilter<"ChatSession"> | string
     createdAt?: DateTimeFilter<"ChatSession"> | Date | string
     updatedAt?: DateTimeFilter<"ChatSession"> | Date | string
+  }
+
+  export type SuggestedPathUpsertWithWhereUniqueWithoutUserInput = {
+    where: SuggestedPathWhereUniqueInput
+    update: XOR<SuggestedPathUpdateWithoutUserInput, SuggestedPathUncheckedUpdateWithoutUserInput>
+    create: XOR<SuggestedPathCreateWithoutUserInput, SuggestedPathUncheckedCreateWithoutUserInput>
+  }
+
+  export type SuggestedPathUpdateWithWhereUniqueWithoutUserInput = {
+    where: SuggestedPathWhereUniqueInput
+    data: XOR<SuggestedPathUpdateWithoutUserInput, SuggestedPathUncheckedUpdateWithoutUserInput>
+  }
+
+  export type SuggestedPathUpdateManyWithWhereWithoutUserInput = {
+    where: SuggestedPathScalarWhereInput
+    data: XOR<SuggestedPathUpdateManyMutationInput, SuggestedPathUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type SuggestedPathScalarWhereInput = {
+    AND?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
+    OR?: SuggestedPathScalarWhereInput[]
+    NOT?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
+    id?: StringFilter<"SuggestedPath"> | string
+    userId?: StringFilter<"SuggestedPath"> | string
+    title?: StringFilter<"SuggestedPath"> | string
+    emoji?: StringFilter<"SuggestedPath"> | string
+    alignment?: IntFilter<"SuggestedPath"> | number
+    tagline?: StringFilter<"SuggestedPath"> | string
+    description?: StringNullableFilter<"SuggestedPath"> | string | null
+    dimensionName?: StringNullableFilter<"SuggestedPath"> | string | null
+    reasons?: StringNullableListFilter<"SuggestedPath">
+    starterQuestion?: StringNullableFilter<"SuggestedPath"> | string | null
+    isActive?: BoolFilter<"SuggestedPath"> | boolean
+    createdAt?: DateTimeFilter<"SuggestedPath"> | Date | string
+  }
+
+  export type UserCreateWithoutSuggestedPathsInput = {
+    id?: string
+    email: string
+    name?: string | null
+    avatarUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeCreateNestedManyWithoutUserInput
+    dimensionInputs?: DimensionInputCreateNestedManyWithoutUserInput
+    lifeStates?: LifeStateCreateNestedManyWithoutUserInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutSuggestedPathsInput = {
+    id?: string
+    email: string
+    name?: string | null
+    avatarUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeUncheckedCreateNestedManyWithoutUserInput
+    dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutUserInput
+    lifeStates?: LifeStateUncheckedCreateNestedManyWithoutUserInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutSuggestedPathsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSuggestedPathsInput, UserUncheckedCreateWithoutSuggestedPathsInput>
+  }
+
+  export type UserUpsertWithoutSuggestedPathsInput = {
+    update: XOR<UserUpdateWithoutSuggestedPathsInput, UserUncheckedUpdateWithoutSuggestedPathsInput>
+    create: XOR<UserCreateWithoutSuggestedPathsInput, UserUncheckedCreateWithoutSuggestedPathsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSuggestedPathsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSuggestedPathsInput, UserUncheckedUpdateWithoutSuggestedPathsInput>
+  }
+
+  export type UserUpdateWithoutSuggestedPathsInput = {
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUpdateManyWithoutUserNestedInput
+    dimensionInputs?: DimensionInputUpdateManyWithoutUserNestedInput
+    lifeStates?: LifeStateUpdateManyWithoutUserNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSuggestedPathsInput = {
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUncheckedUpdateManyWithoutUserNestedInput
+    dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutUserNestedInput
+    lifeStates?: LifeStateUncheckedUpdateManyWithoutUserNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserAttributeCreateWithoutDimensionInput = {
@@ -17072,6 +19323,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAttributesInput = {
@@ -17086,6 +19338,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAttributesInput = {
@@ -17146,6 +19399,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAttributesInput = {
@@ -17159,6 +19413,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type DimensionUpsertWithoutAttributesInput = {
@@ -17208,6 +19463,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDimensionInputsInput = {
@@ -17222,6 +19478,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDimensionInputsInput = {
@@ -17282,6 +19539,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDimensionInputsInput = {
@@ -17295,6 +19553,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type DimensionUpsertWithoutDimensionInputsInput = {
@@ -17344,6 +19603,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutLifeStatesInput = {
@@ -17358,6 +19618,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutLifeStatesInput = {
@@ -17396,6 +19657,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLifeStatesInput = {
@@ -17409,6 +19671,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutLifeEventsInput = {
@@ -17423,6 +19686,7 @@ export namespace Prisma {
     lifeStates?: LifeStateCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutLifeEventsInput = {
@@ -17437,6 +19701,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutLifeEventsInput = {
@@ -17466,6 +19731,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLifeEventsInput = {
@@ -17479,6 +19745,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutGoalsInput = {
@@ -17493,6 +19760,7 @@ export namespace Prisma {
     lifeStates?: LifeStateCreateNestedManyWithoutUserInput
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutGoalsInput = {
@@ -17507,6 +19775,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedCreateNestedManyWithoutUserInput
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutGoalsInput = {
@@ -17518,13 +19787,22 @@ export namespace Prisma {
     id?: string
     title: string
     description?: string | null
+    type: string
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    parent?: GoalActionCreateNestedOneWithoutSubActionsInput
+    subActions?: GoalActionCreateNestedManyWithoutParentInput
     tasks?: TaskCreateNestedManyWithoutGoalActionInput
   }
 
@@ -17532,13 +19810,22 @@ export namespace Prisma {
     id?: string
     title: string
     description?: string | null
+    type: string
+    parentId?: string | null
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    subActions?: GoalActionUncheckedCreateNestedManyWithoutParentInput
     tasks?: TaskUncheckedCreateNestedManyWithoutGoalActionInput
   }
 
@@ -17573,6 +19860,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUpdateManyWithoutUserNestedInput
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutGoalsInput = {
@@ -17586,6 +19874,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedUpdateManyWithoutUserNestedInput
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type GoalActionUpsertWithWhereUniqueWithoutGoalInput = {
@@ -17612,13 +19901,127 @@ export namespace Prisma {
     goalId?: StringFilter<"GoalAction"> | string
     title?: StringFilter<"GoalAction"> | string
     description?: StringNullableFilter<"GoalAction"> | string | null
+    type?: StringFilter<"GoalAction"> | string
+    parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
+    frequency?: JsonNullableFilter<"GoalAction">
+    streak?: IntNullableFilter<"GoalAction"> | number | null
+    consistency?: FloatNullableFilter<"GoalAction"> | number | null
+    effort?: IntNullableFilter<"GoalAction"> | number | null
+    estimatedHours?: FloatNullableFilter<"GoalAction"> | number | null
+    dependsOn?: StringNullableListFilter<"GoalAction">
     impact?: JsonNullableFilter<"GoalAction">
     createdAt?: DateTimeFilter<"GoalAction"> | Date | string
     updatedAt?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
+  }
+
+  export type GoalActionCreateWithoutSubActionsInput = {
+    id?: string
+    title: string
+    description?: string | null
+    type: string
+    isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
+    impact?: InputJsonValue | null
+    createdAt?: Date | string
+    updatedAt?: Date | string | null
+    parent?: GoalActionCreateNestedOneWithoutSubActionsInput
+    goal: GoalCreateNestedOneWithoutActionsInput
+    tasks?: TaskCreateNestedManyWithoutGoalActionInput
+  }
+
+  export type GoalActionUncheckedCreateWithoutSubActionsInput = {
+    id?: string
+    goalId: string
+    title: string
+    description?: string | null
+    type: string
+    parentId?: string | null
+    isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
+    impact?: InputJsonValue | null
+    createdAt?: Date | string
+    updatedAt?: Date | string | null
+    tasks?: TaskUncheckedCreateNestedManyWithoutGoalActionInput
+  }
+
+  export type GoalActionCreateOrConnectWithoutSubActionsInput = {
+    where: GoalActionWhereUniqueInput
+    create: XOR<GoalActionCreateWithoutSubActionsInput, GoalActionUncheckedCreateWithoutSubActionsInput>
+  }
+
+  export type GoalActionCreateWithoutParentInput = {
+    id?: string
+    title: string
+    description?: string | null
+    type: string
+    isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
+    impact?: InputJsonValue | null
+    createdAt?: Date | string
+    updatedAt?: Date | string | null
+    subActions?: GoalActionCreateNestedManyWithoutParentInput
+    goal: GoalCreateNestedOneWithoutActionsInput
+    tasks?: TaskCreateNestedManyWithoutGoalActionInput
+  }
+
+  export type GoalActionUncheckedCreateWithoutParentInput = {
+    id?: string
+    goalId: string
+    title: string
+    description?: string | null
+    type: string
+    isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
+    impact?: InputJsonValue | null
+    createdAt?: Date | string
+    updatedAt?: Date | string | null
+    subActions?: GoalActionUncheckedCreateNestedManyWithoutParentInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutGoalActionInput
+  }
+
+  export type GoalActionCreateOrConnectWithoutParentInput = {
+    where: GoalActionWhereUniqueInput
+    create: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput>
+  }
+
+  export type GoalActionCreateManyParentInputEnvelope = {
+    data: GoalActionCreateManyParentInput | GoalActionCreateManyParentInput[]
   }
 
   export type GoalCreateWithoutActionsInput = {
@@ -17626,6 +20029,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -17639,6 +20047,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -17683,6 +20096,77 @@ export namespace Prisma {
     data: TaskCreateManyGoalActionInput | TaskCreateManyGoalActionInput[]
   }
 
+  export type GoalActionUpsertWithoutSubActionsInput = {
+    update: XOR<GoalActionUpdateWithoutSubActionsInput, GoalActionUncheckedUpdateWithoutSubActionsInput>
+    create: XOR<GoalActionCreateWithoutSubActionsInput, GoalActionUncheckedCreateWithoutSubActionsInput>
+    where?: GoalActionWhereInput
+  }
+
+  export type GoalActionUpdateToOneWithWhereWithoutSubActionsInput = {
+    where?: GoalActionWhereInput
+    data: XOR<GoalActionUpdateWithoutSubActionsInput, GoalActionUncheckedUpdateWithoutSubActionsInput>
+  }
+
+  export type GoalActionUpdateWithoutSubActionsInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
+    impact?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parent?: GoalActionUpdateOneWithoutSubActionsNestedInput
+    goal?: GoalUpdateOneRequiredWithoutActionsNestedInput
+    tasks?: TaskUpdateManyWithoutGoalActionNestedInput
+  }
+
+  export type GoalActionUncheckedUpdateWithoutSubActionsInput = {
+    goalId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
+    isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
+    impact?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tasks?: TaskUncheckedUpdateManyWithoutGoalActionNestedInput
+  }
+
+  export type GoalActionUpsertWithWhereUniqueWithoutParentInput = {
+    where: GoalActionWhereUniqueInput
+    update: XOR<GoalActionUpdateWithoutParentInput, GoalActionUncheckedUpdateWithoutParentInput>
+    create: XOR<GoalActionCreateWithoutParentInput, GoalActionUncheckedCreateWithoutParentInput>
+  }
+
+  export type GoalActionUpdateWithWhereUniqueWithoutParentInput = {
+    where: GoalActionWhereUniqueInput
+    data: XOR<GoalActionUpdateWithoutParentInput, GoalActionUncheckedUpdateWithoutParentInput>
+  }
+
+  export type GoalActionUpdateManyWithWhereWithoutParentInput = {
+    where: GoalActionScalarWhereInput
+    data: XOR<GoalActionUpdateManyMutationInput, GoalActionUncheckedUpdateManyWithoutParentInput>
+  }
+
   export type GoalUpsertWithoutActionsInput = {
     update: XOR<GoalUpdateWithoutActionsInput, GoalUncheckedUpdateWithoutActionsInput>
     create: XOR<GoalCreateWithoutActionsInput, GoalUncheckedCreateWithoutActionsInput>
@@ -17698,6 +20182,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17710,6 +20199,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17752,13 +20246,22 @@ export namespace Prisma {
     id?: string
     title: string
     description?: string | null
+    type: string
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    parent?: GoalActionCreateNestedOneWithoutSubActionsInput
+    subActions?: GoalActionCreateNestedManyWithoutParentInput
     goal: GoalCreateNestedOneWithoutActionsInput
   }
 
@@ -17767,13 +20270,22 @@ export namespace Prisma {
     goalId: string
     title: string
     description?: string | null
+    type: string
+    parentId?: string | null
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+    subActions?: GoalActionUncheckedCreateNestedManyWithoutParentInput
   }
 
   export type GoalActionCreateOrConnectWithoutTasksInput = {
@@ -17795,13 +20307,22 @@ export namespace Prisma {
   export type GoalActionUpdateWithoutTasksInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parent?: GoalActionUpdateOneWithoutSubActionsNestedInput
+    subActions?: GoalActionUpdateManyWithoutParentNestedInput
     goal?: GoalUpdateOneRequiredWithoutActionsNestedInput
   }
 
@@ -17809,13 +20330,22 @@ export namespace Prisma {
     goalId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subActions?: GoalActionUncheckedUpdateManyWithoutParentNestedInput
   }
 
   export type ChatMessageCreateWithoutSessionInput = {
@@ -17853,6 +20383,7 @@ export namespace Prisma {
     lifeStates?: LifeStateCreateNestedManyWithoutUserInput
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutChatSessionsInput = {
@@ -17867,6 +20398,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedCreateNestedManyWithoutUserInput
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutChatSessionsInput = {
@@ -17923,6 +20455,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUpdateManyWithoutUserNestedInput
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChatSessionsInput = {
@@ -17936,6 +20469,7 @@ export namespace Prisma {
     lifeStates?: LifeStateUncheckedUpdateManyWithoutUserNestedInput
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ChatSessionCreateWithoutMessagesInput = {
@@ -18031,6 +20565,11 @@ export namespace Prisma {
     title: string
     description?: string | null
     dimensionId?: string | null
+    target?: InputJsonValue | null
+    deadline?: Date | string | null
+    constraints?: InputJsonValue | null
+    readinessScore?: number | null
+    alignmentScore?: number | null
     progress?: number
     status?: string
     createdAt?: Date | string
@@ -18042,6 +20581,20 @@ export namespace Prisma {
     context: string
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type SuggestedPathCreateManyUserInput = {
+    id?: string
+    title: string
+    emoji: string
+    alignment: number
+    tagline: string
+    description?: string | null
+    dimensionName?: string | null
+    reasons?: SuggestedPathCreatereasonsInput | string[]
+    starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
   }
 
   export type UserAttributeUpdateWithoutUserInput = {
@@ -18162,6 +20715,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18173,6 +20731,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18184,6 +20747,11 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    target?: InputJsonValue | InputJsonValue | null
+    deadline?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    constraints?: InputJsonValue | InputJsonValue | null
+    readinessScore?: NullableFloatFieldUpdateOperationsInput | number | null
+    alignmentScore?: NullableFloatFieldUpdateOperationsInput | number | null
     progress?: FloatFieldUpdateOperationsInput | number
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18208,6 +20776,45 @@ export namespace Prisma {
     context?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathUpdateWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathUncheckedUpdateWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SuggestedPathUncheckedUpdateManyWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    emoji?: StringFieldUpdateOperationsInput | string
+    alignment?: IntFieldUpdateOperationsInput | number
+    tagline?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dimensionName?: NullableStringFieldUpdateOperationsInput | string | null
+    reasons?: SuggestedPathUpdatereasonsInput | string[]
+    starterQuestion?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserAttributeCreateManyDimensionInput = {
@@ -18291,10 +20898,18 @@ export namespace Prisma {
     id?: string
     title: string
     description?: string | null
+    type: string
+    parentId?: string | null
     isCompleted?: boolean
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
     impact?: InputJsonValue | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
@@ -18303,39 +20918,86 @@ export namespace Prisma {
   export type GoalActionUpdateWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parent?: GoalActionUpdateOneWithoutSubActionsNestedInput
+    subActions?: GoalActionUpdateManyWithoutParentNestedInput
     tasks?: TaskUpdateManyWithoutGoalActionNestedInput
   }
 
   export type GoalActionUncheckedUpdateWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subActions?: GoalActionUncheckedUpdateManyWithoutParentNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutGoalActionNestedInput
   }
 
   export type GoalActionUncheckedUpdateManyWithoutGoalInput = {
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
     impact?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type GoalActionCreateManyParentInput = {
+    id?: string
+    goalId: string
+    title: string
+    description?: string | null
+    type: string
+    isCompleted?: boolean
+    targetDate?: Date | string | null
+    dimensions?: GoalActionCreatedimensionsInput | string[]
+    attributes?: GoalActionCreateattributesInput | string[]
+    frequency?: InputJsonValue | null
+    streak?: number | null
+    consistency?: number | null
+    effort?: number | null
+    estimatedHours?: number | null
+    dependsOn?: GoalActionCreatedependsOnInput | string[]
+    impact?: InputJsonValue | null
+    createdAt?: Date | string
+    updatedAt?: Date | string | null
   }
 
   export type TaskCreateManyGoalActionInput = {
@@ -18348,6 +21010,70 @@ export namespace Prisma {
     estimatedHours?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string | null
+  }
+
+  export type GoalActionUpdateWithoutParentInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
+    impact?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subActions?: GoalActionUpdateManyWithoutParentNestedInput
+    goal?: GoalUpdateOneRequiredWithoutActionsNestedInput
+    tasks?: TaskUpdateManyWithoutGoalActionNestedInput
+  }
+
+  export type GoalActionUncheckedUpdateWithoutParentInput = {
+    goalId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
+    impact?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subActions?: GoalActionUncheckedUpdateManyWithoutParentNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutGoalActionNestedInput
+  }
+
+  export type GoalActionUncheckedUpdateManyWithoutParentInput = {
+    goalId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    dimensions?: GoalActionUpdatedimensionsInput | string[]
+    attributes?: GoalActionUpdateattributesInput | string[]
+    frequency?: InputJsonValue | InputJsonValue | null
+    streak?: NullableIntFieldUpdateOperationsInput | number | null
+    consistency?: NullableFloatFieldUpdateOperationsInput | number | null
+    effort?: NullableIntFieldUpdateOperationsInput | number | null
+    estimatedHours?: NullableFloatFieldUpdateOperationsInput | number | null
+    dependsOn?: GoalActionUpdatedependsOnInput | string[]
+    impact?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type TaskUpdateWithoutGoalActionInput = {
@@ -18441,6 +21167,10 @@ export namespace Prisma {
      * @deprecated Use UserDefaultArgs instead
      */
     export type UserArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SuggestedPathDefaultArgs instead
+     */
+    export type SuggestedPathArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SuggestedPathDefaultArgs<ExtArgs>
     /**
      * @deprecated Use DimensionDefaultArgs instead
      */

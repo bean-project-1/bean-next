@@ -29,98 +29,9 @@ function getPalette(id: string) {
   return PALETTES[KEYS[Math.abs(id.charCodeAt(0)) % KEYS.length]]!;
 }
 
-// SVG viewBox — compact, fits on screen
-const W = 400;
-const H = 560;
-
-// Branch spine: S-curve from bottom to top
-// t=0 → base (thick), t=1 → tip (thin)
-function spinePoint(t: number): { x: number; y: number } {
-  const y = H - 40 - t * (H - 80);
-  const x = W / 2 + Math.sin(t * Math.PI * 1.5) * 52;
-  return { x, y };
-}
-
-// Branch half-width: thick at base, pencil-thin at tip
-function branchHW(t: number) { return 10 - t * 8.5; } // 10px → 1.5px
-
-// Build the tapered branch silhouette
-function buildBranchPath(steps = 80) {
-  const left: string[] = [];
-  const right: string[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const c = spinePoint(t);
-    const hw = branchHW(t);
-    const dt = 0.01;
-    const cN = spinePoint(Math.min(1, t + dt));
-    const dx = cN.x - c.x, dy = cN.y - c.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const px = -dy / len, py = dx / len;
-    left.push(`${(c.x + px * hw).toFixed(1)},${(c.y + py * hw).toFixed(1)}`);
-    right.unshift(`${(c.x - px * hw).toFixed(1)},${(c.y - py * hw).toFixed(1)}`);
-  }
-  return `M ${left.join(' L ')} L ${right.join(' L ')} Z`;
-}
-
-// Smooth spine path for stroke overlay
-function buildSpinePath(steps = 80) {
-  const pts: string[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const c = spinePoint(t);
-    pts.push(`${c.x.toFixed(1)},${c.y.toFixed(1)}`);
-  }
-  return `M ${pts.join(' L ')}`;
-}
-
-// Leaf shape — tilted upward, asymmetric (tight upper arc, droopy lower arc)
-// ax,ay = attachment on branch | lw = length | lh = half-height | side = ±1 | angleUp = degrees
-function leafPath(
-  ax: number, ay: number,
-  lw: number, lh: number,
-  side: 1 | -1,
-  angleUp: number
-): string {
-  const rad = (angleUp * Math.PI) / 180;
-  // Tip of leaf
-  const tipX = ax + side * lw * Math.cos(rad);
-  const tipY = ay - lw * Math.sin(rad); // up in SVG
-  // Leaf axis vector
-  const dx = tipX - ax, dy = tipY - ay;
-  const len = Math.hypot(dx, dy) || 1;
-  // Perpendicular (rotated 90° CCW from leaf axis)
-  const px = -dy / len, py = dx / len;
-  // Quarter & three-quarter points along the axis
-  const q1x = ax + dx * 0.28, q1y = ay + dy * 0.28;
-  const q2x = ax + dx * 0.72, q2y = ay + dy * 0.72;
-  // Upper arc: tight positive-perpendicular bulge
-  const uc1x = q1x + px * lh * 0.9, uc1y = q1y + py * lh * 0.9;
-  const uc2x = q2x + px * lh * 1.1, uc2y = q2y + py * lh * 1.1;
-  // Lower arc: droopier negative-perpendicular
-  const lc1x = q2x - px * lh * 1.5, lc1y = q2y - py * lh * 1.5;
-  const lc2x = q1x - px * lh * 0.6, lc2y = q1y - py * lh * 0.6;
-  return [
-    `M ${ax.toFixed(1)},${ay.toFixed(1)}`,
-    `C ${uc1x.toFixed(1)},${uc1y.toFixed(1)} ${uc2x.toFixed(1)},${uc2y.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`,
-    `C ${lc1x.toFixed(1)},${lc1y.toFixed(1)} ${lc2x.toFixed(1)},${lc2y.toFixed(1)} ${ax.toFixed(1)},${ay.toFixed(1)}`,
-    'Z',
-  ].join(' ');
-}
-
-// Curved midrib vein path
-function midribPath(ax: number, ay: number, lw: number, side: 1 | -1, angleUp: number): string {
-  const rad = (angleUp * Math.PI) / 180;
-  const tipX = ax + side * lw * Math.cos(rad);
-  const tipY = ay - lw * Math.sin(rad);
-  const mx = (ax + tipX) / 2 + (tipY - ay) * 0.15;
-  const my = (ay + tipY) / 2 - (tipX - ax) * 0.15 * side;
-  return `M ${ax.toFixed(1)},${ay.toFixed(1)} Q ${mx.toFixed(1)},${my.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
-}
-
 // ── Leaf Detail Panel ─────────────────────────────
 function LeafPanel({
-  leaf, palette, onClose, onToggle, onDelete, onToggleTask,
+  leaf, palette, onClose, onToggle, onDelete, onToggleTask, allLeaves, onToggleSubAction
 }: {
   leaf: Branch['leaves'][0];
   palette: ReturnType<typeof getPalette>;
@@ -128,40 +39,17 @@ function LeafPanel({
   onToggle?: () => void;
   onDelete?: () => void;
   onToggleTask?: (taskId: string, done: boolean) => Promise<void> | void;
+  allLeaves: Branch['leaves'];
+  onToggleSubAction?: (id: string, data: { completed: boolean }) => Promise<void>;
 }) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [chatTaskId, setChatTaskId] = useState<string | null>(null);
-  // Local task state for optimistic checkbox updates
-  const [localTasks, setLocalTasks] = useState<any[]>(() => leaf.tasks || []);
+  
+  // Find sub-actions (tasks/milestones) if this is a phase
+  const children = allLeaves ? allLeaves.filter(l => l.parentId === leaf.id) : [];
+  const tasks = children.filter(c => c.type === 'task');
+  const milestones = children.filter(c => c.type === 'milestone');
 
-  // Sync if leaf changes (e.g. after toggle)
-  React.useEffect(() => { setLocalTasks(leaf.tasks || []); }, [leaf]);
-
-  const handleToggleTask = async (taskId: string, done: boolean) => {
-    // Optimistic update
-    const next = localTasks.map(t => t.id === taskId ? { ...t, isCompleted: done } : t);
-    setLocalTasks(next);
-    try {
-      await onToggleTask?.(taskId, done);
-      // Auto-update activity completion based on task states
-      if (done) {
-        // Mark as done if all are now checked
-        if (next.length > 0 && next.every(t => t.isCompleted) && !leaf.completed) {
-          await onToggle?.();
-        }
-      } else {
-        // Unmark as done if any are now unchecked
-        if (leaf.completed) {
-          await onToggle?.();
-        }
-      }
-    } catch {
-      // Rollback on failure
-      setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, isCompleted: !done } : t));
-    }
-  };
-
-  const tasks = localTasks;
   const chatTask = tasks.find((t: any) => t.id === chatTaskId);
 
   return (
@@ -191,9 +79,18 @@ function LeafPanel({
                   {leaf.completed ? '✓ Completado' : '⏳ En progreso'}
                 </span>
                 <h3 className="text-2xl font-black text-slate-900 leading-tight">{leaf.name}</h3>
-                {(leaf as any).description && (
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{(leaf as any).description}</p>
-                )}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(leaf as any).description && (
+                    <p className="text-sm text-slate-500 leading-relaxed">{(leaf as any).description}</p>
+                  )}
+                  {leaf.targetDate && (
+                    <div className="w-full">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        📅 Finaliza: {new Date(leaf.targetDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <button onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors mt-1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -203,9 +100,9 @@ function LeafPanel({
 
           {/* Tasks checklist */}
           <div className="flex-1 overflow-y-auto px-6 py-5 bg-slate-50/40">
-            {tasks.length > 0 ? (
+            {leaf.type === 'phase' && tasks.length > 0 && (
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pasos / Tareas</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Actividades de la Fase</p>
                 <div className="space-y-2">
                   {tasks.map((task: any, i: number) => {
                     const isExpanded = expandedTask === (task.id ?? i);
@@ -214,38 +111,63 @@ function LeafPanel({
                       <div
                         key={task.id ?? i}
                         className="rounded-2xl border bg-white overflow-hidden transition-all shadow-sm"
-                        style={{ borderColor: isActive ? palette.primary : task.isCompleted ? palette.primary + '44' : '#e8edf2' }}
+                        style={{ borderColor: isActive ? palette.primary : task.completed ? palette.primary + '44' : '#e8edf2' }}
                       >
                         <div
                           className="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors"
                           onClick={() => setExpandedTask(isExpanded ? null : (task.id ?? i))}
                         >
                           {/* Checkbox */}
-                          <button
-                            onClick={e => { e.stopPropagation(); handleToggleTask(task.id, !task.isCompleted); }}
-                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all"
-                            style={{ background: task.isCompleted ? palette.primary : 'white', border: `2px solid ${task.isCompleted ? palette.primary : '#cbd5e1'}` }}
+                          <div
+                            onClick={async (e) => { 
+                              e.stopPropagation(); 
+                              const nextDone = !task.completed;
+                              await onToggleSubAction?.(task.id, { completed: nextDone }); 
+                            }}
+                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer"
+                            style={{ background: task.completed ? palette.primary : 'white', border: `2px solid ${task.completed ? palette.primary : '#cbd5e1'}` }}
                           >
-                            {task.isCompleted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                            {task.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm font-semibold leading-snug ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                {task.name}
+                              </p>
+                              <svg 
+                                width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                                className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                              >
+                                <path d="m6 9 6 6 6-6"/>
+                              </svg>
+                            </div>
+                            {task.targetDate && (
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5 flex items-center gap-1">
+                                <span className="text-[8px]">📅</span> {new Date(task.targetDate).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Coach Button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setChatTaskId(isActive ? null : task.id); }}
+                            className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-100'}`}
+                            title="Preguntar al Coach"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                           </button>
-
-                          <span className={`flex-1 text-sm font-semibold leading-snug ${task.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                            {task.title}
-                          </span>
-
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" className={`shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9" /></svg>
                         </div>
 
-                        {isExpanded && (
-                          <div className="px-5 pb-4 pt-1 border-t border-slate-100">
-                            {task.description && <p className="text-xs text-slate-600 leading-relaxed mb-3">{task.description}</p>}
-                            <button
-                              onClick={e => { e.stopPropagation(); setChatTaskId(chatTaskId === task.id ? null : task.id); }}
-                              className="text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all"
-                              style={{ background: isActive ? palette.primary + '22' : palette.light, color: palette.primary }}
-                            >
-                              🤖 {isActive ? 'Ver coach →' : 'Consultar con el Coach'}
-                            </button>
+                        {/* Description Expansion */}
+                        {isExpanded && task.description && (
+                          <div className="px-4 pb-4 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="pl-9 pr-2 py-3 border-t border-slate-50">
+                              <p className="text-[13px] font-medium text-slate-600 leading-relaxed">
+                                {task.description}
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -253,8 +175,47 @@ function LeafPanel({
                   })}
                 </div>
               </div>
-            ) : (
-              <p className="text-sm text-slate-400 text-center py-8">Esta actividad no tiene tareas registradas.</p>
+            )}
+
+            {leaf.type === 'phase' && milestones.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Hitos de Cierre</p>
+                <div className="space-y-2">
+                  {milestones.map((ms: any) => (
+                    <div key={ms.id} className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg ${ms.completed ? 'bg-indigo-500' : 'bg-white border border-indigo-200'}`}>
+                        {ms.completed ? '🏆' : '🏁'}
+                      </div>
+                      <span className={`font-bold italic ${ms.completed ? 'text-indigo-400' : 'text-indigo-900'}`}>{ms.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {leaf.type === 'habit' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-[32px] bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-900">Consistencia Actual</p>
+                    <p className="text-4xl font-black text-emerald-600">{Math.round((leaf.consistency || 0) * 100)}%</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Racha 🔥</p>
+                    <p className="text-3xl font-black text-emerald-600">{leaf.streak || 0} días</p>
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-2xl">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Frecuencia</p>
+                  <p className="text-sm font-bold text-slate-700">
+                    {leaf.frequency?.type === 'daily' ? `Cada ${leaf.frequency.value} día(s)` : 'Semanal'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {leaf.type === 'phase' && tasks.length === 0 && milestones.length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-8">No hay actividades ni hitos definidos para esta fase.</p>
             )}
           </div>
 
@@ -262,7 +223,7 @@ function LeafPanel({
           <div className="shrink-0 px-6 py-4 border-t border-slate-100 flex items-center justify-between">
             {/* Progress indicator */}
             {tasks.length > 0 && (() => {
-              const done = tasks.filter(t => t.isCompleted).length;
+              const done = tasks.filter(t => t.completed).length;
               const pct = Math.round((done / tasks.length) * 100);
               return (
                 <div className="flex-1 mr-4">
@@ -344,11 +305,62 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
     });
   };
 
-  const completed = localLeaves.filter(l => l.completed).length;
-  const pct = localLeaves.length > 0 ? Math.round((completed / localLeaves.length) * 100) : 0;
+  // Filter hierarchical components
+  const phases = localLeaves.filter(l => l.type === 'phase' || (!l.type && !l.parentId));
+  const habits = localLeaves.filter(l => l.type === 'habit');
 
-  const branchPath = buildBranchPath();
-  const spinePath = buildSpinePath();
+  const completed = phases.filter(l => l.completed).length;
+  const pct = phases.length > 0 ? Math.round((completed / phases.length) * 100) : 0;
+
+  // ── SVG Helpers ──
+  const W = 390, H = 550;
+  const spinePoint = (t: number) => {
+    const bend = 30;
+    const curve = Math.sin(t * Math.PI) * bend;
+    return { x: W / 2 + curve, y: H - (t * (H - 80)) - 40 };
+  };
+  const branchHW = (t: number) => 14 - t * 8;
+  const buildSpinePath = () => {
+    let d = `M ${spinePoint(0).x} ${spinePoint(0).y}`;
+    for (let i = 1; i <= 20; i++) {
+      const p = spinePoint(i / 20);
+      d += ` L ${p.x} ${p.y}`;
+    }
+    return d;
+  };
+  const buildBranchPath = () => {
+    const pts = [];
+    for (let i = 0; i <= 20; i++) pts.push(spinePoint(i / 20));
+    let left = `M ${pts[0]!.x - branchHW(0)} ${pts[0]!.y}`;
+    for (let i = 1; i < pts.length; i++) left += ` L ${pts[i]!.x - branchHW(i / 20)} ${pts[i]!.y}`;
+    let right = `L ${pts[pts.length - 1]!.x + branchHW(1)} ${pts[pts.length - 1]!.y}`;
+    for (let i = pts.length - 2; i >= 0; i--) right += ` L ${pts[i]!.x + branchHW(i / 20)} ${pts[i]!.y}`;
+    return left + ' ' + right + ' Z';
+  };
+
+  const leafPath = (x: number, y: number, w: number, h: number, side: number, angle: number) => {
+    const rad = (angle * Math.PI) / 180;
+    const cp1x = x + side * (w * 0.3) * Math.cos(rad - 0.2);
+    const cp1y = y - (w * 0.3) * Math.sin(rad - 0.2);
+    const tipX = x + side * w * Math.cos(rad);
+    const tipY = y - w * Math.sin(rad);
+    const cp2x = x + side * (w * 0.3) * Math.cos(rad + 0.2);
+    const cp2y = y - (w * 0.3) * Math.sin(rad + 0.2);
+
+    return `M ${x} ${y} 
+            C ${cp1x} ${cp1y - h}, ${tipX - side * 5} ${tipY - h / 2}, ${tipX} ${tipY}
+            C ${tipX - side * 5} ${tipY + h / 2}, ${cp2x} ${cp2y + h}, ${x} ${y} Z`;
+  };
+
+  const midribPath = (x: number, y: number, w: number, side: number, angle: number) => {
+    const rad = (angle * Math.PI) / 180;
+    const tx = x + side * w * Math.cos(rad);
+    const ty = y - w * Math.sin(rad);
+    return `M ${x} ${y} L ${tx} ${ty}`;
+  };
+
+  const branchPathData = buildBranchPath();
+  const spinePathData = buildSpinePath();
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white overflow-hidden">
@@ -383,7 +395,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
               }}
             />
           ) : (
-            <p 
+            <p
               onClick={() => setIsEditingTitle(true)}
               className="text-sm font-bold text-slate-900 truncate max-w-full cursor-pointer hover:text-emerald-600 transition-colors"
             >
@@ -428,7 +440,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
               style={{ width: `${pct}%`, background: `linear-gradient(90deg,${palette.primary},${palette.mid})` }}
             />
           </div>
-          <span className="text-xs font-black tabular-nums" style={{ color: palette.primary }}>{completed}/{localLeaves.length}</span>
+          <span className="text-xs font-black tabular-nums" style={{ color: palette.primary }}>{completed}/{phases.length}</span>
         </div>
 
         {/* Description area */}
@@ -449,11 +461,11 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
                 onChange={e => setEditDesc(e.target.value)}
               />
               <div className="flex justify-end gap-2">
-                <button 
+                <button
                   onClick={() => { setEditDesc(branch.description || ''); setIsEditingDesc(false); }}
                   className="text-[10px] font-bold text-slate-400"
                 >Cancelar</button>
-                <button 
+                <button
                   onClick={async () => {
                     setIsEditingDesc(false);
                     await onUpdateGoal?.(branch.id, { description: editDesc.trim() });
@@ -480,13 +492,18 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
           xmlns="http://www.w3.org/2000/svg"
           style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s ease 0.1s', display: 'block' }}
         >
+          <style>{`
+            @keyframes leafSway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(4deg); } }
+            @keyframes auraFloat { 
+              0%, 100% { transform: translate(0, 0); opacity: 0.6; } 
+              50% { transform: translate(10px, -15px); opacity: 0.9; } 
+            }
+          `}</style>
           <defs>
-            {/* Branch gradient: dark at base, light at tip */}
             <linearGradient id={`brGrad-${branch.id}`} x1="0" y1="1" x2="0" y2="0">
               <stop offset="0%" stopColor={palette.mid} stopOpacity="1" />
               <stop offset="100%" stopColor={palette.primary} stopOpacity="0.5" />
             </linearGradient>
-            {/* Leaf fill gradient */}
             <linearGradient id={`lfGrad-${branch.id}`} x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={palette.primary} stopOpacity="0.9" />
               <stop offset="100%" stopColor={palette.mid} stopOpacity="0.7" />
@@ -504,12 +521,10 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
             </filter>
           </defs>
 
-          {/* ── Branch body ── */}
-          <path d={branchPath} fill={`url(#brGrad-${branch.id})`} />
-          {/* Highlight stripe along top edge of branch */}
-          <path d={spinePath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.25" strokeLinecap="round" />
+          <path d={branchPathData} fill={`url(#brGrad-${branch.id})`} />
+          <path d={spinePathData} fill="none" stroke="white" strokeWidth="1.5" opacity="0.25" strokeLinecap="round" />
 
-          {/* ── Goal bud at tip ── */}
+          {/* Goal bud at tip */}
           {(() => {
             const tip = spinePoint(1);
             return (
@@ -523,179 +538,93 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
             );
           })()}
 
-          {/* ── Leaf indicators ── */}
-          {localLeaves.map((leaf, i) => {
-            const total = localLeaves.length;
+          {/* Habit Aura */}
+          {habits.map((habit, i) => {
+            const t = 0.2 + (i * 0.15) % 0.7;
+            const center = spinePoint(t);
+            const side = i % 2 === 0 ? 1 : -1;
+            const x = center.x + side * (100 + (i * 20) % 50);
+            const y = center.y - 40 - (i * 15) % 60;
+            return (
+              <g key={habit.id} onClick={() => setSelectedLeaf(habit)} style={{ cursor: 'pointer', animation: `auraFloat ${4 + (i % 3)}s ${i * 0.5}s ease-in-out infinite` }}>
+                <circle cx={x} cy={y} r="20" fill={palette.primary} opacity="0.05" />
+                <rect x={x - 40} y={y - 12} width="80" height="24" rx="12" fill="white" stroke={palette.primary} strokeWidth="1" strokeOpacity="0.3" className="shadow-sm" />
+                <text x={x} y={y + 4} textAnchor="middle" fontSize="9" fontWeight="bold" fill={palette.primary} opacity="0.8">
+                  {habit.name.length > 10 ? habit.name.slice(0, 8) + '..' : habit.name}
+                </text>
+                <circle cx={x - 30} cy={y} r="3" fill={palette.primary} />
+              </g>
+            );
+          })}
+
+          {/* Phase Leaves */}
+          {phases.map((leaf, i) => {
+            const total = phases.length;
             const t = total === 1 ? 0.5 : 0.1 + (i / (total - 1)) * 0.78;
             const center = spinePoint(t);
             const side: 1 | -1 = i % 2 === 0 ? 1 : -1;
-
-            const lw = 80 - t * 26;
-            const lh = 22 - t * 6;
-            const angleUp = 18 + (i % 3) * 5 - (t * 8);
-            const bw = branchHW(t);
-            const attachX = center.x + side * bw;
-            const attachY = center.y;
-
-            // Tip of the leaf (static position — for label anchor)
-            const rad = (angleUp * Math.PI) / 180;
-            const tipX = attachX + side * lw * Math.cos(rad);
-            const tipY = attachY - lw * Math.sin(rad);
-
-            const swayDuration = 2.8 + (i % 4) * 0.5;
-            const swayDelay = (i * 0.4) % 2;
-
-            const fillGrad = leaf.completed
-              ? `url(#lfGradDone-${branch.id})`
-              : `url(#lfGrad-${branch.id})`;
-
-            // Label pill geometry — wider for better title visibility
-            const LW = 120, LH = 34;
-            // Label placed just past tip, continuing in leaf direction
-            const extX = tipX + side * 10;
-            const extY = tipY - 2;
-            // Anchor: left edge for right-side leaves, right edge for left-side leaves
-            const labelRectX = side > 0 ? extX : extX - LW;
-            const labelRectY = extY - LH / 2;
-
-            // Done count
-            const tasksDone = leaf.tasks ? leaf.tasks.filter((t: any) => t.isCompleted).length : 0;
-            const tasksTotal = leaf.tasks?.length ?? 0;
+            const lw = 80 - t * 26, lh = 22 - t * 6, angleUp = 18 + (i % 3) * 5 - (t * 8);
+            const bw = branchHW(t), attachX = center.x + side * bw, attachY = center.y;
+            const rad = (angleUp * Math.PI) / 180, tipX = attachX + side * lw * Math.cos(rad), tipY = attachY - lw * Math.sin(rad);
+            const fillGrad = leaf.completed ? `url(#lfGradDone-${branch.id})` : `url(#lfGrad-${branch.id})`;
+            const LW = 120, LH = 34, extX = tipX + side * 10, extY = tipY - 2;
+            const labelRectX = side > 0 ? extX : extX - LW, labelRectY = extY - LH / 2;
+            const children = localLeaves.filter(l => l.parentId === leaf.id);
+            const tasksDone = children.filter(c => c.completed).length;
+            const tasksTotal = children.length;
 
             return (
-              <g
-                key={leaf.id}
-                style={{
-                  opacity: mounted ? 1 : 0,
-                  transition: `opacity 0.5s ease ${0.15 + i * 0.08}s`,
-                  cursor: 'pointer',
-                }}
-                onClick={() => setSelectedLeaf(leaf)}
-              >
-                {/* ── Leaf body (swaying) ── */}
-                <g
-                  style={{
-                    transformOrigin: `${attachX.toFixed(1)}px ${attachY.toFixed(1)}px`,
-                    animation: mounted
-                      ? `leafSway ${swayDuration}s ${swayDelay}s ease-in-out infinite`
-                      : 'none',
-                  }}
-                >
+              <g key={leaf.id} style={{ opacity: mounted ? 1 : 0, transition: `opacity 0.5s ease ${0.15 + i * 0.08}s`, cursor: 'pointer' }} onClick={() => setSelectedLeaf(leaf)}>
+                <g style={{ transformOrigin: `${attachX.toFixed(1)}px ${attachY.toFixed(1)}px`, animation: mounted ? `leafSway ${2.8 + (i % 4) * 0.5}s ${(i * 0.4) % 2}s ease-in-out infinite` : 'none' }}>
                   <path d={leafPath(attachX, attachY, lw, lh, side, angleUp)} fill={fillGrad} filter="url(#leafShadow)" />
                   <path d={midribPath(attachX, attachY, lw * 0.88, side, angleUp)} fill="none" stroke="white" strokeWidth="0.7" opacity="0.4" strokeLinecap="round" />
-                  {/* Small ✓ glyph inside leaf when done */}
-                  {leaf.completed && (
-                    <text
-                      x={(attachX + tipX) / 2} y={(attachY + tipY) / 2 + 3}
-                      textAnchor="middle" fontSize="9" fill="white"
-                      fontWeight="900" pointerEvents="none" opacity="0.85"
-                    >✓</text>
-                  )}
+                  {leaf.completed && <text x={(attachX + tipX) / 2} y={(attachY + tipY) / 2 + 3} textAnchor="middle" fontSize="9" fill="white" fontWeight="900" pointerEvents="none" opacity="0.85">✓</text>}
                 </g>
-
-                {/* ── Label pill (static, outside leaf) ── */}
                 <g>
-                  {/* Drop shadow rect */}
-                  <rect
-                    x={labelRectX} y={labelRectY}
-                    width={LW} height={LH} rx="9"
-                    fill="white"
-                    filter="url(#leafShadow)"
-                  />
-                  {/* Color accent bar on inner edge */}
-                  <rect
-                    x={side > 0 ? labelRectX : labelRectX + LW - 3.5}
-                    y={labelRectY + 6}
-                    width="3.5" height={LH - 12} rx="2"
-                    fill={leaf.completed ? palette.primary : '#cbd5e1'}
-                    opacity="0.9"
-                  />
-                  {/* Status dot — visual only */}
-                  <circle
-                    cx={side > 0 ? labelRectX + LW - 10 : labelRectX + 10}
-                    cy={labelRectY + LH / 2}
-                    r="4"
-                    fill={leaf.completed ? palette.primary : '#e2e8f0'}
-                  />
-                  {/* Activity name */}
-                  <text
-                    x={side > 0 ? labelRectX + 12 : labelRectX + 10}
-                    y={labelRectY + 14}
-                    fontSize="9.5" fill="#1e293b" fontWeight="800"
-                    fontFamily="sans-serif" pointerEvents="none"
-                  >
+                  <rect x={labelRectX} y={labelRectY} width={LW} height={LH} rx="9" fill="white" filter="url(#leafShadow)" />
+                  <rect x={side > 0 ? labelRectX : labelRectX + LW - 3.5} y={labelRectY + 6} width="3.5" height={LH - 12} rx="2" fill={leaf.completed ? palette.primary : '#cbd5e1'} opacity="0.9" />
+                  <circle cx={side > 0 ? labelRectX + LW - 10 : labelRectX + 10} cy={labelRectY + LH / 2} r="4" fill={leaf.completed ? palette.primary : '#e2e8f0'} />
+                  <text x={side > 0 ? labelRectX + 12 : labelRectX + 10} y={labelRectY + 14} fontSize="9.5" fill="#1e293b" fontWeight="800" fontFamily="sans-serif" pointerEvents="none">
                     {leaf.name.length > 18 ? leaf.name.slice(0, 18) + '…' : leaf.name}
                   </text>
-                  {/* Task count or "Completado" */}
-                  <text
-                    x={side > 0 ? labelRectX + 12 : labelRectX + 10}
-                    y={labelRectY + 26}
-                    fontSize="7.5" fill={leaf.completed ? palette.primary : '#94a3b8'}
-                    fontWeight="700" fontFamily="sans-serif" pointerEvents="none"
-                  >
-                    {leaf.completed
-                      ? '✓ Completado'
-                      : tasksTotal > 0
-                        ? `${tasksDone}/${tasksTotal} tareas`
-                        : 'Toca para ver'}
+                  <text x={side > 0 ? labelRectX + 12 : labelRectX + 10} y={labelRectY + 26} fontSize="7.5" fill={leaf.completed ? palette.primary : '#94a3b8'} fontWeight="700" fontFamily="sans-serif" pointerEvents="none">
+                    {leaf.completed ? '✓ Completado' : tasksTotal > 0 ? `${tasksDone}/${tasksTotal} tareas` : 'Toca para ver'}
                   </text>
                 </g>
               </g>
             );
           })}
 
-          {/* Sway keyframes injected via foreignObject trick — use a <style> inside SVG */}
-          <defs>
-            <style>{`
-              @keyframes leafSway {
-                0%   { transform: rotate(0deg); }
-                30%  { transform: rotate(2.5deg); }
-                60%  { transform: rotate(-1.8deg); }
-                100% { transform: rotate(0deg); }
-              }
-            `}</style>
-          </defs>
-
-          {/* Empty state */}
+          <style>{`@keyframes leafSway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(2.5deg); } }`}</style>
+          
           {localLeaves.length === 0 && (
             <g>
-              <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="12" fill="#cbd5e1" fontWeight="700" fontFamily="sans-serif">
-                Sin actividades aún
-              </text>
-              <text x={W / 2} y={H / 2 + 18} textAnchor="middle" fontSize="10" fill="#e2e8f0" fontFamily="sans-serif">
-                Toca + para añadir la primera
-              </text>
+              <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="12" fill="#cbd5e1" fontWeight="700" fontFamily="sans-serif">Sin actividades aún</text>
+              <text x={W / 2} y={H / 2 + 18} textAnchor="middle" fontSize="10" fill="#e2e8f0" fontFamily="sans-serif">Toca + para añadir la primera</text>
             </g>
           )}
 
-          {/* Base label */}
           {(() => {
             const base = spinePoint(0);
             return (
-              <text x={base.x} y={base.y + 20} textAnchor="middle" fontSize="8" fill={palette.primary}
-                fontWeight="700" fontFamily="sans-serif" opacity="0.4" letterSpacing="2">
-                INICIO
-              </text>
+              <text x={base.x} y={base.y + 20} textAnchor="middle" fontSize="8" fill={palette.primary} fontWeight="700" fontFamily="sans-serif" opacity="0.4" letterSpacing="2">INICIO</text>
             );
           })()}
         </svg>
       </div>
 
-      {/* Hint */}
       <div className="shrink-0 py-1.5 text-center">
         <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Toca una hoja para ver el detalle</span>
       </div>
 
-      {/* ── Leaf detail panel ── */}
       {selectedLeaf && (
         <LeafPanel
           leaf={selectedLeaf}
+          allLeaves={localLeaves}
           palette={palette}
           onClose={() => setSelectedLeaf(null)}
           onToggleTask={async (taskId, done) => {
-            // Update local state first
             updateTaskInLeaves(taskId, done);
-            // Sync with API
             await fetch(`/api/profile/goals/tasks/${taskId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
@@ -706,6 +635,11 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
             await onToggleAction?.(selectedLeaf.id, { completed: !selectedLeaf.completed });
             setSelectedLeaf(null);
           }}
+          onToggleSubAction={async (id, data) => {
+          // Optimistic update for local UI
+          setLocalLeaves(prev => prev.map(l => l.id === id ? { ...l, completed: !!data.completed } : l));
+          await onToggleAction?.(id, data);
+        }}
           onDelete={async () => {
             if (confirm('¿Eliminar esta actividad?')) {
               await onDeleteAction?.(selectedLeaf.id);
@@ -715,7 +649,6 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
         />
       )}
 
-      {/* ── Add activity modal ── */}
       {isAdding && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">

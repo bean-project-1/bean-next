@@ -15,6 +15,7 @@ import { AICoachModal } from '@/features/dashboard/components/AICoachModal';
 const NAV = [
   { href: '/home',      icon: '🌳', label: 'Mi Árbol'   },
   { href: '/future',    icon: '✨', label: 'Mi Futuro'  },
+  { href: '/schedule',  icon: '📅', label: 'Mi Agenda'  },
   { href: '/dna',       icon: '🧬', label: 'Mi ADN'     },
   { href: '/dashboard', icon: '📊', label: 'Dashboard'  },
   { href: '/insights',  icon: '💡', label: 'Insights'   },

@@ -92,6 +92,9 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
         <div className="flex-1 min-w-0">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Coach — Guía de tarea</p>
           <p className="text-sm font-bold text-slate-800 truncate leading-tight">{taskTitle}</p>
+          {taskDescription && (
+            <p className="text-[10px] text-slate-500 truncate leading-tight mt-0.5">{taskDescription}</p>
+          )}
         </div>
         {onCloseMobile && (
           <button

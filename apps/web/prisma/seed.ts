@@ -41,6 +41,7 @@ async function clearData() {
   await prisma.chatMessage.deleteMany({});
   await prisma.chatSession.deleteMany({});
   await prisma.suggestedPath.deleteMany({});
+  await prisma.baseCommitment.deleteMany({});
   await prisma.user.deleteMany({});
 }
 
@@ -59,7 +60,7 @@ async function createDimensions() {
   return dimensionMap;
 }
 
-async function seedUser(email: string, name: string, attributes: any[], goals: any[], dimensionMap: Record<string, string>) {
+async function seedUser(email: string, name: string, attributes: any[], goals: any[], dimensionMap: Record<string, string>, baseCommitments: any[] = []) {
   console.log(`👤 Seeding user: ${name} (${email})`);
   const user = await prisma.user.create({
     data: { email, name }
@@ -74,6 +75,22 @@ async function seedUser(email: string, name: string, attributes: any[], goals: a
         name: attr.name,
         category: attr.category,
         metadata: attr.metadata || {}
+      }
+    });
+  }
+
+  // Base Commitments
+  for (const bc of baseCommitments) {
+    await prisma.baseCommitment.create({
+      data: {
+        userId: user.id,
+        title: bc.title,
+        type: bc.type,
+        daysOfWeek: bc.daysOfWeek,
+        hoursPerDay: bc.hoursPerDay,
+        startTime: bc.startTime,
+        endTime: bc.endTime,
+        dimensionId: bc.dimension ? dimensionMap[bc.dimension] : null
       }
     });
   }
@@ -173,7 +190,10 @@ async function main() {
         ]
       }
     ],
-    dimensionMap
+    dimensionMap,
+    [
+      { title: 'Trabajo (Fullstack Dev)', type: 'work', daysOfWeek: [1, 2, 3, 4, 5], hoursPerDay: 8, startTime: '09:00', endTime: '18:00', dimension: 'career' }
+    ]
   );
 
   // 2. ELENA - The Wellness Specialist
@@ -210,7 +230,10 @@ async function main() {
         ]
       }
     ],
-    dimensionMap
+    dimensionMap,
+    [
+      { title: 'Universidad (Clases)', type: 'study', daysOfWeek: [1, 2, 3, 4, 5], hoursPerDay: 4, startTime: '08:00', endTime: '12:00', dimension: 'knowledge' }
+    ]
   );
 
   // 3. MARCUS - The Hustler

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
     
     // d. Generate plan structure
-    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis);
+    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, userId);
 
     // 3. Persist in DB
     const result = await prisma.$transaction(async (tx) => {
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
           title: parsedGoal.title,
           description: parsedGoal.description,
           readinessScore: dnaAnalysis.readinessScore,
+          constraints: parsedGoal.constraints || {},
           target: {
             dimensions: dnaAnalysis.targetDimensions,
             gap: dnaAnalysis.gap
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
         // Create Tasks for this phase
         if (phaseData.tasks) {
           for (const taskObj of phaseData.tasks) {
-            const t = typeof taskObj === 'string' ? { name: taskObj, description: '', targetDate: null, dimensions: [], attributes: [] } : taskObj;
+            const t = typeof taskObj === 'string' ? { name: taskObj, description: '', startDate: null, targetDate: null, dimensions: [], attributes: [] } : taskObj;
             await tx.goalAction.create({
               data: {
                 goalId: goal.id,
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
                 title: t.name,
                 description: t.description || null,
                 type: 'task',
+                startDate: t.startDate ? new Date(t.startDate) : null,
                 targetDate: t.targetDate ? new Date(t.targetDate) : null,
                 estimatedHours: t.estimatedHours || 0,
                 dimensions: Array.isArray(t.dimensions) ? t.dimensions : [],

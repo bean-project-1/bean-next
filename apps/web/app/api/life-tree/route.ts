@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
           type: action.type,
           parentId: action.parentId,
           completed: action.isCompleted,
+          startDate: action.startDate,
           targetDate: action.targetDate,
           estimatedHours: action.estimatedHours || 0,
           dimensions: action.dimensions || [],

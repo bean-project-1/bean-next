@@ -24,6 +24,11 @@ export type DimensionScore = $Result.DefaultSelection<Prisma.$DimensionScorePayl
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model BaseCommitment
+ * 
+ */
+export type BaseCommitment = $Result.DefaultSelection<Prisma.$BaseCommitmentPayload>
+/**
  * Model SuggestedPath
  * 
  */
@@ -178,6 +183,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs>;
+
+  /**
+   * `prisma.baseCommitment`: Exposes CRUD operations for the **BaseCommitment** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more BaseCommitments
+    * const baseCommitments = await prisma.baseCommitment.findMany()
+    * ```
+    */
+  get baseCommitment(): Prisma.BaseCommitmentDelegate<ExtArgs>;
 
   /**
    * `prisma.suggestedPath`: Exposes CRUD operations for the **SuggestedPath** model.
@@ -730,6 +745,7 @@ export namespace Prisma {
 
   export const ModelName: {
     User: 'User',
+    BaseCommitment: 'BaseCommitment',
     SuggestedPath: 'SuggestedPath',
     Dimension: 'Dimension',
     UserAttribute: 'UserAttribute',
@@ -756,7 +772,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "suggestedPath" | "dimension" | "userAttribute" | "dimensionInput" | "lifeState" | "lifeEvent" | "goal" | "goalAction" | "task" | "chatSession" | "chatMessage"
+      modelProps: "user" | "baseCommitment" | "suggestedPath" | "dimension" | "userAttribute" | "dimensionInput" | "lifeState" | "lifeEvent" | "goal" | "goalAction" | "task" | "chatSession" | "chatMessage"
       txIsolationLevel: never
     }
     model: {
@@ -831,6 +847,80 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      BaseCommitment: {
+        payload: Prisma.$BaseCommitmentPayload<ExtArgs>
+        fields: Prisma.BaseCommitmentFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.BaseCommitmentFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.BaseCommitmentFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          findFirst: {
+            args: Prisma.BaseCommitmentFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.BaseCommitmentFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          findMany: {
+            args: Prisma.BaseCommitmentFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>[]
+          }
+          create: {
+            args: Prisma.BaseCommitmentCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          createMany: {
+            args: Prisma.BaseCommitmentCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.BaseCommitmentDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          update: {
+            args: Prisma.BaseCommitmentUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          deleteMany: {
+            args: Prisma.BaseCommitmentDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.BaseCommitmentUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.BaseCommitmentUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$BaseCommitmentPayload>
+          }
+          aggregate: {
+            args: Prisma.BaseCommitmentAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateBaseCommitment>
+          }
+          groupBy: {
+            args: Prisma.BaseCommitmentGroupByArgs<ExtArgs>
+            result: $Utils.Optional<BaseCommitmentGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.BaseCommitmentFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.BaseCommitmentAggregateRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          count: {
+            args: Prisma.BaseCommitmentCountArgs<ExtArgs>
+            result: $Utils.Optional<BaseCommitmentCountAggregateOutputType> | number
           }
         }
       }
@@ -1803,6 +1893,7 @@ export namespace Prisma {
     goals: number
     chatSessions: number
     suggestedPaths: number
+    baseCommitments: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1813,6 +1904,7 @@ export namespace Prisma {
     goals?: boolean | UserCountOutputTypeCountGoalsArgs
     chatSessions?: boolean | UserCountOutputTypeCountChatSessionsArgs
     suggestedPaths?: boolean | UserCountOutputTypeCountSuggestedPathsArgs
+    baseCommitments?: boolean | UserCountOutputTypeCountBaseCommitmentsArgs
   }
 
   // Custom InputTypes
@@ -1875,6 +1967,13 @@ export namespace Prisma {
     where?: SuggestedPathWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountBaseCommitmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BaseCommitmentWhereInput
+  }
+
 
   /**
    * Count Type DimensionCountOutputType
@@ -1883,11 +1982,13 @@ export namespace Prisma {
   export type DimensionCountOutputType = {
     attributes: number
     dimensionInputs: number
+    baseCommitments: number
   }
 
   export type DimensionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     attributes?: boolean | DimensionCountOutputTypeCountAttributesArgs
     dimensionInputs?: boolean | DimensionCountOutputTypeCountDimensionInputsArgs
+    baseCommitments?: boolean | DimensionCountOutputTypeCountBaseCommitmentsArgs
   }
 
   // Custom InputTypes
@@ -1913,6 +2014,13 @@ export namespace Prisma {
    */
   export type DimensionCountOutputTypeCountDimensionInputsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DimensionInputWhereInput
+  }
+
+  /**
+   * DimensionCountOutputType without action
+   */
+  export type DimensionCountOutputTypeCountBaseCommitmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BaseCommitmentWhereInput
   }
 
 
@@ -2266,6 +2374,7 @@ export namespace Prisma {
     goals?: boolean | User$goalsArgs<ExtArgs>
     chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
     suggestedPaths?: boolean | User$suggestedPathsArgs<ExtArgs>
+    baseCommitments?: boolean | User$baseCommitmentsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -2287,6 +2396,7 @@ export namespace Prisma {
     goals?: boolean | User$goalsArgs<ExtArgs>
     chatSessions?: boolean | User$chatSessionsArgs<ExtArgs>
     suggestedPaths?: boolean | User$suggestedPathsArgs<ExtArgs>
+    baseCommitments?: boolean | User$baseCommitmentsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -2300,6 +2410,7 @@ export namespace Prisma {
       goals: Prisma.$GoalPayload<ExtArgs>[]
       chatSessions: Prisma.$ChatSessionPayload<ExtArgs>[]
       suggestedPaths: Prisma.$SuggestedPathPayload<ExtArgs>[]
+      baseCommitments: Prisma.$BaseCommitmentPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2678,6 +2789,7 @@ export namespace Prisma {
     goals<T extends User$goalsArgs<ExtArgs> = {}>(args?: Subset<T, User$goalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany"> | Null>
     chatSessions<T extends User$chatSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$chatSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ChatSessionPayload<ExtArgs>, T, "findMany"> | Null>
     suggestedPaths<T extends User$suggestedPathsArgs<ExtArgs> = {}>(args?: Subset<T, User$suggestedPathsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SuggestedPathPayload<ExtArgs>, T, "findMany"> | Null>
+    baseCommitments<T extends User$baseCommitmentsArgs<ExtArgs> = {}>(args?: Subset<T, User$baseCommitmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3179,6 +3291,26 @@ export namespace Prisma {
   }
 
   /**
+   * User.baseCommitments
+   */
+  export type User$baseCommitmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    where?: BaseCommitmentWhereInput
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    cursor?: BaseCommitmentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3190,6 +3322,1054 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model BaseCommitment
+   */
+
+  export type AggregateBaseCommitment = {
+    _count: BaseCommitmentCountAggregateOutputType | null
+    _avg: BaseCommitmentAvgAggregateOutputType | null
+    _sum: BaseCommitmentSumAggregateOutputType | null
+    _min: BaseCommitmentMinAggregateOutputType | null
+    _max: BaseCommitmentMaxAggregateOutputType | null
+  }
+
+  export type BaseCommitmentAvgAggregateOutputType = {
+    daysOfWeek: number | null
+    hoursPerDay: number | null
+  }
+
+  export type BaseCommitmentSumAggregateOutputType = {
+    daysOfWeek: number[]
+    hoursPerDay: number | null
+  }
+
+  export type BaseCommitmentMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    title: string | null
+    type: string | null
+    startTime: string | null
+    endTime: string | null
+    hoursPerDay: number | null
+    dimensionId: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+  }
+
+  export type BaseCommitmentMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    title: string | null
+    type: string | null
+    startTime: string | null
+    endTime: string | null
+    hoursPerDay: number | null
+    dimensionId: string | null
+    isActive: boolean | null
+    createdAt: Date | null
+  }
+
+  export type BaseCommitmentCountAggregateOutputType = {
+    id: number
+    userId: number
+    title: number
+    type: number
+    daysOfWeek: number
+    startTime: number
+    endTime: number
+    hoursPerDay: number
+    dimensionId: number
+    isActive: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type BaseCommitmentAvgAggregateInputType = {
+    daysOfWeek?: true
+    hoursPerDay?: true
+  }
+
+  export type BaseCommitmentSumAggregateInputType = {
+    daysOfWeek?: true
+    hoursPerDay?: true
+  }
+
+  export type BaseCommitmentMinAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    type?: true
+    startTime?: true
+    endTime?: true
+    hoursPerDay?: true
+    dimensionId?: true
+    isActive?: true
+    createdAt?: true
+  }
+
+  export type BaseCommitmentMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    type?: true
+    startTime?: true
+    endTime?: true
+    hoursPerDay?: true
+    dimensionId?: true
+    isActive?: true
+    createdAt?: true
+  }
+
+  export type BaseCommitmentCountAggregateInputType = {
+    id?: true
+    userId?: true
+    title?: true
+    type?: true
+    daysOfWeek?: true
+    startTime?: true
+    endTime?: true
+    hoursPerDay?: true
+    dimensionId?: true
+    isActive?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type BaseCommitmentAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BaseCommitment to aggregate.
+     */
+    where?: BaseCommitmentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BaseCommitments to fetch.
+     */
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: BaseCommitmentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BaseCommitments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BaseCommitments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned BaseCommitments
+    **/
+    _count?: true | BaseCommitmentCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: BaseCommitmentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: BaseCommitmentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: BaseCommitmentMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: BaseCommitmentMaxAggregateInputType
+  }
+
+  export type GetBaseCommitmentAggregateType<T extends BaseCommitmentAggregateArgs> = {
+        [P in keyof T & keyof AggregateBaseCommitment]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateBaseCommitment[P]>
+      : GetScalarType<T[P], AggregateBaseCommitment[P]>
+  }
+
+
+
+
+  export type BaseCommitmentGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: BaseCommitmentWhereInput
+    orderBy?: BaseCommitmentOrderByWithAggregationInput | BaseCommitmentOrderByWithAggregationInput[]
+    by: BaseCommitmentScalarFieldEnum[] | BaseCommitmentScalarFieldEnum
+    having?: BaseCommitmentScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: BaseCommitmentCountAggregateInputType | true
+    _avg?: BaseCommitmentAvgAggregateInputType
+    _sum?: BaseCommitmentSumAggregateInputType
+    _min?: BaseCommitmentMinAggregateInputType
+    _max?: BaseCommitmentMaxAggregateInputType
+  }
+
+  export type BaseCommitmentGroupByOutputType = {
+    id: string
+    userId: string
+    title: string
+    type: string
+    daysOfWeek: number[]
+    startTime: string | null
+    endTime: string | null
+    hoursPerDay: number
+    dimensionId: string | null
+    isActive: boolean
+    createdAt: Date
+    _count: BaseCommitmentCountAggregateOutputType | null
+    _avg: BaseCommitmentAvgAggregateOutputType | null
+    _sum: BaseCommitmentSumAggregateOutputType | null
+    _min: BaseCommitmentMinAggregateOutputType | null
+    _max: BaseCommitmentMaxAggregateOutputType | null
+  }
+
+  type GetBaseCommitmentGroupByPayload<T extends BaseCommitmentGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<BaseCommitmentGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof BaseCommitmentGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], BaseCommitmentGroupByOutputType[P]>
+            : GetScalarType<T[P], BaseCommitmentGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type BaseCommitmentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    title?: boolean
+    type?: boolean
+    daysOfWeek?: boolean
+    startTime?: boolean
+    endTime?: boolean
+    hoursPerDay?: boolean
+    dimensionId?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    dimension?: boolean | BaseCommitment$dimensionArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["baseCommitment"]>
+
+
+  export type BaseCommitmentSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    title?: boolean
+    type?: boolean
+    daysOfWeek?: boolean
+    startTime?: boolean
+    endTime?: boolean
+    hoursPerDay?: boolean
+    dimensionId?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+  }
+
+  export type BaseCommitmentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    dimension?: boolean | BaseCommitment$dimensionArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $BaseCommitmentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "BaseCommitment"
+    objects: {
+      dimension: Prisma.$DimensionPayload<ExtArgs> | null
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      title: string
+      type: string
+      daysOfWeek: number[]
+      startTime: string | null
+      endTime: string | null
+      hoursPerDay: number
+      dimensionId: string | null
+      isActive: boolean
+      createdAt: Date
+    }, ExtArgs["result"]["baseCommitment"]>
+    composites: {}
+  }
+
+  type BaseCommitmentGetPayload<S extends boolean | null | undefined | BaseCommitmentDefaultArgs> = $Result.GetResult<Prisma.$BaseCommitmentPayload, S>
+
+  type BaseCommitmentCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<BaseCommitmentFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: BaseCommitmentCountAggregateInputType | true
+    }
+
+  export interface BaseCommitmentDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['BaseCommitment'], meta: { name: 'BaseCommitment' } }
+    /**
+     * Find zero or one BaseCommitment that matches the filter.
+     * @param {BaseCommitmentFindUniqueArgs} args - Arguments to find a BaseCommitment
+     * @example
+     * // Get one BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends BaseCommitmentFindUniqueArgs>(args: SelectSubset<T, BaseCommitmentFindUniqueArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one BaseCommitment that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {BaseCommitmentFindUniqueOrThrowArgs} args - Arguments to find a BaseCommitment
+     * @example
+     * // Get one BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends BaseCommitmentFindUniqueOrThrowArgs>(args: SelectSubset<T, BaseCommitmentFindUniqueOrThrowArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first BaseCommitment that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentFindFirstArgs} args - Arguments to find a BaseCommitment
+     * @example
+     * // Get one BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends BaseCommitmentFindFirstArgs>(args?: SelectSubset<T, BaseCommitmentFindFirstArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first BaseCommitment that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentFindFirstOrThrowArgs} args - Arguments to find a BaseCommitment
+     * @example
+     * // Get one BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends BaseCommitmentFindFirstOrThrowArgs>(args?: SelectSubset<T, BaseCommitmentFindFirstOrThrowArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more BaseCommitments that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all BaseCommitments
+     * const baseCommitments = await prisma.baseCommitment.findMany()
+     * 
+     * // Get first 10 BaseCommitments
+     * const baseCommitments = await prisma.baseCommitment.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const baseCommitmentWithIdOnly = await prisma.baseCommitment.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends BaseCommitmentFindManyArgs>(args?: SelectSubset<T, BaseCommitmentFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a BaseCommitment.
+     * @param {BaseCommitmentCreateArgs} args - Arguments to create a BaseCommitment.
+     * @example
+     * // Create one BaseCommitment
+     * const BaseCommitment = await prisma.baseCommitment.create({
+     *   data: {
+     *     // ... data to create a BaseCommitment
+     *   }
+     * })
+     * 
+     */
+    create<T extends BaseCommitmentCreateArgs>(args: SelectSubset<T, BaseCommitmentCreateArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many BaseCommitments.
+     * @param {BaseCommitmentCreateManyArgs} args - Arguments to create many BaseCommitments.
+     * @example
+     * // Create many BaseCommitments
+     * const baseCommitment = await prisma.baseCommitment.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends BaseCommitmentCreateManyArgs>(args?: SelectSubset<T, BaseCommitmentCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a BaseCommitment.
+     * @param {BaseCommitmentDeleteArgs} args - Arguments to delete one BaseCommitment.
+     * @example
+     * // Delete one BaseCommitment
+     * const BaseCommitment = await prisma.baseCommitment.delete({
+     *   where: {
+     *     // ... filter to delete one BaseCommitment
+     *   }
+     * })
+     * 
+     */
+    delete<T extends BaseCommitmentDeleteArgs>(args: SelectSubset<T, BaseCommitmentDeleteArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one BaseCommitment.
+     * @param {BaseCommitmentUpdateArgs} args - Arguments to update one BaseCommitment.
+     * @example
+     * // Update one BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends BaseCommitmentUpdateArgs>(args: SelectSubset<T, BaseCommitmentUpdateArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more BaseCommitments.
+     * @param {BaseCommitmentDeleteManyArgs} args - Arguments to filter BaseCommitments to delete.
+     * @example
+     * // Delete a few BaseCommitments
+     * const { count } = await prisma.baseCommitment.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends BaseCommitmentDeleteManyArgs>(args?: SelectSubset<T, BaseCommitmentDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more BaseCommitments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many BaseCommitments
+     * const baseCommitment = await prisma.baseCommitment.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends BaseCommitmentUpdateManyArgs>(args: SelectSubset<T, BaseCommitmentUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one BaseCommitment.
+     * @param {BaseCommitmentUpsertArgs} args - Arguments to update or create a BaseCommitment.
+     * @example
+     * // Update or create a BaseCommitment
+     * const baseCommitment = await prisma.baseCommitment.upsert({
+     *   create: {
+     *     // ... data to create a BaseCommitment
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the BaseCommitment we want to update
+     *   }
+     * })
+     */
+    upsert<T extends BaseCommitmentUpsertArgs>(args: SelectSubset<T, BaseCommitmentUpsertArgs<ExtArgs>>): Prisma__BaseCommitmentClient<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+    /**
+     * Find zero or more BaseCommitments that matches the filter.
+     * @param {BaseCommitmentFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const baseCommitment = await prisma.baseCommitment.findRaw({
+     *   filter: { age: { $gt: 25 } } 
+     * })
+     */
+    findRaw(args?: BaseCommitmentFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a BaseCommitment.
+     * @param {BaseCommitmentAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const baseCommitment = await prisma.baseCommitment.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: BaseCommitmentAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
+
+
+    /**
+     * Count the number of BaseCommitments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentCountArgs} args - Arguments to filter BaseCommitments to count.
+     * @example
+     * // Count the number of BaseCommitments
+     * const count = await prisma.baseCommitment.count({
+     *   where: {
+     *     // ... the filter for the BaseCommitments we want to count
+     *   }
+     * })
+    **/
+    count<T extends BaseCommitmentCountArgs>(
+      args?: Subset<T, BaseCommitmentCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], BaseCommitmentCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a BaseCommitment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends BaseCommitmentAggregateArgs>(args: Subset<T, BaseCommitmentAggregateArgs>): Prisma.PrismaPromise<GetBaseCommitmentAggregateType<T>>
+
+    /**
+     * Group by BaseCommitment.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {BaseCommitmentGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends BaseCommitmentGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: BaseCommitmentGroupByArgs['orderBy'] }
+        : { orderBy?: BaseCommitmentGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, BaseCommitmentGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetBaseCommitmentGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the BaseCommitment model
+   */
+  readonly fields: BaseCommitmentFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for BaseCommitment.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__BaseCommitmentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    dimension<T extends BaseCommitment$dimensionArgs<ExtArgs> = {}>(args?: Subset<T, BaseCommitment$dimensionArgs<ExtArgs>>): Prisma__DimensionClient<$Result.GetResult<Prisma.$DimensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the BaseCommitment model
+   */ 
+  interface BaseCommitmentFieldRefs {
+    readonly id: FieldRef<"BaseCommitment", 'String'>
+    readonly userId: FieldRef<"BaseCommitment", 'String'>
+    readonly title: FieldRef<"BaseCommitment", 'String'>
+    readonly type: FieldRef<"BaseCommitment", 'String'>
+    readonly daysOfWeek: FieldRef<"BaseCommitment", 'Int[]'>
+    readonly startTime: FieldRef<"BaseCommitment", 'String'>
+    readonly endTime: FieldRef<"BaseCommitment", 'String'>
+    readonly hoursPerDay: FieldRef<"BaseCommitment", 'Float'>
+    readonly dimensionId: FieldRef<"BaseCommitment", 'String'>
+    readonly isActive: FieldRef<"BaseCommitment", 'Boolean'>
+    readonly createdAt: FieldRef<"BaseCommitment", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * BaseCommitment findUnique
+   */
+  export type BaseCommitmentFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter, which BaseCommitment to fetch.
+     */
+    where: BaseCommitmentWhereUniqueInput
+  }
+
+  /**
+   * BaseCommitment findUniqueOrThrow
+   */
+  export type BaseCommitmentFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter, which BaseCommitment to fetch.
+     */
+    where: BaseCommitmentWhereUniqueInput
+  }
+
+  /**
+   * BaseCommitment findFirst
+   */
+  export type BaseCommitmentFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter, which BaseCommitment to fetch.
+     */
+    where?: BaseCommitmentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BaseCommitments to fetch.
+     */
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BaseCommitments.
+     */
+    cursor?: BaseCommitmentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BaseCommitments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BaseCommitments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BaseCommitments.
+     */
+    distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
+  }
+
+  /**
+   * BaseCommitment findFirstOrThrow
+   */
+  export type BaseCommitmentFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter, which BaseCommitment to fetch.
+     */
+    where?: BaseCommitmentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BaseCommitments to fetch.
+     */
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for BaseCommitments.
+     */
+    cursor?: BaseCommitmentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BaseCommitments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BaseCommitments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of BaseCommitments.
+     */
+    distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
+  }
+
+  /**
+   * BaseCommitment findMany
+   */
+  export type BaseCommitmentFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter, which BaseCommitments to fetch.
+     */
+    where?: BaseCommitmentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of BaseCommitments to fetch.
+     */
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing BaseCommitments.
+     */
+    cursor?: BaseCommitmentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` BaseCommitments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` BaseCommitments.
+     */
+    skip?: number
+    distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
+  }
+
+  /**
+   * BaseCommitment create
+   */
+  export type BaseCommitmentCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * The data needed to create a BaseCommitment.
+     */
+    data: XOR<BaseCommitmentCreateInput, BaseCommitmentUncheckedCreateInput>
+  }
+
+  /**
+   * BaseCommitment createMany
+   */
+  export type BaseCommitmentCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many BaseCommitments.
+     */
+    data: BaseCommitmentCreateManyInput | BaseCommitmentCreateManyInput[]
+  }
+
+  /**
+   * BaseCommitment update
+   */
+  export type BaseCommitmentUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * The data needed to update a BaseCommitment.
+     */
+    data: XOR<BaseCommitmentUpdateInput, BaseCommitmentUncheckedUpdateInput>
+    /**
+     * Choose, which BaseCommitment to update.
+     */
+    where: BaseCommitmentWhereUniqueInput
+  }
+
+  /**
+   * BaseCommitment updateMany
+   */
+  export type BaseCommitmentUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update BaseCommitments.
+     */
+    data: XOR<BaseCommitmentUpdateManyMutationInput, BaseCommitmentUncheckedUpdateManyInput>
+    /**
+     * Filter which BaseCommitments to update
+     */
+    where?: BaseCommitmentWhereInput
+  }
+
+  /**
+   * BaseCommitment upsert
+   */
+  export type BaseCommitmentUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * The filter to search for the BaseCommitment to update in case it exists.
+     */
+    where: BaseCommitmentWhereUniqueInput
+    /**
+     * In case the BaseCommitment found by the `where` argument doesn't exist, create a new BaseCommitment with this data.
+     */
+    create: XOR<BaseCommitmentCreateInput, BaseCommitmentUncheckedCreateInput>
+    /**
+     * In case the BaseCommitment was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<BaseCommitmentUpdateInput, BaseCommitmentUncheckedUpdateInput>
+  }
+
+  /**
+   * BaseCommitment delete
+   */
+  export type BaseCommitmentDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    /**
+     * Filter which BaseCommitment to delete.
+     */
+    where: BaseCommitmentWhereUniqueInput
+  }
+
+  /**
+   * BaseCommitment deleteMany
+   */
+  export type BaseCommitmentDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which BaseCommitments to delete
+     */
+    where?: BaseCommitmentWhereInput
+  }
+
+  /**
+   * BaseCommitment findRaw
+   */
+  export type BaseCommitmentFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * BaseCommitment aggregateRaw
+   */
+  export type BaseCommitmentAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * BaseCommitment.dimension
+   */
+  export type BaseCommitment$dimensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Dimension
+     */
+    select?: DimensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DimensionInclude<ExtArgs> | null
+    where?: DimensionWhereInput
+  }
+
+  /**
+   * BaseCommitment without action
+   */
+  export type BaseCommitmentDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
   }
 
 
@@ -4461,6 +5641,7 @@ export namespace Prisma {
     updatedAt?: boolean
     attributes?: boolean | Dimension$attributesArgs<ExtArgs>
     dimensionInputs?: boolean | Dimension$dimensionInputsArgs<ExtArgs>
+    baseCommitments?: boolean | Dimension$baseCommitmentsArgs<ExtArgs>
     _count?: boolean | DimensionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dimension"]>
 
@@ -4480,6 +5661,7 @@ export namespace Prisma {
   export type DimensionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     attributes?: boolean | Dimension$attributesArgs<ExtArgs>
     dimensionInputs?: boolean | Dimension$dimensionInputsArgs<ExtArgs>
+    baseCommitments?: boolean | Dimension$baseCommitmentsArgs<ExtArgs>
     _count?: boolean | DimensionCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4488,6 +5670,7 @@ export namespace Prisma {
     objects: {
       attributes: Prisma.$UserAttributePayload<ExtArgs>[]
       dimensionInputs: Prisma.$DimensionInputPayload<ExtArgs>[]
+      baseCommitments: Prisma.$BaseCommitmentPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -4864,6 +6047,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     attributes<T extends Dimension$attributesArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$attributesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserAttributePayload<ExtArgs>, T, "findMany"> | Null>
     dimensionInputs<T extends Dimension$dimensionInputsArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$dimensionInputsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DimensionInputPayload<ExtArgs>, T, "findMany"> | Null>
+    baseCommitments<T extends Dimension$baseCommitmentsArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$baseCommitmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5265,6 +6449,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DimensionInputScalarFieldEnum | DimensionInputScalarFieldEnum[]
+  }
+
+  /**
+   * Dimension.baseCommitments
+   */
+  export type Dimension$baseCommitmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BaseCommitment
+     */
+    select?: BaseCommitmentSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BaseCommitmentInclude<ExtArgs> | null
+    where?: BaseCommitmentWhereInput
+    orderBy?: BaseCommitmentOrderByWithRelationInput | BaseCommitmentOrderByWithRelationInput[]
+    cursor?: BaseCommitmentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
   }
 
   /**
@@ -10300,6 +11504,7 @@ export namespace Prisma {
     type: string | null
     parentId: string | null
     isCompleted: boolean | null
+    startDate: Date | null
     targetDate: Date | null
     streak: number | null
     consistency: number | null
@@ -10317,6 +11522,7 @@ export namespace Prisma {
     type: string | null
     parentId: string | null
     isCompleted: boolean | null
+    startDate: Date | null
     targetDate: Date | null
     streak: number | null
     consistency: number | null
@@ -10334,6 +11540,7 @@ export namespace Prisma {
     type: number
     parentId: number
     isCompleted: number
+    startDate: number
     targetDate: number
     dimensions: number
     attributes: number
@@ -10372,6 +11579,7 @@ export namespace Prisma {
     type?: true
     parentId?: true
     isCompleted?: true
+    startDate?: true
     targetDate?: true
     streak?: true
     consistency?: true
@@ -10389,6 +11597,7 @@ export namespace Prisma {
     type?: true
     parentId?: true
     isCompleted?: true
+    startDate?: true
     targetDate?: true
     streak?: true
     consistency?: true
@@ -10406,6 +11615,7 @@ export namespace Prisma {
     type?: true
     parentId?: true
     isCompleted?: true
+    startDate?: true
     targetDate?: true
     dimensions?: true
     attributes?: true
@@ -10515,6 +11725,7 @@ export namespace Prisma {
     type: string
     parentId: string | null
     isCompleted: boolean
+    startDate: Date | null
     targetDate: Date | null
     dimensions: string[]
     attributes: string[]
@@ -10556,6 +11767,7 @@ export namespace Prisma {
     type?: boolean
     parentId?: boolean
     isCompleted?: boolean
+    startDate?: boolean
     targetDate?: boolean
     dimensions?: boolean
     attributes?: boolean
@@ -10584,6 +11796,7 @@ export namespace Prisma {
     type?: boolean
     parentId?: boolean
     isCompleted?: boolean
+    startDate?: boolean
     targetDate?: boolean
     dimensions?: boolean
     attributes?: boolean
@@ -10622,6 +11835,7 @@ export namespace Prisma {
       type: string
       parentId: string | null
       isCompleted: boolean
+      startDate: Date | null
       targetDate: Date | null
       dimensions: string[]
       attributes: string[]
@@ -11037,6 +12251,7 @@ export namespace Prisma {
     readonly type: FieldRef<"GoalAction", 'String'>
     readonly parentId: FieldRef<"GoalAction", 'String'>
     readonly isCompleted: FieldRef<"GoalAction", 'Boolean'>
+    readonly startDate: FieldRef<"GoalAction", 'DateTime'>
     readonly targetDate: FieldRef<"GoalAction", 'DateTime'>
     readonly dimensions: FieldRef<"GoalAction", 'String[]'>
     readonly attributes: FieldRef<"GoalAction", 'String[]'>
@@ -14362,6 +15577,23 @@ export namespace Prisma {
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+  export const BaseCommitmentScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    title: 'title',
+    type: 'type',
+    daysOfWeek: 'daysOfWeek',
+    startTime: 'startTime',
+    endTime: 'endTime',
+    hoursPerDay: 'hoursPerDay',
+    dimensionId: 'dimensionId',
+    isActive: 'isActive',
+    createdAt: 'createdAt'
+  };
+
+  export type BaseCommitmentScalarFieldEnum = (typeof BaseCommitmentScalarFieldEnum)[keyof typeof BaseCommitmentScalarFieldEnum]
+
+
   export const SuggestedPathScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
@@ -14480,6 +15712,7 @@ export namespace Prisma {
     type: 'type',
     parentId: 'parentId',
     isCompleted: 'isCompleted',
+    startDate: 'startDate',
     targetDate: 'targetDate',
     dimensions: 'dimensions',
     attributes: 'attributes',
@@ -14585,13 +15818,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Int'
-   */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-  /**
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
@@ -14599,16 +15825,9 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Boolean'
+   * Reference to a field of type 'Int'
    */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 
@@ -14623,6 +15842,20 @@ export namespace Prisma {
    * Reference to a field of type 'Float[]'
    */
   export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
   /**
    * Deep Input Types
@@ -14646,6 +15879,7 @@ export namespace Prisma {
     goals?: GoalListRelationFilter
     chatSessions?: ChatSessionListRelationFilter
     suggestedPaths?: SuggestedPathListRelationFilter
+    baseCommitments?: BaseCommitmentListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -14662,6 +15896,7 @@ export namespace Prisma {
     goals?: GoalOrderByRelationAggregateInput
     chatSessions?: ChatSessionOrderByRelationAggregateInput
     suggestedPaths?: SuggestedPathOrderByRelationAggregateInput
+    baseCommitments?: BaseCommitmentOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -14681,6 +15916,7 @@ export namespace Prisma {
     goals?: GoalListRelationFilter
     chatSessions?: ChatSessionListRelationFilter
     suggestedPaths?: SuggestedPathListRelationFilter
+    baseCommitments?: BaseCommitmentListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -14705,6 +15941,96 @@ export namespace Prisma {
     avatarUrl?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+  }
+
+  export type BaseCommitmentWhereInput = {
+    AND?: BaseCommitmentWhereInput | BaseCommitmentWhereInput[]
+    OR?: BaseCommitmentWhereInput[]
+    NOT?: BaseCommitmentWhereInput | BaseCommitmentWhereInput[]
+    id?: StringFilter<"BaseCommitment"> | string
+    userId?: StringFilter<"BaseCommitment"> | string
+    title?: StringFilter<"BaseCommitment"> | string
+    type?: StringFilter<"BaseCommitment"> | string
+    daysOfWeek?: IntNullableListFilter<"BaseCommitment">
+    startTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    endTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    hoursPerDay?: FloatFilter<"BaseCommitment"> | number
+    dimensionId?: StringNullableFilter<"BaseCommitment"> | string | null
+    isActive?: BoolFilter<"BaseCommitment"> | boolean
+    createdAt?: DateTimeFilter<"BaseCommitment"> | Date | string
+    dimension?: XOR<DimensionNullableRelationFilter, DimensionWhereInput> | null
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }
+
+  export type BaseCommitmentOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    type?: SortOrder
+    daysOfWeek?: SortOrder
+    startTime?: SortOrder
+    endTime?: SortOrder
+    hoursPerDay?: SortOrder
+    dimensionId?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    dimension?: DimensionOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type BaseCommitmentWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: BaseCommitmentWhereInput | BaseCommitmentWhereInput[]
+    OR?: BaseCommitmentWhereInput[]
+    NOT?: BaseCommitmentWhereInput | BaseCommitmentWhereInput[]
+    userId?: StringFilter<"BaseCommitment"> | string
+    title?: StringFilter<"BaseCommitment"> | string
+    type?: StringFilter<"BaseCommitment"> | string
+    daysOfWeek?: IntNullableListFilter<"BaseCommitment">
+    startTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    endTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    hoursPerDay?: FloatFilter<"BaseCommitment"> | number
+    dimensionId?: StringNullableFilter<"BaseCommitment"> | string | null
+    isActive?: BoolFilter<"BaseCommitment"> | boolean
+    createdAt?: DateTimeFilter<"BaseCommitment"> | Date | string
+    dimension?: XOR<DimensionNullableRelationFilter, DimensionWhereInput> | null
+    user?: XOR<UserRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type BaseCommitmentOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    type?: SortOrder
+    daysOfWeek?: SortOrder
+    startTime?: SortOrder
+    endTime?: SortOrder
+    hoursPerDay?: SortOrder
+    dimensionId?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    _count?: BaseCommitmentCountOrderByAggregateInput
+    _avg?: BaseCommitmentAvgOrderByAggregateInput
+    _max?: BaseCommitmentMaxOrderByAggregateInput
+    _min?: BaseCommitmentMinOrderByAggregateInput
+    _sum?: BaseCommitmentSumOrderByAggregateInput
+  }
+
+  export type BaseCommitmentScalarWhereWithAggregatesInput = {
+    AND?: BaseCommitmentScalarWhereWithAggregatesInput | BaseCommitmentScalarWhereWithAggregatesInput[]
+    OR?: BaseCommitmentScalarWhereWithAggregatesInput[]
+    NOT?: BaseCommitmentScalarWhereWithAggregatesInput | BaseCommitmentScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"BaseCommitment"> | string
+    userId?: StringWithAggregatesFilter<"BaseCommitment"> | string
+    title?: StringWithAggregatesFilter<"BaseCommitment"> | string
+    type?: StringWithAggregatesFilter<"BaseCommitment"> | string
+    daysOfWeek?: IntNullableListFilter<"BaseCommitment">
+    startTime?: StringNullableWithAggregatesFilter<"BaseCommitment"> | string | null
+    endTime?: StringNullableWithAggregatesFilter<"BaseCommitment"> | string | null
+    hoursPerDay?: FloatWithAggregatesFilter<"BaseCommitment"> | number
+    dimensionId?: StringNullableWithAggregatesFilter<"BaseCommitment"> | string | null
+    isActive?: BoolWithAggregatesFilter<"BaseCommitment"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"BaseCommitment"> | Date | string
   }
 
   export type SuggestedPathWhereInput = {
@@ -14814,6 +16140,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Dimension"> | Date | string
     attributes?: UserAttributeListRelationFilter
     dimensionInputs?: DimensionInputListRelationFilter
+    baseCommitments?: BaseCommitmentListRelationFilter
   }
 
   export type DimensionOrderByWithRelationInput = {
@@ -14828,6 +16155,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     attributes?: UserAttributeOrderByRelationAggregateInput
     dimensionInputs?: DimensionInputOrderByRelationAggregateInput
+    baseCommitments?: BaseCommitmentOrderByRelationAggregateInput
   }
 
   export type DimensionWhereUniqueInput = Prisma.AtLeast<{
@@ -14845,6 +16173,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Dimension"> | Date | string
     attributes?: UserAttributeListRelationFilter
     dimensionInputs?: DimensionInputListRelationFilter
+    baseCommitments?: BaseCommitmentListRelationFilter
   }, "id" | "name">
 
   export type DimensionOrderByWithAggregationInput = {
@@ -15291,6 +16620,7 @@ export namespace Prisma {
     type?: StringFilter<"GoalAction"> | string
     parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    startDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
@@ -15317,6 +16647,7 @@ export namespace Prisma {
     type?: SortOrder
     parentId?: SortOrder
     isCompleted?: SortOrder
+    startDate?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
@@ -15346,6 +16677,7 @@ export namespace Prisma {
     type?: StringFilter<"GoalAction"> | string
     parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    startDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
@@ -15372,6 +16704,7 @@ export namespace Prisma {
     type?: SortOrder
     parentId?: SortOrder
     isCompleted?: SortOrder
+    startDate?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
@@ -15402,6 +16735,7 @@ export namespace Prisma {
     type?: StringWithAggregatesFilter<"GoalAction"> | string
     parentId?: StringNullableWithAggregatesFilter<"GoalAction"> | string | null
     isCompleted?: BoolWithAggregatesFilter<"GoalAction"> | boolean
+    startDate?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
     targetDate?: DateTimeNullableWithAggregatesFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
@@ -15625,6 +16959,7 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -15641,6 +16976,7 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -15656,6 +16992,7 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -15671,6 +17008,7 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -15696,6 +17034,98 @@ export namespace Prisma {
     avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BaseCommitmentCreateInput = {
+    id?: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    dimension?: DimensionCreateNestedOneWithoutBaseCommitmentsInput
+    user: UserCreateNestedOneWithoutBaseCommitmentsInput
+  }
+
+  export type BaseCommitmentUncheckedCreateInput = {
+    id?: string
+    userId: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    dimensionId?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentUpdateInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dimension?: DimensionUpdateOneWithoutBaseCommitmentsNestedInput
+    user?: UserUpdateOneRequiredWithoutBaseCommitmentsNestedInput
+  }
+
+  export type BaseCommitmentUncheckedUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BaseCommitmentCreateManyInput = {
+    id?: string
+    userId: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    dimensionId?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentUpdateManyMutationInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BaseCommitmentUncheckedUpdateManyInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SuggestedPathCreateInput = {
@@ -15810,6 +17240,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateInput = {
@@ -15824,6 +17255,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUpdateInput = {
@@ -15837,6 +17269,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateInput = {
@@ -15850,6 +17283,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionCreateManyInput = {
@@ -16310,6 +17744,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -16336,6 +17771,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -16357,6 +17793,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -16382,6 +17819,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -16406,6 +17844,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -16425,6 +17864,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -16446,6 +17886,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -16736,6 +18177,12 @@ export namespace Prisma {
     none?: SuggestedPathWhereInput
   }
 
+  export type BaseCommitmentListRelationFilter = {
+    every?: BaseCommitmentWhereInput
+    some?: BaseCommitmentWhereInput
+    none?: BaseCommitmentWhereInput
+  }
+
   export type UserAttributeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -16761,6 +18208,10 @@ export namespace Prisma {
   }
 
   export type SuggestedPathOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type BaseCommitmentOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -16842,6 +18293,114 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type IntNullableListFilter<$PrismaModel = never> = {
+    equals?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    has?: number | IntFieldRefInput<$PrismaModel> | null
+    hasEvery?: number[] | ListIntFieldRefInput<$PrismaModel>
+    hasSome?: number[] | ListIntFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type DimensionNullableRelationFilter = {
+    is?: DimensionWhereInput | null
+    isNot?: DimensionWhereInput | null
+  }
+
+  export type UserRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type BaseCommitmentCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    type?: SortOrder
+    daysOfWeek?: SortOrder
+    startTime?: SortOrder
+    endTime?: SortOrder
+    hoursPerDay?: SortOrder
+    dimensionId?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BaseCommitmentAvgOrderByAggregateInput = {
+    daysOfWeek?: SortOrder
+    hoursPerDay?: SortOrder
+  }
+
+  export type BaseCommitmentMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    type?: SortOrder
+    startTime?: SortOrder
+    endTime?: SortOrder
+    hoursPerDay?: SortOrder
+    dimensionId?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BaseCommitmentMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    type?: SortOrder
+    startTime?: SortOrder
+    endTime?: SortOrder
+    hoursPerDay?: SortOrder
+    dimensionId?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type BaseCommitmentSumOrderByAggregateInput = {
+    daysOfWeek?: SortOrder
+    hoursPerDay?: SortOrder
+  }
+
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -16859,16 +18418,6 @@ export namespace Prisma {
     hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
     hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
     isEmpty?: boolean
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
-  export type UserRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
   }
 
   export type SuggestedPathCountOrderByAggregateInput = {
@@ -16936,14 +18485,6 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DimensionCountOrderByAggregateInput = {
@@ -17106,17 +18647,6 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
-  export type FloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
   export type DimensionScoreCompositeListFilter = {
     equals?: DimensionScoreObjectEqualityInput[]
     every?: DimensionScoreWhereInput
@@ -17183,22 +18713,6 @@ export namespace Prisma {
     balanceScore?: SortOrder
     alignmentScore?: SortOrder
     energyIndex?: SortOrder
-  }
-
-  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type LifeEventCountOrderByAggregateInput = {
@@ -17398,6 +18912,7 @@ export namespace Prisma {
     type?: SortOrder
     parentId?: SortOrder
     isCompleted?: SortOrder
+    startDate?: SortOrder
     targetDate?: SortOrder
     dimensions?: SortOrder
     attributes?: SortOrder
@@ -17427,6 +18942,7 @@ export namespace Prisma {
     type?: SortOrder
     parentId?: SortOrder
     isCompleted?: SortOrder
+    startDate?: SortOrder
     targetDate?: SortOrder
     streak?: SortOrder
     consistency?: SortOrder
@@ -17444,6 +18960,7 @@ export namespace Prisma {
     type?: SortOrder
     parentId?: SortOrder
     isCompleted?: SortOrder
+    startDate?: SortOrder
     targetDate?: SortOrder
     streak?: SortOrder
     consistency?: SortOrder
@@ -17641,6 +19158,13 @@ export namespace Prisma {
     connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
   }
 
+  export type BaseCommitmentCreateNestedManyWithoutUserInput = {
+    create?: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput> | BaseCommitmentCreateWithoutUserInput[] | BaseCommitmentUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutUserInput | BaseCommitmentCreateOrConnectWithoutUserInput[]
+    createMany?: BaseCommitmentCreateManyUserInputEnvelope
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+  }
+
   export type UserAttributeUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<UserAttributeCreateWithoutUserInput, UserAttributeUncheckedCreateWithoutUserInput> | UserAttributeCreateWithoutUserInput[] | UserAttributeUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutUserInput | UserAttributeCreateOrConnectWithoutUserInput[]
@@ -17688,6 +19212,13 @@ export namespace Prisma {
     connectOrCreate?: SuggestedPathCreateOrConnectWithoutUserInput | SuggestedPathCreateOrConnectWithoutUserInput[]
     createMany?: SuggestedPathCreateManyUserInputEnvelope
     connect?: SuggestedPathWhereUniqueInput | SuggestedPathWhereUniqueInput[]
+  }
+
+  export type BaseCommitmentUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput> | BaseCommitmentCreateWithoutUserInput[] | BaseCommitmentUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutUserInput | BaseCommitmentCreateOrConnectWithoutUserInput[]
+    createMany?: BaseCommitmentCreateManyUserInputEnvelope
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -17801,6 +19332,20 @@ export namespace Prisma {
     deleteMany?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
   }
 
+  export type BaseCommitmentUpdateManyWithoutUserNestedInput = {
+    create?: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput> | BaseCommitmentCreateWithoutUserInput[] | BaseCommitmentUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutUserInput | BaseCommitmentCreateOrConnectWithoutUserInput[]
+    upsert?: BaseCommitmentUpsertWithWhereUniqueWithoutUserInput | BaseCommitmentUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: BaseCommitmentCreateManyUserInputEnvelope
+    set?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    disconnect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    delete?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    update?: BaseCommitmentUpdateWithWhereUniqueWithoutUserInput | BaseCommitmentUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: BaseCommitmentUpdateManyWithWhereWithoutUserInput | BaseCommitmentUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+  }
+
   export type UserAttributeUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<UserAttributeCreateWithoutUserInput, UserAttributeUncheckedCreateWithoutUserInput> | UserAttributeCreateWithoutUserInput[] | UserAttributeUncheckedCreateWithoutUserInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutUserInput | UserAttributeCreateOrConnectWithoutUserInput[]
@@ -17899,6 +19444,71 @@ export namespace Prisma {
     deleteMany?: SuggestedPathScalarWhereInput | SuggestedPathScalarWhereInput[]
   }
 
+  export type BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput> | BaseCommitmentCreateWithoutUserInput[] | BaseCommitmentUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutUserInput | BaseCommitmentCreateOrConnectWithoutUserInput[]
+    upsert?: BaseCommitmentUpsertWithWhereUniqueWithoutUserInput | BaseCommitmentUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: BaseCommitmentCreateManyUserInputEnvelope
+    set?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    disconnect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    delete?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    update?: BaseCommitmentUpdateWithWhereUniqueWithoutUserInput | BaseCommitmentUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: BaseCommitmentUpdateManyWithWhereWithoutUserInput | BaseCommitmentUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+  }
+
+  export type BaseCommitmentCreatedaysOfWeekInput = {
+    set: number[]
+  }
+
+  export type DimensionCreateNestedOneWithoutBaseCommitmentsInput = {
+    create?: XOR<DimensionCreateWithoutBaseCommitmentsInput, DimensionUncheckedCreateWithoutBaseCommitmentsInput>
+    connectOrCreate?: DimensionCreateOrConnectWithoutBaseCommitmentsInput
+    connect?: DimensionWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutBaseCommitmentsInput = {
+    create?: XOR<UserCreateWithoutBaseCommitmentsInput, UserUncheckedCreateWithoutBaseCommitmentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutBaseCommitmentsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type BaseCommitmentUpdatedaysOfWeekInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
+  export type DimensionUpdateOneWithoutBaseCommitmentsNestedInput = {
+    create?: XOR<DimensionCreateWithoutBaseCommitmentsInput, DimensionUncheckedCreateWithoutBaseCommitmentsInput>
+    connectOrCreate?: DimensionCreateOrConnectWithoutBaseCommitmentsInput
+    upsert?: DimensionUpsertWithoutBaseCommitmentsInput
+    disconnect?: boolean
+    delete?: DimensionWhereInput | boolean
+    connect?: DimensionWhereUniqueInput
+    update?: XOR<XOR<DimensionUpdateToOneWithWhereWithoutBaseCommitmentsInput, DimensionUpdateWithoutBaseCommitmentsInput>, DimensionUncheckedUpdateWithoutBaseCommitmentsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutBaseCommitmentsNestedInput = {
+    create?: XOR<UserCreateWithoutBaseCommitmentsInput, UserUncheckedCreateWithoutBaseCommitmentsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutBaseCommitmentsInput
+    upsert?: UserUpsertWithoutBaseCommitmentsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutBaseCommitmentsInput, UserUpdateWithoutBaseCommitmentsInput>, UserUncheckedUpdateWithoutBaseCommitmentsInput>
+  }
+
   export type SuggestedPathCreatereasonsInput = {
     set: string[]
   }
@@ -17920,10 +19530,6 @@ export namespace Prisma {
   export type SuggestedPathUpdatereasonsInput = {
     set?: string[]
     push?: string | string[]
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type UserUpdateOneRequiredWithoutSuggestedPathsNestedInput = {
@@ -17948,6 +19554,13 @@ export namespace Prisma {
     connect?: DimensionInputWhereUniqueInput | DimensionInputWhereUniqueInput[]
   }
 
+  export type BaseCommitmentCreateNestedManyWithoutDimensionInput = {
+    create?: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput> | BaseCommitmentCreateWithoutDimensionInput[] | BaseCommitmentUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutDimensionInput | BaseCommitmentCreateOrConnectWithoutDimensionInput[]
+    createMany?: BaseCommitmentCreateManyDimensionInputEnvelope
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+  }
+
   export type UserAttributeUncheckedCreateNestedManyWithoutDimensionInput = {
     create?: XOR<UserAttributeCreateWithoutDimensionInput, UserAttributeUncheckedCreateWithoutDimensionInput> | UserAttributeCreateWithoutDimensionInput[] | UserAttributeUncheckedCreateWithoutDimensionInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutDimensionInput | UserAttributeCreateOrConnectWithoutDimensionInput[]
@@ -17960,6 +19573,13 @@ export namespace Prisma {
     connectOrCreate?: DimensionInputCreateOrConnectWithoutDimensionInput | DimensionInputCreateOrConnectWithoutDimensionInput[]
     createMany?: DimensionInputCreateManyDimensionInputEnvelope
     connect?: DimensionInputWhereUniqueInput | DimensionInputWhereUniqueInput[]
+  }
+
+  export type BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput = {
+    create?: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput> | BaseCommitmentCreateWithoutDimensionInput[] | BaseCommitmentUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutDimensionInput | BaseCommitmentCreateOrConnectWithoutDimensionInput[]
+    createMany?: BaseCommitmentCreateManyDimensionInputEnvelope
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
   }
 
   export type UserAttributeUpdateManyWithoutDimensionNestedInput = {
@@ -17990,6 +19610,20 @@ export namespace Prisma {
     deleteMany?: DimensionInputScalarWhereInput | DimensionInputScalarWhereInput[]
   }
 
+  export type BaseCommitmentUpdateManyWithoutDimensionNestedInput = {
+    create?: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput> | BaseCommitmentCreateWithoutDimensionInput[] | BaseCommitmentUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutDimensionInput | BaseCommitmentCreateOrConnectWithoutDimensionInput[]
+    upsert?: BaseCommitmentUpsertWithWhereUniqueWithoutDimensionInput | BaseCommitmentUpsertWithWhereUniqueWithoutDimensionInput[]
+    createMany?: BaseCommitmentCreateManyDimensionInputEnvelope
+    set?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    disconnect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    delete?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    update?: BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput | BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput[]
+    updateMany?: BaseCommitmentUpdateManyWithWhereWithoutDimensionInput | BaseCommitmentUpdateManyWithWhereWithoutDimensionInput[]
+    deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+  }
+
   export type UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput = {
     create?: XOR<UserAttributeCreateWithoutDimensionInput, UserAttributeUncheckedCreateWithoutDimensionInput> | UserAttributeCreateWithoutDimensionInput[] | UserAttributeUncheckedCreateWithoutDimensionInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutDimensionInput | UserAttributeCreateOrConnectWithoutDimensionInput[]
@@ -18016,6 +19650,20 @@ export namespace Prisma {
     update?: DimensionInputUpdateWithWhereUniqueWithoutDimensionInput | DimensionInputUpdateWithWhereUniqueWithoutDimensionInput[]
     updateMany?: DimensionInputUpdateManyWithWhereWithoutDimensionInput | DimensionInputUpdateManyWithWhereWithoutDimensionInput[]
     deleteMany?: DimensionInputScalarWhereInput | DimensionInputScalarWhereInput[]
+  }
+
+  export type BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput = {
+    create?: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput> | BaseCommitmentCreateWithoutDimensionInput[] | BaseCommitmentUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: BaseCommitmentCreateOrConnectWithoutDimensionInput | BaseCommitmentCreateOrConnectWithoutDimensionInput[]
+    upsert?: BaseCommitmentUpsertWithWhereUniqueWithoutDimensionInput | BaseCommitmentUpsertWithWhereUniqueWithoutDimensionInput[]
+    createMany?: BaseCommitmentCreateManyDimensionInputEnvelope
+    set?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    disconnect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    delete?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+    update?: BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput | BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput[]
+    updateMany?: BaseCommitmentUpdateManyWithWhereWithoutDimensionInput | BaseCommitmentUpdateManyWithWhereWithoutDimensionInput[]
+    deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutAttributesInput = {
@@ -18089,14 +19737,6 @@ export namespace Prisma {
     create?: XOR<UserCreateWithoutLifeStatesInput, UserUncheckedCreateWithoutLifeStatesInput>
     connectOrCreate?: UserCreateOrConnectWithoutLifeStatesInput
     connect?: UserWhereUniqueInput
-  }
-
-  export type FloatFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type DimensionScoreListUpdateEnvelopeInput = {
@@ -18544,9 +20184,44 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type NestedBoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -18563,25 +20238,6 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
   export type NestedJsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -18615,22 +20271,6 @@ export namespace Prisma {
     score?: FloatFilter<"DimensionScore"> | number
     trend?: StringFilter<"DimensionScore"> | string
     confidence?: FloatNullableFilter<"DimensionScore"> | number | null
-  }
-
-  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -18931,6 +20571,41 @@ export namespace Prisma {
     data: SuggestedPathCreateManyUserInput | SuggestedPathCreateManyUserInput[]
   }
 
+  export type BaseCommitmentCreateWithoutUserInput = {
+    id?: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    dimension?: DimensionCreateNestedOneWithoutBaseCommitmentsInput
+  }
+
+  export type BaseCommitmentUncheckedCreateWithoutUserInput = {
+    id?: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    dimensionId?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentCreateOrConnectWithoutUserInput = {
+    where: BaseCommitmentWhereUniqueInput
+    create: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput>
+  }
+
+  export type BaseCommitmentCreateManyUserInputEnvelope = {
+    data: BaseCommitmentCreateManyUserInput | BaseCommitmentCreateManyUserInput[]
+  }
+
   export type UserAttributeUpsertWithWhereUniqueWithoutUserInput = {
     where: UserAttributeWhereUniqueInput
     update: XOR<UserAttributeUpdateWithoutUserInput, UserAttributeUncheckedUpdateWithoutUserInput>
@@ -19149,6 +20824,187 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"SuggestedPath"> | Date | string
   }
 
+  export type BaseCommitmentUpsertWithWhereUniqueWithoutUserInput = {
+    where: BaseCommitmentWhereUniqueInput
+    update: XOR<BaseCommitmentUpdateWithoutUserInput, BaseCommitmentUncheckedUpdateWithoutUserInput>
+    create: XOR<BaseCommitmentCreateWithoutUserInput, BaseCommitmentUncheckedCreateWithoutUserInput>
+  }
+
+  export type BaseCommitmentUpdateWithWhereUniqueWithoutUserInput = {
+    where: BaseCommitmentWhereUniqueInput
+    data: XOR<BaseCommitmentUpdateWithoutUserInput, BaseCommitmentUncheckedUpdateWithoutUserInput>
+  }
+
+  export type BaseCommitmentUpdateManyWithWhereWithoutUserInput = {
+    where: BaseCommitmentScalarWhereInput
+    data: XOR<BaseCommitmentUpdateManyMutationInput, BaseCommitmentUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type BaseCommitmentScalarWhereInput = {
+    AND?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+    OR?: BaseCommitmentScalarWhereInput[]
+    NOT?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+    id?: StringFilter<"BaseCommitment"> | string
+    userId?: StringFilter<"BaseCommitment"> | string
+    title?: StringFilter<"BaseCommitment"> | string
+    type?: StringFilter<"BaseCommitment"> | string
+    daysOfWeek?: IntNullableListFilter<"BaseCommitment">
+    startTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    endTime?: StringNullableFilter<"BaseCommitment"> | string | null
+    hoursPerDay?: FloatFilter<"BaseCommitment"> | number
+    dimensionId?: StringNullableFilter<"BaseCommitment"> | string | null
+    isActive?: BoolFilter<"BaseCommitment"> | boolean
+    createdAt?: DateTimeFilter<"BaseCommitment"> | Date | string
+  }
+
+  export type DimensionCreateWithoutBaseCommitmentsInput = {
+    id?: string
+    name: string
+    label: string
+    category: string
+    description?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
+    dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
+  }
+
+  export type DimensionUncheckedCreateWithoutBaseCommitmentsInput = {
+    id?: string
+    name: string
+    label: string
+    category: string
+    description?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
+    dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
+  }
+
+  export type DimensionCreateOrConnectWithoutBaseCommitmentsInput = {
+    where: DimensionWhereUniqueInput
+    create: XOR<DimensionCreateWithoutBaseCommitmentsInput, DimensionUncheckedCreateWithoutBaseCommitmentsInput>
+  }
+
+  export type UserCreateWithoutBaseCommitmentsInput = {
+    id?: string
+    email: string
+    name?: string | null
+    avatarUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeCreateNestedManyWithoutUserInput
+    dimensionInputs?: DimensionInputCreateNestedManyWithoutUserInput
+    lifeStates?: LifeStateCreateNestedManyWithoutUserInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutBaseCommitmentsInput = {
+    id?: string
+    email: string
+    name?: string | null
+    avatarUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeUncheckedCreateNestedManyWithoutUserInput
+    dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutUserInput
+    lifeStates?: LifeStateUncheckedCreateNestedManyWithoutUserInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutBaseCommitmentsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutBaseCommitmentsInput, UserUncheckedCreateWithoutBaseCommitmentsInput>
+  }
+
+  export type DimensionUpsertWithoutBaseCommitmentsInput = {
+    update: XOR<DimensionUpdateWithoutBaseCommitmentsInput, DimensionUncheckedUpdateWithoutBaseCommitmentsInput>
+    create: XOR<DimensionCreateWithoutBaseCommitmentsInput, DimensionUncheckedCreateWithoutBaseCommitmentsInput>
+    where?: DimensionWhereInput
+  }
+
+  export type DimensionUpdateToOneWithWhereWithoutBaseCommitmentsInput = {
+    where?: DimensionWhereInput
+    data: XOR<DimensionUpdateWithoutBaseCommitmentsInput, DimensionUncheckedUpdateWithoutBaseCommitmentsInput>
+  }
+
+  export type DimensionUpdateWithoutBaseCommitmentsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
+    dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
+  }
+
+  export type DimensionUncheckedUpdateWithoutBaseCommitmentsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
+    dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
+  }
+
+  export type UserUpsertWithoutBaseCommitmentsInput = {
+    update: XOR<UserUpdateWithoutBaseCommitmentsInput, UserUncheckedUpdateWithoutBaseCommitmentsInput>
+    create: XOR<UserCreateWithoutBaseCommitmentsInput, UserUncheckedCreateWithoutBaseCommitmentsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutBaseCommitmentsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutBaseCommitmentsInput, UserUncheckedUpdateWithoutBaseCommitmentsInput>
+  }
+
+  export type UserUpdateWithoutBaseCommitmentsInput = {
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUpdateManyWithoutUserNestedInput
+    dimensionInputs?: DimensionInputUpdateManyWithoutUserNestedInput
+    lifeStates?: LifeStateUpdateManyWithoutUserNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutBaseCommitmentsInput = {
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUncheckedUpdateManyWithoutUserNestedInput
+    dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutUserNestedInput
+    lifeStates?: LifeStateUncheckedUpdateManyWithoutUserNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+  }
+
   export type UserCreateWithoutSuggestedPathsInput = {
     id?: string
     email: string
@@ -19162,6 +21018,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSuggestedPathsInput = {
@@ -19177,6 +21034,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSuggestedPathsInput = {
@@ -19207,6 +21065,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSuggestedPathsInput = {
@@ -19221,6 +21080,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserAttributeCreateWithoutDimensionInput = {
@@ -19279,6 +21139,41 @@ export namespace Prisma {
     data: DimensionInputCreateManyDimensionInput | DimensionInputCreateManyDimensionInput[]
   }
 
+  export type BaseCommitmentCreateWithoutDimensionInput = {
+    id?: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutBaseCommitmentsInput
+  }
+
+  export type BaseCommitmentUncheckedCreateWithoutDimensionInput = {
+    id?: string
+    userId: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentCreateOrConnectWithoutDimensionInput = {
+    where: BaseCommitmentWhereUniqueInput
+    create: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput>
+  }
+
+  export type BaseCommitmentCreateManyDimensionInputEnvelope = {
+    data: BaseCommitmentCreateManyDimensionInput | BaseCommitmentCreateManyDimensionInput[]
+  }
+
   export type UserAttributeUpsertWithWhereUniqueWithoutDimensionInput = {
     where: UserAttributeWhereUniqueInput
     update: XOR<UserAttributeUpdateWithoutDimensionInput, UserAttributeUncheckedUpdateWithoutDimensionInput>
@@ -19311,6 +21206,22 @@ export namespace Prisma {
     data: XOR<DimensionInputUpdateManyMutationInput, DimensionInputUncheckedUpdateManyWithoutDimensionInput>
   }
 
+  export type BaseCommitmentUpsertWithWhereUniqueWithoutDimensionInput = {
+    where: BaseCommitmentWhereUniqueInput
+    update: XOR<BaseCommitmentUpdateWithoutDimensionInput, BaseCommitmentUncheckedUpdateWithoutDimensionInput>
+    create: XOR<BaseCommitmentCreateWithoutDimensionInput, BaseCommitmentUncheckedCreateWithoutDimensionInput>
+  }
+
+  export type BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput = {
+    where: BaseCommitmentWhereUniqueInput
+    data: XOR<BaseCommitmentUpdateWithoutDimensionInput, BaseCommitmentUncheckedUpdateWithoutDimensionInput>
+  }
+
+  export type BaseCommitmentUpdateManyWithWhereWithoutDimensionInput = {
+    where: BaseCommitmentScalarWhereInput
+    data: XOR<BaseCommitmentUpdateManyMutationInput, BaseCommitmentUncheckedUpdateManyWithoutDimensionInput>
+  }
+
   export type UserCreateWithoutAttributesInput = {
     id?: string
     email: string
@@ -19324,6 +21235,7 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAttributesInput = {
@@ -19339,6 +21251,7 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAttributesInput = {
@@ -19357,6 +21270,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateWithoutAttributesInput = {
@@ -19370,6 +21284,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionCreateOrConnectWithoutAttributesInput = {
@@ -19400,6 +21315,7 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAttributesInput = {
@@ -19414,6 +21330,7 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type DimensionUpsertWithoutAttributesInput = {
@@ -19437,6 +21354,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateWithoutAttributesInput = {
@@ -19449,6 +21367,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserCreateWithoutDimensionInputsInput = {
@@ -19464,6 +21383,7 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDimensionInputsInput = {
@@ -19479,6 +21399,7 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDimensionInputsInput = {
@@ -19497,6 +21418,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateWithoutDimensionInputsInput = {
@@ -19510,6 +21432,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionCreateOrConnectWithoutDimensionInputsInput = {
@@ -19540,6 +21463,7 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDimensionInputsInput = {
@@ -19554,6 +21478,7 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type DimensionUpsertWithoutDimensionInputsInput = {
@@ -19577,6 +21502,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateWithoutDimensionInputsInput = {
@@ -19589,6 +21515,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserCreateWithoutLifeStatesInput = {
@@ -19604,6 +21531,7 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutLifeStatesInput = {
@@ -19619,6 +21547,7 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutLifeStatesInput = {
@@ -19658,6 +21587,7 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLifeStatesInput = {
@@ -19672,6 +21602,7 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutLifeEventsInput = {
@@ -19687,6 +21618,7 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutLifeEventsInput = {
@@ -19702,6 +21634,7 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutLifeEventsInput = {
@@ -19732,6 +21665,7 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLifeEventsInput = {
@@ -19746,6 +21680,7 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutGoalsInput = {
@@ -19761,6 +21696,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutGoalsInput = {
@@ -19776,6 +21712,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     chatSessions?: ChatSessionUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutGoalsInput = {
@@ -19789,6 +21726,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -19813,6 +21751,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -19861,6 +21800,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutGoalsInput = {
@@ -19875,6 +21815,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     chatSessions?: ChatSessionUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type GoalActionUpsertWithWhereUniqueWithoutGoalInput = {
@@ -19904,6 +21845,7 @@ export namespace Prisma {
     type?: StringFilter<"GoalAction"> | string
     parentId?: StringNullableFilter<"GoalAction"> | string | null
     isCompleted?: BoolFilter<"GoalAction"> | boolean
+    startDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     targetDate?: DateTimeNullableFilter<"GoalAction"> | Date | string | null
     dimensions?: StringNullableListFilter<"GoalAction">
     attributes?: StringNullableListFilter<"GoalAction">
@@ -19924,6 +21866,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -19949,6 +21892,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -19975,6 +21919,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -19999,6 +21944,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -20112,6 +22058,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20136,6 +22083,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20248,6 +22196,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -20273,6 +22222,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -20309,6 +22259,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20333,6 +22284,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20384,6 +22336,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventCreateNestedManyWithoutUserInput
     goals?: GoalCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutChatSessionsInput = {
@@ -20399,6 +22352,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutUserInput
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     suggestedPaths?: SuggestedPathUncheckedCreateNestedManyWithoutUserInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutChatSessionsInput = {
@@ -20456,6 +22410,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUpdateManyWithoutUserNestedInput
     goals?: GoalUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChatSessionsInput = {
@@ -20470,6 +22425,7 @@ export namespace Prisma {
     lifeEvents?: LifeEventUncheckedUpdateManyWithoutUserNestedInput
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     suggestedPaths?: SuggestedPathUncheckedUpdateManyWithoutUserNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ChatSessionCreateWithoutMessagesInput = {
@@ -20593,6 +22549,19 @@ export namespace Prisma {
     dimensionName?: string | null
     reasons?: SuggestedPathCreatereasonsInput | string[]
     starterQuestion?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentCreateManyUserInput = {
+    id?: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    dimensionId?: string | null
     isActive?: boolean
     createdAt?: Date | string
   }
@@ -20817,6 +22786,42 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BaseCommitmentUpdateWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dimension?: DimensionUpdateOneWithoutBaseCommitmentsNestedInput
+  }
+
+  export type BaseCommitmentUncheckedUpdateWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BaseCommitmentUncheckedUpdateManyWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type UserAttributeCreateManyDimensionInput = {
     id?: string
     userId: string
@@ -20833,6 +22838,19 @@ export namespace Prisma {
     subType?: string | null
     valueJson: InputJsonValue
     source?: string
+    createdAt?: Date | string
+  }
+
+  export type BaseCommitmentCreateManyDimensionInput = {
+    id?: string
+    userId: string
+    title: string
+    type: string
+    daysOfWeek?: BaseCommitmentCreatedaysOfWeekInput | number[]
+    startTime?: string | null
+    endTime?: string | null
+    hoursPerDay?: number
+    isActive?: boolean
     createdAt?: Date | string
   }
 
@@ -20887,6 +22905,42 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type BaseCommitmentUpdateWithoutDimensionInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutBaseCommitmentsNestedInput
+  }
+
+  export type BaseCommitmentUncheckedUpdateWithoutDimensionInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type BaseCommitmentUncheckedUpdateManyWithoutDimensionInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    daysOfWeek?: BaseCommitmentUpdatedaysOfWeekInput | number[]
+    startTime?: NullableStringFieldUpdateOperationsInput | string | null
+    endTime?: NullableStringFieldUpdateOperationsInput | string | null
+    hoursPerDay?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DimensionScoreUpdateInput = {
     dimensionId?: StringFieldUpdateOperationsInput | string
     score?: FloatFieldUpdateOperationsInput | number
@@ -20901,6 +22955,7 @@ export namespace Prisma {
     type: string
     parentId?: string | null
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -20920,6 +22975,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20943,6 +22999,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20965,6 +23022,7 @@ export namespace Prisma {
     type?: StringFieldUpdateOperationsInput | string
     parentId?: NullableStringFieldUpdateOperationsInput | string | null
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -20986,6 +23044,7 @@ export namespace Prisma {
     description?: string | null
     type: string
     isCompleted?: boolean
+    startDate?: Date | string | null
     targetDate?: Date | string | null
     dimensions?: GoalActionCreatedimensionsInput | string[]
     attributes?: GoalActionCreateattributesInput | string[]
@@ -21017,6 +23076,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -21040,6 +23100,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -21062,6 +23123,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     type?: StringFieldUpdateOperationsInput | string
     isCompleted?: BoolFieldUpdateOperationsInput | boolean
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     targetDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dimensions?: GoalActionUpdatedimensionsInput | string[]
     attributes?: GoalActionUpdateattributesInput | string[]
@@ -21167,6 +23229,10 @@ export namespace Prisma {
      * @deprecated Use UserDefaultArgs instead
      */
     export type UserArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BaseCommitmentDefaultArgs instead
+     */
+    export type BaseCommitmentArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BaseCommitmentDefaultArgs<ExtArgs>
     /**
      * @deprecated Use SuggestedPathDefaultArgs instead
      */

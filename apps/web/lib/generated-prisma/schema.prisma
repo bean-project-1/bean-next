@@ -27,8 +27,33 @@ model User {
   goals           Goal[]
   chatSessions    ChatSession[]
   suggestedPaths  SuggestedPath[]
+  baseCommitments BaseCommitment[]
 
   @@map("users")
+}
+
+model BaseCommitment {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @map("user_id") @db.ObjectId
+
+  title String // e.g., "Trabajo", "Universidad"
+  type  String // work, study, routine
+
+  // Schedule
+  daysOfWeek  Int[] // 0-6 (Sunday to Saturday)
+  startTime   String? // e.g., "09:00"
+  endTime     String? // e.g., "17:00"
+  hoursPerDay Float   @default(8)
+
+  dimensionId String?    @map("dimension_id") @db.ObjectId
+  dimension   Dimension? @relation(fields: [dimensionId], references: [id])
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("base_commitments")
 }
 
 // ... (intermediate models)
@@ -75,6 +100,7 @@ model Dimension {
 
   attributes      UserAttribute[]
   dimensionInputs DimensionInput[]
+  baseCommitments BaseCommitment[]
 
   @@map("dimensions")
 }
@@ -229,6 +255,7 @@ model GoalAction {
 
   isCompleted Boolean @default(false) @map("is_completed")
 
+  startDate  DateTime? @map("start_date")
   targetDate DateTime? @map("target_date")
   dimensions String[]
   attributes String[]

@@ -124,6 +124,20 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.BaseCommitmentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  type: 'type',
+  daysOfWeek: 'daysOfWeek',
+  startTime: 'startTime',
+  endTime: 'endTime',
+  hoursPerDay: 'hoursPerDay',
+  dimensionId: 'dimensionId',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SuggestedPathScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -221,6 +235,7 @@ exports.Prisma.GoalActionScalarFieldEnum = {
   type: 'type',
   parentId: 'parentId',
   isCompleted: 'isCompleted',
+  startDate: 'startDate',
   targetDate: 'targetDate',
   dimensions: 'dimensions',
   attributes: 'attributes',
@@ -277,6 +292,7 @@ exports.Prisma.QueryMode = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  BaseCommitment: 'BaseCommitment',
   SuggestedPath: 'SuggestedPath',
   Dimension: 'Dimension',
   UserAttribute: 'UserAttribute',

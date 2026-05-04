@@ -288,6 +288,10 @@ export async function GET(req: NextRequest) {
         lifeStates: {
           orderBy: { timestamp: 'desc' },
           take: 1
+        },
+        baseCommitments: {
+          include: { dimension: true },
+          where: { isActive: true }
         }
       },
     });
@@ -320,7 +324,8 @@ export async function GET(req: NextRequest) {
           email: user.email,
           name: user.name,
           avatarUrl: user.avatarUrl,
-          attributes: user.attributes
+          attributes: user.attributes,
+          baseCommitments: user.baseCommitments
         },
         latestState,
         dimensions: allDimensions

@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const parsedGoal = await goalService.parseGoalWithAI(goalText);
     const userDNA = await goalService.getUserDNA(user.id);
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
-    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis);
+    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id);
 
     // 4. Resolve Dimension
     const primaryDimName = parsedGoal.relevantDimensions?.[0] || 'career';
@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
           description: parsedGoal.description,
           dimensionId: dimension?.id,
           readinessScore: dnaAnalysis.readinessScore,
+          constraints: parsedGoal.constraints || {},
           target: {
             dimensions: dnaAnalysis.targetDimensions,
             gap: dnaAnalysis.gap
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
                 title: t.name,
                 description: t.description || null,
                 type: 'task',
+                startDate: t.startDate ? new Date(t.startDate) : null,
                 targetDate: t.targetDate ? new Date(t.targetDate) : null,
                 estimatedHours: t.estimatedHours || 0,
                 dimensions: t.dimensions || [],

@@ -16,6 +16,7 @@ export function DashboardView() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [dimScores, setDimScores] = useState<DimScore[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
+  const [baseCommitments, setBaseCommitments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'dimensions'>('overview');
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export function DashboardView() {
           const { user } = json.data;
           setProfile({ userId: user.id, name: user.name, email: user.email });
           setAttributes(user.attributes || []);
+          setBaseCommitments(user.baseCommitments || []);
 
           const dbScores: Record<string, number> = {};
           if (json.data.latestState?.scores) {
@@ -129,6 +131,29 @@ export function DashboardView() {
               <AttributesWordMap attributes={attributes} />
             </div>
           </div>
+
+          {/* Base Commitments Section */}
+          {baseCommitments.length > 0 && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+              <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest opacity-40 mb-6">Compromisos de Vida</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {baseCommitments.map(bc => (
+                  <div key={bc.id} className="group relative overflow-hidden rounded-[24px] border border-slate-50 bg-slate-50/50 p-5 transition-all hover:bg-white hover:shadow-md">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm group-hover:bg-slate-50">
+                        {bc.type === 'work' ? '💼' : bc.type === 'study' ? '🎓' : '📅'}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{bc.hoursPerDay}h/día</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800">{bc.title}</h3>
+                    <p className="mt-1 text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+                      {bc.dimension?.label || 'General'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             {byCategory.map(({ cat, dims }) => (

@@ -83,10 +83,16 @@ export function DashboardView() {
             {filled}/{ALL_DIMENSIONS.length} dimensiones completadas
           </p>
         </div>
-        <a href="/dna"
-          className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition-all hover:bg-gray-50">
-          🧬 Mi ADN
-        </a>
+        <div className="flex items-center gap-3">
+          <a href="/profile/settings"
+            className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-4 py-2 text-sm font-semibold text-gray-500 shadow-sm transition-all hover:bg-gray-50">
+            ⚙️ Configurar Vida
+          </a>
+          <a href="/dna"
+            className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition-all hover:bg-gray-50">
+            🧬 Mi ADN
+          </a>
+        </div>
       </div>
 
       <div className="mb-6 flex gap-1 w-fit rounded-xl border border-gray-100 bg-gray-50 p-1">

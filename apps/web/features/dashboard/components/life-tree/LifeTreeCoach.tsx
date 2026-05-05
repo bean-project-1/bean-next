@@ -7,9 +7,10 @@ interface Message {
 
 interface LifeTreeCoachProps {
   onPlanGenerated: () => void;
+  onPlantingStateChange?: (isPlanting: boolean) => void;
 }
 
-export function LifeTreeCoach({ onPlanGenerated }: LifeTreeCoachProps) {
+export function LifeTreeCoach({ onPlanGenerated, onPlantingStateChange }: LifeTreeCoachProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -50,6 +51,7 @@ export function LifeTreeCoach({ onPlanGenerated }: LifeTreeCoachProps) {
 
   const generate = async () => {
     setIsGenerating(true);
+    onPlantingStateChange?.(true);
     try {
       const res = await fetch('/api/ai/goal-generate', {
         method: 'POST',
@@ -65,6 +67,7 @@ export function LifeTreeCoach({ onPlanGenerated }: LifeTreeCoachProps) {
       console.error(e);
     } finally {
       setIsGenerating(false);
+      onPlantingStateChange?.(false);
     }
   };
 

@@ -27,6 +27,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
+  const [isPlanting, setIsPlanting] = useState(false);
+
   useGSAP(() => {
     const tl = gsap.timeline();
     // 1. Initial UI fade-ins
@@ -68,6 +70,30 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       tl.to("#seed-label-group", { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
     }
   }, { scope: containerRef });
+
+  // Animation for "Planting" state
+  useGSAP(() => {
+    if (isPlanting && seedRef.current) {
+      gsap.to(seedRef.current, {
+        scale: 1.3,
+        duration: 0.8,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+      });
+      // Add a glow effect
+      gsap.to(seedRef.current.querySelector('path'), {
+        filter: "drop-shadow(0 0 20px #10b981)",
+        duration: 0.8,
+        repeat: -1,
+        yoyo: true,
+      });
+    } else if (seedRef.current) {
+      gsap.killTweensOf(seedRef.current);
+      gsap.to(seedRef.current, { scale: 1, duration: 0.5 });
+      gsap.to(seedRef.current.querySelector('path'), { filter: "none", duration: 0.5 });
+    }
+  }, [isPlanting]);
 
   // Debugging log for branch count
   console.log("Number of branches:", data.branches.length);
@@ -298,7 +324,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       </svg>
 
       {/* Integrated Coach */}
-      <LifeTreeCoach onPlanGenerated={() => onRefresh?.()} />
+      <LifeTreeCoach 
+        onPlanGenerated={() => onRefresh?.()} 
+        onPlantingStateChange={setIsPlanting}
+      />
 
       {/* Legend */}
       <div className="fixed bottom-24 sm:bottom-10 left-4 sm:left-64 flex flex-col gap-2 bg-white/50 p-3 sm:p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">

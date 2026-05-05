@@ -9,8 +9,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { AICoachModal } from '@/features/dashboard/components/AICoachModal';
 
 const NAV = [
   { href: '/home',      icon: '🌳', label: 'Mi Árbol'   },
@@ -24,8 +22,6 @@ const NAV = [
 
 function Sidebar() {
   const path = usePathname();
-  const [coachOpen, setCoachOpen] = useState(false);
-
   return (
     <>
       {/* Sidebar (Desktop Only) */}
@@ -55,15 +51,6 @@ function Sidebar() {
             </Link>
           );
         })}
-        
-        {/* Botón Mágico AI Coach */}
-        <button 
-          onClick={() => setCoachOpen(true)}
-          className="group mt-4 flex w-full items-center justify-start gap-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-sm text-white shadow-md shadow-violet-500/20 transition-all hover:-translate-y-px hover:shadow-violet-500/40"
-        >
-          <span className="text-base">🧠</span>
-          <span className="font-semibold">Coach AI</span>
-        </button>
       </nav>
 
       {/* Footer */}
@@ -80,27 +67,7 @@ function Sidebar() {
 
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="sm:hidden fixed bottom-0 left-0 w-full z-40 bg-white/90 backdrop-blur-md border-t border-slate-100 px-2 py-2 pb-safe flex items-center justify-around">
-        {NAV.slice(0, 2).map(n => {
-          const active = path === n.href || path.startsWith(n.href + '/');
-          return (
-            <Link key={n.href} href={n.href} className="flex flex-col items-center gap-1 p-2 w-16">
-              <span className={`text-xl transition-transform ${active ? 'scale-110' : 'opacity-70'}`}>{n.icon}</span>
-              <span className={`text-[9px] font-bold ${active ? 'text-green-600' : 'text-slate-400'}`}>{n.label.split(' ')[1] || n.label}</span>
-            </Link>
-          );
-        })}
-
-        {/* Floating Coach Button Center */}
-        <div className="relative -top-5">
-          <button 
-            onClick={() => setCoachOpen(true)}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30 transition-transform active:scale-95"
-          >
-            <span className="text-2xl">🧠</span>
-          </button>
-        </div>
-
-        {NAV.slice(2, 4).map(n => {
+        {NAV.map(n => {
           const active = path === n.href || path.startsWith(n.href + '/');
           return (
             <Link key={n.href} href={n.href} className="flex flex-col items-center gap-1 p-2 w-16">
@@ -110,9 +77,6 @@ function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Modal Renderizado Condicionalmente */}
-      {coachOpen && <AICoachModal onClose={() => setCoachOpen(false)} />}
     </>
   );
 }

@@ -15,7 +15,7 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   
-  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, error } = useLifeTree();
+  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
 
   const handleLeafClick = (id: string) => {
     console.log('handleLeafClick triggered for ID:', id);
@@ -101,6 +101,7 @@ export default function HomePage() {
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
             onBranchClick={(b) => setSelectedBranchId(b.id)}
+            onRefresh={refresh}
           />
         </main>
       </div>

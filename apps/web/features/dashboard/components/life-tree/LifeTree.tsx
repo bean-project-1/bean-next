@@ -6,15 +6,17 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
+import { LifeTreeCoach } from './LifeTreeCoach';
 
 interface LifeTreeProps {
   data: TreeData;
   onLeafClick?: (leafId: string) => void;
   onScoreClick?: () => void;
   onBranchClick?: (branch: BranchData) => void;
+  onRefresh?: () => void;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -292,7 +294,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick }: Lif
             onBranchClick={(b) => onBranchClick?.(b)}
           />
         ))}
+
       </svg>
+
+      {/* Integrated Coach */}
+      <LifeTreeCoach onPlanGenerated={() => onRefresh?.()} />
 
       {/* Legend */}
       <div className="fixed bottom-24 sm:bottom-10 left-4 sm:left-64 flex flex-col gap-2 bg-white/50 p-3 sm:p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">

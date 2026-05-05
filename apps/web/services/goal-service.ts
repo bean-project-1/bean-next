@@ -231,11 +231,27 @@ export class GoalService {
           { role: "system", content: "You are a professional Life Architect. You provide detailed, structured JSON plans. You split long tasks into digestible blocks of 1-4 hours." },
           { role: "user", content: prompt }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        max_tokens: 4096
       });
 
-      const content = response.choices[0]?.message.content || '{}';
-      const plan = JSON.parse(content);
+      const rawContent = response.choices[0]?.message.content || '{}';
+      
+      // Clean up markdown if present
+      const content = rawContent
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+
+      let plan;
+      try {
+        plan = JSON.parse(content);
+      } catch (parseError) {
+        console.error("JSON Parse Error in generateHierarchicalPlan:", parseError);
+        console.error("Raw Content received:", content);
+        // Fallback or re-throw with better context
+        throw new Error(`Failed to parse AI plan: ${content.substring(0, 100)}...`);
+      }
       
       if (!plan.phases) plan.phases = [];
       if (!plan.habits) plan.habits = [];

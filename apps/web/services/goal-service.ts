@@ -113,14 +113,6 @@ export class GoalService {
     const horizon = new Date();
     horizon.setDate(horizon.getDate() + 30);
     
-    const actions = await prisma.goalAction.findMany({
-      where: {
-        goal: { userId },
-        targetDate: { gte: new Date(), lte: horizon }
-      },
-      select: { targetDate: true, estimatedHours: true }
-    });
-
     const workload: Record<string, number> = {};
     
     // 1. Fetch dynamic actions

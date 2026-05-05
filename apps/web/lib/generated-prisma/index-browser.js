@@ -206,6 +206,7 @@ exports.Prisma.LifeEventScalarFieldEnum = {
   description: 'description',
   date: 'date',
   impact: 'impact',
+  dimensionId: 'dimensionId',
   metadata: 'metadata',
   createdAt: 'createdAt'
 };

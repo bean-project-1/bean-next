@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
@@ -13,40 +13,32 @@ const CATEGORIES = [
 
 export function DNAView() {
   const {
-    attributes, dbDimensions, loading, error, addAttribute
+    dbDimensions, loading: profileLoading, error: profileError
   } = useProfile();
 
+  const [identity, setIdentity] = useState<any>(null);
+  const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
-  const [newAttrName, setNewAttrName] = useState('');
-  const [addingAttr, setAddingAttr] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/dna/identity')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setIdentity(json.identity);
+      })
+      .finally(() => setLoadingIdentity(false));
+  }, []);
 
   const attributesCount = ALL_DIMENSIONS.reduce((acc, dim) => {
-    acc[dim.key] = attributes.filter(a => a.dimension?.name === dim.key || a.dimensionId === dim.id).length;
+    const dimData = identity?.[dim.key]?.identity;
+    acc[dim.key] = (dimData?.assets?.length || 0) + (dimData?.current?.length || 0) + (dimData?.history?.length || 0);
     return acc;
   }, {} as Record<string, number>);
 
   const filledCount = Object.values(attributesCount).filter(c => c > 0).length;
   const pct = Math.round((filledCount / ALL_DIMENSIONS.length) * 100);
 
-  const handleAddAttributeLocal = async (dimKey: string) => {
-    if (!newAttrName.trim()) return;
-    const dimDb = dbDimensions.find(d => d.name === dimKey);
-    if (!dimDb) {
-      alert('Error: No se encontró el ID de la dimensión');
-      return;
-    }
-
-    setAddingAttr(true);
-    const res = await addAttribute(dimDb.id, newAttrName, 'other');
-    if (res.success) {
-      setNewAttrName('');
-    } else {
-      alert('Error: ' + res.error);
-    }
-    setAddingAttr(false);
-  };
-
-  if (loading) {
+  if (profileLoading || loadingIdentity) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
@@ -54,12 +46,12 @@ export function DNAView() {
     );
   }
 
-  if (error) {
+  if (profileError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
         <div className="mb-4 text-4xl">⚠️</div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Error de Perfil</h2>
-        <p className="text-gray-500 mb-6 max-w-xs">{error === 'Not authenticated' ? 'Tu sesión ha expirado o no has iniciado sesión.' : error}</p>
+        <p className="text-gray-500 mb-6 max-w-xs">{profileError === 'Not authenticated' ? 'Tu sesión ha expirado o no has iniciado sesión.' : profileError}</p>
         <a href="/login" className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold">Ir al Login</a>
       </div>
     );
@@ -68,16 +60,16 @@ export function DNAView() {
   return (
     <div className="min-h-screen px-6 py-8 bg-white">
       <div className="mb-8">
-        <h1 className="text-3xl font-light text-gray-900 tracking-tight">Mi <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
+        <h1 className="text-3xl font-light text-gray-900 tracking-tight">Identidad <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
         <p className="mt-1 text-sm text-gray-400 font-medium">
-          Tus características, habilidades y valores en las 19 dimensiones BEAN.
+          La colección de tus experiencias, activos y compromisos que definen quién eres.
         </p>
       </div>
 
       <div className="mb-8 rounded-2xl border border-gray-100 bg-gray-50/50 px-6 py-6 flex items-center gap-8 shadow-sm">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            <span>Completitud de Perfil</span>
+            <span>Exploración de Identidad</span>
             <span className="text-green-600 font-bold">{pct}%</span>
           </div>
           <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
@@ -87,7 +79,7 @@ export function DNAView() {
         </div>
         <div className="flex-shrink-0 text-right">
           <p className="text-3xl font-light text-gray-900 leading-none">{filledCount}<span className="text-base font-normal text-gray-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Dimensiones</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Áreas de Vida</p>
         </div>
       </div>
 
@@ -115,7 +107,7 @@ export function DNAView() {
                         <div className={`h-2 w-2 rounded-full ${cColor}`} />
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
                       </div>
-                      <span className={`text-xs font-bold text-gray-900`}>{catCount} ítems</span>
+                      <span className={`text-xs font-bold text-gray-900`}>{catCount} hitos</span>
                     </div>
                   );
                 })}
@@ -140,47 +132,48 @@ export function DNAView() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {dims.map((dim: any) => {
-                    const count = attributesCount[dim.key] ?? 0;
-                    const hasData = count > 0;
-                    const dimAttributes = attributes.filter(a => 
-                      a.dimension?.name === dim.key || a.dimensionId === dim.id
-                    );
+                    const dimData = identity?.[dim.key]?.identity;
+                    const hasData = (attributesCount[dim.key] || 0) > 0;
 
                     return (
                       <div key={dim.key} 
                         onClick={() => setSelectedDimKey(dim.key)}
                         className={`group relative rounded-2xl border p-4 transition-all cursor-pointer hover:shadow-md ${
-                          hasData ? `${c.border} bg-white` : 'border-gray-50 bg-gray-50/50'
+                          hasData ? `${c.border} bg-white shadow-sm` : 'border-gray-50 bg-gray-50/50 opacity-40'
                         }`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <span className="text-base flex-shrink-0">{dim.emoji}</span>
-                            <span className={`text-xs font-semibold truncate ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                            <span className={`text-xs font-bold truncate ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
                               {dim.label}
                             </span>
                           </div>
                         </div>
                         
-                        {/* Attributes Chips (Mini list) */}
-                        {dimAttributes.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 mb-1">
-                            {dimAttributes.slice(0, 3).map((attr, idx) => (
-                              <span key={idx} className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${
-                                attr.category === 'skill' ? 'bg-blue-50 text-blue-600' : 
-                                attr.category === 'interest' ? 'bg-orange-50 text-orange-600' :
-                                attr.category === 'value' ? 'bg-violet-50 text-violet-600' :
-                                'bg-gray-100 text-gray-500'
-                              }`}>
-                                {attr.name}
-                              </span>
-                            ))}
-                            {dimAttributes.length > 3 && (
-                              <span className="text-[8px] font-bold text-gray-300">+{dimAttributes.length - 3}</span>
+                        {/* Summary Narrative */}
+                        {hasData ? (
+                          <div className="space-y-1">
+                            {dimData?.current?.[0] && (
+                              <p className="text-[10px] font-medium text-slate-800 truncate">
+                                💼 Actual: {dimData.current[0].title}
+                              </p>
                             )}
+                            {dimData?.history?.[0] && (
+                              <p className="text-[10px] text-slate-400 truncate italic">
+                                🎓 Previo: {dimData.history[0].title}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {dimData?.assets?.slice(0, 2).map((asset: any, idx: number) => (
+                                <span key={idx} className="bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
+                                  {asset.name}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">
-                            Sin características
+                            Territorio inexplorado
                           </div>
                         )}
                       </div>
@@ -203,82 +196,114 @@ export function DNAView() {
               {(() => {
                 const dim = ALL_DIMENSIONS.find(d => d.key === selectedDimKey);
                 if (!dim) return null;
-                const dimAttributes = attributes.filter(a => a.dimension?.name === selectedDimKey);
+                const dimData = identity?.[selectedDimKey]?.identity;
                 
                 return (
                   <>
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 rounded-2xl bg-gray-50 flex items-center justify-center text-3xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-10">
+                      <div className="flex items-center gap-5">
+                        <div className="h-16 w-16 rounded-[24px] bg-slate-50 flex items-center justify-center text-3xl shadow-sm border border-slate-100">
                           {dim.emoji}
                         </div>
                         <div>
-                          <h2 className="text-3xl font-light text-gray-900 tracking-tight leading-none">{dim.label}</h2>
+                          <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none">{dim.label}</h2>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{dim.cat}</span>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">{dim.cat}</span>
                           </div>
                         </div>
                       </div>
                       <button 
                         onClick={() => setSelectedDimKey(null)}
-                        className="h-10 w-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400">
+                        className="h-10 w-10 rounded-full hover:bg-slate-50 flex items-center justify-center transition-colors text-slate-300">
                         ✕
                       </button>
                     </div>
 
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Atributos & Evidencia</h3>
-                        {dimAttributes.length > 0 ? (
-                          <div className="grid gap-3">
-                            {dimAttributes.map((attr, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-4 rounded-2xl border border-gray-50 bg-gray-50/30 group hover:border-gray-100 hover:bg-white transition-all shadow-sm hover:shadow-md">
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-sm font-semibold text-gray-900">{attr.name}</span>
-                                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{attr.category}</span>
+                    <div className="space-y-10">
+                      {/* Current & Intent */}
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <div>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compromiso Actual</h3>
+                          {dimData?.current?.length > 0 ? (
+                            <div className="space-y-3">
+                              {dimData.current.map((c: any, idx: number) => (
+                                <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{c.type}</span>
+                                  <h4 className="text-sm font-black text-slate-800">{c.title}</h4>
+                                  <p className="text-[10px] font-bold text-slate-400 mt-1">{c.hoursPerDay}h / día</p>
                                 </div>
-                                {attr.metadata && (
-                                  <div className="text-right">
-                                    {Object.entries(attr.metadata).map(([k, v]) => (
-                                      <div key={k} className="text-[10px] font-medium text-gray-500">
-                                        <span className="capitalize">{k}:</span> <span className="text-gray-900 font-bold">{String(v)}</span>
-                                      </div>
-                                    ))}
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-4 rounded-2xl border-2 border-dashed border-slate-50 text-center">
+                              <p className="text-[10px] font-bold text-slate-300 italic">Sin actividad recurrente</p>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Intención Futura</h3>
+                          {dimData?.intent?.length > 0 ? (
+                            <div className="space-y-3">
+                              {dimData.intent.map((i: any, idx: number) => (
+                                <div key={idx} className="p-4 rounded-2xl bg-green-50/30 border border-green-100/50">
+                                  <h4 className="text-sm font-black text-green-900">{i.title}</h4>
+                                  <div className="mt-2 h-1 w-full bg-green-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-green-500" style={{ width: `${i.progress}%` }} />
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="py-12 text-center rounded-3xl border-2 border-dashed border-gray-100">
-                            <p className="text-sm text-gray-400 font-medium italic">No hay atributos definidos.</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-6 border-t border-gray-100">
-                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Agregar Nuevo Atributo</h4>
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            placeholder="Ej: Liderazgo, Python, Mindfulness..." 
-                            className="flex-1 px-4 py-2 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-                            value={newAttrName}
-                            onChange={e => setNewAttrName(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleAddAttributeLocal(selectedDimKey)}
-                          />
-                          <button 
-                            onClick={() => handleAddAttributeLocal(selectedDimKey)}
-                            disabled={addingAttr || !newAttrName}
-                            className="px-6 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-bold hover:bg-black disabled:opacity-50 transition-all uppercase tracking-widest">
-                            {addingAttr ? '...' : 'Agregar'}
-                          </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-4 rounded-2xl border-2 border-dashed border-slate-50 text-center">
+                              <p className="text-[10px] font-bold text-slate-300 italic">Sin metas activas</p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="pt-6 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 font-medium leading-relaxed">
-                          Estos atributos construyen tu identidad en la dimensión de {dim.label}. Puedes documentarlos desde el coach o al cumplir tus metas.
+                      {/* Assets / Skills */}
+                      <div>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Activos & Atributos</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {dimData?.assets?.length > 0 ? (
+                            dimData.assets.map((a: any, idx: number) => (
+                              <div key={idx} className="px-4 py-2 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center gap-3">
+                                <div className="h-2 w-2 rounded-full bg-violet-400" />
+                                <span className="text-xs font-bold text-slate-700">{a.name}</span>
+                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">{a.level}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 italic">No hay atributos definidos.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* History Timeline */}
+                      {dimData?.history?.length > 0 && (
+                        <div>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Historia & Legado</h3>
+                          <div className="space-y-6 border-l-2 border-slate-100 ml-2 pl-8">
+                            {dimData.history.map((h: any, idx: number) => (
+                              <div key={idx} className="relative">
+                                <div className="absolute -left-[41px] top-1 h-5 w-5 rounded-full bg-white border-4 border-slate-100 flex items-center justify-center">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                </div>
+                                <span className="text-[10px] font-black text-slate-300 mb-1 block">
+                                  {new Date(h.date).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }).toUpperCase()}
+                                </span>
+                                <h4 className="text-sm font-black text-slate-800">{h.title}</h4>
+                                <p className="text-xs text-slate-500 leading-relaxed mt-1">{h.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-8 border-t border-slate-100">
+                        <p className="text-[10px] text-slate-400 font-bold leading-relaxed text-center uppercase tracking-tighter">
+                          Esta es la huella de tu identidad en {dim.label}. <br/>
+                          Se actualiza automáticamente con tus acciones, logros y compromisos.
                         </p>
                       </div>
                     </div>

@@ -1983,12 +1983,14 @@ export namespace Prisma {
     attributes: number
     dimensionInputs: number
     baseCommitments: number
+    lifeEvents: number
   }
 
   export type DimensionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     attributes?: boolean | DimensionCountOutputTypeCountAttributesArgs
     dimensionInputs?: boolean | DimensionCountOutputTypeCountDimensionInputsArgs
     baseCommitments?: boolean | DimensionCountOutputTypeCountBaseCommitmentsArgs
+    lifeEvents?: boolean | DimensionCountOutputTypeCountLifeEventsArgs
   }
 
   // Custom InputTypes
@@ -2021,6 +2023,13 @@ export namespace Prisma {
    */
   export type DimensionCountOutputTypeCountBaseCommitmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BaseCommitmentWhereInput
+  }
+
+  /**
+   * DimensionCountOutputType without action
+   */
+  export type DimensionCountOutputTypeCountLifeEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LifeEventWhereInput
   }
 
 
@@ -5642,6 +5651,7 @@ export namespace Prisma {
     attributes?: boolean | Dimension$attributesArgs<ExtArgs>
     dimensionInputs?: boolean | Dimension$dimensionInputsArgs<ExtArgs>
     baseCommitments?: boolean | Dimension$baseCommitmentsArgs<ExtArgs>
+    lifeEvents?: boolean | Dimension$lifeEventsArgs<ExtArgs>
     _count?: boolean | DimensionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dimension"]>
 
@@ -5662,6 +5672,7 @@ export namespace Prisma {
     attributes?: boolean | Dimension$attributesArgs<ExtArgs>
     dimensionInputs?: boolean | Dimension$dimensionInputsArgs<ExtArgs>
     baseCommitments?: boolean | Dimension$baseCommitmentsArgs<ExtArgs>
+    lifeEvents?: boolean | Dimension$lifeEventsArgs<ExtArgs>
     _count?: boolean | DimensionCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -5671,6 +5682,7 @@ export namespace Prisma {
       attributes: Prisma.$UserAttributePayload<ExtArgs>[]
       dimensionInputs: Prisma.$DimensionInputPayload<ExtArgs>[]
       baseCommitments: Prisma.$BaseCommitmentPayload<ExtArgs>[]
+      lifeEvents: Prisma.$LifeEventPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -6048,6 +6060,7 @@ export namespace Prisma {
     attributes<T extends Dimension$attributesArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$attributesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserAttributePayload<ExtArgs>, T, "findMany"> | Null>
     dimensionInputs<T extends Dimension$dimensionInputsArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$dimensionInputsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DimensionInputPayload<ExtArgs>, T, "findMany"> | Null>
     baseCommitments<T extends Dimension$baseCommitmentsArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$baseCommitmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BaseCommitmentPayload<ExtArgs>, T, "findMany"> | Null>
+    lifeEvents<T extends Dimension$lifeEventsArgs<ExtArgs> = {}>(args?: Subset<T, Dimension$lifeEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LifeEventPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6469,6 +6482,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BaseCommitmentScalarFieldEnum | BaseCommitmentScalarFieldEnum[]
+  }
+
+  /**
+   * Dimension.lifeEvents
+   */
+  export type Dimension$lifeEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LifeEvent
+     */
+    select?: LifeEventSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LifeEventInclude<ExtArgs> | null
+    where?: LifeEventWhereInput
+    orderBy?: LifeEventOrderByWithRelationInput | LifeEventOrderByWithRelationInput[]
+    cursor?: LifeEventWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LifeEventScalarFieldEnum | LifeEventScalarFieldEnum[]
   }
 
   /**
@@ -9434,6 +9467,7 @@ export namespace Prisma {
     title: string | null
     description: string | null
     date: Date | null
+    dimensionId: string | null
     createdAt: Date | null
   }
 
@@ -9444,6 +9478,7 @@ export namespace Prisma {
     title: string | null
     description: string | null
     date: Date | null
+    dimensionId: string | null
     createdAt: Date | null
   }
 
@@ -9455,6 +9490,7 @@ export namespace Prisma {
     description: number
     date: number
     impact: number
+    dimensionId: number
     metadata: number
     createdAt: number
     _all: number
@@ -9468,6 +9504,7 @@ export namespace Prisma {
     title?: true
     description?: true
     date?: true
+    dimensionId?: true
     createdAt?: true
   }
 
@@ -9478,6 +9515,7 @@ export namespace Prisma {
     title?: true
     description?: true
     date?: true
+    dimensionId?: true
     createdAt?: true
   }
 
@@ -9489,6 +9527,7 @@ export namespace Prisma {
     description?: true
     date?: true
     impact?: true
+    dimensionId?: true
     metadata?: true
     createdAt?: true
     _all?: true
@@ -9574,6 +9613,7 @@ export namespace Prisma {
     description: string | null
     date: Date
     impact: JsonValue | null
+    dimensionId: string | null
     metadata: JsonValue | null
     createdAt: Date
     _count: LifeEventCountAggregateOutputType | null
@@ -9603,8 +9643,10 @@ export namespace Prisma {
     description?: boolean
     date?: boolean
     impact?: boolean
+    dimensionId?: boolean
     metadata?: boolean
     createdAt?: boolean
+    dimension?: boolean | LifeEvent$dimensionArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["lifeEvent"]>
 
@@ -9617,17 +9659,20 @@ export namespace Prisma {
     description?: boolean
     date?: boolean
     impact?: boolean
+    dimensionId?: boolean
     metadata?: boolean
     createdAt?: boolean
   }
 
   export type LifeEventInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    dimension?: boolean | LifeEvent$dimensionArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
 
   export type $LifeEventPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "LifeEvent"
     objects: {
+      dimension: Prisma.$DimensionPayload<ExtArgs> | null
       user: Prisma.$UserPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -9638,6 +9683,7 @@ export namespace Prisma {
       description: string | null
       date: Date
       impact: Prisma.JsonValue | null
+      dimensionId: string | null
       metadata: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["lifeEvent"]>
@@ -10003,6 +10049,7 @@ export namespace Prisma {
    */
   export interface Prisma__LifeEventClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    dimension<T extends LifeEvent$dimensionArgs<ExtArgs> = {}>(args?: Subset<T, LifeEvent$dimensionArgs<ExtArgs>>): Prisma__DimensionClient<$Result.GetResult<Prisma.$DimensionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -10040,6 +10087,7 @@ export namespace Prisma {
     readonly description: FieldRef<"LifeEvent", 'String'>
     readonly date: FieldRef<"LifeEvent", 'DateTime'>
     readonly impact: FieldRef<"LifeEvent", 'Json'>
+    readonly dimensionId: FieldRef<"LifeEvent", 'String'>
     readonly metadata: FieldRef<"LifeEvent", 'Json'>
     readonly createdAt: FieldRef<"LifeEvent", 'DateTime'>
   }
@@ -10365,6 +10413,21 @@ export namespace Prisma {
      * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
      */
     options?: InputJsonValue
+  }
+
+  /**
+   * LifeEvent.dimension
+   */
+  export type LifeEvent$dimensionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Dimension
+     */
+    select?: DimensionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DimensionInclude<ExtArgs> | null
+    where?: DimensionWhereInput
   }
 
   /**
@@ -15677,6 +15740,7 @@ export namespace Prisma {
     description: 'description',
     date: 'date',
     impact: 'impact',
+    dimensionId: 'dimensionId',
     metadata: 'metadata',
     createdAt: 'createdAt'
   };
@@ -16141,6 +16205,7 @@ export namespace Prisma {
     attributes?: UserAttributeListRelationFilter
     dimensionInputs?: DimensionInputListRelationFilter
     baseCommitments?: BaseCommitmentListRelationFilter
+    lifeEvents?: LifeEventListRelationFilter
   }
 
   export type DimensionOrderByWithRelationInput = {
@@ -16156,6 +16221,7 @@ export namespace Prisma {
     attributes?: UserAttributeOrderByRelationAggregateInput
     dimensionInputs?: DimensionInputOrderByRelationAggregateInput
     baseCommitments?: BaseCommitmentOrderByRelationAggregateInput
+    lifeEvents?: LifeEventOrderByRelationAggregateInput
   }
 
   export type DimensionWhereUniqueInput = Prisma.AtLeast<{
@@ -16174,6 +16240,7 @@ export namespace Prisma {
     attributes?: UserAttributeListRelationFilter
     dimensionInputs?: DimensionInputListRelationFilter
     baseCommitments?: BaseCommitmentListRelationFilter
+    lifeEvents?: LifeEventListRelationFilter
   }, "id" | "name">
 
   export type DimensionOrderByWithAggregationInput = {
@@ -16440,8 +16507,10 @@ export namespace Prisma {
     description?: StringNullableFilter<"LifeEvent"> | string | null
     date?: DateTimeFilter<"LifeEvent"> | Date | string
     impact?: JsonNullableFilter<"LifeEvent">
+    dimensionId?: StringNullableFilter<"LifeEvent"> | string | null
     metadata?: JsonNullableFilter<"LifeEvent">
     createdAt?: DateTimeFilter<"LifeEvent"> | Date | string
+    dimension?: XOR<DimensionNullableRelationFilter, DimensionWhereInput> | null
     user?: XOR<UserRelationFilter, UserWhereInput>
   }
 
@@ -16453,8 +16522,10 @@ export namespace Prisma {
     description?: SortOrder
     date?: SortOrder
     impact?: SortOrder
+    dimensionId?: SortOrder
     metadata?: SortOrder
     createdAt?: SortOrder
+    dimension?: DimensionOrderByWithRelationInput
     user?: UserOrderByWithRelationInput
   }
 
@@ -16469,8 +16540,10 @@ export namespace Prisma {
     description?: StringNullableFilter<"LifeEvent"> | string | null
     date?: DateTimeFilter<"LifeEvent"> | Date | string
     impact?: JsonNullableFilter<"LifeEvent">
+    dimensionId?: StringNullableFilter<"LifeEvent"> | string | null
     metadata?: JsonNullableFilter<"LifeEvent">
     createdAt?: DateTimeFilter<"LifeEvent"> | Date | string
+    dimension?: XOR<DimensionNullableRelationFilter, DimensionWhereInput> | null
     user?: XOR<UserRelationFilter, UserWhereInput>
   }, "id">
 
@@ -16482,6 +16555,7 @@ export namespace Prisma {
     description?: SortOrder
     date?: SortOrder
     impact?: SortOrder
+    dimensionId?: SortOrder
     metadata?: SortOrder
     createdAt?: SortOrder
     _count?: LifeEventCountOrderByAggregateInput
@@ -16500,6 +16574,7 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"LifeEvent"> | string | null
     date?: DateTimeWithAggregatesFilter<"LifeEvent"> | Date | string
     impact?: JsonNullableWithAggregatesFilter<"LifeEvent">
+    dimensionId?: StringNullableWithAggregatesFilter<"LifeEvent"> | string | null
     metadata?: JsonNullableWithAggregatesFilter<"LifeEvent">
     createdAt?: DateTimeWithAggregatesFilter<"LifeEvent"> | Date | string
   }
@@ -17241,6 +17316,7 @@ export namespace Prisma {
     attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateInput = {
@@ -17256,6 +17332,7 @@ export namespace Prisma {
     attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUpdateInput = {
@@ -17270,6 +17347,7 @@ export namespace Prisma {
     attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateInput = {
@@ -17284,6 +17362,7 @@ export namespace Prisma {
     attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionCreateManyInput = {
@@ -17550,6 +17629,7 @@ export namespace Prisma {
     impact?: InputJsonValue | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
+    dimension?: DimensionCreateNestedOneWithoutLifeEventsInput
     user: UserCreateNestedOneWithoutLifeEventsInput
   }
 
@@ -17561,6 +17641,7 @@ export namespace Prisma {
     description?: string | null
     date: Date | string
     impact?: InputJsonValue | null
+    dimensionId?: string | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
   }
@@ -17573,6 +17654,7 @@ export namespace Prisma {
     impact?: InputJsonValue | InputJsonValue | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dimension?: DimensionUpdateOneWithoutLifeEventsNestedInput
     user?: UserUpdateOneRequiredWithoutLifeEventsNestedInput
   }
 
@@ -17583,6 +17665,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     impact?: InputJsonValue | InputJsonValue | null
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17595,6 +17678,7 @@ export namespace Prisma {
     description?: string | null
     date: Date | string
     impact?: InputJsonValue | null
+    dimensionId?: string | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
   }
@@ -17616,6 +17700,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     impact?: InputJsonValue | InputJsonValue | null
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -18723,6 +18808,7 @@ export namespace Prisma {
     description?: SortOrder
     date?: SortOrder
     impact?: SortOrder
+    dimensionId?: SortOrder
     metadata?: SortOrder
     createdAt?: SortOrder
   }
@@ -18734,6 +18820,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     date?: SortOrder
+    dimensionId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -18744,6 +18831,7 @@ export namespace Prisma {
     title?: SortOrder
     description?: SortOrder
     date?: SortOrder
+    dimensionId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -19561,6 +19649,13 @@ export namespace Prisma {
     connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
   }
 
+  export type LifeEventCreateNestedManyWithoutDimensionInput = {
+    create?: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput> | LifeEventCreateWithoutDimensionInput[] | LifeEventUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: LifeEventCreateOrConnectWithoutDimensionInput | LifeEventCreateOrConnectWithoutDimensionInput[]
+    createMany?: LifeEventCreateManyDimensionInputEnvelope
+    connect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+  }
+
   export type UserAttributeUncheckedCreateNestedManyWithoutDimensionInput = {
     create?: XOR<UserAttributeCreateWithoutDimensionInput, UserAttributeUncheckedCreateWithoutDimensionInput> | UserAttributeCreateWithoutDimensionInput[] | UserAttributeUncheckedCreateWithoutDimensionInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutDimensionInput | UserAttributeCreateOrConnectWithoutDimensionInput[]
@@ -19580,6 +19675,13 @@ export namespace Prisma {
     connectOrCreate?: BaseCommitmentCreateOrConnectWithoutDimensionInput | BaseCommitmentCreateOrConnectWithoutDimensionInput[]
     createMany?: BaseCommitmentCreateManyDimensionInputEnvelope
     connect?: BaseCommitmentWhereUniqueInput | BaseCommitmentWhereUniqueInput[]
+  }
+
+  export type LifeEventUncheckedCreateNestedManyWithoutDimensionInput = {
+    create?: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput> | LifeEventCreateWithoutDimensionInput[] | LifeEventUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: LifeEventCreateOrConnectWithoutDimensionInput | LifeEventCreateOrConnectWithoutDimensionInput[]
+    createMany?: LifeEventCreateManyDimensionInputEnvelope
+    connect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
   }
 
   export type UserAttributeUpdateManyWithoutDimensionNestedInput = {
@@ -19624,6 +19726,20 @@ export namespace Prisma {
     deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
   }
 
+  export type LifeEventUpdateManyWithoutDimensionNestedInput = {
+    create?: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput> | LifeEventCreateWithoutDimensionInput[] | LifeEventUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: LifeEventCreateOrConnectWithoutDimensionInput | LifeEventCreateOrConnectWithoutDimensionInput[]
+    upsert?: LifeEventUpsertWithWhereUniqueWithoutDimensionInput | LifeEventUpsertWithWhereUniqueWithoutDimensionInput[]
+    createMany?: LifeEventCreateManyDimensionInputEnvelope
+    set?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    disconnect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    delete?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    connect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    update?: LifeEventUpdateWithWhereUniqueWithoutDimensionInput | LifeEventUpdateWithWhereUniqueWithoutDimensionInput[]
+    updateMany?: LifeEventUpdateManyWithWhereWithoutDimensionInput | LifeEventUpdateManyWithWhereWithoutDimensionInput[]
+    deleteMany?: LifeEventScalarWhereInput | LifeEventScalarWhereInput[]
+  }
+
   export type UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput = {
     create?: XOR<UserAttributeCreateWithoutDimensionInput, UserAttributeUncheckedCreateWithoutDimensionInput> | UserAttributeCreateWithoutDimensionInput[] | UserAttributeUncheckedCreateWithoutDimensionInput[]
     connectOrCreate?: UserAttributeCreateOrConnectWithoutDimensionInput | UserAttributeCreateOrConnectWithoutDimensionInput[]
@@ -19664,6 +19780,20 @@ export namespace Prisma {
     update?: BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput | BaseCommitmentUpdateWithWhereUniqueWithoutDimensionInput[]
     updateMany?: BaseCommitmentUpdateManyWithWhereWithoutDimensionInput | BaseCommitmentUpdateManyWithWhereWithoutDimensionInput[]
     deleteMany?: BaseCommitmentScalarWhereInput | BaseCommitmentScalarWhereInput[]
+  }
+
+  export type LifeEventUncheckedUpdateManyWithoutDimensionNestedInput = {
+    create?: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput> | LifeEventCreateWithoutDimensionInput[] | LifeEventUncheckedCreateWithoutDimensionInput[]
+    connectOrCreate?: LifeEventCreateOrConnectWithoutDimensionInput | LifeEventCreateOrConnectWithoutDimensionInput[]
+    upsert?: LifeEventUpsertWithWhereUniqueWithoutDimensionInput | LifeEventUpsertWithWhereUniqueWithoutDimensionInput[]
+    createMany?: LifeEventCreateManyDimensionInputEnvelope
+    set?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    disconnect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    delete?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    connect?: LifeEventWhereUniqueInput | LifeEventWhereUniqueInput[]
+    update?: LifeEventUpdateWithWhereUniqueWithoutDimensionInput | LifeEventUpdateWithWhereUniqueWithoutDimensionInput[]
+    updateMany?: LifeEventUpdateManyWithWhereWithoutDimensionInput | LifeEventUpdateManyWithWhereWithoutDimensionInput[]
+    deleteMany?: LifeEventScalarWhereInput | LifeEventScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutAttributesInput = {
@@ -19754,10 +19884,26 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLifeStatesInput, UserUpdateWithoutLifeStatesInput>, UserUncheckedUpdateWithoutLifeStatesInput>
   }
 
+  export type DimensionCreateNestedOneWithoutLifeEventsInput = {
+    create?: XOR<DimensionCreateWithoutLifeEventsInput, DimensionUncheckedCreateWithoutLifeEventsInput>
+    connectOrCreate?: DimensionCreateOrConnectWithoutLifeEventsInput
+    connect?: DimensionWhereUniqueInput
+  }
+
   export type UserCreateNestedOneWithoutLifeEventsInput = {
     create?: XOR<UserCreateWithoutLifeEventsInput, UserUncheckedCreateWithoutLifeEventsInput>
     connectOrCreate?: UserCreateOrConnectWithoutLifeEventsInput
     connect?: UserWhereUniqueInput
+  }
+
+  export type DimensionUpdateOneWithoutLifeEventsNestedInput = {
+    create?: XOR<DimensionCreateWithoutLifeEventsInput, DimensionUncheckedCreateWithoutLifeEventsInput>
+    connectOrCreate?: DimensionCreateOrConnectWithoutLifeEventsInput
+    upsert?: DimensionUpsertWithoutLifeEventsInput
+    disconnect?: boolean
+    delete?: DimensionWhereInput | boolean
+    connect?: DimensionWhereUniqueInput
+    update?: XOR<XOR<DimensionUpdateToOneWithWhereWithoutLifeEventsInput, DimensionUpdateWithoutLifeEventsInput>, DimensionUncheckedUpdateWithoutLifeEventsInput>
   }
 
   export type UserUpdateOneRequiredWithoutLifeEventsNestedInput = {
@@ -20444,6 +20590,7 @@ export namespace Prisma {
     impact?: InputJsonValue | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
+    dimension?: DimensionCreateNestedOneWithoutLifeEventsInput
   }
 
   export type LifeEventUncheckedCreateWithoutUserInput = {
@@ -20453,6 +20600,7 @@ export namespace Prisma {
     description?: string | null
     date: Date | string
     impact?: InputJsonValue | null
+    dimensionId?: string | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
   }
@@ -20723,6 +20871,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"LifeEvent"> | string | null
     date?: DateTimeFilter<"LifeEvent"> | Date | string
     impact?: JsonNullableFilter<"LifeEvent">
+    dimensionId?: StringNullableFilter<"LifeEvent"> | string | null
     metadata?: JsonNullableFilter<"LifeEvent">
     createdAt?: DateTimeFilter<"LifeEvent"> | Date | string
   }
@@ -20869,6 +21018,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateWithoutBaseCommitmentsInput = {
@@ -20883,6 +21033,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
     dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionCreateOrConnectWithoutBaseCommitmentsInput = {
@@ -20949,6 +21100,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateWithoutBaseCommitmentsInput = {
@@ -20962,6 +21114,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
     dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserUpsertWithoutBaseCommitmentsInput = {
@@ -21174,6 +21327,39 @@ export namespace Prisma {
     data: BaseCommitmentCreateManyDimensionInput | BaseCommitmentCreateManyDimensionInput[]
   }
 
+  export type LifeEventCreateWithoutDimensionInput = {
+    id?: string
+    type: string
+    title: string
+    description?: string | null
+    date: Date | string
+    impact?: InputJsonValue | null
+    metadata?: InputJsonValue | null
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutLifeEventsInput
+  }
+
+  export type LifeEventUncheckedCreateWithoutDimensionInput = {
+    id?: string
+    userId: string
+    type: string
+    title: string
+    description?: string | null
+    date: Date | string
+    impact?: InputJsonValue | null
+    metadata?: InputJsonValue | null
+    createdAt?: Date | string
+  }
+
+  export type LifeEventCreateOrConnectWithoutDimensionInput = {
+    where: LifeEventWhereUniqueInput
+    create: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput>
+  }
+
+  export type LifeEventCreateManyDimensionInputEnvelope = {
+    data: LifeEventCreateManyDimensionInput | LifeEventCreateManyDimensionInput[]
+  }
+
   export type UserAttributeUpsertWithWhereUniqueWithoutDimensionInput = {
     where: UserAttributeWhereUniqueInput
     update: XOR<UserAttributeUpdateWithoutDimensionInput, UserAttributeUncheckedUpdateWithoutDimensionInput>
@@ -21220,6 +21406,22 @@ export namespace Prisma {
   export type BaseCommitmentUpdateManyWithWhereWithoutDimensionInput = {
     where: BaseCommitmentScalarWhereInput
     data: XOR<BaseCommitmentUpdateManyMutationInput, BaseCommitmentUncheckedUpdateManyWithoutDimensionInput>
+  }
+
+  export type LifeEventUpsertWithWhereUniqueWithoutDimensionInput = {
+    where: LifeEventWhereUniqueInput
+    update: XOR<LifeEventUpdateWithoutDimensionInput, LifeEventUncheckedUpdateWithoutDimensionInput>
+    create: XOR<LifeEventCreateWithoutDimensionInput, LifeEventUncheckedCreateWithoutDimensionInput>
+  }
+
+  export type LifeEventUpdateWithWhereUniqueWithoutDimensionInput = {
+    where: LifeEventWhereUniqueInput
+    data: XOR<LifeEventUpdateWithoutDimensionInput, LifeEventUncheckedUpdateWithoutDimensionInput>
+  }
+
+  export type LifeEventUpdateManyWithWhereWithoutDimensionInput = {
+    where: LifeEventScalarWhereInput
+    data: XOR<LifeEventUpdateManyMutationInput, LifeEventUncheckedUpdateManyWithoutDimensionInput>
   }
 
   export type UserCreateWithoutAttributesInput = {
@@ -21271,6 +21473,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateWithoutAttributesInput = {
@@ -21285,6 +21488,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionCreateOrConnectWithoutAttributesInput = {
@@ -21355,6 +21559,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateWithoutAttributesInput = {
@@ -21368,6 +21573,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserCreateWithoutDimensionInputsInput = {
@@ -21419,6 +21625,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionUncheckedCreateWithoutDimensionInputsInput = {
@@ -21433,6 +21640,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
     baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
+    lifeEvents?: LifeEventUncheckedCreateNestedManyWithoutDimensionInput
   }
 
   export type DimensionCreateOrConnectWithoutDimensionInputsInput = {
@@ -21503,6 +21711,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUpdateManyWithoutDimensionNestedInput
   }
 
   export type DimensionUncheckedUpdateWithoutDimensionInputsInput = {
@@ -21516,6 +21725,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
     baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
+    lifeEvents?: LifeEventUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserCreateWithoutLifeStatesInput = {
@@ -21605,6 +21815,41 @@ export namespace Prisma {
     baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutUserNestedInput
   }
 
+  export type DimensionCreateWithoutLifeEventsInput = {
+    id?: string
+    name: string
+    label: string
+    category: string
+    description?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeCreateNestedManyWithoutDimensionInput
+    dimensionInputs?: DimensionInputCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentCreateNestedManyWithoutDimensionInput
+  }
+
+  export type DimensionUncheckedCreateWithoutLifeEventsInput = {
+    id?: string
+    name: string
+    label: string
+    category: string
+    description?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    attributes?: UserAttributeUncheckedCreateNestedManyWithoutDimensionInput
+    dimensionInputs?: DimensionInputUncheckedCreateNestedManyWithoutDimensionInput
+    baseCommitments?: BaseCommitmentUncheckedCreateNestedManyWithoutDimensionInput
+  }
+
+  export type DimensionCreateOrConnectWithoutLifeEventsInput = {
+    where: DimensionWhereUniqueInput
+    create: XOR<DimensionCreateWithoutLifeEventsInput, DimensionUncheckedCreateWithoutLifeEventsInput>
+  }
+
   export type UserCreateWithoutLifeEventsInput = {
     id?: string
     email: string
@@ -21640,6 +21885,45 @@ export namespace Prisma {
   export type UserCreateOrConnectWithoutLifeEventsInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutLifeEventsInput, UserUncheckedCreateWithoutLifeEventsInput>
+  }
+
+  export type DimensionUpsertWithoutLifeEventsInput = {
+    update: XOR<DimensionUpdateWithoutLifeEventsInput, DimensionUncheckedUpdateWithoutLifeEventsInput>
+    create: XOR<DimensionCreateWithoutLifeEventsInput, DimensionUncheckedCreateWithoutLifeEventsInput>
+    where?: DimensionWhereInput
+  }
+
+  export type DimensionUpdateToOneWithWhereWithoutLifeEventsInput = {
+    where?: DimensionWhereInput
+    data: XOR<DimensionUpdateWithoutLifeEventsInput, DimensionUncheckedUpdateWithoutLifeEventsInput>
+  }
+
+  export type DimensionUpdateWithoutLifeEventsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUpdateManyWithoutDimensionNestedInput
+    dimensionInputs?: DimensionInputUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUpdateManyWithoutDimensionNestedInput
+  }
+
+  export type DimensionUncheckedUpdateWithoutLifeEventsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    category?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    attributes?: UserAttributeUncheckedUpdateManyWithoutDimensionNestedInput
+    dimensionInputs?: DimensionInputUncheckedUpdateManyWithoutDimensionNestedInput
+    baseCommitments?: BaseCommitmentUncheckedUpdateManyWithoutDimensionNestedInput
   }
 
   export type UserUpsertWithoutLifeEventsInput = {
@@ -22512,6 +22796,7 @@ export namespace Prisma {
     description?: string | null
     date: Date | string
     impact?: InputJsonValue | null
+    dimensionId?: string | null
     metadata?: InputJsonValue | null
     createdAt?: Date | string
   }
@@ -22658,6 +22943,7 @@ export namespace Prisma {
     impact?: InputJsonValue | InputJsonValue | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dimension?: DimensionUpdateOneWithoutLifeEventsNestedInput
   }
 
   export type LifeEventUncheckedUpdateWithoutUserInput = {
@@ -22666,6 +22952,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     impact?: InputJsonValue | InputJsonValue | null
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22676,6 +22963,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     impact?: InputJsonValue | InputJsonValue | null
+    dimensionId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22854,6 +23142,18 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type LifeEventCreateManyDimensionInput = {
+    id?: string
+    userId: string
+    type: string
+    title: string
+    description?: string | null
+    date: Date | string
+    impact?: InputJsonValue | null
+    metadata?: InputJsonValue | null
+    createdAt?: Date | string
+  }
+
   export type UserAttributeUpdateWithoutDimensionInput = {
     name?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
@@ -22938,6 +23238,39 @@ export namespace Prisma {
     endTime?: NullableStringFieldUpdateOperationsInput | string | null
     hoursPerDay?: FloatFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LifeEventUpdateWithoutDimensionInput = {
+    type?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    impact?: InputJsonValue | InputJsonValue | null
+    metadata?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutLifeEventsNestedInput
+  }
+
+  export type LifeEventUncheckedUpdateWithoutDimensionInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    impact?: InputJsonValue | InputJsonValue | null
+    metadata?: InputJsonValue | InputJsonValue | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LifeEventUncheckedUpdateManyWithoutDimensionInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    date?: DateTimeFieldUpdateOperationsInput | Date | string
+    impact?: InputJsonValue | InputJsonValue | null
+    metadata?: InputJsonValue | InputJsonValue | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

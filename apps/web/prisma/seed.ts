@@ -42,6 +42,7 @@ async function clearData() {
   await prisma.chatSession.deleteMany({});
   await prisma.suggestedPath.deleteMany({});
   await prisma.baseCommitment.deleteMany({});
+  await prisma.lifeEvent.deleteMany({});
   await prisma.user.deleteMany({});
 }
 
@@ -60,13 +61,13 @@ async function createDimensions() {
   return dimensionMap;
 }
 
-async function seedUser(email: string, name: string, attributes: any[], goals: any[], dimensionMap: Record<string, string>, baseCommitments: any[] = []) {
+async function seedUser(email: string, name: string, attributes: any[], goals: any[], dimensionMap: Record<string, string>, baseCommitments: any[] = [], lifeEvents: any[] = []) {
   console.log(`👤 Seeding user: ${name} (${email})`);
   const user = await prisma.user.create({
     data: { email, name }
   });
 
-  // DNA
+  // DNA Attributes
   for (const attr of attributes) {
     await prisma.userAttribute.create({
       data: {
@@ -79,7 +80,7 @@ async function seedUser(email: string, name: string, attributes: any[], goals: a
     });
   }
 
-  // Base Commitments
+  // Base Commitments (Current)
   for (const bc of baseCommitments) {
     await prisma.baseCommitment.create({
       data: {
@@ -91,6 +92,21 @@ async function seedUser(email: string, name: string, attributes: any[], goals: a
         startTime: bc.startTime,
         endTime: bc.endTime,
         dimensionId: bc.dimension ? dimensionMap[bc.dimension] : null
+      }
+    });
+  }
+
+  // Life Events (Historical)
+  for (const le of lifeEvents) {
+    await prisma.lifeEvent.create({
+      data: {
+        userId: user.id,
+        type: le.type,
+        title: le.title,
+        description: le.description,
+        date: new Date(le.date),
+        dimensionId: le.dimension ? dimensionMap[le.dimension] : null,
+        impact: le.impact || {}
       }
     });
   }
@@ -174,10 +190,33 @@ async function main() {
     'daniel@bean.app', 
     'Daniel BEAN',
     [
+      // Identity
       { dimension: 'values', name: 'Libertad', category: 'value', metadata: { importance: 95 } },
-      { dimension: 'values', name: 'Impacto Social', category: 'value', metadata: { importance: 90 } },
+      { dimension: 'values', name: 'Innovación', category: 'value', metadata: { importance: 90 } },
+      { dimension: 'personality', name: 'Analítico/Explorador', category: 'trait' },
       { dimension: 'interests', name: 'IA & Futuro', category: 'interest' },
+      { dimension: 'interests', name: 'Astrofísica', category: 'interest' },
+      { dimension: 'purpose', name: 'Democratizar la tecnología', category: 'mission' },
+      { dimension: 'motivations', name: 'Autonomía', category: 'driver' },
+      
+      // Capital
+      { dimension: 'knowledge', name: 'Arquitectura de Software', category: 'expertise', metadata: { level: 'Master' } },
       { dimension: 'skills', name: 'Fullstack Dev', category: 'skill', metadata: { level: 90 } },
+      { dimension: 'skills', name: 'Problem Solving', category: 'skill' },
+      { dimension: 'career', name: 'Product Lead', category: 'role' },
+      { dimension: 'income', name: 'Ingresos Altos', category: 'financial' },
+      { dimension: 'social_capital', name: 'Red de Mentores Tech', category: 'asset' },
+      { dimension: 'physical_health', name: 'Entrenamiento Funcional', category: 'routine', metadata: { frequency: '3x/week' } },
+      { dimension: 'resilience', name: 'Gestión de Crisis en Startups', category: 'experience' },
+
+      // Experience
+      { dimension: 'work_satisfaction', name: 'Alta Autonomía', category: 'factor' },
+      { dimension: 'relationships', name: 'Círculo de Crecimiento', category: 'asset' },
+      { dimension: 'mental_wellbeing', name: 'Meditación Zen', category: 'practice' },
+      { dimension: 'free_time', name: 'Hacking Ético / Side Projects', category: 'activity' },
+      { dimension: 'personal_growth', name: 'Aprendizaje Continuo', category: 'value' },
+      { dimension: 'impact', name: 'Contribución a Open Source', category: 'achievement' },
+      { dimension: 'financial_security', name: 'Inversiones Diversificadas', category: 'asset' },
     ],
     [
       {
@@ -193,6 +232,10 @@ async function main() {
     dimensionMap,
     [
       { title: 'Trabajo (Fullstack Dev)', type: 'work', daysOfWeek: [1, 2, 3, 4, 5], hoursPerDay: 8, startTime: '09:00', endTime: '18:00', dimension: 'career' }
+    ],
+    [
+      { type: 'job', title: 'Senior Developer en TechCorp', date: '2022-01-01', dimension: 'career', description: 'Lideré el equipo de backend.' },
+      { type: 'education', title: 'MSc Computer Science', date: '2020-12-15', dimension: 'knowledge', description: 'Especialización en Sistemas Distribuidos.' }
     ]
   );
 
@@ -233,6 +276,9 @@ async function main() {
     dimensionMap,
     [
       { title: 'Universidad (Clases)', type: 'study', daysOfWeek: [1, 2, 3, 4, 5], hoursPerDay: 4, startTime: '08:00', endTime: '12:00', dimension: 'knowledge' }
+    ],
+    [
+      { type: 'education', title: 'Grado en Biología', date: '2020-06-15', dimension: 'knowledge', description: 'Especialización en ecosistemas.' }
     ]
   );
 

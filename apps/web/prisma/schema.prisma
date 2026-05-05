@@ -101,6 +101,7 @@ model Dimension {
   attributes       UserAttribute[]
   dimensionInputs  DimensionInput[]
   baseCommitments  BaseCommitment[]
+  lifeEvents       LifeEvent[]
 
   @@map("dimensions")
 }
@@ -191,6 +192,9 @@ model LifeEvent {
 
   date        DateTime
   impact      Json?
+  
+  dimensionId String?  @db.ObjectId @map("dimension_id")
+  dimension   Dimension? @relation(fields: [dimensionId], references: [id])
 
   metadata    Json?
 

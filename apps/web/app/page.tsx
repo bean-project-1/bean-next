@@ -30,10 +30,10 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-6">
             <Link
-              href="/dashboard"
+              href="/home"
               className="text-sm font-medium text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              Mi Árbol
             </Link>
             <div className="h-4 w-px bg-white/10" />
             <Link
@@ -90,10 +90,10 @@ export default function HomePage() {
               <span className="transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
             <Link
-              href="/dashboard"
+              href="/home"
               className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20"
             >
-              Explore Dashboard
+              Explorar Mi Árbol
             </Link>
           </div>
         </div>

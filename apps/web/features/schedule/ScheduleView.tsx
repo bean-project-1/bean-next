@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { LeafDetailView } from '@/features/dashboard/components/life-tree/LeafDetailView';
-import { Leaf } from '@/features/dashboard/components/life-tree/types';
+import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
+import { Leaf } from '@/features/life-tree/types';
 
 interface ScheduledEvent {
   id: string;

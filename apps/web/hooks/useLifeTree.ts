@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TreeData } from '../features/dashboard/components/life-tree/types';
+import { TreeData } from '../features/life-tree/types';
 
 export function useLifeTree() {
   const [treeData, setTreeData] = useState<TreeData | null>(null);

@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import DnaModal from '../../../features/dashboard/components/DnaModal';
-import NodeSidePanel from '../../../features/dashboard/components/NodeSidePanel';
-import { LifeTree } from '../../../features/dashboard/components/life-tree/LifeTree';
-import { BranchDetailView } from '../../../features/dashboard/components/life-tree/BranchDetailView';
-import { LeafDetailView } from '../../../features/dashboard/components/life-tree/LeafDetailView';
-import { TreeData, Branch } from '../../../features/dashboard/components/life-tree/types';
+import DnaModal from '../../../features/life-tree/DnaModal';
+import NodeSidePanel from '../../../features/life-tree/NodeSidePanel';
+import { LifeTree } from '../../../features/life-tree/LifeTree';
+import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
+import { LeafDetailView } from '../../../features/life-tree/LeafDetailView';
+import { TreeData, Branch } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 
 export default function HomePage() {

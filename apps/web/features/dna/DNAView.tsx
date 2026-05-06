@@ -19,6 +19,8 @@ export function DNAView() {
   const [identity, setIdentity] = useState<any>(null);
   const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
+  const [commitments, setCommitments] = useState<any[]>([]);
+  const [loadingCommitments, setLoadingCommitments] = useState(true);
 
   useEffect(() => {
     fetch('/api/dna/identity')
@@ -27,6 +29,13 @@ export function DNAView() {
         if (json.success) setIdentity(json.identity);
       })
       .finally(() => setLoadingIdentity(false));
+
+    fetch('/api/profile/commitments')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setCommitments(json.commitments);
+      })
+      .finally(() => setLoadingCommitments(false));
   }, []);
 
   const attributesCount = ALL_DIMENSIONS.reduce((acc, dim) => {
@@ -185,6 +194,63 @@ export function DNAView() {
           })}
         </div>
       </div>
+
+      {/* Global Base Commitments Section */}
+      <div className="mt-16 pt-12 border-t border-gray-100">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-light text-gray-900 tracking-tight">
+              Compromisos <span className="font-semibold text-gray-900 italic">Base</span>
+            </h2>
+            <p className="text-sm text-gray-400 mt-1 font-medium">Tus actividades recurrentes y carga de vida fija.</p>
+          </div>
+        </div>
+        
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {['work', 'study', 'routine'].map(type => {
+            const typeCommitments = commitments.filter(c => c.type === type);
+            const icons: any = { work: '💼', study: '📚', routine: '🔄' };
+            const labels: any = { work: 'Trabajo', study: 'Estudio', routine: 'Rutinas' };
+            
+            return (
+              <div key={type} className="flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-xs">{icons[type]}</span> {labels[type]}
+                  </h3>
+                  <span className="text-[10px] font-black text-gray-300 bg-gray-50 px-2 py-0.5 rounded-full">{typeCommitments.length}</span>
+                </div>
+                <div className="space-y-3">
+                  {loadingCommitments ? (
+                    [1, 2].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-50 animate-pulse" />)
+                  ) : typeCommitments.length > 0 ? (
+                    typeCommitments.map((c, idx) => {
+                      return (
+                        <div key={idx} className="group p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[8px] font-black text-violet-500 bg-violet-50 px-2 py-0.5 rounded-lg uppercase tracking-widest">{c.dimension?.label || 'General'}</span>
+                            <span className="text-[9px] font-bold text-gray-300">Fijo</span>
+                          </div>
+                          <h4 className="text-sm font-black text-gray-800 group-hover:text-violet-600 transition-colors">{c.title}</h4>
+                          <div className="mt-4 flex items-center justify-between text-[10px] font-bold border-t border-gray-50 pt-3">
+                            <span className="text-gray-400 uppercase tracking-tighter">⏱️ {c.hoursPerDay}h / día</span>
+                            <span className="text-gray-400 uppercase tracking-tighter">📅 {c.daysOfWeek.length} días</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-8 rounded-3xl border-2 border-dashed border-gray-50 text-center">
+                      <p className="text-[10px] font-bold text-gray-300 italic">Sin {labels[type].toLowerCase()} activos</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
 
       {/* Dimension Detail Modal */}
       {selectedDimKey && (

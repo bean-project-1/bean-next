@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const commitments = await prisma.baseCommitment.findMany({
-      where: { userId }
+      where: { userId },
+      include: { dimension: true }
     });
 
     return NextResponse.json({ success: true, commitments });

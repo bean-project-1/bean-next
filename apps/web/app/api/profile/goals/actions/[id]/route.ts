@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 // DELETE - Remove a goal action
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const userId = req.cookies.get('bean_user_id')?.value;
@@ -54,9 +54,9 @@ export async function DELETE(
 // PATCH - Update a goal action (e.g. toggle completion)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const userId = req.cookies.get('bean_user_id')?.value;

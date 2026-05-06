@@ -34,6 +34,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-violet-200 selection:text-violet-900">
         {/* Ambient background glow for light mode */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden">

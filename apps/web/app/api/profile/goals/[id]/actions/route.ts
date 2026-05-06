@@ -4,10 +4,10 @@ const { PrismaClient } = require('../../../../../../lib/generated-prisma');
 // POST - Add a new action to a goal
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const prisma = new PrismaClient();
-  const goalId = params.id;
+  const { id: goalId } = await params;
 
   try {
     const userId = req.cookies.get('bean_user_id')?.value;

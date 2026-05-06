@@ -12,12 +12,13 @@ const nextConfig = {
 
   // Image optimization
   images: {
-    domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+    ],
   },
 
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'openai'],
-  },
+  serverExternalPackages: ['@prisma/client', 'openai'],
 };
 
 export default nextConfig;

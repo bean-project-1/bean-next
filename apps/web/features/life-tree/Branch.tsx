@@ -94,7 +94,7 @@ export const Branch = ({
     const subRad = rad + (0.5 * side); 
     
     // Dynamic sub-branch length based on leaf count
-    const minLeafSpace = 10;
+    const minLeafSpace = 5;
     const subLen = 30 + (activityCount * minLeafSpace);
     
     const sEndX = start.x + Math.cos(subRad) * subLen;
@@ -220,7 +220,7 @@ export const Branch = ({
                 x={sub.end.x}
                 y={sub.end.y}
                 angle={(sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1))}
-                delay={2.5 + index * 0.1 + pIdx * 0.2}
+                delay={0.1 + index * 0.05 + pIdx * 0.05}
                 isSelected={clickedLeafId === phase.id}
                 onHover={onHover}
                 onClick={onClick}
@@ -271,7 +271,7 @@ export const Branch = ({
                         x={lx}
                         y={ly}
                         angle={(sub.rad * 180) / Math.PI + (60 * side)}
-                        delay={3 + index * 0.1 + lIdx * 0.1}
+                        delay={0.2 + index * 0.05 + lIdx * 0.05}
                         isSelected={clickedLeafId === leaf.id}
                         onHover={onHover}
                         onClick={onClick}
@@ -328,7 +328,7 @@ export const Branch = ({
                   x={lx}
                   y={ly}
                   angle={angle + (60 * side)}
-                  delay={2.5 + index * 0.1 + oIdx * 0.1}
+                  delay={0.1 + index * 0.05 + oIdx * 0.05}
                   isSelected={clickedLeafId === leaf.id}
                   onHover={onHover}
                   onClick={onClick}

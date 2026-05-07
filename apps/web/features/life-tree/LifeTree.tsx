@@ -172,7 +172,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         let targetRot = -90 - angleDeg;
         
         // Target zoom area centered around the rotated start point
-        const zoomSize = len ? (len * 1.8) : 380;
+        const zoomSize = len ? (len * 2.2) : 420;
         
         // To keep the point centered after rotation, we must focus the viewBox 
         // on where the point WILL BE after rotating around (400, 350).
@@ -184,7 +184,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
 
         const targetX = rx - zoomSize / 2;
-        const targetY = ry - zoomSize * 0.85; // Base at 85% height to show more above
+        const targetY = ry - zoomSize * 0.9; // Base at 90% height to show more above
 
         gsap.to(viewBox, {
           x: targetX,

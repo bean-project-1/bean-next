@@ -4,15 +4,12 @@ import React, { useState } from 'react';
 import DnaModal from '../../../features/life-tree/DnaModal';
 import NodeSidePanel from '../../../features/life-tree/NodeSidePanel';
 import { LifeTree } from '../../../features/life-tree/LifeTree';
-import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
 import { LeafDetailView } from '../../../features/life-tree/LeafDetailView';
-import { TreeData, Branch } from '../../../features/life-tree/types';
+import { TreeData } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 
 export default function HomePage() {
   const [isDnaOpen, setIsDnaOpen] = useState(false);
-  const [selectedObjective, setSelectedObjective] = useState<any>(null);
-  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
@@ -100,42 +97,13 @@ export default function HomePage() {
             data={treeData}
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
-            onBranchClick={(b) => setSelectedBranchId(b.id)}
             onRefresh={refresh}
           />
         </main>
       </div>
 
       <DnaModal isOpen={isDnaOpen} onClose={() => setIsDnaOpen(false)} />
-
-      {(() => {
-        const branch = treeData.branches.find(b => b.id === selectedBranchId);
-        if (!branch) return null;
-        return (
-          <BranchDetailView
-            branch={branch}
-            onClose={() => setSelectedBranchId(null)}
-            onDelete={handleDeleteGoal}
-            onUpdateGoal={async (id, data) => {
-              const res = await updateGoal(id, data);
-              if (!res.success) alert('Error: ' + res.error);
-            }}
-            onToggleAction={handleToggleAction}
-            onDeleteAction={handleDeleteAction}
-            onLeafClick={handleLeafClick}
-            onAddAction={addAction}
-          />
-        );
-      })()}
       
-      {selectedObjective && (
-        <NodeSidePanel
-          node={selectedObjective}
-          onClose={() => setSelectedObjective(null)}
-          onDelete={handleDeleteGoal}
-        />
-      )}
-
       {selectedAction && (
         <LeafDetailView
           action={selectedAction}

@@ -26,7 +26,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
     gsap.fromTo(containerRef.current, 
       { scale: 0, opacity: 0 },
       { 
-        scale: isSelected ? 1.6 : 1, 
+        scale: isSelected ? 1.15 : 1, 
         opacity: 1, 
         duration: 0.8, 
         delay, 
@@ -41,7 +41,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
     // Selection scale toggle
     if (containerRef.current) {
       gsap.to(containerRef.current, {
-        scale: isSelected ? 1.6 : 1,
+        scale: isSelected ? 1.15 : 1,
         duration: 0.4,
         ease: "power2.out"
       });
@@ -66,11 +66,9 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
         className="group"
         onMouseEnter={() => {
           onHover(leaf.name);
-          gsap.to(pathRef.current, { scale: 1.1, duration: 0.2 });
         }}
         onMouseLeave={() => {
           onHover(null);
-          gsap.to(pathRef.current, { scale: 1, duration: 0.2 });
         }}
         onClick={(e) => {
           e.stopPropagation();

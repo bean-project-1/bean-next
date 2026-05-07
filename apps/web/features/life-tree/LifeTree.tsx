@@ -30,7 +30,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
-  const [viewBox, setViewBox] = useState({ x: 0, y: 0, w: 800, h: 800 });
+  const [viewBox, setViewBox] = useState({ x: 0, y: -220, w: 800, h: 800 });
+  const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
 
@@ -108,16 +109,19 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       const index = data.branches.findIndex(b => b.id === branch.id);
       const step = data.branches.length > 1 ? (endAngle - startAngle) / (data.branches.length - 1) : 0;
       const angle = startAngle + index * step;
-      const length = 180 + (branch.progress / 100) * 120;
-      const rad = (angle * Math.PI) / 180;
       
-      const midX = 400 + Math.cos(rad) * (length * 0.6);
-      const midY = 350 + Math.sin(rad) * (length * 0.6);
+      // Sync with Branch.tsx lengths
+      const length = 240 + (branch.progress / 100) * 150;
       
-      const zoomSize = 220;
-      const targetX = midX - zoomSize / 2;
-      const targetY = midY - zoomSize / 2;
+      let targetRot = -90 - angle;
       
+      // Pivot is (400, 350). Since we rotate around it, the pivot's position doesn't change relative to the SVG.
+      // We want (400, 350) to be at the bottom-center of the zoomed view.
+      // Dynamic zoom based on branch length
+      const zoomSize = length * 1.35; 
+      const targetX = 400 - zoomSize / 2;
+      const targetY = 350 - zoomSize * 0.85; // Trunk base near bottom
+
       gsap.to(viewBox, {
         x: targetX,
         y: targetY,
@@ -127,31 +131,83 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         ease: "power4.inOut",
         onUpdate: () => setViewBox({ ...viewBox })
       });
+
+      // Normalize target rotation to shortest path
+      const currentRot = rotation;
+      const diff = ((targetRot - currentRot + 180) % 360 + 360) % 360 - 180;
+      targetRot = currentRot + diff;
+
+      const rotObj = { r: currentRot };
+        gsap.to(rotObj, {
+          r: targetRot,
+          duration: 1.5,
+          ease: "power4.inOut",
+          onUpdate: () => setRotation(rotObj.r)
+        });
     }
     onBranchClick?.(branch);
   };
 
-  const handlePhaseClick = (phaseId: string, x: number, y: number) => {
+  const handlePhaseClick = (phaseId: string, x: number, y: number, angle?: number, startX?: number, startY?: number, branchId?: string, len?: number) => {
     if (zoomedPhaseId === phaseId) {
       setZoomedPhaseId(null);
       const branch = data.branches.find(b => b.id === zoomedBranchId);
       if (branch) handleBranchClick(branch);
     } else {
       setZoomedPhaseId(phaseId);
-      const zoomSize = 120;
-      const targetX = x - zoomSize / 2;
-      const targetY = y - zoomSize / 2;
       
-      const v = { ...viewBox };
-      gsap.to(v, {
-        x: targetX,
-        y: targetY,
-        w: zoomSize,
-        h: zoomSize,
-        duration: 1.5,
-        ease: "power4.inOut",
-        onUpdate: () => setViewBox({ ...v })
-      });
+      // If we clicked directly from full tree, we must also set the zoomed branch
+      if (branchId && zoomedBranchId !== branchId) {
+        setZoomedBranchId(branchId);
+        // Hide trunk smoothly
+        gsap.to([trunkRef.current, seedRef.current, "#seed-label-group"], { 
+          opacity: 0, 
+          duration: 0.8,
+          ease: "power2.inOut"
+        });
+      }
+
+      if (angle !== undefined && startX !== undefined && startY !== undefined) {
+        const angleDeg = (angle * 180) / Math.PI;
+        let targetRot = -90 - angleDeg;
+        
+        // Target zoom area centered around the rotated start point
+        const zoomSize = len ? (len * 1.8) : 380;
+        
+        // To keep the point centered after rotation, we must focus the viewBox 
+        // on where the point WILL BE after rotating around (400, 350).
+        const targetRad = (targetRot * Math.PI) / 180;
+        const px = 400, py = 350;
+        
+        // Target rotated position of (startX, startY)
+        const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
+        const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
+
+        const targetX = rx - zoomSize / 2;
+        const targetY = ry - zoomSize * 0.85; // Base at 85% height to show more above
+
+        gsap.to(viewBox, {
+          x: targetX,
+          y: targetY,
+          w: zoomSize,
+          h: zoomSize,
+          duration: 1.5,
+          ease: "power4.inOut",
+          onUpdate: () => setViewBox({ ...viewBox })
+        });
+
+        const currentRot = rotation;
+        const diff = ((targetRot - currentRot + 180) % 360 + 360) % 360 - 180;
+        targetRot = currentRot + diff;
+
+        const rotObj = { r: currentRot };
+        gsap.to(rotObj, {
+          r: targetRot,
+          duration: 1.5,
+          ease: "power4.inOut",
+          onUpdate: () => setRotation(rotObj.r)
+        });
+      }
     }
   };
 
@@ -159,23 +215,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     setZoomedBranchId(null);
     setZoomedPhaseId(null);
     
-    // Show trunk smoothly
+    // Show trunk back
     gsap.to([trunkRef.current, seedRef.current, "#seed-label-group"], { 
       opacity: 1, 
-      duration: 1, 
-      ease: "power2.inOut",
+      duration: 1,
       delay: 0.2
     });
 
-    const v = { ...viewBox };
-    gsap.to(v, {
+    gsap.to(viewBox, {
       x: 0,
-      y: 0,
+      y: -220,
       w: 800,
       h: 800,
-      duration: 1.2,
-      ease: "power3.inOut",
-      onUpdate: () => setViewBox({ ...v })
+      duration: 1.5,
+      ease: "power2.inOut",
+      onUpdate: () => setViewBox({ ...viewBox })
+    });
+
+    const rotObj = { r: rotation };
+    gsap.to(rotObj, {
+      r: 0,
+      duration: 1.5,
+      ease: "power2.inOut",
+      onUpdate: () => setRotation(rotObj.r)
     });
   };
 
@@ -237,22 +299,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-white font-sans overflow-hidden z-10">
-      {/* Top Score Indicator */}
-      <div 
-        ref={scoreRef}
-        className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-50 cursor-pointer group"
-        onClick={onScoreClick}
-      >
-        <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-slate-100 px-6 py-3 rounded-2xl shadow-sm group-hover:shadow-md transition-all">
-          <div className="w-10 h-10 rounded-full border-2 border-emerald-500 flex items-center justify-center bg-emerald-50/50">
-            <span className="text-xl">🌱</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Life Growth</span>
-            <span className="text-[11px] text-emerald-600 font-bold uppercase tracking-widest">{lifeState}</span>
-          </div>
+      {/* Interaction Hints - Only visible when NOT zoomed */}
+      {!zoomedBranchId && hoveredLeafName && (
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <p className="text-slate-600 font-bold tracking-tight text-center">
+            {hoveredLeafName}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Global Status (if no leaf selected) */}
       {!clickedLeafId && (
@@ -310,120 +364,146 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           
         </defs>
 
-        {/* 1. Ground / Soil Mound */}
-        {!zoomedBranchId && (
-          <>
-            <ellipse cx="400" cy="454" rx="70" ry="12" fill="#2d1a0e" opacity="0.6" filter="blur(6px)" />
-            <ellipse cx="400" cy="452" rx="50" ry="8" fill="#1a0f08" opacity="0.8" />
-          </>
-        )}
+        <g transform={`rotate(${rotation}, 400, 350)`}>
+          {/* 1. Ground / Soil Mound */}
+          {!zoomedBranchId && (
+            <>
+              <ellipse cx="400" cy="454" rx="70" ry="12" fill="#2d1a0e" opacity="0.6" filter="blur(6px)" />
+              <ellipse cx="400" cy="452" rx="50" ry="8" fill="#1a0f08" opacity="0.8" />
+            </>
+          )}
 
-        {/* 3. Realistic Trunk */}
-        <g ref={trunkRef} className="pointer-events-none">
-          <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
-          <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
-          <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-          <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
-          <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-          <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
-          <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
-        </g>
-
-        {/* 4. The Seed (BEAN) */}
-        {!zoomedBranchId && (
-          <g 
-            ref={seedRef} 
-            transform="translate(400, 450)" 
-            className="cursor-pointer group"
-            onClick={() => router.push('/dna')}
-            onMouseEnter={(e) => {
-              gsap.to(e.currentTarget.querySelector('path'), { scale: 1.1, duration: 0.3, ease: 'power2.out' });
-            }}
-            onMouseLeave={(e) => {
-              gsap.to(e.currentTarget.querySelector('path'), { scale: 1, duration: 0.3, ease: 'power2.out' });
-            }}
-          >
-            <path 
-              d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
-              fill="url(#seedGrad)"
-              stroke="#059669"
-              strokeWidth="0.5"
-            />
-            <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
+          {/* 3. Realistic Trunk */}
+          <g ref={trunkRef} className="pointer-events-none">
+            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
+            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
+            <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
+            <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
+            <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
           </g>
-        )}
 
-        {/* 6. Interaction Hint / Label - Tu BEAN! */}
-        {!zoomedBranchId && (
-          <g className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
-            <text x="485" y="432" className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
-              style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))', textShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
-              Tu BEAN!
-            </text>
-            <path d="M 480,442 C 465,445 445,448 425,449" stroke="#f97316" strokeWidth="2" fill="none" strokeLinecap="round" markerEnd="url(#arrowhead)" opacity="0.8" />
-            <defs>
-              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
-              </marker>
-            </defs>
-          </g>
-        )}
-
-
-        {/* Dynamic Branches */}
-        {data.branches.map((branch, i) => (
-          <Branch
-            key={branch.id}
-            branch={branch}
-            index={i}
-            totalBranches={data.branches.length}
-            clickedLeafId={clickedLeafId}
-            onClick={handleLeafClickHandler}
-            onHover={setHoveredLeafName}
-            onBranchClick={handleBranchClick}
-            onPhaseClick={handlePhaseClick}
-            isZoomed={zoomedBranchId === branch.id}
-            hide={zoomedBranchId !== null && zoomedBranchId !== branch.id}
-            zoomedPhaseId={zoomedPhaseId}
-          />
-        ))}
-
-        {/* Branch Labels inside SVG - Zoom Resilient */}
-        {!zoomedBranchId && data.branches.map((branch, i) => {
-          const startAngle = -160;
-          const endAngle = -20;
-          const step = data.branches.length > 1 ? (endAngle - startAngle) / (data.branches.length - 1) : 0;
-          const angle = startAngle + i * step;
-          const length = 180 + (branch.progress / 100) * 120;
-          const rad = (angle * Math.PI) / 180;
-          const endX = 400 + Math.cos(rad) * length;
-          const endY = 350 + Math.sin(rad) * length;
-          
-          return (
-            <g key={branch.id} className="pointer-events-none">
-              <rect 
-                x={endX + (endX > 400 ? 5 : -105)} 
-                y={endY - 25} 
-                width="100" 
-                height="20" 
-                rx="4" 
-                fill="white" 
-                fillOpacity="0.8" 
-                className="shadow-sm"
+          {/* 4. The Seed (BEAN) */}
+          {!zoomedBranchId && (
+            <g 
+              ref={seedRef} 
+              transform="translate(400, 450)" 
+              className="cursor-pointer group"
+              onClick={() => router.push('/dna')}
+              onMouseEnter={(e) => {
+                gsap.to(e.currentTarget.querySelector('path'), { scale: 1.1, duration: 0.3, ease: 'power2.out' });
+              }}
+              onMouseLeave={(e) => {
+                gsap.to(e.currentTarget.querySelector('path'), { scale: 1, duration: 0.3, ease: 'power2.out' });
+              }}
+            >
+              <path 
+                d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
+                fill="url(#seedGrad)"
+                stroke="#059669"
+                strokeWidth="0.5"
               />
-              <text 
-                x={endX + (endX > 400 ? 55 : -55)} 
-                y={endY - 10} 
-                textAnchor="middle" 
-                dominantBaseline="middle"
-                className="text-[10px] font-black fill-slate-500 uppercase tracking-tighter"
-                fontSize="10"
-              >
-                {branch.goal.length > 15 ? branch.goal.substring(0, 15) + '...' : branch.goal}
-              </text>
+              <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
             </g>
-          );
-        })}
+          )}
+
+          {/* 6. Interaction Hint / Label - Tu BEAN! */}
+          {!zoomedBranchId && (
+            <g className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
+              <text x="485" y="432" className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
+                style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))', textShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
+                Tu BEAN!
+              </text>
+              <path d="M 480,442 C 465,445 445,448 425,449" stroke="#f97316" strokeWidth="2" fill="none" strokeLinecap="round" markerEnd="url(#arrowhead)" opacity="0.8" />
+              <defs>
+                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
+                </marker>
+              </defs>
+            </g>
+          )}
+
+
+          {/* Dynamic Branches */}
+          {data.branches.map((branch, i) => {
+            let branchOpacity = 1;
+            if (zoomedBranchId !== null && zoomedBranchId !== branch.id) {
+              const threshold = 600;
+              const range = 800 - threshold;
+              branchOpacity = Math.max(0, Math.min(1, (viewBox.w - threshold) / range));
+            }
+
+            return (
+              <Branch
+                key={branch.id}
+                branch={branch}
+                index={i}
+                totalBranches={data.branches.length}
+                clickedLeafId={clickedLeafId}
+                onClick={handleLeafClickHandler}
+                onHover={setHoveredLeafName}
+                onBranchClick={handleBranchClick}
+                onPhaseClick={handlePhaseClick}
+                isZoomed={zoomedBranchId === branch.id}
+                opacity={branchOpacity}
+                zoomedPhaseId={zoomedBranchId === branch.id ? zoomedPhaseId : null}
+                currentRotation={rotation}
+              />
+            );
+          })}
+
+          {/* Branch Labels inside SVG - Zoom Resilient */}
+          {data.branches.map((branch, i) => {
+            const startAngle = -160;
+            const endAngle = -20;
+            const step = data.branches.length > 1 ? (endAngle - startAngle) / (data.branches.length - 1) : 0;
+            const angle = startAngle + i * step;
+            const length = 240 + (branch.progress / 100) * 150; // Sync with Branch.tsx
+            const rad = (angle * Math.PI) / 180;
+            const endX = 400 + Math.cos(rad) * length;
+            const endY = 350 + Math.sin(rad) * length;
+            
+            let labelOpacity = 1;
+            if (zoomedBranchId !== null) {
+              const threshold = 600;
+              const range = 800 - threshold;
+              labelOpacity = Math.max(0, Math.min(1, (viewBox.w - threshold) / range));
+            }
+
+            if (labelOpacity <= 0) return null;
+
+            return (
+              <g 
+                key={`label-${branch.id}`} 
+                className="pointer-events-none transition-opacity duration-300" 
+                style={{ opacity: labelOpacity }}
+                transform={`rotate(${-rotation}, ${endX}, ${endY})`}
+              >
+                <rect 
+                  x={endX + (endX > 400 ? 5 : -105)} 
+                  y={endY - 25} 
+                  width="100" 
+                  height="20" 
+                  rx="4" 
+                  fill="white" 
+                  fillOpacity="0.8" 
+                  className="shadow-sm"
+                />
+                <text 
+                  x={endX + (endX > 400 ? 55 : -55)} 
+                  y={endY - 10} 
+                  textAnchor="middle" 
+                  dominantBaseline="middle"
+                  className="text-[10px] font-black fill-slate-500 uppercase tracking-tighter"
+                  fontSize="10"
+                >
+                  {branch.goal.length > 15 ? branch.goal.substring(0, 15) + '...' : branch.goal}
+                </text>
+              </g>
+            );
+          })}
+        </g>
 
       </svg>
 

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, type, daysOfWeek, hoursPerDay, startTime, endTime, dimensionId } = body;
+    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionId } = body;
 
     const commitment = await prisma.baseCommitment.create({
       data: {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         type,
         daysOfWeek,
         hoursPerDay,
+        commuteHours,
         startTime,
         endTime,
         dimensionId

@@ -235,22 +235,28 @@ export const Branch = ({
               strokeLinecap="round" 
             />
 
-            {/* PHASE LEAF (AT THE END) */}
-            <Leaf
-              leaf={phase}
-              x={sub.end.x}
-              y={sub.end.y}
-              angle={(sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1))}
-              delay={2.8 + index * 0.1 + pIdx * 0.1}
-              isSelected={clickedLeafId === phase.id}
-              isActive={activeLeafId === phase.id}
-              onHover={onHover}
-              onClick={onClick}
-            />
+            {/* PHASE CULMINATION LEAF (AT THE END) */}
+            {(() => {
+              const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
+              const tipLeaf = phaseMilestone || phase;
+              return (
+                <Leaf
+                  leaf={tipLeaf}
+                  x={sub.end.x}
+                  y={sub.end.y}
+                  angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
+                  delay={2.8 + index * 0.1 + pIdx * 0.1}
+                  isSelected={clickedLeafId === tipLeaf.id}
+                  isActive={activeLeafId === tipLeaf.id}
+                  onHover={onHover}
+                  onClick={onClick}
+                />
+              );
+            })()}
 
-            {/* ACTIVITIES IN THIS PHASE */}
-            {phase.activities?.map((leaf, lIdx) => {
-              const t = 0.1 + (lIdx / (phase.activities.length || 1)) * 0.85;
+            {/* ACTIVITIES IN THIS PHASE (EXCLUDING MILESTONE) */}
+            {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
+              const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
               const mt = 1 - t;
               const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
               const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;

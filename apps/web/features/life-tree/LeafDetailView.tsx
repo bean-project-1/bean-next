@@ -59,7 +59,7 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
                 </span>
               )}
             </div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
               {action.name}
             </h2>
           </div>

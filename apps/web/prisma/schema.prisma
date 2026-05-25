@@ -44,6 +44,7 @@ model BaseCommitment {
   startTime   String?  // e.g., "09:00"
   endTime     String?  // e.g., "17:00"
   hoursPerDay Float    @default(8)
+  commuteHours Float?  // e.g., 1.5
   
   dimensionId String?  @db.ObjectId @map("dimension_id")
   dimension   Dimension? @relation(fields: [dimensionId], references: [id])

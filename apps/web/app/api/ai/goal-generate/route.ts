@@ -123,12 +123,23 @@ export async function POST(req: NextRequest) {
         }
 
         if (phaseData.milestone) {
+          const m = phaseData.milestone;
+          const milestoneTitle = typeof m === 'string' ? m : (m.title || 'Hito Final');
+          const milestoneDesc = typeof m === 'object' ? m.description : null;
+          const evaluationType = typeof m === 'object' ? (m.evaluationType || 'none') : 'none';
+          const evaluationInstructions = typeof m === 'object' ? m.evaluationInstructions : null;
+
           await tx.goalAction.create({
             data: {
               goalId: goal.id,
               parentId: phase.id,
-              title: phaseData.milestone,
-              type: 'milestone'
+              title: milestoneTitle,
+              description: milestoneDesc,
+              type: 'milestone',
+              impact: {
+                evaluationType,
+                evaluationInstructions
+              }
             }
           });
         }

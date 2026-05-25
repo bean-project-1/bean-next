@@ -133,8 +133,8 @@ function PathDetailPanel({
       {/* Backdrop (click to close on desktop) */}
       <div className="hidden sm:block absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
-      <div className="relative sm:ml-auto w-full sm:w-[480px] lg:w-[560px] h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-right-8 sm:slide-in-from-right-16 duration-300">
+      {/* Panel — full-screen on mobile, slide-in from right on sm+ */}
+      <div className="relative w-full sm:ml-auto sm:w-[480px] lg:w-[560px] h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right-16 duration-300">
 
         {/* Header gradient band */}
         <div className={`h-1 w-full bg-gradient-to-r ${g.from} ${g.to} shrink-0`} />
@@ -334,7 +334,7 @@ export function InsightsView() {
   const values = attrSlice('value');
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white pb-24 sm:pb-0">
 
       {/* ── Header ─────────────────────────────────────── */}
       <div className="shrink-0 px-5 sm:px-8 pt-6 pb-4 border-b border-slate-100">

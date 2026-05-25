@@ -196,7 +196,12 @@ export class GoalService {
             "title": "Phase Title",
             "description": "Why this phase matters",
             "targetDate": "ISO-8601-Date-String",
-            "milestone": "Measurable outcome",
+            "milestone": {
+              "title": "Measurable outcome title",
+              "description": "Detailed description of the outcome",
+              "evaluationType": "text | image | document | questionnaire | none",
+              "evaluationInstructions": "Specific instructions on what the user must provide (e.g. 'Sube una foto de tu certificado', 'Escribe un párrafo sobre lo que aprendiste')"
+            },
             "tasks": [
               {
                 "name": "Actionable Task",
@@ -260,7 +265,7 @@ export class GoalService {
         title: p.title || p.name || 'Sin título',
         description: p.description || p.desc || '',
         targetDate: p.targetDate || null,
-        milestone: p.milestone || '',
+        milestone: p.milestone || { title: 'Completar fase', evaluationType: 'none' },
         tasks: (p.tasks || []).map((t: any) => {
           const task = typeof t === 'string' ? { name: t } : t;
           return {

@@ -72,9 +72,9 @@ export function LifeTreeCoach({ onPlanGenerated, onPlantingStateChange }: LifeTr
   };
 
   return (
-    <div className="fixed bottom-10 right-10 z-50 flex flex-col items-end gap-4 pointer-events-auto">
+    <div className="fixed bottom-24 left-3 sm:bottom-10 sm:left-[264px] z-50 flex flex-col items-start gap-4 pointer-events-auto">
       {isOpen && (
-        <div className="w-[350px] h-[450px] bg-white rounded-3xl border border-slate-100 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="w-[calc(100vw-24px)] sm:w-[350px] max-w-[380px] h-[420px] sm:h-[450px] bg-white rounded-3xl border border-slate-100 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
           {/* Header */}
           <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-white">
             <div className="flex items-center gap-2">

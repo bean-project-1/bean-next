@@ -40,6 +40,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
 
+  // Offset the tree on desktop initially so it centers visually with the left sidebar
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 640) {
+      setViewBox(v => ({ ...v, x: -100 }));
+    }
+  }, []);
+
   useGSAP(() => {
     const tl = gsap.timeline();
     // 1. Initial UI fade-ins
@@ -223,8 +230,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     onEditBranch?.(null); // Notify parent to close the panel
     onPhaseClick?.(null); // Clear phase selection
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
     gsap.to(viewBox, {
-      x: 0,
+      x: isMobile ? 0 : -100,
       y: -220,
       w: 800,
       h: 800,
@@ -325,7 +334,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
 
   return (
-    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-white font-sans overflow-hidden z-10">
+    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-[#fafafa] font-sans overflow-hidden z-10">
       {/* Interaction Hints - Only visible when NOT zoomed */}
       {!zoomedBranchId && hoveredLeafName && (
         <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -335,22 +344,14 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         </div>
       )}
 
-      {/* Global Status (if no leaf selected) */}
-      {!clickedLeafId && (
-        <div className="fixed bottom-10 right-10 flex flex-col items-end pointer-events-none transition-opacity duration-300 z-50">
-          <span className="text-3xl font-light text-slate-400 tracking-tight uppercase">
-            {lifeState}
-          </span>
-          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">ESTADO ACTUAL</span>
-        </div>
-      )}
+
 
       {(zoomedBranchId || viewBox.w !== 800) && (
         <button 
           onClick={resetZoom}
-          className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-black transition-all z-50 animate-in fade-in slide-in-from-bottom-4"
+          className="absolute top-6 left-6 sm:top-8 sm:left-[264px] bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-50 animate-in fade-in slide-in-from-top-4"
         >
-          🔍 Ver Árbol Completo
+          ← Ver Árbol Completo
         </button>
       )}
 
@@ -536,23 +537,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       </svg>
 
       {/* Integrated Coach */}
-      <LifeTreeCoach 
-        onPlanGenerated={() => onRefresh?.()} 
-        onPlantingStateChange={setIsPlanting}
-      />
-
-      {/* Legend */}
-      <div className="fixed bottom-24 sm:bottom-10 left-4 sm:left-64 flex flex-col gap-2 bg-white/50 p-3 sm:p-4 rounded-xl backdrop-blur-sm border border-slate-100 pointer-events-none z-30">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-3 h-1.5 sm:w-4 sm:h-2 rounded-full bg-emerald-500 shadow-sm" />
-          <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-widest">Completado</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-3 h-1.5 sm:w-4 sm:h-2 rounded-full bg-slate-200 shadow-sm" />
-          <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pendiente</span>
-        </div>
-      </div>
-
+      {!zoomedBranchId && (
+        <LifeTreeCoach 
+          onPlanGenerated={() => onRefresh?.()} 
+          onPlantingStateChange={setIsPlanting}
+        />
+      )}
 
     </div>
   );

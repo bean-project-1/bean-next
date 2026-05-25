@@ -17,6 +17,11 @@ export type Leaf = {
   attributes?: string[];
   description?: string;
   tasks?: any[]; // sub-tasks (Task model)
+  // milestone evaluation metadata (from GoalAction.impact)
+  impact?: {
+    evaluationType?: 'text' | 'image' | 'document' | 'questionnaire' | 'none';
+    evaluationInstructions?: string;
+  };
 };
 
 export type Branch = {

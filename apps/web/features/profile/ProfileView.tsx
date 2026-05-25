@@ -70,8 +70,8 @@ export function ProfileView() {
     .split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
   return (
-    <div className="min-h-screen px-6 py-8 max-w-2xl bg-transparent">
-      <h1 className="text-3xl font-extrabold text-slate-900 mb-10 tracking-tight">Mi Perfil</h1>
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 max-w-2xl bg-transparent pb-24 sm:pb-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-8 sm:mb-10 tracking-tight">Mi Perfil</h1>
 
       <div className="flex items-center gap-5 mb-10 p-6 glass rounded-3xl">
         <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-violet-500/30 flex-shrink-0">
@@ -132,7 +132,7 @@ export function ProfileView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <a href="/dna"
           className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 transition-all group">
           <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">🧬</span>

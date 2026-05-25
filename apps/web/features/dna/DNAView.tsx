@@ -67,15 +67,15 @@ export function DNAView() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-8 bg-white">
-      <div className="mb-8">
-        <h1 className="text-3xl font-light text-gray-900 tracking-tight">Identidad <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-white pb-24 sm:pb-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight">Identidad <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
         <p className="mt-1 text-sm text-gray-400 font-medium">
           La colección de tus experiencias, activos y compromisos que definen quién eres.
         </p>
       </div>
 
-      <div className="mb-8 rounded-2xl border border-gray-100 bg-gray-50/50 px-6 py-6 flex items-center gap-8 shadow-sm">
+      <div className="mb-6 sm:mb-8 rounded-2xl border border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 shadow-sm">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
             <span>Exploración de Identidad</span>
@@ -233,7 +233,9 @@ export function DNAView() {
                           </div>
                           <h4 className="text-sm font-black text-gray-800 group-hover:text-violet-600 transition-colors">{c.title}</h4>
                           <div className="mt-4 flex items-center justify-between text-[10px] font-bold border-t border-gray-50 pt-3">
-                            <span className="text-gray-400 uppercase tracking-tighter">⏱️ {c.hoursPerDay}h / día</span>
+                            <span className="text-gray-400 uppercase tracking-tighter">
+                              ⏱️ {c.hoursPerDay}h / día {c.commuteHours > 0 && <span className="text-emerald-500">(+{c.commuteHours}h traslado)</span>}
+                            </span>
                             <span className="text-gray-400 uppercase tracking-tighter">📅 {c.daysOfWeek.length} días</span>
                           </div>
                         </div>
@@ -254,11 +256,11 @@ export function DNAView() {
 
       {/* Dimension Detail Modal */}
       {selectedDimKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setSelectedDimKey(null)}>
-          <div className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+          <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}>
-            <div className="p-8">
+            <div className="p-5 sm:p-8">
               {(() => {
                 const dim = ALL_DIMENSIONS.find(d => d.key === selectedDimKey);
                 if (!dim) return null;
@@ -296,7 +298,9 @@ export function DNAView() {
                                 <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{c.type}</span>
                                   <h4 className="text-sm font-black text-slate-800">{c.title}</h4>
-                                  <p className="text-[10px] font-bold text-slate-400 mt-1">{c.hoursPerDay}h / día</p>
+                                  <p className="text-[10px] font-bold text-slate-400 mt-1">
+                                    {c.hoursPerDay}h / día {c.commuteHours > 0 && <span className="text-emerald-500 font-black">(+{c.commuteHours}h)</span>}
+                                  </p>
                                 </div>
                               ))}
                             </div>

@@ -48,63 +48,118 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, 
           onClick(leaf.id, leaf.name);
         }}
       >
-        <defs>
-          <linearGradient id={`leafGrad-${leaf.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.2" />
-            <stop offset="50%" stopColor="transparent" stopOpacity="0" />
-            <stop offset="100%" stopColor="black" stopOpacity="0.1" />
-          </linearGradient>
-        </defs>
+        {leaf.type === 'milestone' ? (
+          <>
+            <defs>
+              <linearGradient id={`fruitGrad-${leaf.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={leaf.completed ? "#fcd34d" : "#cbd5e1"} />
+                <stop offset="100%" stopColor={leaf.completed ? "#d97706" : "#64748b"} />
+              </linearGradient>
+            </defs>
 
-        {/* Active Glow/Pulse Overlay */}
-        {isActive && (
-          <path
-            d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
-            fill="none"
-            stroke={leaf.completed ? "#10b981" : "#f59e0b"} // Emerald or Amber depending on completion
-            strokeWidth="4"
-            className="animate-pulse"
-            style={{ filter: 'blur(3px)' }}
-          />
+            {isActive && (
+              <circle
+                cx="12" cy="0" r={leaf.completed ? "9" : "6"}
+                fill="none"
+                stroke={leaf.completed ? "#f59e0b" : "#94a3b8"}
+                strokeWidth="4"
+                className="animate-pulse"
+                style={{ filter: 'blur(3px)' }}
+              />
+            )}
+
+            <g className="transition-all duration-500">
+              {/* Stem */}
+              <path d="M 0,0 Q 6,0 12,0" stroke="#7c4a1e" strokeWidth="1.5" fill="none" className="transition-all duration-300 group-hover:stroke-[#925c27]" />
+              
+              {leaf.completed ? (
+                // Blooming Fruit
+                <g transform="translate(12, 0)">
+                  <circle 
+                    cx="0" cy="0" r="8" 
+                    fill={`url(#fruitGrad-${leaf.id})`} 
+                    stroke={isSelected ? "#fff" : "rgba(255,255,255,0.2)"} 
+                    strokeWidth={isSelected ? 1.5 : 0} 
+                    className="transition-all duration-300 group-hover:scale-125"
+                    style={!isSelected ? { filter: 'drop-shadow(0 0px 8px rgba(245,158,11,0.5))' } : undefined}
+                  />
+                  {/* Inner shine */}
+                  <path d="M -3,-4 A 4 4 0 0 1 3,-4" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                </g>
+              ) : (
+                // Unripe Bud
+                <g transform="translate(12, 0) scale(0.7)">
+                  <path 
+                    d="M 0,8 C 6,6 6,-6 0,-8 C -6,-6 -6,6 0,8 Z" 
+                    fill={`url(#fruitGrad-${leaf.id})`} 
+                    stroke={isSelected ? "#fff" : "rgba(255,255,255,0.2)"} 
+                    strokeWidth={isSelected ? 1 : 0.5} 
+                    className="transition-all duration-300 group-hover:scale-110"
+                  />
+                </g>
+              )}
+            </g>
+          </>
+        ) : (
+          <>
+            <defs>
+                      <linearGradient id={`leafGrad-${leaf.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+                        <stop offset="50%" stopColor="transparent" stopOpacity="0" />
+                        <stop offset="100%" stopColor="black" stopOpacity="0.1" />
+                      </linearGradient>
+                    </defs>
+            
+                    {/* Active Glow/Pulse Overlay */}
+                    {isActive && (
+                      <path
+                        d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
+                        fill="none"
+                        stroke={leaf.completed ? "#10b981" : "#f59e0b"} // Emerald or Amber depending on completion
+                        strokeWidth="4"
+                        className="animate-pulse"
+                        style={{ filter: 'blur(3px)' }}
+                      />
+                    )}
+            
+                    {/* The Realistic Leaf Body */}
+                    <path
+                      ref={pathRef}
+                      d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
+                      fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
+                      stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
+                      strokeWidth={isSelected ? 1 : 0.3}
+                      className="transition-all duration-300 group-hover:scale-125 group-hover:stroke-white group-hover:stroke-[0.5px]"
+                      style={!isSelected ? { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' } : undefined}
+                    />
+                    
+                    {/* Depth Overlay */}
+                    <path
+                      d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
+                      fill={`url(#leafGrad-${leaf.id})`}
+                      pointerEvents="none"
+                      className="transition-opacity duration-300 group-hover:opacity-40"
+                    />
+            
+                    {/* Central Vein */}
+                    <path
+                      d="M 0,0 C 5,0 12,0 19,0"
+                      stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
+                      strokeWidth="0.3"
+                      fill="none"
+                      opacity="0.6"
+                      pointerEvents="none"
+                      className="transition-colors duration-300 group-hover:stroke-emerald-700"
+                    />
+            
+                    <g opacity="0.4" pointerEvents="none">
+                      <path d="M 3.75,0 C 4.5,-1.5 6.25,-2 7.5,-2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
+                      <path d="M 3.75,0 C 4.5,1.5 6.25,2 7.5,2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
+                      <path d="M 8.75,0 C 9.5,-1.25 11.25,-1.5 12.5,-2" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
+                      <path d="M 8.75,0 C 9.5,1.25 11.25,1.5 12.5,2" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
+                    </g>
+          </>
         )}
-
-        {/* The Realistic Leaf Body */}
-        <path
-          ref={pathRef}
-          d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
-          fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
-          stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
-          strokeWidth={isSelected ? 1 : 0.3}
-          className="transition-all duration-300 group-hover:scale-125 group-hover:stroke-white group-hover:stroke-[0.5px]"
-          style={!isSelected ? { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' } : undefined}
-        />
-        
-        {/* Depth Overlay */}
-        <path
-          d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
-          fill={`url(#leafGrad-${leaf.id})`}
-          pointerEvents="none"
-          className="transition-opacity duration-300 group-hover:opacity-40"
-        />
-
-        {/* Central Vein */}
-        <path
-          d="M 0,0 C 5,0 12,0 19,0"
-          stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
-          strokeWidth="0.3"
-          fill="none"
-          opacity="0.6"
-          pointerEvents="none"
-          className="transition-colors duration-300 group-hover:stroke-emerald-700"
-        />
-
-        {/* Lateral Veins */}
-        <g opacity="0.4" pointerEvents="none">
-          <path d="M 3.75,0 C 4.5,-1.5 6.25,-2 7.5,-2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
-          <path d="M 3.75,0 C 4.5,1.5 6.25,2 7.5,2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
-          <path d="M 8.75,0 C 9.5,-1.25 11.25,-1.5 12.5,-2" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
-          <path d="M 8.75,0 C 9.5,1.25 11.25,1.5 12.5,2" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
-        </g>
       </g>
     </g>
   );

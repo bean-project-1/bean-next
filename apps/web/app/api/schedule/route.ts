@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
             description: `Compromiso recurrente (${bc.type})`,
             date: d.toISOString(),
             type: bc.type,
-            estimatedHours: bc.hoursPerDay,
+            estimatedHours: bc.hoursPerDay + ((bc as any).commuteHours || 0),
             status: 'commitment',
             goalTitle: 'Base DNA',
             itemType: 'commitment',

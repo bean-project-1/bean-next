@@ -28,23 +28,23 @@ export default function HomePage() {
             </div>
             <span className="text-xl font-bold tracking-tight text-white">BEAN</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/home"
-              className="text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+              className="hidden sm:inline text-sm font-medium text-neutral-400 transition-colors hover:text-white"
             >
               Mi Árbol
             </Link>
-            <div className="h-4 w-px bg-white/10" />
+            <div className="hidden sm:block h-4 w-px bg-white/10" />
             <Link
               href="/login"
-              className="text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+              className="hidden sm:inline text-sm font-medium text-neutral-400 transition-colors hover:text-white"
             >
               Login
             </Link>
             <Link
               href="/onboarding"
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:scale-105 hover:from-violet-500 hover:to-indigo-500 active:scale-95 shadow-lg shadow-violet-600/20"
+              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-white transition-all hover:scale-105 hover:from-violet-500 hover:to-indigo-500 active:scale-95 shadow-lg shadow-violet-600/20"
             >
               Get Started
             </Link>
@@ -68,7 +68,7 @@ export default function HomePage() {
           </div>
 
           {/* Headline */}
-          <h1 className="mb-8 text-6xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-7xl lg:text-8xl">
+          <h1 className="mb-6 sm:mb-8 text-4xl sm:text-6xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight text-white">
             Engineer your{' '}
             <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
               ideal life
@@ -76,7 +76,7 @@ export default function HomePage() {
           </h1>
 
           {/* Sub-headline */}
-          <p className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-neutral-400 sm:text-xl">
+          <p className="mx-auto mb-10 sm:mb-12 max-w-2xl text-base sm:text-lg leading-relaxed text-neutral-400 sm:text-xl">
             BEAN uses advanced AI to synthesize your identity, professional capital, and wellbeing into a unified intelligence engine. Make decisions backed by data, not guesswork.
           </p>
 
@@ -99,7 +99,7 @@ export default function HomePage() {
         </div>
 
         {/* Stats */}
-        <div className="mt-20 flex flex-wrap items-center justify-center gap-16">
+        <div className="mt-16 sm:mt-20 flex flex-wrap items-center justify-center gap-8 sm:gap-16">
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col items-center gap-2">
               <span className="text-4xl font-black tracking-tighter text-white">

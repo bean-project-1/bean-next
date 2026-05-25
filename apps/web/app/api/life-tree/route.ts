@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
           frequency: action.frequency,
           streak: action.streak,
           consistency: action.consistency,
-          tasks: action.tasks || []
+          tasks: action.tasks || [],
+          impact: action.impact || null
         }))
       }))
     };

@@ -19,3 +19,39 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const userId = req.cookies.get('bean_user_id')?.value;
+    if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const body = await req.json();
+    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionId } = body;
+
+    let validDimensionId = null; // Use null to unset if empty
+    if (dimensionId) {
+      const dim = await prisma.dimension.findUnique({ where: { name: dimensionId } });
+      if (dim) validDimensionId = dim.id;
+    }
+
+    const commitment = await prisma.baseCommitment.update({
+      where: { id, userId },
+      data: {
+        title,
+        type,
+        daysOfWeek,
+        hoursPerDay,
+        commuteHours,
+        startTime,
+        endTime,
+        dimensionId: validDimensionId
+      }
+    });
+
+    return NextResponse.json({ success: true, commitment });
+  } catch (error: any) {
+    console.error('[BaseCommitment PUT Error]', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

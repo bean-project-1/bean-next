@@ -319,21 +319,24 @@ export function ScheduleView() {
   const selectedDayEvents = getEventsForDay(selectedDay);
 
   const dailyTasks = selectedDayEvents.filter(e => {
+    if (e.itemType === 'commitment' || e.itemType === 'habit') return false;
     if (!e.startDate) return true;
     return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) <= 14 * 24 * 60 * 60 * 1000;
   });
 
   const continuousProjects = selectedDayEvents.filter(e => {
-    if (e.itemType === 'commitment') return false;
+    if (e.itemType === 'commitment' || e.itemType === 'habit') return false;
     if (!e.startDate) return false;
     return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
   });
 
   const commitments = selectedDayEvents.filter(e => e.itemType === 'commitment');
+  const habits = selectedDayEvents.filter(e => e.itemType === 'habit');
 
   const totalDailyHours =
     dailyTasks.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0) +
-    commitments.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
+    commitments.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0) +
+    habits.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
 
   const handleOpenActivity = (event: ScheduledEvent) => {
     if (event.itemType === 'commitment') return;
@@ -459,11 +462,12 @@ export function ScheduleView() {
             {/* Day cells */}
             {calendarDays.map((day, i) => {
               const dayEvents = getEventsForDay(day);
-              const activeDailyTasks = dayEvents.filter(e => {
+              const validEventsForHours = dayEvents.filter(e => {
+                if (e.itemType === 'commitment' || e.itemType === 'habit') return true;
                 if (!e.startDate) return true;
                 return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) <= 14 * 24 * 60 * 60 * 1000;
               });
-              const dayHours = activeDailyTasks.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
+              const dayHours = validEventsForHours.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
 
               const isCurrentMonth = isSameMonth(day, monthStart);
               const isSelected = isSameDay(day, selectedDay);
@@ -509,48 +513,80 @@ export function ScheduleView() {
 
                   {/* Event pills — on mobile just show dots, desktop shows pills */}
                   <div className="hidden sm:block space-y-1">
-                    {dayEvents.slice(0, 3).map(e => {
-                      const isLongRange = e.startDate &&
-                        (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
-                      const isCommitment = e.itemType === 'commitment';
+                    {(() => {
+                      const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
+                      const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
+                      const displayLimit = cellCommitments.length > 0 ? 2 : 3;
+                      
+                      const visibleEvents = regularEvents.slice(0, displayLimit);
+                      const hasMoreEvents = regularEvents.length > displayLimit;
+
                       return (
-                        <div
-                          key={e.id}
-                          className={`text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm
-                            ${isCommitment
-                              ? 'bg-slate-50 text-slate-400 border-slate-300 italic'
-                              : e.status === 'completed'
-                                ? 'bg-slate-100 text-slate-400 border-slate-300'
-                                : isLongRange
-                                  ? 'bg-violet-50 text-violet-700 border-violet-400 opacity-60'
-                                  : 'bg-white text-slate-700 border-green-500'}`}
-                        >
-                          {isCommitment ? `🔒 ${e.title}` : e.title}
-                        </div>
+                        <>
+                          {visibleEvents.map(e => {
+                            const isLongRange = e.startDate &&
+                              (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
+                            return (
+                              <div
+                                key={e.id}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  handleOpenActivity(e);
+                                }}
+                                className={`text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80
+                                  ${e.status === 'completed'
+                                    ? 'bg-slate-100 text-slate-400 border-slate-300'
+                                    : isLongRange
+                                      ? 'bg-violet-50 text-violet-700 border-violet-400 opacity-60'
+                                      : 'bg-white text-slate-700 border-green-500'}`}
+                              >
+                                {e.title}
+                              </div>
+                            );
+                          })}
+                          
+                          {cellCommitments.length > 0 && (
+                            <div className="text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm bg-slate-50 text-slate-400 border-slate-300 italic">
+                              🔒 {cellCommitments.length} Compromiso{cellCommitments.length > 1 ? 's' : ''} Base
+                            </div>
+                          )}
+
+                          {hasMoreEvents && (
+                            <div className="text-[8px] text-slate-400 font-bold pl-2">+{regularEvents.length - displayLimit} más</div>
+                          )}
+                        </>
                       );
-                    })}
-                    {dayEvents.length > 3 && (
-                      <div className="text-[8px] text-slate-400 font-bold pl-2">+{dayEvents.length - 3} más</div>
-                    )}
+                    })()}
                   </div>
 
                   {/* Mobile: coloured dot indicators */}
                   {dayEvents.length > 0 && (
                     <div className="sm:hidden flex gap-0.5 flex-wrap mt-1">
-                      {dayEvents.slice(0, 3).map((e, idx) => (
-                        <span
-                          key={idx}
-                          className={`w-1.5 h-1.5 rounded-full shrink-0
-                            ${e.itemType === 'commitment' ? 'bg-slate-300'
-                              : e.status === 'completed' ? 'bg-slate-200'
-                              : e.startDate && (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000
-                                ? 'bg-violet-400'
-                                : 'bg-green-500'}`}
-                        />
-                      ))}
-                      {dayEvents.length > 3 && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                      )}
+                      {(() => {
+                        const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
+                        const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
+                        
+                        return (
+                          <>
+                            {regularEvents.slice(0, 3).map((e, idx) => (
+                              <span
+                                key={idx}
+                                className={`w-1.5 h-1.5 rounded-full shrink-0
+                                  ${e.status === 'completed' ? 'bg-slate-200'
+                                    : e.startDate && (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000
+                                      ? 'bg-violet-400'
+                                      : 'bg-green-500'}`}
+                              />
+                            ))}
+                            {cellCommitments.length > 0 && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                            )}
+                            {regularEvents.length > 3 && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0" />
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

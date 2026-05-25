@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
         id: goal.id,
         goal: goal.title,
         description: goal.description,
+        deadline: goal.deadline,
         progress: goal.progress || 0,
         leaves: (goal.actions || []).map((action: any) => ({
           id: action.id,

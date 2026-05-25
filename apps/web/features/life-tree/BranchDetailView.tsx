@@ -604,9 +604,16 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                             {task.isCompleted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                           </div>
                         </div>
-                        <span className={`text-xs sm:text-sm font-semibold flex-1 ${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                          {task.title}
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-xs sm:text-sm font-semibold block ${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                            {task.title}
+                          </span>
+                          {task.targetDate && (
+                            <p className="text-[9px] font-bold text-slate-400 mt-0.5 flex items-center gap-1">
+                              <span className="text-[8px]">📅</span> {new Date(task.targetDate).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
                         <div className="text-slate-400">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${expandedTaskId === task.id ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
@@ -812,12 +819,29 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                 onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
               />
             ) : (
-              <h2 
-                onClick={() => setIsEditingTitle(true)}
-                className="text-xl sm:text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
-              >
-                {editGoal}
-              </h2>
+              <div>
+                <h2 
+                  onClick={() => setIsEditingTitle(true)}
+                  className="text-xl sm:text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
+                >
+                  {editGoal}
+                </h2>
+                {(() => {
+                  let dateStr = branch.deadline;
+                  if (!dateStr) {
+                    const phasesWithDates = branch.leaves.filter(l => l.type === 'phase' && l.targetDate);
+                    if (phasesWithDates.length > 0) {
+                      const maxDate = new Date(Math.max(...phasesWithDates.map(p => new Date(p.targetDate!).getTime())));
+                      dateStr = maxDate.toISOString();
+                    }
+                  }
+                  return dateStr ? (
+                    <p className="text-xs font-bold text-slate-400 mt-1 flex items-center gap-1">
+                      <span className="text-[10px]">📅</span> Estimado para: {new Date(dateStr).toLocaleDateString()}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
             )}
           </div>
 
@@ -919,6 +943,11 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                         <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                           {phase.name}
                         </h4>
+                        {phase.targetDate && (
+                          <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                            <span className="text-[8px]">📅</span> {new Date(phase.targetDate).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                       <svg 
                         width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 

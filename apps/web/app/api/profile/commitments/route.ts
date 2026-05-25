@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionId } = body;
 
+    let validDimensionId = undefined;
+    if (dimensionId) {
+      const dim = await prisma.dimension.findUnique({ where: { name: dimensionId } });
+      if (dim) validDimensionId = dim.id;
+    }
+
     const commitment = await prisma.baseCommitment.create({
       data: {
         userId,
@@ -37,12 +43,13 @@ export async function POST(req: NextRequest) {
         commuteHours,
         startTime,
         endTime,
-        dimensionId
+        dimensionId: validDimensionId
       }
     });
 
     return NextResponse.json({ success: true, commitment });
   } catch (error: any) {
+    console.error('[BaseCommitment POST Error]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

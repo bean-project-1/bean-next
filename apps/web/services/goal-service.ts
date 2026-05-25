@@ -120,7 +120,7 @@ export class GoalService {
     const horizon = new Date();
     horizon.setDate(horizon.getDate() + 30);
     
-    const workload: Record<string, number> = {};
+    const dailyHours: Record<string, number> = {};
     
     // 1. Fetch dynamic actions
     const actions = await prisma.goalAction.findMany({
@@ -134,7 +134,7 @@ export class GoalService {
     actions.forEach(a => {
       if (!a.targetDate) return;
       const key = a.targetDate.toISOString().split('T')[0];
-      workload[key] = (workload[key] || 0) + (a.estimatedHours || 0);
+      dailyHours[key] = (dailyHours[key] || 0) + (a.estimatedHours || 0);
     });
 
     // 2. Fetch static base commitments (Work/Study/Routines)
@@ -151,12 +151,19 @@ export class GoalService {
 
       baseCommitments.forEach(bc => {
         if (bc.daysOfWeek.includes(dayOfWeek)) {
-          workload[key] = (workload[key] || 0) + bc.hoursPerDay;
+          dailyHours[key] = (dailyHours[key] || 0) + bc.hoursPerDay + ((bc as any).commuteHours || 0);
         }
       });
     }
 
-    return workload;
+    const commitmentsSummary = baseCommitments.map(bc => 
+      `- ${bc.title} (${bc.type}): ${bc.hoursPerDay}h/día ${((bc as any).commuteHours) ? `+ ${(bc as any).commuteHours}h transporte` : ''} (${bc.daysOfWeek.length} días/sem)`
+    );
+
+    return {
+      dailyHours,
+      commitmentsSummary
+    };
   }
 
   async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string) {
@@ -168,10 +175,13 @@ export class GoalService {
     let workloadContext = "";
     if (userId) {
       const workload = await this.getUserWorkloadContext(userId);
-      workloadContext = `EXISTING WORKLOAD (Hours already scheduled per day):
-      ${JSON.stringify(workload)}
+      workloadContext = `EXISTING SCHEDULE & ROUTINES:
+      ${workload.commitmentsSummary.join('\n')}
       
-      INSTRUCTION: Avoid adding tasks on days that already have > 4 hours of work. Distribute the new tasks into the "empty" or "light" days.`;
+      TOTAL OCCUPIED HOURS PER DAY (Including sleep/work):
+      ${JSON.stringify(workload.dailyHours)}
+      
+      INSTRUCTION: Avoid adding tasks on days that already have > 22 hours occupied (including sleep). Distribute the new tasks into the "empty" or "light" days where (24 - occupied) >= task estimated hours.`;
     }
 
     console.log(`[GoalService] Generating workload-aware plan for: "${title}" (Complexity: ${parsedGoal.complexityLevel})`);

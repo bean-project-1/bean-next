@@ -28,6 +28,7 @@ export type Branch = {
   id: string;
   goal: string;
   description?: string;
+  deadline?: string;
   progress: number;
   leaves: Leaf[];
 };

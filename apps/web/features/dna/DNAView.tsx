@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
+import { CommitmentModal } from './CommitmentModal';
 
 const CATEGORIES = [
   { cat: 'identity',   label: 'Identity'         },
@@ -21,6 +22,17 @@ export function DNAView() {
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
   const [commitments, setCommitments] = useState<any[]>([]);
   const [loadingCommitments, setLoadingCommitments] = useState(true);
+  const [editingCommitment, setEditingCommitment] = useState<any | null>(null);
+
+  const fetchCommitments = useCallback(() => {
+    setLoadingCommitments(true);
+    fetch('/api/profile/commitments')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setCommitments(json.commitments);
+      })
+      .finally(() => setLoadingCommitments(false));
+  }, []);
 
   useEffect(() => {
     fetch('/api/dna/identity')
@@ -30,13 +42,8 @@ export function DNAView() {
       })
       .finally(() => setLoadingIdentity(false));
 
-    fetch('/api/profile/commitments')
-      .then(r => r.json())
-      .then(json => {
-        if (json.success) setCommitments(json.commitments);
-      })
-      .finally(() => setLoadingCommitments(false));
-  }, []);
+    fetchCommitments();
+  }, [fetchCommitments]);
 
   const attributesCount = ALL_DIMENSIONS.reduce((acc, dim) => {
     const dimData = identity?.[dim.key]?.identity;
@@ -197,7 +204,7 @@ export function DNAView() {
 
       {/* Global Base Commitments Section */}
       <div className="mt-16 pt-12 border-t border-gray-100">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
             <h2 className="text-2xl font-light text-gray-900 tracking-tight">
               Compromisos <span className="font-semibold text-gray-900 italic">Base</span>
@@ -223,13 +230,13 @@ export function DNAView() {
                 <div className="space-y-3">
                   {loadingCommitments ? (
                     [1, 2].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-50 animate-pulse" />)
-                  ) : typeCommitments.length > 0 ? (
-                    typeCommitments.map((c, idx) => {
-                      return (
-                        <div key={idx} className="group p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
+                  ) : (
+                    <>
+                      {typeCommitments.map((c, idx) => (
+                        <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-violet-200 transition-all">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[8px] font-black text-violet-500 bg-violet-50 px-2 py-0.5 rounded-lg uppercase tracking-widest">{c.dimension?.label || 'General'}</span>
-                            <span className="text-[9px] font-bold text-gray-300">Fijo</span>
+                            <span className="text-[9px] font-bold text-gray-300 group-hover:text-violet-400 transition-colors">Editar</span>
                           </div>
                           <h4 className="text-sm font-black text-gray-800 group-hover:text-violet-600 transition-colors">{c.title}</h4>
                           <div className="mt-4 flex items-center justify-between text-[10px] font-bold border-t border-gray-50 pt-3">
@@ -239,12 +246,14 @@ export function DNAView() {
                             <span className="text-gray-400 uppercase tracking-tighter">📅 {c.daysOfWeek.length} días</span>
                           </div>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <div className="p-8 rounded-3xl border-2 border-dashed border-gray-50 text-center">
-                      <p className="text-[10px] font-bold text-gray-300 italic">Sin {labels[type].toLowerCase()} activos</p>
-                    </div>
+                      ))}
+                      <button 
+                        onClick={() => setEditingCommitment({ type })}
+                        className="w-full p-4 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest"
+                      >
+                        + Añadir {labels[type]}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -383,6 +392,15 @@ export function DNAView() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Editing/Adding Modal */}
+      {editingCommitment && (
+        <CommitmentModal 
+          commitment={editingCommitment}
+          onClose={() => setEditingCommitment(null)}
+          onSave={fetchCommitments}
+        />
       )}
     </div>
   );

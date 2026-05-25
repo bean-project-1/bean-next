@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
 
     const goalService = new GoalService();
     const workload = await goalService.getUserWorkloadContext(user.id);
-    const workloadContext = `CARGA DE TRABAJO ACTUAL DEL USUARIO (Horas ya programadas por día en los próximos 30 días):\n${JSON.stringify(workload)}`;
+    const workloadContext = `AGENDA Y RUTINAS DEL USUARIO (Incluye sueño, trabajo y transporte):
+${workload.commitmentsSummary.join('\n')}
+
+HORAS TOTALES OCUPADAS POR DÍA (próximos 30 días, incluyendo sueño):
+${JSON.stringify(workload.dailyHours)}`;
 
     const systemPrompt = {
       role: 'system',

@@ -14,9 +14,11 @@ interface LifeTreeProps {
   onScoreClick?: () => void;
   onBranchClick?: (branch: BranchData) => void;
   onRefresh?: () => void;
+  onDeleteBranch?: (branch: BranchData) => void;
+  onEditBranch?: (branch: BranchData | null) => void;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -92,18 +94,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   }, [isPlanting]);
 
   const handleBranchClick = (branch: BranchData) => {
-    if (zoomedBranchId === branch.id) {
-      resetZoom();
-    } else {
+    if (zoomedBranchId !== branch.id) {
       setZoomedBranchId(branch.id);
+      onEditBranch?.(branch); // Trigger management UI immediately on first click
       
-      // Hide trunk smoothly
-      gsap.to([trunkRef.current, seedRef.current, "#seed-label-group"], { 
-        opacity: 0, 
-        duration: 0.5, 
-        ease: "power2.out" 
-      });
-
       const startAngle = -160;
       const endAngle = -20;
       const index = data.branches.findIndex(b => b.id === branch.id);
@@ -111,15 +105,16 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       const angle = startAngle + index * step;
       
       // Sync with Branch.tsx lengths
-      const length = 240 + (branch.progress / 100) * 150;
+      const length = 180 + (branch.progress / 100) * 100;
       
       let targetRot = -90 - angle;
       
       // Pivot is (400, 350). Since we rotate around it, the pivot's position doesn't change relative to the SVG.
       // We want (400, 350) to be at the bottom-center of the zoomed view.
       // Dynamic zoom based on branch length
-      const zoomSize = length * 1.35; 
-      const targetX = 400 - zoomSize / 2;
+      const zoomSize = length * 1.5; // Increased slightly for better view
+      // Shift camera to the right by 20% to leave the branch on the left side of the screen
+      const targetX = (400 - zoomSize / 2) + (zoomSize * 0.2);
       const targetY = 350 - zoomSize * 0.85; // Trunk base near bottom
 
       gsap.to(viewBox, {
@@ -127,8 +122,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         y: targetY,
         w: zoomSize,
         h: zoomSize,
-        duration: 1.5,
-        ease: "power4.inOut",
+        duration: 0.6,
+        ease: "power3.out",
         onUpdate: () => setViewBox({ ...viewBox })
       });
 
@@ -138,12 +133,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       targetRot = currentRot + diff;
 
       const rotObj = { r: currentRot };
-        gsap.to(rotObj, {
-          r: targetRot,
-          duration: 1.5,
-          ease: "power4.inOut",
-          onUpdate: () => setRotation(rotObj.r)
-        });
+      gsap.to(rotObj, {
+        r: targetRot,
+        duration: 0.6,
+        ease: "power3.out",
+        onUpdate: () => setRotation(rotObj.r)
+      });
     }
     onBranchClick?.(branch);
   };
@@ -159,12 +154,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       // If we clicked directly from full tree, we must also set the zoomed branch
       if (branchId && zoomedBranchId !== branchId) {
         setZoomedBranchId(branchId);
-        // Hide trunk smoothly
-        gsap.to([trunkRef.current, seedRef.current, "#seed-label-group"], { 
-          opacity: 0, 
-          duration: 0.8,
-          ease: "power2.inOut"
-        });
+        const branch = data.branches.find(b => b.id === branchId);
+        if (branch) onEditBranch?.(branch); // Trigger management UI
       }
 
       if (angle !== undefined && startX !== undefined && startY !== undefined) {
@@ -172,7 +163,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         let targetRot = -90 - angleDeg;
         
         // Target zoom area centered around the rotated start point
-        const zoomSize = len ? (len * 2.2) : 420;
+        const zoomSize = len ? (len * 2.5) : 420;
         
         // To keep the point centered after rotation, we must focus the viewBox 
         // on where the point WILL BE after rotating around (400, 350).
@@ -183,7 +174,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
         const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
 
-        const targetX = rx - zoomSize / 2;
+        // Shift camera to the right by 20% to leave the phase on the left side of the screen
+        const targetX = (rx - zoomSize / 2) + (zoomSize * 0.2);
         const targetY = ry - zoomSize * 0.9; // Base at 90% height to show more above
 
         gsap.to(viewBox, {
@@ -191,8 +183,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           y: targetY,
           w: zoomSize,
           h: zoomSize,
-          duration: 1.5,
-          ease: "power4.inOut",
+          duration: 0.6,
+          ease: "power3.out",
           onUpdate: () => setViewBox({ ...viewBox })
         });
 
@@ -203,8 +195,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         const rotObj = { r: currentRot };
         gsap.to(rotObj, {
           r: targetRot,
-          duration: 1.5,
-          ease: "power4.inOut",
+          duration: 0.6,
+          ease: "power3.out",
           onUpdate: () => setRotation(rotObj.r)
         });
       }
@@ -214,28 +206,28 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const resetZoom = () => {
     setZoomedBranchId(null);
     setZoomedPhaseId(null);
-    
-    // Show trunk back
-    gsap.to([trunkRef.current, seedRef.current, "#seed-label-group"], { 
-      opacity: 1, 
-      duration: 1,
-      delay: 0.2
-    });
+    onEditBranch?.(null); // Notify parent to close the panel
 
     gsap.to(viewBox, {
       x: 0,
       y: -220,
       w: 800,
       h: 800,
-      duration: 1.5,
+      duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
     });
 
     const rotObj = { r: rotation };
+    
+    // Normalize current rotation so it always takes the shortest path to 0
+    let currentRot = rotation;
+    const diff = ((0 - currentRot + 180) % 360 + 360) % 360 - 180;
+    const targetRot = currentRot + diff;
+
     gsap.to(rotObj, {
-      r: 0,
-      duration: 1.5,
+      r: targetRot,
+      duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setRotation(rotObj.r)
     });
@@ -243,13 +235,27 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const zoomFactor = 1.1;
+    const zoomFactor = 1.05; // Smoother manual zoom step
     const factor = e.deltaY > 0 ? zoomFactor : 1 / zoomFactor;
     
-    // Zoom relative to current view center or mouse position?
-    // Let's do simple center zoom for now
     const newW = Math.max(100, Math.min(2000, viewBox.w * factor));
     const newH = Math.max(100, Math.min(2000, viewBox.h * factor));
+    
+    // If scrolling out while focused on a branch
+    if (zoomedBranchId && e.deltaY > 0) {
+      // 1. Auto-reset completely if they zoom out wide enough
+      if (newW >= 650) {
+        resetZoom();
+        return;
+      }
+      
+      // 2. Smoothly "relax" the rotation towards upright (0 degrees)
+      const currentRot = rotation;
+      const diff = ((0 - currentRot + 180) % 360 + 360) % 360 - 180;
+      // Move 10% towards zero per scroll tick
+      setRotation(currentRot + (diff * 0.1));
+    }
+
     const dx = (viewBox.w - newW) / 2;
     const dy = (viewBox.h - newH) / 2;
 
@@ -296,6 +302,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const lifeState = getQualitativeState(data.growthScore);
+
+  // Calculate dynamic opacity based on current zoom level
+  const zoomThreshold = 400; // Fully opaque when zoomed in this much
+  const zoomRange = 800 - zoomThreshold;
+  // Fade all the way to 0 (completely invisible) when fully zoomed
+  const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-white font-sans overflow-hidden z-10">
@@ -374,7 +386,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none">
+          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: dynamicOpacity }}>
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
@@ -427,12 +439,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
-            let branchOpacity = 1;
-            if (zoomedBranchId !== null && zoomedBranchId !== branch.id) {
-              const threshold = 600;
-              const range = 800 - threshold;
-              branchOpacity = Math.max(0, Math.min(1, (viewBox.w - threshold) / range));
-            }
+            // Fade out other branches smoothly as you zoom out
+            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? dynamicOpacity : 1;
 
             return (
               <Branch
@@ -445,6 +453,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 onHover={setHoveredLeafName}
                 onBranchClick={handleBranchClick}
                 onPhaseClick={handlePhaseClick}
+                onEdit={onEditBranch}
+                onDelete={onDeleteBranch}
                 isZoomed={zoomedBranchId === branch.id}
                 opacity={branchOpacity}
                 zoomedPhaseId={zoomedBranchId === branch.id ? zoomedPhaseId : null}

@@ -281,7 +281,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
   const [newName, setNewName] = useState('');
   const [newDate, setNewDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [containerW, setContainerW] = useState(390);
+  const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(null);
   // Local copy of leaves — persists task state across panel open/close
   const [localLeaves, setLocalLeaves] = useState(() => branch.leaves);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -291,18 +291,12 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
   // Sync localLeaves if branch prop changes (e.g. full data reload from parent)
   useEffect(() => { setLocalLeaves(branch.leaves); }, [branch.leaves]);
 
-  // Update a single task across localLeaves + keep selectedLeaf in sync
+  // Update a single task across localLeaves
   const updateTaskInLeaves = (taskId: string, done: boolean) => {
     setLocalLeaves(prev => prev.map(leaf => ({
       ...leaf,
       tasks: leaf.tasks?.map((t: any) => t.id === taskId ? { ...t, isCompleted: done } : t),
     })));
-    // Keep the currently open leaf panel in sync too
-    setSelectedLeaf(prev => {
-      if (!prev) return prev;
-      const updatedTasks = prev.tasks?.map((t: any) => t.id === taskId ? { ...t, isCompleted: done } : t);
-      return { ...prev, tasks: updatedTasks };
-    });
   };
 
   // Filter hierarchical components
@@ -312,305 +306,209 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
   const completed = phases.filter(l => l.completed).length;
   const pct = phases.length > 0 ? Math.round((completed / phases.length) * 100) : 0;
 
-  // ── SVG Helpers ──
-  const W = 390, H = 550;
-  const spinePoint = (t: number) => {
-    const bend = 30;
-    const curve = Math.sin(t * Math.PI) * bend;
-    return { x: W / 2 + curve, y: H - (t * (H - 80)) - 40 };
-  };
-  const branchHW = (t: number) => 14 - t * 8;
-  const buildSpinePath = () => {
-    let d = `M ${spinePoint(0).x} ${spinePoint(0).y}`;
-    for (let i = 1; i <= 20; i++) {
-      const p = spinePoint(i / 20);
-      d += ` L ${p.x} ${p.y}`;
-    }
-    return d;
-  };
-  const buildBranchPath = () => {
-    const pts = [];
-    for (let i = 0; i <= 20; i++) pts.push(spinePoint(i / 20));
-    let left = `M ${pts[0]!.x - branchHW(0)} ${pts[0]!.y}`;
-    for (let i = 1; i < pts.length; i++) left += ` L ${pts[i]!.x - branchHW(i / 20)} ${pts[i]!.y}`;
-    let right = `L ${pts[pts.length - 1]!.x + branchHW(1)} ${pts[pts.length - 1]!.y}`;
-    for (let i = pts.length - 2; i >= 0; i--) right += ` L ${pts[i]!.x + branchHW(i / 20)} ${pts[i]!.y}`;
-    return left + ' ' + right + ' Z';
-  };
-
-  const leafPath = (x: number, y: number, w: number, h: number, side: number, angle: number) => {
-    const rad = (angle * Math.PI) / 180;
-    const cp1x = x + side * (w * 0.3) * Math.cos(rad - 0.2);
-    const cp1y = y - (w * 0.3) * Math.sin(rad - 0.2);
-    const tipX = x + side * w * Math.cos(rad);
-    const tipY = y - w * Math.sin(rad);
-    const cp2x = x + side * (w * 0.3) * Math.cos(rad + 0.2);
-    const cp2y = y - (w * 0.3) * Math.sin(rad + 0.2);
-
-    return `M ${x} ${y} 
-            C ${cp1x} ${cp1y - h}, ${tipX - side * 5} ${tipY - h / 2}, ${tipX} ${tipY}
-            C ${tipX - side * 5} ${tipY + h / 2}, ${cp2x} ${cp2y + h}, ${x} ${y} Z`;
-  };
-
-  const midribPath = (x: number, y: number, w: number, side: number, angle: number) => {
-    const rad = (angle * Math.PI) / 180;
-    const tx = x + side * w * Math.cos(rad);
-    const ty = y - w * Math.sin(rad);
-    return `M ${x} ${y} L ${tx} ${ty}`;
-  };
-
-  const branchPathData = buildBranchPath();
-  const spinePathData = buildSpinePath();
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white overflow-hidden">
-      {/* ── Header ── */}
-      <div
-        className="shrink-0 flex items-center justify-between px-5 py-4 bg-white border-b border-slate-100"
-        style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(-8px)', transition: 'all 0.4s ease' }}
+    <div className="fixed inset-y-0 right-0 z-50 flex items-center p-4 sm:py-6 sm:pr-6 pointer-events-none">
+      <div 
+        className="w-full sm:w-[450px] h-full bg-white rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-500 pointer-events-auto border border-slate-100"
+        onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold text-sm">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-          </svg>
-          Tu Árbol
-        </button>
+        {/* ── Header ── */}
+        <div className="shrink-0 px-8 py-6 bg-white border-b border-slate-100 flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest">
+                Gestión de Meta
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">
+                {completed}/{phases.length} Fases
+              </span>
+            </div>
+            {isEditingTitle ? (
+              <input
+                autoFocus
+                className="w-full text-2xl font-black text-slate-900 bg-slate-50 border-b-2 border-emerald-500 focus:outline-none"
+                value={editGoal}
+                onChange={e => setEditGoal(e.target.value)}
+                onBlur={async () => {
+                  setIsEditingTitle(false);
+                  if (editGoal.trim() && editGoal !== branch.goal) {
+                    await onUpdateGoal?.(branch.id, { goal: editGoal.trim() });
+                  }
+                }}
+                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+              />
+            ) : (
+              <h2 
+                onClick={() => setIsEditingTitle(true)}
+                className="text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
+              >
+                {editGoal}
+              </h2>
+            )}
+          </div>
 
-        <div className="flex-1 flex flex-col items-center px-4 overflow-hidden">
-          <p className="text-[10px] font-black uppercase tracking-widest mb-0.5" style={{ color: palette.primary }}>Meta</p>
-          {isEditingTitle ? (
-            <input
-              autoFocus
-              className="w-full text-center text-sm font-bold text-slate-900 bg-slate-50 border-b-2 border-emerald-500 focus:outline-none"
-              value={editGoal}
-              onChange={e => setEditGoal(e.target.value)}
-              onBlur={async () => {
-                setIsEditingTitle(false);
-                if (editGoal.trim() && editGoal !== branch.goal) {
-                  await onUpdateGoal?.(branch.id, { goal: editGoal.trim() });
-                }
-              }}
-              onKeyDown={async e => {
-                if (e.key === 'Enter') e.currentTarget.blur();
-              }}
-            />
-          ) : (
-            <p
-              onClick={() => setIsEditingTitle(true)}
-              className="text-sm font-bold text-slate-900 truncate max-w-full cursor-pointer hover:text-emerald-600 transition-colors"
-            >
-              {editGoal}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {onAddAction && (
-            <button
-              onClick={() => setIsAdding(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold shadow-sm transition-all hover:scale-110 active:scale-95"
-              style={{ background: palette.primary, color: 'white' }}
-            >+</button>
-          )}
-          {onDelete && (
+          <div className="flex items-center gap-3">
             <button
               onClick={async () => {
-                if (confirm('¿Eliminar esta meta completa y todas sus actividades? Esta acción no se puede deshacer.')) {
-                  await onDelete(branch.id);
+                if (confirm('¿Eliminar esta meta completa?')) {
+                  await onDelete?.(branch.id);
                   onClose();
                 }
               }}
-              className="w-9 h-9 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition-colors shadow-sm active:scale-95"
+              className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors"
               title="Eliminar Meta"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
               </svg>
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Progress & Description ── */}
-      <div className="shrink-0 px-5 py-3 bg-white space-y-3" style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.4s ease 0.1s' }}>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-1000"
-              style={{ width: `${pct}%`, background: `linear-gradient(90deg,${palette.primary},${palette.mid})` }}
-            />
+            <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
           </div>
-          <span className="text-xs font-black tabular-nums" style={{ color: palette.primary }}>{completed}/{phases.length}</span>
         </div>
 
-        {/* Description area */}
-        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100/50">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Descripción</span>
-            {!isEditingDesc && (
-              <button onClick={() => setIsEditingDesc(true)} className="text-[10px] font-bold text-emerald-600 hover:underline">Editar</button>
-            )}
-          </div>
-          {isEditingDesc ? (
-            <div className="space-y-2">
-              <textarea
-                autoFocus
-                className="w-full text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                rows={2}
-                value={editDesc}
-                onChange={e => setEditDesc(e.target.value)}
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => { setEditDesc(branch.description || ''); setIsEditingDesc(false); }}
-                  className="text-[10px] font-bold text-slate-400"
-                >Cancelar</button>
-                <button
-                  onClick={async () => {
-                    setIsEditingDesc(false);
-                    await onUpdateGoal?.(branch.id, { description: editDesc.trim() });
-                  }}
-                  className="text-[10px] font-bold text-emerald-600"
-                >Guardar</button>
-              </div>
+        {/* ── Content ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 bg-slate-50/30 custom-scrollbar">
+          {/* Description Section */}
+          <section className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Proyecto</p>
+              {!isEditingDesc && (
+                <button onClick={() => setIsEditingDesc(true)} className="text-[10px] font-bold text-emerald-600 hover:underline">Editar</button>
+              )}
             </div>
-          ) : (
-            <p className="text-xs font-medium text-slate-600 leading-relaxed">
-              {editDesc || 'Sin descripción... Añade una para dar contexto a tu meta.'}
-            </p>
-          )}
+            {isEditingDesc ? (
+              <div className="space-y-3">
+                <textarea
+                  autoFocus
+                  className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-medium border-0 focus:ring-2 focus:ring-emerald-500/20"
+                  rows={3}
+                  value={editDesc}
+                  onChange={e => setEditDesc(e.target.value)}
+                />
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setIsEditingDesc(false)} className="px-4 py-2 text-xs font-bold text-slate-400">Cancelar</button>
+                  <button 
+                    onClick={async () => {
+                      setIsEditingDesc(false);
+                      await onUpdateGoal?.(branch.id, { description: editDesc.trim() });
+                    }}
+                    className="px-4 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-xl"
+                  >Guardar</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                {editDesc || 'Sin descripción detallada.'}
+              </p>
+            )}
+          </section>
+
+          {/* Accordion List of Phases */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Planificación por Fases</p>
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
+              >
+                + Nueva Fase
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {phases.map((phase) => {
+                const isExpanded = expandedPhaseId === phase.id;
+                const children = localLeaves.filter(l => l.parentId === phase.id);
+                const doneCount = children.filter(c => c.completed).length;
+                
+                return (
+                  <div 
+                    key={phase.id} 
+                    className={`rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-emerald-100 shadow-xl' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                  >
+                    <div 
+                      className="p-5 flex items-center gap-4 cursor-pointer"
+                      onClick={() => setExpandedPhaseId(isExpanded ? null : phase.id)}
+                    >
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {phase.completed ? '✓' : '⏳'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                          {phase.name}
+                        </h4>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                          {children.length > 0 ? `${doneCount}/${children.length} tareas completadas` : 'Sin tareas asignadas'}
+                        </p>
+                      </div>
+                      <svg 
+                        width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                        className={`text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6"/>
+                      </svg>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-5 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="border-t border-slate-50 pt-5 space-y-3">
+                          {children.length > 0 ? (
+                            children.map(child => (
+                              <div key={child.id} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 hover:border-emerald-100 transition-colors group">
+                                <button 
+                                  onClick={async () => {
+                                    const next = !child.completed;
+                                    setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
+                                    await onToggleAction?.(child.id, { completed: next });
+                                  }}
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 group-hover:border-emerald-400'}`}
+                                >
+                                  {child.completed && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                </button>
+                                <div className="flex-1">
+                                  <p className={`text-sm font-bold ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                    {child.name}
+                                  </p>
+                                </div>
+                                <button 
+                                  onClick={async () => {
+                                    if (confirm('¿Eliminar actividad?')) {
+                                      await onDeleteAction?.(child.id);
+                                    }
+                                  }}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /></svg>
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 italic text-center py-4">Sin actividades registradas.</p>
+                          )}
+                          <button 
+                            onClick={() => { setIsAdding(true); /* Logic to set parentId needed if strictly hierarchical */ }}
+                            className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-100 text-slate-400 text-xs font-bold hover:border-emerald-200 hover:text-emerald-500 transition-all"
+                          >
+                            + Añadir Tarea a esta Fase
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         </div>
-      </div>
 
-      {/* ── Branch SVG (fills remaining height, no scroll) ── */}
-      <div ref={svgWrapRef} className="flex-1 w-full min-h-0">
-        <svg
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="xMidYMid meet"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s ease 0.1s', display: 'block' }}
-        >
-          <style>{`
-            @keyframes leafSway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(4deg); } }
-            @keyframes auraFloat { 
-              0%, 100% { transform: translate(0, 0); opacity: 0.6; } 
-              50% { transform: translate(10px, -15px); opacity: 0.9; } 
-            }
-          `}</style>
-          <defs>
-            <linearGradient id={`brGrad-${branch.id}`} x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor={palette.mid} stopOpacity="1" />
-              <stop offset="100%" stopColor={palette.primary} stopOpacity="0.5" />
-            </linearGradient>
-            <linearGradient id={`lfGrad-${branch.id}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={palette.primary} stopOpacity="0.9" />
-              <stop offset="100%" stopColor={palette.mid} stopOpacity="0.7" />
-            </linearGradient>
-            <linearGradient id={`lfGradDone-${branch.id}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={palette.mid} stopOpacity="1" />
-              <stop offset="100%" stopColor={palette.primary} stopOpacity="0.9" />
-            </linearGradient>
-            <filter id="leafShadow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="1" dy="2" stdDeviation="3" floodColor="#00000022" />
-            </filter>
-            <filter id="goalGlow" x="-80%" y="-80%" width="260%" height="260%">
-              <feGaussianBlur stdDeviation="6" result="b" />
-              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-
-          <path d={branchPathData} fill={`url(#brGrad-${branch.id})`} />
-          <path d={spinePathData} fill="none" stroke="white" strokeWidth="1.5" opacity="0.25" strokeLinecap="round" />
-
-          {/* Goal bud at tip */}
-          {(() => {
-            const tip = spinePoint(1);
-            return (
-              <g filter="url(#goalGlow)">
-                <circle cx={tip.x} cy={tip.y} r="9" fill={palette.primary} opacity="0.2" />
-                <circle cx={tip.x} cy={tip.y} r="5.5" fill={palette.primary} />
-                <circle cx={tip.x} cy={tip.y} r="2.5" fill="white" opacity="0.8" />
-                <text x={tip.x} y={tip.y - 16} textAnchor="middle" fontSize="8" fill={palette.mid}
-                  fontWeight="800" fontFamily="sans-serif" letterSpacing="1.5">META</text>
-              </g>
-            );
-          })()}
-
-          {/* Habit Aura */}
-          {habits.map((habit, i) => {
-            const t = 0.2 + (i * 0.15) % 0.7;
-            const center = spinePoint(t);
-            const side = i % 2 === 0 ? 1 : -1;
-            const x = center.x + side * (100 + (i * 20) % 50);
-            const y = center.y - 40 - (i * 15) % 60;
-            return (
-              <g key={habit.id} onClick={() => setSelectedLeaf(habit)} style={{ cursor: 'pointer', animation: `auraFloat ${4 + (i % 3)}s ${i * 0.5}s ease-in-out infinite` }}>
-                <circle cx={x} cy={y} r="20" fill={palette.primary} opacity="0.05" />
-                <rect x={x - 40} y={y - 12} width="80" height="24" rx="12" fill="white" stroke={palette.primary} strokeWidth="1" strokeOpacity="0.3" className="shadow-sm" />
-                <text x={x} y={y + 4} textAnchor="middle" fontSize="9" fontWeight="bold" fill={palette.primary} opacity="0.8">
-                  {habit.name.length > 10 ? habit.name.slice(0, 8) + '..' : habit.name}
-                </text>
-                <circle cx={x - 30} cy={y} r="3" fill={palette.primary} />
-              </g>
-            );
-          })}
-
-          {/* Phase Leaves */}
-          {phases.map((leaf, i) => {
-            const total = phases.length;
-            const t = total === 1 ? 0.5 : 0.1 + (i / (total - 1)) * 0.78;
-            const center = spinePoint(t);
-            const side: 1 | -1 = i % 2 === 0 ? 1 : -1;
-            const lw = 80 - t * 26, lh = 22 - t * 6, angleUp = 18 + (i % 3) * 5 - (t * 8);
-            const bw = branchHW(t), attachX = center.x + side * bw, attachY = center.y;
-            const rad = (angleUp * Math.PI) / 180, tipX = attachX + side * lw * Math.cos(rad), tipY = attachY - lw * Math.sin(rad);
-            const fillGrad = leaf.completed ? `url(#lfGradDone-${branch.id})` : `url(#lfGrad-${branch.id})`;
-            const LW = 120, LH = 34, extX = tipX + side * 10, extY = tipY - 2;
-            const labelRectX = side > 0 ? extX : extX - LW, labelRectY = extY - LH / 2;
-            const children = localLeaves.filter(l => l.parentId === leaf.id);
-            const tasksDone = children.filter(c => c.completed).length;
-            const tasksTotal = children.length;
-
-            return (
-              <g key={leaf.id} style={{ opacity: mounted ? 1 : 0, transition: `opacity 0.5s ease ${0.15 + i * 0.08}s`, cursor: 'pointer' }} onClick={() => setSelectedLeaf(leaf)}>
-                <g style={{ transformOrigin: `${attachX.toFixed(1)}px ${attachY.toFixed(1)}px`, animation: mounted ? `leafSway ${2.8 + (i % 4) * 0.5}s ${(i * 0.4) % 2}s ease-in-out infinite` : 'none' }}>
-                  <path d={leafPath(attachX, attachY, lw, lh, side, angleUp)} fill={fillGrad} filter="url(#leafShadow)" />
-                  <path d={midribPath(attachX, attachY, lw * 0.88, side, angleUp)} fill="none" stroke="white" strokeWidth="0.7" opacity="0.4" strokeLinecap="round" />
-                  {leaf.completed && <text x={(attachX + tipX) / 2} y={(attachY + tipY) / 2 + 3} textAnchor="middle" fontSize="9" fill="white" fontWeight="900" pointerEvents="none" opacity="0.85">✓</text>}
-                </g>
-                <g>
-                  <rect x={labelRectX} y={labelRectY} width={LW} height={LH} rx="9" fill="white" filter="url(#leafShadow)" />
-                  <rect x={side > 0 ? labelRectX : labelRectX + LW - 3.5} y={labelRectY + 6} width="3.5" height={LH - 12} rx="2" fill={leaf.completed ? palette.primary : '#cbd5e1'} opacity="0.9" />
-                  <circle cx={side > 0 ? labelRectX + LW - 10 : labelRectX + 10} cy={labelRectY + LH / 2} r="4" fill={leaf.completed ? palette.primary : '#e2e8f0'} />
-                  <text x={side > 0 ? labelRectX + 12 : labelRectX + 10} y={labelRectY + 14} fontSize="9.5" fill="#1e293b" fontWeight="800" fontFamily="sans-serif" pointerEvents="none">
-                    {leaf.name.length > 18 ? leaf.name.slice(0, 18) + '…' : leaf.name}
-                  </text>
-                  <text x={side > 0 ? labelRectX + 12 : labelRectX + 10} y={labelRectY + 26} fontSize="7.5" fill={leaf.completed ? palette.primary : '#94a3b8'} fontWeight="700" fontFamily="sans-serif" pointerEvents="none">
-                    {leaf.completed ? '✓ Completado' : tasksTotal > 0 ? `${tasksDone}/${tasksTotal} tareas` : 'Toca para ver'}
-                  </text>
-                </g>
-              </g>
-            );
-          })}
-
-          <style>{`@keyframes leafSway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(2.5deg); } }`}</style>
-          
-          {localLeaves.length === 0 && (
-            <g>
-              <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="12" fill="#cbd5e1" fontWeight="700" fontFamily="sans-serif">Sin actividades aún</text>
-              <text x={W / 2} y={H / 2 + 18} textAnchor="middle" fontSize="10" fill="#e2e8f0" fontFamily="sans-serif">Toca + para añadir la primera</text>
-            </g>
-          )}
-
-          {(() => {
-            const base = spinePoint(0);
-            return (
-              <text x={base.x} y={base.y + 20} textAnchor="middle" fontSize="8" fill={palette.primary} fontWeight="700" fontFamily="sans-serif" opacity="0.4" letterSpacing="2">INICIO</text>
-            );
-          })()}
-        </svg>
+        {/* Footer Area */}
+        <div className="shrink-0 px-8 py-4 bg-white border-t border-slate-100 text-center">
+          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+            Usa el Coach en cada tarea para obtener ayuda detallada
+          </p>
+        </div>
       </div>
 
       <div className="shrink-0 py-1.5 text-center">
@@ -650,8 +548,14 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
+        <div 
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsAdding(false)}
+        >
+          <div 
+            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold text-slate-900">Nueva Actividad</h3>
               <button onClick={() => setIsAdding(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">

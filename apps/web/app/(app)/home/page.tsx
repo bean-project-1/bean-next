@@ -5,12 +5,14 @@ import DnaModal from '../../../features/life-tree/DnaModal';
 import NodeSidePanel from '../../../features/life-tree/NodeSidePanel';
 import { LifeTree } from '../../../features/life-tree/LifeTree';
 import { LeafDetailView } from '../../../features/life-tree/LeafDetailView';
+import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
 import { TreeData } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 
 export default function HomePage() {
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
 
@@ -76,7 +78,7 @@ export default function HomePage() {
     }
   };
 
-  if (loading) {
+  if (loading && !treeData) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
@@ -98,11 +100,33 @@ export default function HomePage() {
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
             onRefresh={refresh}
+            onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
+            onDeleteBranch={(b) => handleDeleteGoal(b.id)}
           />
         </main>
       </div>
 
       <DnaModal isOpen={isDnaOpen} onClose={() => setIsDnaOpen(false)} />
+
+      {(() => {
+        const branch = treeData.branches.find(b => b.id === selectedBranchId);
+        if (!branch) return null;
+        return (
+          <BranchDetailView
+            branch={branch}
+            onClose={() => setSelectedBranchId(null)}
+            onDelete={handleDeleteGoal}
+            onUpdateGoal={async (id, data) => {
+              const res = await updateGoal(id, data);
+              if (!res.success) alert('Error: ' + res.error);
+            }}
+            onToggleAction={handleToggleAction}
+            onDeleteAction={handleDeleteAction}
+            onLeafClick={handleLeafClick}
+            onAddAction={addAction}
+          />
+        );
+      })()}
       
       {selectedAction && (
         <LeafDetailView

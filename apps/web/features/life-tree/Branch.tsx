@@ -15,6 +15,8 @@ interface BranchProps {
   onHover: (name: string | null) => void;
   onBranchClick: (branch: BranchType) => void;
   onPhaseClick: (phaseId: string, x: number, y: number, angle?: number, startX?: number, startY?: number, branchId?: string, len?: number) => void;
+  onEdit?: (branch: BranchType) => void;
+  onDelete?: (branch: BranchType) => void;
   isZoomed?: boolean;
   opacity?: number;
   zoomedPhaseId?: string | null;
@@ -23,11 +25,10 @@ interface BranchProps {
 
 export const Branch = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
-  onBranchClick, onPhaseClick, isZoomed, opacity, zoomedPhaseId,
+  onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
   currentRotation = 0
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
-  const textRef = useRef<SVGTextElement>(null);
 
   // Trunk end point MUST match LifeTree (400, 350)
   const startX = 400;
@@ -40,11 +41,9 @@ export const Branch = ({
     return startAngle + index * step;
   }, [index, totalBranches]);
 
-  // --- NEW LOGIC: Grouping by Phase ---
-  const { phases, phaseMap, orphans } = useMemo(() => {
-    // Get all phases and initialize them with an empty activities array
+  // --- Grouping by Phase ---
+  const { phases, orphans } = useMemo(() => {
     const p = branch.leaves.filter(l => l.type === 'phase').map(ph => ({ ...ph, activities: [] as typeof branch.leaves }));
-    const m: Record<string, typeof branch.leaves> = {};
     const o: typeof branch.leaves = [];
 
     branch.leaves.forEach(l => {
@@ -52,13 +51,11 @@ export const Branch = ({
       const targetPhase = p.find(ph => ph.id === l.parentId);
       if (l.parentId && targetPhase) {
         targetPhase.activities.push(l);
-        if (!m[l.parentId]) m[l.parentId] = [];
-        m[l.parentId].push(l);
       } else {
         o.push(l);
       }
     });
-    return { phases: p, phaseMap: m, orphans: o };
+    return { phases: p, orphans: o };
   }, [branch.leaves]);
 
   const length = 180 + (branch.progress / 100) * 100;
@@ -67,7 +64,7 @@ export const Branch = ({
   const endX = startX + Math.cos(rad) * length;
   const endY = startY + Math.sin(rad) * length;
 
-  // Natural control points: bulge slightly upward for organic feel
+  // Natural control points
   const cp1x = startX + Math.cos(rad) * (length * 0.35) + Math.sin(rad) * -20;
   const cp1y = startY + Math.sin(rad) * (length * 0.1) + Math.cos(rad) * -15;
   const cp2x = startX + Math.cos(rad) * (length * 0.65) + Math.sin(rad) * -15;
@@ -85,17 +82,14 @@ export const Branch = ({
 
   // Helper for sub-branches
   const getSubBranchData = (phaseIdx: number, totalPhases: number, activityCount: number = 0) => {
-    // Distribute along the main branch from 0.3 to 0.85
     const t = totalPhases > 0 ? 0.3 + (phaseIdx / totalPhases) * 0.55 : 0.6;
     const start = getBezierPoint(t);
     
-    // Direction: alternating sides or consistent offset
     const side = phaseIdx % 2 === 0 ? 1 : -1;
     const subRad = rad + (0.5 * side); 
     
-    // Dynamic sub-branch length based on leaf count
-    const minLeafSpace = 5;
-    const subLen = 30 + (activityCount * minLeafSpace);
+    const minLeafSpace = 8; // Increased space for easier clicking
+    const subLen = 40 + (activityCount * minLeafSpace);
     
     const sEndX = start.x + Math.cos(subRad) * subLen;
     const sEndY = start.y + Math.sin(subRad) * subLen;
@@ -113,7 +107,6 @@ export const Branch = ({
   };
 
   const branchColor = '#7c4a1e';
-  const branchColorDark = '#4a2810';
 
   useGSAP(() => {
     const group = groupRef.current;
@@ -121,7 +114,7 @@ export const Branch = ({
 
     // Grow branches from root outward
     const paths = group.querySelectorAll('path.branch-stroke');
-    paths.forEach((path, i) => {
+    paths.forEach((path) => {
       const svgPath = path as SVGPathElement;
       const pLen = svgPath.getTotalLength();
       gsap.fromTo(svgPath,
@@ -130,210 +123,184 @@ export const Branch = ({
           strokeDashoffset: 0,
           opacity: 0.8,
           duration: 2,
-          delay: 1.2 + index * 0.2,
+          delay: 0.8 + index * 0.15,
           ease: 'power2.inOut',
         }
       );
     });
 
-    // Subtle sway
-    gsap.to(group, {
-      rotate: index % 2 === 0 ? '0.3deg' : '-0.3deg',
-      duration: 8 + (index * 1.5),
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut',
-      transformOrigin: `${startX}px ${startY}px`,
+    // Animate leaf stems (petioles) to appear with leaves
+    const stems = group.querySelectorAll('path.leaf-stem');
+    stems.forEach((stem) => {
+      gsap.fromTo(stem,
+        { opacity: 0, scale: 0 },
+        { opacity: 0.5, scale: 1, duration: 0.8, delay: 2.8, ease: "back.out(1.2)" }
+      );
     });
   }, [index]);
 
   return (
-    <g ref={groupRef} style={{ opacity: opacity ?? 1, pointerEvents: (opacity ?? 1) < 0.1 ? 'none' : 'auto' }}>
-      {/* 0. HITBOX (Rendered first so it's at the bottom) */}
-      <path
-        d={pathContent}
-        stroke="transparent"
-        strokeWidth="30"
-        fill="none"
-        strokeLinecap="round"
-        className="cursor-pointer"
-        onClick={() => onBranchClick(branch)}
-      />
-
-      {/* 1. LAYER: BRANCH PATHS */}
-      <g className="branch-paths-layer">
-        {/* Single Main branch path for reliability */}
+    <g 
+      ref={groupRef}
+      style={{ opacity: opacity ?? 1, pointerEvents: (opacity ?? 1) < 0.2 ? 'none' : 'auto', transition: 'opacity 0.7s ease' }}
+    >
+      {/* 1. MAIN BRANCH */}
+      <g 
+        className="group/main-branch cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onBranchClick(branch);
+        }}
+        onMouseEnter={() => onHover(branch.goal)}
+        onMouseLeave={() => onHover(null)}
+      >
+        {/* MASSIVE INVISIBLE HITBOX FOR EASY CLICKING */}
+        <path
+          d={pathContent}
+          stroke="transparent"
+          strokeWidth="40"
+          fill="none"
+          strokeLinecap="round"
+          style={{ pointerEvents: 'visibleStroke' }}
+        />
+        
+        {/* VISUAL MAIN BRANCH */}
         <path 
-          className="branch-stroke transition-all duration-700" 
+          className="branch-stroke transition-all duration-300 ease-out group-hover/main-branch:stroke-[12] group-hover/main-branch:opacity-100" 
           d={pathContent} 
           stroke={branchColor} 
-          strokeWidth={isZoomed ? "10" : "6"} 
+          strokeWidth="6" 
           fill="none" 
           strokeLinecap="round" 
         />
-        
-        {/* Sub-branch paths for phases */}
-        {phases.map((phase, pIdx) => {
-          if (zoomedPhaseId && zoomedPhaseId !== phase.id) return null;
-          const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
-          const tPos = 0.3 + (pIdx / phases.length) * 0.55;
-          let pScale = isZoomed ? (1.2 - tPos * 0.5) : 1;
-          if (zoomedPhaseId === phase.id) pScale *= 1.5;
-
-          return (
-            <path 
-              key={`path-${phase.id}`}
-              className="branch-stroke cursor-pointer transition-all duration-700" 
-              d={sub.path} 
-              stroke={branchColor} 
-              strokeWidth={(2.5 * pScale) + (zoomedPhaseId === phase.id ? 2 : 0)} 
-              fill="none" 
-              strokeLinecap="round" 
-              transform={isZoomed ? `scale(${pScale})` : undefined}
-              style={isZoomed ? { transformOrigin: `${sub.start.x}px ${sub.start.y}px` } : undefined}
-              onClick={(e) => {
-                e.stopPropagation();
-                const midX = (sub.start.x + sub.end.x) / 2;
-                const midY = (sub.start.y + sub.end.y) / 2;
-                onPhaseClick(phase.id, midX, midY, sub.rad, sub.start.x, sub.start.y, branch.id, sub.len);
-              }}
-            />
-          );
-        })}
       </g>
 
-      {/* 2. LAYER: LEAVES (Rendered last to stay on top) */}
-      <g className="branch-leaves-layer">
-        {/* Phase Leaves */}
-        {phases.map((phase, pIdx) => {
-          if (zoomedPhaseId && zoomedPhaseId !== phase.id) return null;
-          const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
-          const tPos = 0.3 + (pIdx / phases.length) * 0.55;
-          let pScale = isZoomed ? (1.2 - tPos * 0.5) : 1;
-          if (zoomedPhaseId === phase.id) pScale *= 1.5;
+      {/* 2. PHASES (SUB-BRANCHES) */}
+      {phases.map((phase, pIdx) => {
+        const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
+        // Fade out other phases when one is focused
+        const phaseOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) ? 0.15 : 1;
 
-          return (
-            <g key={`leaves-group-${phase.id}`} transform={isZoomed ? `scale(${pScale})` : undefined} style={isZoomed ? { transformOrigin: `${sub.start.x}px ${sub.start.y}px` } : undefined}>
-              {/* Phase Leaf at the end of sub-branch */}
-              <Leaf
-                leaf={phase}
-                x={sub.end.x}
-                y={sub.end.y}
-                angle={(sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1))}
-                delay={0.1 + index * 0.05 + pIdx * 0.05}
-                isSelected={clickedLeafId === phase.id}
-                onHover={onHover}
-                onClick={onClick}
-              />
+        return (
+          <g 
+            key={`phase-${phase.id}`} 
+            className="group/phase cursor-pointer"
+            style={{ 
+              opacity: phaseOpacity, 
+              pointerEvents: phaseOpacity < 0.2 ? 'none' : 'auto',
+              transition: 'opacity 0.6s ease'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const midX = (sub.start.x + sub.end.x) / 2;
+              const midY = (sub.start.y + sub.end.y) / 2;
+              onPhaseClick(phase.id, midX, midY, sub.rad, sub.start.x, sub.start.y, branch.id, sub.len);
+            }}
+            onMouseEnter={() => onHover(phase.name)}
+            onMouseLeave={() => onHover(null)}
+          >
+            {/* MASSIVE INVISIBLE HITBOX FOR SUB-BRANCH */}
+            <path 
+              d={sub.path} 
+              stroke="transparent" 
+              strokeWidth="40" 
+              fill="none" 
+              strokeLinecap="round" 
+              style={{ pointerEvents: 'visibleStroke' }}
+            />
+            
+            {/* VISUAL SUB-BRANCH */}
+            <path 
+              className="branch-stroke transition-all duration-300 ease-out group-hover/phase:stroke-[6] group-hover/phase:opacity-100" 
+              d={sub.path} 
+              stroke={branchColor} 
+              strokeWidth="3" 
+              fill="none" 
+              strokeLinecap="round" 
+            />
 
-              {/* Phase name label when zoomed into branch */}
-              {isZoomed && !zoomedPhaseId && (
-                <g transform={`translate(${sub.end.x}, ${sub.end.y - 12}) rotate(${-currentRotation})`}>
-                  <text
-                    textAnchor="middle"
-                    className="fill-slate-800 font-black pointer-events-none select-none"
-                    style={{ fontSize: '3px', textTransform: 'uppercase', letterSpacing: '0.05em', filter: 'drop-shadow(0 0 1.5px white)' }}
-                  >
-                    {phase.name}
-                  </text>
-                </g>
-              )}
+            {/* PHASE LEAF (AT THE END) */}
+            <Leaf
+              leaf={phase}
+              x={sub.end.x}
+              y={sub.end.y}
+              angle={(sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1))}
+              delay={2.8 + index * 0.1 + pIdx * 0.1}
+              isSelected={clickedLeafId === phase.id}
+              onHover={onHover}
+              onClick={onClick}
+            />
 
-              {/* Actions belonging to this phase */}
-              {phase.activities?.map((leaf, lIdx) => {
-                // Distribute along the sub-branch from 0.1 to 0.95
-                const t = 0.1 + (lIdx / (phase.activities.length || 1)) * 0.85;
-                const mt = 1 - t;
-                const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
-                const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
-                
-                const side = lIdx % 2 === 0 ? 1 : -1;
-                const offsetDist = 10 * pScale;
-                const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
-                const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
+            {/* ACTIVITIES IN THIS PHASE */}
+            {phase.activities?.map((leaf, lIdx) => {
+              const t = 0.1 + (lIdx / (phase.activities.length || 1)) * 0.85;
+              const mt = 1 - t;
+              const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
+              const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
+              
+              const side = lIdx % 2 === 0 ? 1 : -1;
+              const offsetDist = 12; // Fixed offset
+              const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
+              const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
 
-                const leafPScale = pScale * (1.1 - t * 0.4);
+              return (
+                <React.Fragment key={leaf.id}>
+                  <path 
+                    className="leaf-stem"
+                    d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
+                    stroke={branchColor} 
+                    strokeWidth={0.5} 
+                    fill="none"
+                    opacity="0.6"
+                  />
+                  <Leaf
+                    leaf={leaf}
+                    x={lx}
+                    y={ly}
+                    angle={(sub.rad * 180) / Math.PI + (60 * side)}
+                    delay={3.0 + index * 0.1 + lIdx * 0.1}
+                    isSelected={clickedLeafId === leaf.id}
+                    onHover={onHover}
+                    onClick={onClick}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </g>
+        );
+      })}
 
-                return (
-                  <React.Fragment key={leaf.id}>
-                    {/* Stem connecting leaf to sub-branch (drawn in phase context) */}
-                    {/* Natural curved stem (petiole) */}
-                    <path 
-                      d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
-                      stroke={branchColor} 
-                      strokeWidth={0.4} 
-                      fill="none"
-                      opacity="0.5"
-                    />
-                    <g>
-                      <Leaf
-                        leaf={leaf}
-                        x={lx}
-                        y={ly}
-                        angle={(sub.rad * 180) / Math.PI + (60 * side)}
-                        delay={0.2 + index * 0.05 + lIdx * 0.05}
-                        isSelected={clickedLeafId === leaf.id}
-                        onHover={onHover}
-                        onClick={onClick}
-                      />
-                      {/* Activity name label when zoomed into phase */}
-                      {zoomedPhaseId === phase.id && (
-                        <g transform={`translate(${lx + (side > 0 ? 8 : -8)}, ${ly}) rotate(${-currentRotation})`}>
-                          <text
-                            x={side > 0 ? 17.5 : -17.5}
-                            y={1}
-                            textAnchor="middle"
-                            className="fill-slate-600 font-black pointer-events-none select-none"
-                            style={{ fontSize: '1.8px', textTransform: 'uppercase', letterSpacing: '0.02em', filter: 'drop-shadow(0 0 1px white)' }}
-                          >
-                            {leaf.name.length > 25 ? leaf.name.substring(0, 22) + '...' : leaf.name}
-                          </text>
-                        </g>
-                      )}
-                    </g>
-                  </React.Fragment>
-                );
-              })}
-            </g>
-          );
-        })}
-
-        {/* Orphan actions on main branch */}
-        {!zoomedPhaseId && orphans.map((leaf, oIdx) => {
+      {/* 3. ORPHANS (LEAVES ON MAIN BRANCH) */}
+      <g style={{ opacity: zoomedPhaseId ? 0.15 : 1, pointerEvents: zoomedPhaseId ? 'none' : 'auto', transition: 'opacity 0.6s ease' }}>
+        {orphans.map((leaf, oIdx) => {
           const t = 0.4 + (oIdx / orphans.length) * 0.5;
           const pos = getBezierPoint(t);
-          
           const side = oIdx % 2 === 0 ? 1 : -1;
-          const offsetDist = 14;
+          const offsetDist = 16;
           const radAngle = (angle * Math.PI) / 180;
           const lx = pos.x + Math.cos(radAngle + Math.PI/2) * offsetDist * side;
           const ly = pos.y + Math.sin(radAngle + Math.PI/2) * offsetDist * side;
 
-          const leafPScale = isZoomed ? (1.3 - t * 0.6) : 1;
-
           return (
             <React.Fragment key={leaf.id}>
-              {/* Stem connecting orphan leaf to main branch */}
-              {/* Natural curved stem (petiole) for orphan */}
               <path 
+                className="leaf-stem"
                 d={`M ${pos.x},${pos.y} Q ${(pos.x+lx)/2 + Math.cos(radAngle)*3},${(pos.y+ly)/2 + Math.sin(radAngle)*3} ${lx},${ly}`}
                 stroke={branchColor} 
-                strokeWidth={0.5} 
+                strokeWidth={0.6} 
                 fill="none"
-                opacity="0.5"
+                opacity="0.6"
               />
-              <g transform={isZoomed ? `scale(${leafPScale})` : undefined} style={isZoomed ? { transformOrigin: `${lx}px ${ly}px` } : undefined}>
-                <Leaf
-                  leaf={leaf}
-                  x={lx}
-                  y={ly}
-                  angle={angle + (60 * side)}
-                  delay={0.1 + index * 0.05 + oIdx * 0.05}
-                  isSelected={clickedLeafId === leaf.id}
-                  onHover={onHover}
-                  onClick={onClick}
-                />
-              </g>
+              <Leaf
+                leaf={leaf}
+                x={lx}
+                y={ly}
+                angle={angle + (60 * side)}
+                delay={2.8 + index * 0.1 + oIdx * 0.1}
+                isSelected={clickedLeafId === leaf.id}
+                onHover={onHover}
+                onClick={onClick}
+              />
             </React.Fragment>
           );
         })}

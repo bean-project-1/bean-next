@@ -19,65 +19,34 @@ interface LeafProps {
 export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
-  const labelRef = useRef<SVGGElement>(null);
 
   useGSAP(() => {
-    // Initial appear animation
+    // Initial appear animation (Growth)
     gsap.fromTo(containerRef.current, 
       { scale: 0, opacity: 0 },
       { 
-        scale: isSelected ? 1.15 : 1, 
+        scale: 1, 
         opacity: 1, 
         duration: 0.8, 
         delay, 
         ease: "back.out(1.7)" 
       }
     );
-
-
-  }, [delay]); // Only re-run appear if delay changes (unlikely)
-
-  useGSAP(() => {
-    // Selection scale toggle
-    if (containerRef.current) {
-      gsap.to(containerRef.current, {
-        scale: isSelected ? 1.15 : 1,
-        duration: 0.4,
-        ease: "power2.out"
-      });
-    }
-
-    // Modal label visibility
-    if (labelRef.current) {
-      if (isSelected) {
-        gsap.fromTo(labelRef.current, 
-          { opacity: 0, scale: 0.8, y: -20 },
-          { opacity: 1, scale: 1, y: -40, duration: 0.3, ease: "back.out(1.2)" }
-        );
-      }
-    }
-  }, [isSelected]);
+  }, [delay]); // Only re-run appear if delay changes
 
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
       <g
         ref={containerRef}
         style={{ transformOrigin: "0 0", cursor: 'pointer' }}
-        className="group"
-        onMouseEnter={() => {
-          onHover(leaf.name);
-        }}
-        onMouseLeave={() => {
-          onHover(null);
-        }}
+        className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'}`}
+        onMouseEnter={() => onHover(leaf.name)}
+        onMouseLeave={() => onHover(null)}
         onClick={(e) => {
           e.stopPropagation();
           onClick(leaf.id, leaf.name);
         }}
       >
-        {/* Labels removed as requested */}
-
-
         <defs>
           <linearGradient id={`leafGrad-${leaf.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="white" stopOpacity="0.2" />
@@ -93,7 +62,8 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
           fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
           stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
           strokeWidth={isSelected ? 1 : 0.3}
-          className="transition-all duration-300"
+          className="transition-all duration-300 group-hover:scale-125 group-hover:stroke-white group-hover:stroke-[0.5px]"
+          style={!isSelected ? { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' } : undefined}
         />
         
         {/* Depth Overlay */}
@@ -101,9 +71,10 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
           d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
           fill={`url(#leafGrad-${leaf.id})`}
           pointerEvents="none"
+          className="transition-opacity duration-300 group-hover:opacity-40"
         />
 
-        {/* Central Vein (Nervadura Central) */}
+        {/* Central Vein */}
         <path
           d="M 0,0 C 5,0 12,0 19,0"
           stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
@@ -111,6 +82,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
           fill="none"
           opacity="0.6"
           pointerEvents="none"
+          className="transition-colors duration-300 group-hover:stroke-emerald-700"
         />
 
         {/* Lateral Veins */}

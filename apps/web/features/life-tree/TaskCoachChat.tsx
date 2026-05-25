@@ -83,7 +83,7 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div className="w-full h-[450px] flex flex-col bg-white rounded-2xl border border-slate-100 shadow-inner overflow-hidden my-4">
       {/* Header */}
       <div className="shrink-0 px-5 py-3 border-b border-slate-100 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-lg shadow-sm shrink-0">

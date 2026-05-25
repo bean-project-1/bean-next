@@ -17,14 +17,32 @@ export default function HomePage() {
   
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
 
-  const handleLeafClick = (id: string) => {
-    console.log('handleLeafClick triggered for ID:', id);
+  const handleLeafClick = (id: string | null) => {
+    if (!id) {
+      setSelectedAction(null);
+      return;
+    }
     if (!treeData) return;
     for (const b of treeData.branches) {
       const act = b.leaves.find((a: any) => a.id === id);
       if (act) {
-        console.log('Action found:', act.name);
+        setSelectedBranchId(b.id);
+        if (act.parentId) {
+          setSelectedPhaseId(act.parentId);
+        }
         setSelectedAction(act);
+        break;
+      }
+    }
+  };
+
+  const handlePhaseClick = (phaseId: string | null) => {
+    setSelectedPhaseId(phaseId);
+    if (!phaseId || !treeData) return;
+    for (const b of treeData.branches) {
+      const phase = b.leaves.find((a: any) => a.id === phaseId);
+      if (phase) {
+        setSelectedBranchId(b.id);
         break;
       }
     }
@@ -34,7 +52,7 @@ export default function HomePage() {
     const res = await deleteGoal(id);
     if (res.success) {
       setSelectedBranchId(null);
-      setSelectedObjective(null);
+      setSelectedPhaseId(null);
     } else {
       alert('Error: ' + res.error);
     }
@@ -104,7 +122,7 @@ export default function HomePage() {
             activePhaseId={selectedPhaseId}
             activeLeafId={selectedAction?.id}
             onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
-            onPhaseClick={setSelectedPhaseId}
+            onPhaseClick={handlePhaseClick}
             onDeleteBranch={(b) => handleDeleteGoal(b.id)}
           />
         </main>
@@ -119,6 +137,7 @@ export default function HomePage() {
           <BranchDetailView
             branch={branch}
             zoomedPhaseId={selectedPhaseId}
+            activeLeafId={selectedAction?.id}
             onPhaseSelect={setSelectedPhaseId}
             onClose={() => setSelectedBranchId(null)}
             onDelete={handleDeleteGoal}
@@ -133,16 +152,6 @@ export default function HomePage() {
           />
         );
       })()}
-      
-      {selectedAction && (
-        <LeafDetailView
-          action={selectedAction}
-          onClose={() => setSelectedAction(null)}
-          onDelete={handleDeleteAction}
-          onToggle={handleToggleAction}
-          onToggleTask={handleToggleTask}
-        />
-      )}
     </div>
   );
 }

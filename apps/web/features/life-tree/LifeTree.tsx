@@ -97,9 +97,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   }, [isPlanting]);
 
   const handleBranchClick = (branch: BranchData) => {
+    onEditBranch?.(branch); // Always trigger the UI to open the panel
+    
     if (zoomedBranchId !== branch.id) {
       setZoomedBranchId(branch.id);
-      onEditBranch?.(branch); // Trigger management UI immediately on first click
       
       const startAngle = -160;
       const endAngle = -20;
@@ -120,8 +121,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       
       // Desktop: Shift camera right by 20% (branch moves left). Mobile: Center X.
       const targetX = isMobile ? 400 - zoomSize / 2 : (400 - zoomSize / 2) + (zoomSize * 0.2);
-      // Desktop: Center Y. Mobile: Shift camera down by 25% (branch moves up).
-      const targetY = isMobile ? (350 - zoomSize * 0.85) + (zoomSize * 0.25) : 350 - zoomSize * 0.85;
+      // Desktop: Center Y. Mobile: Shift camera down significantly so branch is at the top of the screen (visible area).
+      const targetY = isMobile ? 350 - zoomSize * 0.25 : 350 - zoomSize * 0.85;
 
       gsap.to(viewBox, {
         x: targetX,
@@ -150,19 +151,22 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePhaseClick = (phaseId: string, x: number, y: number, angle?: number, startX?: number, startY?: number, branchId?: string, len?: number) => {
+    onPhaseClick?.(phaseId); // Always sync with sidebar
+    if (branchId) {
+      const branch = data.branches.find(b => b.id === branchId);
+      if (branch) onEditBranch?.(branch); // Always trigger management UI
+    }
+
     if (zoomedPhaseId === phaseId) {
       setZoomedPhaseId(null);
       const branch = data.branches.find(b => b.id === zoomedBranchId);
       if (branch) handleBranchClick(branch);
     } else {
       setZoomedPhaseId(phaseId);
-      onPhaseClick?.(phaseId); // Sync with sidebar
       
       // If we clicked directly from full tree, we must also set the zoomed branch
       if (branchId && zoomedBranchId !== branchId) {
         setZoomedBranchId(branchId);
-        const branch = data.branches.find(b => b.id === branchId);
-        if (branch) onEditBranch?.(branch); // Trigger management UI
       }
 
       if (angle !== undefined && startX !== undefined && startY !== undefined) {
@@ -185,8 +189,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
         // Desktop: Shift camera right by 20% (phase moves left). Mobile: Center X.
         const targetX = isMobile ? rx - zoomSize / 2 : (rx - zoomSize / 2) + (zoomSize * 0.2);
-        // Desktop: Center Y. Mobile: Shift camera down by 25% (phase moves up).
-        const targetY = isMobile ? ry - zoomSize * 0.9 + (zoomSize * 0.25) : ry - zoomSize * 0.9;
+        // Desktop: Center Y. Mobile: Shift camera down significantly so phase is at the top of the screen (visible area).
+        const targetY = isMobile ? ry - zoomSize * 0.2 : ry - zoomSize * 0.9;
 
         gsap.to(viewBox, {
           x: targetX,

@@ -10,10 +10,11 @@ interface Props {
   onDelete?: (id: string) => Promise<void>;
   onToggleAction?: (id: string, data: { completed?: boolean; targetDate?: string }) => Promise<void>;
   onDeleteAction?: (id: string) => Promise<void>;
-  onLeafClick?: (id: string) => void;
+  onLeafClick?: (id: string | null) => void;
   onUpdateGoal?: (id: string, data: { goal?: string; description?: string }) => Promise<void>;
   onAddAction?: (goalId: string, name: string, data?: { targetDate?: string }) => Promise<any>;
   zoomedPhaseId?: string | null;
+  activeLeafId?: string | null;
   onPhaseSelect?: (phaseId: string | null) => void;
 }
 
@@ -258,7 +259,7 @@ function LeafPanel({
           <div className="flex flex-1 lg:flex-none lg:w-[420px] flex-col border-l border-slate-100">
             <TaskCoachChat
               taskId={chatTaskId}
-              taskTitle={chatTask.title}
+              taskTitle={chatTask.name}
               taskDescription={chatTask.description}
               onCloseMobile={() => setChatTaskId(null)}
             />
@@ -271,7 +272,7 @@ function LeafPanel({
 }
 
 // ── Main View ────────────────────────────────────
-export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction, onPhaseSelect }: Props) {
+export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction, onPhaseSelect }: Props) {
   const palette = getPalette(branch.id);
   const [mounted, setMounted] = useState(false);
   const [selectedLeaf, setSelectedLeaf] = useState<Branch['leaves'][0] | null>(null);
@@ -284,6 +285,14 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
   const [newDate, setNewDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(zoomedPhaseId || null);
+  
+  // Inline Leaf state
+  const [expandedLeafId, setExpandedLeafId] = useState<string | null>(activeLeafId || null);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [chatOpenTaskId, setChatOpenTaskId] = useState<string | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const touchStartY = useRef(0);
+  
   // Local copy of leaves — persists task state across panel open/close
   const [localLeaves, setLocalLeaves] = useState(() => branch.leaves);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -307,6 +316,16 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
     }
   }, [zoomedPhaseId]);
 
+  useEffect(() => {
+    if (activeLeafId) {
+      setExpandedLeafId(activeLeafId);
+      setTimeout(() => {
+        const el = document.getElementById(`leaf-${activeLeafId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150); // slight delay for accordion animation
+    }
+  }, [activeLeafId]);
+
   // Update a single task across localLeaves
   const updateTaskInLeaves = (taskId: string, done: boolean) => {
     setLocalLeaves(prev => prev.map(leaf => ({
@@ -317,32 +336,53 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
 
   // Filter hierarchical components
   const phases = localLeaves.filter(l => l.type === 'phase' || (!l.type && !l.parentId));
-  const habits = localLeaves.filter(l => l.type === 'habit');
-
   const completed = phases.filter(l => l.completed).length;
-  const pct = phases.length > 0 ? Math.round((completed / phases.length) * 100) : 0;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchStartY.current - touchEndY;
+    if (diff > 50) {
+      setIsFullScreen(true); // swiped up
+    } else if (diff < -50) {
+      if (isFullScreen) setIsFullScreen(false); // swiped down
+      else onClose(); // close if already half
+    }
+  };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 w-full h-[65vh] sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full z-50 block sm:flex sm:items-center sm:p-6 pointer-events-none m-0 p-0">
+    <div className={`fixed inset-x-0 bottom-0 w-full z-50 block sm:flex sm:items-center sm:p-6 pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[92vh]' : 'h-[65vh] sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full'}`}>
       <div 
         className="w-full h-full flex-1 sm:flex-none sm:w-[450px] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-500 pointer-events-auto border-t sm:border border-slate-100 m-0"
         onClick={e => e.stopPropagation()}
       >
+        {/* Mobile Drag Handle */}
+        <div 
+          className="w-full flex items-center justify-center pt-4 pb-2 sm:hidden cursor-pointer"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onClick={() => setIsFullScreen(!isFullScreen)}
+        >
+          <div className="w-12 h-1.5 bg-slate-200 hover:bg-slate-300 transition-colors rounded-full" />
+        </div>
+
         {/* ── Header ── */}
-        <div className="shrink-0 px-8 py-6 bg-white border-b border-slate-100 flex items-center justify-between">
+        <div className="shrink-0 px-5 sm:px-8 pb-5 sm:pb-6 pt-2 sm:pt-6 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
                 Gestión de Meta
               </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">
                 {completed}/{phases.length} Fases
               </span>
             </div>
             {isEditingTitle ? (
               <input
                 autoFocus
-                className="w-full text-2xl font-black text-slate-900 bg-slate-50 border-b-2 border-emerald-500 focus:outline-none"
+                className="w-full text-xl sm:text-2xl font-black text-slate-900 bg-slate-50 border-b-2 border-emerald-500 focus:outline-none"
                 value={editGoal}
                 onChange={e => setEditGoal(e.target.value)}
                 onBlur={async () => {
@@ -356,7 +396,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
             ) : (
               <h2 
                 onClick={() => setIsEditingTitle(true)}
-                className="text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
+                className="text-xl sm:text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
               >
                 {editGoal}
               </h2>
@@ -385,20 +425,19 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 bg-slate-50/30 custom-scrollbar">
-          {/* Description Section */}
-          <section className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-slate-50/30 custom-scrollbar">
+          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Proyecto</p>
+              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Proyecto</p>
               {!isEditingDesc && (
-                <button onClick={() => setIsEditingDesc(true)} className="text-[10px] font-bold text-emerald-600 hover:underline">Editar</button>
+                <button onClick={() => setIsEditingDesc(true)} className="text-[9px] sm:text-[10px] font-bold text-emerald-600 hover:underline">Editar</button>
               )}
             </div>
             {isEditingDesc ? (
               <div className="space-y-3">
                 <textarea
                   autoFocus
-                  className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-medium border-0 focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full p-3 sm:p-4 bg-slate-50 rounded-2xl text-xs sm:text-sm font-medium border-0 focus:ring-2 focus:ring-emerald-500/20"
                   rows={3}
                   value={editDesc}
                   onChange={e => setEditDesc(e.target.value)}
@@ -421,13 +460,12 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
             )}
           </section>
 
-          {/* Accordion List of Phases */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Planificación por Fases</p>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Planificación por Fases</p>
               <button 
                 onClick={() => setIsAdding(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
               >
                 + Nueva Fase
               </button>
@@ -437,32 +475,28 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
               {phases.map((phase) => {
                 const isExpanded = expandedPhaseId === phase.id;
                 const children = localLeaves.filter(l => l.parentId === phase.id);
-                const doneCount = children.filter(c => c.completed).length;
                 
                 return (
                   <div 
                     key={phase.id} 
                     id={`phase-${phase.id}`}
-                    className={`rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-emerald-100 shadow-xl' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                    className={`rounded-[24px] sm:rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-emerald-100 shadow-xl' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
                   >
                     <div 
-                      className="p-5 flex items-center gap-4 cursor-pointer"
+                      className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4 cursor-pointer"
                       onClick={() => {
                         const newId = isExpanded ? null : phase.id;
                         setExpandedPhaseId(newId);
                         onPhaseSelect?.(newId);
                       }}
                     >
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                         {phase.completed ? '✓' : '⏳'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className={`font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                        <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                           {phase.name}
                         </h4>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                          {children.length > 0 ? `${doneCount}/${children.length} tareas completadas` : 'Sin tareas asignadas'}
-                        </p>
                       </div>
                       <svg 
                         width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
@@ -473,38 +507,145 @@ export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onU
                     </div>
 
                     {isExpanded && (
-                      <div className="px-5 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="border-t border-slate-50 pt-5 space-y-3">
+                      <div className="px-4 sm:px-5 pb-5 sm:pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="border-t border-slate-50 pt-4 sm:pt-5 space-y-3">
                           {children.length > 0 ? (
-                            children.map(child => (
-                              <div key={child.id} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 hover:border-emerald-100 transition-colors group">
-                                <button 
-                                  onClick={async () => {
-                                    const next = !child.completed;
-                                    setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
-                                    await onToggleAction?.(child.id, { completed: next });
-                                  }}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 group-hover:border-emerald-400'}`}
-                                >
-                                  {child.completed && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                                </button>
-                                <div className="flex-1">
-                                  <p className={`text-sm font-bold ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                                    {child.name}
-                                  </p>
+                            children.map(child => {
+                              const isExpandedLeaf = expandedLeafId === child.id;
+                              
+                              return (
+                                <div key={child.id} id={`leaf-${child.id}`} className="border border-slate-100 rounded-[20px] sm:rounded-3xl overflow-hidden bg-white shadow-sm transition-all duration-300">
+                                  <div 
+                                    className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 cursor-pointer transition-colors ${isExpandedLeaf ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}
+                                    onClick={() => {
+                                      const newId = isExpandedLeaf ? null : child.id;
+                                      setExpandedLeafId(newId);
+                                      onLeafClick?.(newId);
+                                    }}
+                                  >
+                                    <button 
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const next = !child.completed;
+                                        setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
+                                        await onToggleAction?.(child.id, { completed: next });
+                                      }}
+                                      className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 hover:border-emerald-400'}`}
+                                    >
+                                      {child.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-xs sm:text-sm font-bold truncate ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                        {child.name}
+                                      </p>
+                                    </div>
+                                    <button 
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (confirm('¿Eliminar actividad?')) {
+                                          await onDeleteAction?.(child.id);
+                                        }
+                                      }}
+                                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                    </button>
+                                  </div>
+
+                                  {isExpandedLeaf && (
+                                    <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-slate-50">
+                                      {(child as any).description && (
+                                        <div className="mt-3 sm:mt-4 mb-3 sm:mb-4">
+                                          <h4 className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Descripción</h4>
+                                          <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-medium">{(child as any).description}</p>
+                                        </div>
+                                      )}
+
+                                      {(child as any).tasks && (child as any).tasks.length > 0 && (
+                                        <div className="mt-3 sm:mt-4">
+                                          <h4 className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Pasos / Tareas</h4>
+                                          <div className="space-y-2">
+                                            {(child as any).tasks.map((task: any) => (
+                                              <div key={task.id} className="border border-slate-100 rounded-[16px] sm:rounded-2xl overflow-hidden bg-slate-50/50">
+                                                <div 
+                                                  className="flex items-center p-2 sm:p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                                                  onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                                                >
+                                                  <div className="mr-2 sm:mr-3">
+                                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border flex items-center justify-center transition-all ${task.isCompleted ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-300'}`}>
+                                                      {task.isCompleted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                                                    </div>
+                                                  </div>
+                                                  <span className={`text-xs sm:text-sm font-semibold flex-1 ${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                                    {task.title}
+                                                  </span>
+                                                  <div className="text-slate-400">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${expandedTaskId === task.id ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                  </div>
+                                                </div>
+                                                
+                                                {expandedTaskId === task.id && (
+                                                  <div className="px-8 sm:px-11 pb-3 sm:pb-4 pt-1">
+                                                    {task.description && (
+                                                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-relaxed mb-3">
+                                                        {task.description}
+                                                      </p>
+                                                    )}
+                                                    
+                                                    <button
+                                                      onClick={() => setChatOpenTaskId(chatOpenTaskId === task.id ? null : task.id)}
+                                                      className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                                                        chatOpenTaskId === task.id 
+                                                          ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' 
+                                                          : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                                                      }`}
+                                                    >
+                                                      🤖 {chatOpenTaskId === task.id ? 'Cerrar Coach' : 'Consultar tarea con el Coach'}
+                                                    </button>
+                                                    
+                                                    {chatOpenTaskId === task.id && (
+                                                      <TaskCoachChat 
+                                                        taskId={task.id}
+                                                        taskTitle={task.title} 
+                                                        taskDescription={task.description}
+                                                        onCloseMobile={() => setChatOpenTaskId(null)}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Activity-level Coach Chat */}
+                                      <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center">
+                                        <button
+                                          onClick={() => setChatOpenTaskId(chatOpenTaskId === child.id ? null : child.id)}
+                                          className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                                            chatOpenTaskId === child.id 
+                                              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
+                                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                                          }`}
+                                        >
+                                          🤖 {chatOpenTaskId === child.id ? 'Ocultar Coach' : 'Consultar actividad con el Coach'}
+                                        </button>
+                                        
+                                        {chatOpenTaskId === child.id && (
+                                          <TaskCoachChat 
+                                            taskId={child.id}
+                                            taskTitle={child.name} 
+                                            taskDescription={(child as any).description}
+                                            onCloseMobile={() => setChatOpenTaskId(null)}
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <button 
-                                  onClick={async () => {
-                                    if (confirm('¿Eliminar actividad?')) {
-                                      await onDeleteAction?.(child.id);
-                                    }
-                                  }}
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /></svg>
-                                </button>
-                              </div>
-                            ))
+                              );
+                            })
                           ) : (
                             <p className="text-xs text-slate-400 italic text-center py-4">Sin actividades registradas.</p>
                           )}

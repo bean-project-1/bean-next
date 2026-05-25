@@ -9,7 +9,7 @@ const DEFAULT_WEIGHTS = {
 };
 
 export class GoalService {
-  private openai: OpenAI;
+  public openai: OpenAI;
 
   constructor() {
     this.openai = new OpenAI({
@@ -26,8 +26,15 @@ export class GoalService {
       1. "title": A concise, inspiring title for the goal.
       2. "description": A short explanation of the goal.
       3. "relevantDimensions": An array of strings representing which areas of life this goal affects (e.g., "career", "health", "knowledge", "skills", "social_capital"). Choose 2-4.
-      4. "constraints": An object with "timePerWeek" (number, hours the user mentioned they have) if mentioned, otherwise null.
+      4. "constraints": An object with:
+         - "timePerWeek": (number) hours the user mentioned they have.
+         - "budgetTotal": (number) total budget mentioned, if any.
+         - "savingsPerMonth": (number) amount the user is willing to save per month, if any.
+         - "targetDate": (string) specific target date (YYYY-MM) if mentioned.
       5. "entities": Any specific companies, roles, or locations mentioned.
+      6. "estimatedDurationMonths": (number) A highly realistic estimate of how many months this goal typically takes to achieve in the real world (e.g., climbing Everest = 24 to 36 months). If the user provided a targetDate or savingsPerMonth, use those to calculate the exact duration (e.g., Cost / savingsPerMonth).
+      7. "complexityLevel": (string) "low", "medium", "high", or "extreme".
+      8. "domainExpertiseNeeded": (string) A comma-separated list of technical/domain knowledge needed.
     `;
 
     const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
@@ -167,20 +174,27 @@ export class GoalService {
       INSTRUCTION: Avoid adding tasks on days that already have > 4 hours of work. Distribute the new tasks into the "empty" or "light" days.`;
     }
 
-    console.log(`[GoalService] Generating workload-aware plan for: "${title}"`);
+    console.log(`[GoalService] Generating workload-aware plan for: "${title}" (Complexity: ${parsedGoal.complexityLevel})`);
+
+    const financialContext = parsedGoal.constraints?.budgetTotal || parsedGoal.constraints?.savingsPerMonth 
+      ? `- FINANCIAL CONSTRAINTS: Budget: ${parsedGoal.constraints.budgetTotal || 'Unknown'}. Savings Capacity: ${parsedGoal.constraints.savingsPerMonth || 'Unknown'} per month. Target Date: ${parsedGoal.constraints.targetDate || 'Unknown'}. You MUST create explicit "Milestone" or "Task" items in the phases for saving money (e.g., "Ahorro Mes 1: $X", "Abrir cuenta de inversión"). The duration of the plan MUST stretch logically to allow the user to save the required budget based on their monthly capacity.`
+      : `- FINANCIAL CONSTRAINTS: None specified. Assume standard costs, but if it's an expensive goal, add a phase for "Financial Planning & Funding".`;
 
     const prompt = `
-      As a Practical Execution Expert, create a highly detailed and structured action plan.
+      As a World-Class Practical Execution Expert and Domain Specialist, create a highly realistic and structured action plan.
       
       ${workloadContext}
       
-      CRITICAL PLANNING CONSTRAINTS:
+      CRITICAL PLANNING CONSTRAINTS & REALISM:
       - USER AVAILABILITY: The user has ONLY ${timePerWeek} hours per week for this goal.
-      - TASK DISTRIBUTION (FRAGMENTATION): If a commitment is repeated (e.g., "4 classes of 1 hour each", "Gym 3 times a week"), do NOT create a single 4-hour task. You MUST create multiple individual sub-tasks, each with its OWN "startDate" and "targetDate" representing the specific day of that session.
+      ${financialContext}
+      - REALISTIC SCALE: This goal has a complexity level of [${parsedGoal.complexityLevel || 'medium'}] and is estimated to take ${parsedGoal.estimatedDurationMonths || 6} months. DO NOT compress a multi-year goal into a few weeks. Spread the phases realistically over the estimated duration.
+      - DOMAIN EXPERTISE REQUIRED: ${parsedGoal.domainExpertiseNeeded || 'General knowledge'}. You MUST apply deep domain realism. For example, if the goal is climbing Everest, you must include financial planning, acclimatization, technical ice training, and previous expedition tests (e.g. Aconcagua). If it's becoming a Senior Developer, include deep architectural study, system design, and real-world project deployments.
+      - TASK DISTRIBUTION (FRAGMENTATION): Break down complex tasks into sub-tasks (max 4 hours each). HOWEVER, to prevent excessively long responses: DO NOT exceed 5 Phases and DO NOT exceed 25 tasks in total across the entire plan.
+      - LONG-TERM REPETITION: For activities that repeat over months (e.g., "Gym 3 times a week", "Read 30 mins daily"), DO NOT create individual tasks. You MUST create them as "habits" in the "habits" array. Only use "tasks" for unique, non-repeating milestones.
       - INSTITUTIONAL PATHS: Include formal steps (Apply, Enroll) for careers.
-      - TIME SCALES: Immediate tasks granular; long-term commitment as phases.
       - TASK DURATION LIMIT: NO SINGLE TASK SHOULD EVER EXCEED 4 HOURS. 
-      - REASONABLE SPREAD: Distribute tasks across the week. Do not saturate a single day if the user's weekly budget is limited.
+      - REASONABLE SPREAD: Distribute tasks logically across the timeline.
       
       GOAL CONTEXT:
       - Title: "${title}"

@@ -36,72 +36,44 @@ const onboardingSchema = z.object({
   impact: z.number().min(0).max(10).default(5),
   financialSecurity: z.number().min(0).max(10).default(5),
   // review + goals
-  dimensionExtras: z
-    .array(z.object({ key: z.string(), score: z.number().min(0).max(10) }))
-    .default([]),
+  extractedAttributes: z.array(z.any()).optional(),
+  extractedInputs: z.array(z.any()).optional(),
   goals: z
     .array(z.object({ title: z.string().min(1) }))
     .max(3)
     .default([]),
-  
-  extractedAttributes: z.array(z.any()).optional(),
-  extractedInputs: z.array(z.any()).optional(),
 });
 
 // Map onboarding fields → dimension keys + initial score
 function buildDimScores(
   data: z.infer<typeof onboardingSchema>
 ): { key: string; score: number }[] {
-  const results: { key: string; score: number }[] = [];
+  // Aggregate counts of attributes per dimension
+  const counts: Record<string, number> = {};
+  const add = (key: string) => { counts[key] = (counts[key] || 0) + 1; };
 
-  const push = (key: string, score: number) => results.push({ key, score: Math.max(0, Math.min(10, score)) });
+  data.skills?.forEach(() => add('skills'));
+  data.interests?.forEach(() => add('interests'));
+  if (data.profession) add('career');
+  if (data.values?.length) data.values.forEach(() => add('values'));
+  if (data.personality) add('personality');
+  if (data.motivations) add('motivations');
 
-  // ── IDENTIDAD ────────────────────────────────────────
-  if (data.values?.length)    push('values',       Math.min(10, 4 + data.values.length * 1.2));
-  if (data.personality)       push('personality',  7);   // categorical → fixed signal
-  if (data.interests?.length) push('interests',    Math.min(10, 4 + data.interests.length * 1));
-  if (data.purpose !== undefined)    push('purpose',     data.purpose);
-  if (data.motivations)       push('motivations',  7);   // categorical → fixed signal
+  data.extractedAttributes?.forEach(attr => add(attr.dimension));
 
-  // ── CAPITAL ──────────────────────────────────────────
-  if (data.knowledge !== undefined)  push('knowledge',      data.knowledge);
-  if (data.skills?.length)    push('skills',        Math.min(10, 4 + data.skills.length * 0.8));
-  if (data.profession)        push('career',        7);
-  if (data.income) {
-    const incomeMap: Record<string, number> = { none: 1, basic: 3, medium: 6, high: 8, very_high: 10 };
-    push('income', incomeMap[data.income] ?? 5);
-  }
-  if (data.socialCapital !== undefined) push('social_capital', data.socialCapital);
-  if (data.exerciseFrequency) {
-    const map: Record<string, number> = {
-      'Rara vez': 2, '1–2x/semana': 4, '3–4x/semana': 7, '5+x/semana': 9, 'Diario': 10,
-      // Legacy english labels (backwards compat)
-      'Rarely': 2, '1–2x/week': 4, '3–4x/week': 7, '5+x/week': 9, 'Daily': 10,
-    };
-    push('physical_health', map[data.exerciseFrequency] ?? 5);
-  }
-  if (data.resilience !== undefined) push('resilience', data.resilience);
+  const ALL_DIMENSIONS = [
+    'values', 'personality', 'interests', 'purpose', 'motivations',
+    'knowledge', 'skills', 'career', 'income', 'social_capital',
+    'physical_health', 'resilience', 'work_satisfaction', 'relationships',
+    'mental_wellbeing', 'free_time', 'personal_growth', 'impact', 'financial_security'
+  ];
 
-  // ── EXPERIENCIA ───────────────────────────────────────
-  if (data.workSatisfaction !== undefined) push('work_satisfaction', data.workSatisfaction);
-  if (data.relationships !== undefined)    push('relationships',     data.relationships);
-  if (data.lifeSatisfaction !== undefined) push('mental_wellbeing',  data.lifeSatisfaction);
-  if (data.freeTime) {
-    const ftMap: Record<string, number> = { none: 1, little: 3, some: 6, plenty: 9 };
-    push('free_time', ftMap[data.freeTime] ?? 4);
-  }
-  if (data.personalGrowth !== undefined)   push('personal_growth',  data.personalGrowth);
-  if (data.impact !== undefined)           push('impact',           data.impact);
-  if (data.financialSecurity !== undefined) push('financial_security', data.financialSecurity);
-
-  // Merge extras from the Review phase (extras override auto-derived)
-  const extraKeys = new Set((data.dimensionExtras ?? []).map((e: {key: string}) => e.key));
-  const base = results.filter(r => !extraKeys.has(r.key));
-  const extras = (data.dimensionExtras ?? [])
-    .filter((e: {score: number}) => e.score > 0)
-    .map((e: {key: string; score: number}) => ({ key: e.key, score: e.score }));
-
-  return [...base, ...extras];
+  return ALL_DIMENSIONS.map(key => {
+    const c = counts[key] || 0;
+    // Base score is 3, +1 for each attribute, max 10.
+    const score = Math.min(10, 3 + c * 1.5);
+    return { key, score };
+  });
 }
 
 
@@ -113,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: parsed.error.errors[0]?.message ?? 'Validation failed' },
+        { success: false, error: parsed.error.issues[0]?.message ?? 'Validation failed' },
         { status: 400 }
       );
     }
@@ -206,10 +178,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Create initial LifeState snapshot with embedded scores
-    const lifeScore =
-      dimScores.length > 0
-        ? (dimScores.reduce((s, d) => s + d.score, 0) / dimScores.length) * 10
-        : data.lifeSatisfaction * 10;
+    const lifeScore = dimScores.reduce((s, d) => s + d.score, 0) / dimScores.length * 10;
 
     await prisma.lifeState.create({
       data: {
@@ -245,7 +214,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Set session cookie
+    // 5. Create default Sleep commitment
+    if (isNewUser) {
+      const physicalHealthId = dimMap.get('physical_health');
+      await prisma.baseCommitment.create({
+        data: {
+          userId: user.id,
+          title: 'Dormir',
+          type: 'routine',
+          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+          hoursPerDay: 8,
+          commuteHours: 0,
+          dimensionId: physicalHealthId || null
+        }
+      });
+    }
+
+    // 6. Set session cookie
     const res = NextResponse.json(
       { success: true as const, data: { userId: user.id, isNewUser } },
       { status: 201 }

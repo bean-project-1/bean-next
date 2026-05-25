@@ -34,7 +34,7 @@ export function getUserIdFromRequest(req: NextRequest): string | null {
  * Read the userId from Server Component cookies.
  * Returns null if not present.
  */
-export function getUserIdFromCookies(): string | null {
-  const cookieStore = cookies();
+export async function getUserIdFromCookies(): Promise<string | null> {
+  const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE)?.value ?? null;
 }

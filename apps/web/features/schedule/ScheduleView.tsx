@@ -12,6 +12,8 @@ interface ScheduledEvent {
   title: string;
   description?: string;
   startDate?: string;
+  startTime?: string;
+  endTime?: string;
   date: string;
   type: string;
   status: string;
@@ -235,7 +237,7 @@ function AgendaContent({
                 </div>
                 <h3 className="text-xs font-black text-slate-600">{bc.title}</h3>
                 <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">
-                  {bc.estimatedHours}h
+                  {bc.startTime && bc.endTime ? `${bc.startTime} - ${bc.endTime} (${bc.estimatedHours}h)` : `${bc.estimatedHours}h`}
                 </p>
               </div>
             ))}

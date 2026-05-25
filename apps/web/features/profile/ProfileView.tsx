@@ -157,6 +157,15 @@ export function ProfileView() {
           <p className="font-bold text-slate-900 text-base">Repetir onboarding</p>
           <p className="text-sm text-slate-500 font-medium mt-1">Actualizar mi perfil</p>
         </a>
+        <button onClick={async () => {
+          await fetch('/api/auth/logout', { method: 'POST' });
+          window.location.href = '/login';
+        }}
+          className="rounded-3xl border border-red-100 bg-red-50/50 p-6 shadow-sm hover:shadow-lg hover:shadow-red-200/50 hover:border-red-200 transition-all group text-left">
+          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">🚪</span>
+          <p className="font-bold text-red-700 text-base">Cerrar Sesión</p>
+          <p className="text-sm text-red-500/70 font-medium mt-1">Salir de mi cuenta</p>
+        </button>
       </div>
     </div>
   );

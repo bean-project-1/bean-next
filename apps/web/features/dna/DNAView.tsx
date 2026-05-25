@@ -234,7 +234,7 @@ export function DNAView() {
                           <h4 className="text-sm font-black text-gray-800 group-hover:text-violet-600 transition-colors">{c.title}</h4>
                           <div className="mt-4 flex items-center justify-between text-[10px] font-bold border-t border-gray-50 pt-3">
                             <span className="text-gray-400 uppercase tracking-tighter">
-                              ⏱️ {c.hoursPerDay}h / día {c.commuteHours > 0 && <span className="text-emerald-500">(+{c.commuteHours}h traslado)</span>}
+                              ⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`} {c.commuteHours > 0 && <span className="text-emerald-500">(+{c.commuteHours}h traslado)</span>}
                             </span>
                             <span className="text-gray-400 uppercase tracking-tighter">📅 {c.daysOfWeek.length} días</span>
                           </div>
@@ -299,7 +299,7 @@ export function DNAView() {
                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{c.type}</span>
                                   <h4 className="text-sm font-black text-slate-800">{c.title}</h4>
                                   <p className="text-[10px] font-bold text-slate-400 mt-1">
-                                    {c.hoursPerDay}h / día {c.commuteHours > 0 && <span className="text-emerald-500 font-black">(+{c.commuteHours}h)</span>}
+                                    {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`} {c.commuteHours > 0 && <span className="text-emerald-500 font-black">(+{c.commuteHours}h)</span>}
                                   </p>
                                 </div>
                               ))}

@@ -32,16 +32,21 @@ export async function POST(req: NextRequest) {
 
     // 2. Build Goal Intent
     let goalText = finalGoalInput;
+    const rawChat = chatHistory ? chatHistory.map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join('\n') : '';
     
     // If the input is the placeholder from the frontend or too generic, distill from chat
     if (!goalText || goalText.includes('Resumen de lo que quiero') || goalText.length < 10) {
       console.log('[GoalGenerate] Distilling goal from chat history...');
       const distillationPrompt = `
-        Based on the following conversation, what is the user's PRIMARY goal? 
-        Return ONLY a short sentence describing the goal (e.g. "Ser panadero profesional").
+        Based on the following conversation between a user and a life coach, summarize the user's OVERARCHING goal and vision.
+        
+        CRITICAL: Do not just output the final message or the first step discussed. Capture the MACRO goal (e.g. "Conocer las 7 maravillas del mundo moderno") AND any specific details, phases, or first steps they agreed upon.
+        ALSO CRITICAL: If the user mentioned any FINANCIAL BUDGET, SAVINGS CAPACITY (e.g., "$200 per month"), or a SPECIFIC TARGET DATE, you MUST explicitly include them in your summary.
+        
+        Return a comprehensive sentence or short paragraph describing the full intent, including time and money constraints if present.
         
         CONVERSATION:
-        ${chatHistory.map((m: any) => `${m.role}: ${m.content}`).join('\n')}
+        ${rawChat}
       `;
       
       const distillationRes = await goalService.openai.chat.completions.create({
@@ -49,10 +54,12 @@ export async function POST(req: NextRequest) {
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
       });
       
-      goalText = distillationRes.choices[0]?.message?.content || 'Mi nueva meta';
+      goalText = (distillationRes.choices[0]?.message?.content || 'Mi nueva meta') + `\n\n[RAW CONVERSATION CONTEXT FOR EXACT DETAILS/ASSETS]:\n${rawChat}`;
+    } else {
+      goalText = goalText + `\n\n[RAW CONVERSATION CONTEXT FOR EXACT DETAILS/ASSETS]:\n${rawChat}`;
     }
 
-    console.log(`[GoalGenerate] User: ${user.email} | Distilled Intent: "${goalText}"`);
+    console.log(`[GoalGenerate] User: ${user.email} | Distilled Intent: "${goalText.substring(0, 200)}..."`);
 
     // 3. Unified Pipeline
     const parsedGoal = await goalService.parseGoalWithAI(goalText);
@@ -75,6 +82,11 @@ export async function POST(req: NextRequest) {
 
     // 5. Persist
     const result = await prisma.$transaction(async (tx) => {
+      
+      // Inject raw chat history into constraints for future reference
+      const finalConstraints = parsedGoal.constraints || {};
+      finalConstraints.rawChatHistory = chatHistory;
+
       // Create Goal
       const goal = await tx.goal.create({
         data: {
@@ -83,7 +95,7 @@ export async function POST(req: NextRequest) {
           description: parsedGoal.description,
           dimensionId: dimension?.id,
           readinessScore: dnaAnalysis.readinessScore,
-          constraints: parsedGoal.constraints || {},
+          constraints: finalConstraints,
           target: {
             dimensions: dnaAnalysis.targetDimensions,
             gap: dnaAnalysis.gap

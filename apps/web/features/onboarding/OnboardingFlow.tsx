@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { WelcomePhase, MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GoalPhase, GeneratingScreen } from './components';
 import { SKILL_SUGGESTIONS, INTEREST_SUGGESTIONS, PROFESSION_SUGGESTIONS } from './constants';
-import type { Phase, FormData, DimExtra } from './types';
+import type { Phase, FormData } from './types';
 
 const INITIAL_FORM: FormData = {
   name: '', email: '',
@@ -24,7 +24,6 @@ export function OnboardingFlow() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('welcome');
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
-  const [extras, setExtras] = useState<DimExtra[]>([]);
   const [error, setError] = useState('');
 
   // Auto-fetch existing user session and skip Welcome phase
@@ -49,10 +48,11 @@ export function OnboardingFlow() {
     setError('');
     setPhase('generating');
     try {
+      // 1. Create Profile (save all goals EXCEPT the first one as empty goals)
+      const profileGoals = form.goals.length > 1 ? form.goals.slice(1) : [];
       const res = await fetch('/api/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, dimensionExtras: extras }),
+        body: JSON.stringify({ ...form, goals: profileGoals }),
       });
       const json = await res.json();
 
@@ -62,12 +62,31 @@ export function OnboardingFlow() {
         return;
       }
 
-      setTimeout(() => router.push('/dashboard'), 2800);
-    } catch {
+      // 2. Generate the full tree plan for the FIRST goal using the AI Agent
+      if (form.goals.length > 0) {
+        const firstGoalText = form.goals[0].title;
+        const generateRes = await fetch('/api/ai/goal-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            finalGoalInput: firstGoalText,
+            chatHistory: [],
+            userEmail: form.email // So the backend finds the newly created user
+          })
+        });
+        
+        if (!generateRes.ok) {
+          console.warn("Failed to generate goal tree during onboarding, but profile was created.");
+        }
+      }
+
+      setTimeout(() => router.push('/home'), 500);
+    } catch (e: any) {
+      console.error(e);
       setPhase('review');
       setError('Error de red. Revisa tu conexión.');
     }
-  }, [form, extras, router]);
+  }, [form, router]);
 
   const [isExtracting, setIsExtracting] = useState(false);
 
@@ -161,8 +180,7 @@ export function OnboardingFlow() {
 
         {phase === 'review' && (
           <ReviewPhase
-            form={form} extras={extras}
-            onExtrasChange={setExtras}
+            form={form}
             onFormChange={(f) => setForm(prev => ({ ...prev, ...f }))}
             onSubmit={() => setPhase('goals')}
           />
@@ -174,6 +192,7 @@ export function OnboardingFlow() {
             onChange={(goals) => setForm(f => ({ ...f, goals }))}
             onBack={() => setPhase('review')}
             onSubmit={submit}
+            attributes={form.extractedAttributes}
           />
         )}
       </div>

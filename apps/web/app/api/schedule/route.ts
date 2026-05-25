@@ -50,6 +50,8 @@ export async function GET(req: NextRequest) {
             title: bc.title,
             description: `Compromiso recurrente (${bc.type})`,
             date: d.toISOString(),
+            startTime: bc.startTime,
+            endTime: bc.endTime,
             type: bc.type,
             estimatedHours: bc.hoursPerDay + ((bc as any).commuteHours || 0),
             status: 'commitment',

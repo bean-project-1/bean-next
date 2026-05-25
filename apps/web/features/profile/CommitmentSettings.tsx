@@ -22,9 +22,22 @@ export function CommitmentSettings() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('work');
   const [hours, setHours] = useState(8);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
   const [commuteHours, setCommuteHours] = useState(0);
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [selectedDim, setSelectedDim] = useState('');
+
+  // Auto-calculate hours when start or end time changes
+  useEffect(() => {
+    if (startTime && endTime) {
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      let diff = endH - startH + (endM - startM) / 60;
+      if (diff < 0) diff += 24; // Cross-midnight
+      setHours(Math.round(diff * 10) / 10);
+    }
+  }, [startTime, endTime]);
 
   const days = [
     { label: 'D', value: 0 },
@@ -65,6 +78,8 @@ export function CommitmentSettings() {
           title,
           type,
           hoursPerDay: hours,
+          startTime,
+          endTime,
           commuteHours: commuteHours,
           daysOfWeek: selectedDays,
           dimensionId: selectedDim || null
@@ -147,11 +162,31 @@ export function CommitmentSettings() {
             </div>
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Hora Inicio</label>
+                  <input 
+                    type="time" 
+                    value={startTime}
+                    onChange={e => setStartTime(e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Hora Fin</label>
+                  <input 
+                    type="time" 
+                    value={endTime}
+                    onChange={e => setEndTime(e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Horas por día</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Horas por día (calculado o manual)</label>
                 <div className="flex items-center gap-4">
                   <input 
-                    type="range" min="1" max="12" step="0.5"
+                    type="range" min="1" max="24" step="0.5"
                     value={hours}
                     onChange={e => setHours(parseFloat(e.target.value))}
                     className="flex-1 accent-slate-900"
@@ -223,7 +258,7 @@ export function CommitmentSettings() {
               </div>
               <h3 className="text-lg font-black text-slate-800">{bc.title}</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                {bc.hoursPerDay}h por día {(bc as any).commuteHours > 0 && `(+ ${(bc as any).commuteHours}h traslado)`} • {bc.dimension?.label || 'General'}
+                {(bc as any).startTime && (bc as any).endTime ? `${(bc as any).startTime} - ${(bc as any).endTime} (${bc.hoursPerDay}h)` : `${bc.hoursPerDay}h por día`} {(bc as any).commuteHours > 0 && `(+ ${(bc as any).commuteHours}h traslado)`} • {bc.dimension?.label || 'General'}
               </p>
               
               <div className="mt-6 flex gap-1">

@@ -81,7 +81,18 @@ export function LifeTreeCoach({ onPlanGenerated, onPlantingStateChange }: LifeTr
               <span className="text-xl">🌳</span>
               <span className="text-xs font-black text-slate-800 uppercase tracking-tighter">Planificador de Vida</span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-slate-300 hover:text-slate-500 transition-colors text-sm">✕</button>
+            <div className="flex items-center gap-3">
+              {messages.length > 0 && (
+                <button 
+                  onClick={() => setMessages([])} 
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                  title="Reiniciar conversación"
+                >
+                  ↻
+                </button>
+              )}
+              <button onClick={() => setIsOpen(false)} className="text-slate-300 hover:text-slate-500 transition-colors text-sm">✕</button>
+            </div>
           </div>
 
           {/* Chat */}
@@ -113,7 +124,7 @@ export function LifeTreeCoach({ onPlanGenerated, onPlantingStateChange }: LifeTr
 
           {/* Actions */}
           <div className="p-3 bg-white border-t border-slate-100 space-y-2">
-            {messages.length > 1 && (
+            {messages.some(m => m.role === 'assistant' && m.content.includes('Plantar Meta')) && (
               <button 
                 onClick={generate}
                 disabled={isGenerating}

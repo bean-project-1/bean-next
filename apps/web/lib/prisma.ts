@@ -7,16 +7,14 @@ const prismaClientSingleton = () => {
   });
 };
 
-declare global {
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma: ReturnType<typeof prismaClientSingleton> | undefined;
+};
 
-export const prisma = (process.env.NODE_ENV === 'development') 
-  ? prismaClientSingleton() 
-  : (globalThis.prisma ?? prismaClientSingleton());
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== 'production') {
-  globalThis.prisma = prisma;
+  globalForPrisma.prisma = prisma;
 }
 
 // Debug check for model availability in development

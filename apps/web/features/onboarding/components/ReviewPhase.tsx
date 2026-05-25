@@ -4,29 +4,16 @@
 // =======================================================
 'use client';
 
+import { useState } from 'react';
 import { DNADiagram } from './DNADiagram';
 import { ALL_DIMENSIONS, CAT_COLORS } from '../constants';
-import type { FormData, DimExtra } from '../types';
+import type { FormData } from '../types';
 
 interface Props {
   form: FormData;
-  extras: DimExtra[];
-  onExtrasChange: (ex: DimExtra[]) => void;
   onFormChange?: (f: Partial<FormData>) => void;
   onSubmit: () => void;
 }
-
-// Dimensions pre-filled from the quiz form
-const FORM_DERIVED: Record<string, (f: FormData) => number> = {
-  career:          f => f.profession ? 7 : 0,
-  skills:          f => Math.min(10, f.skills.length ? 5 + f.skills.length * 0.5 : 0),
-  interests:       f => Math.min(10, f.interests.length ? 5 + f.interests.length * 0.5 : 0),
-  physical_health: f => {
-    const map: Record<string, number> = { Rarely: 2, '1–2x/week': 5, '3–4x/week': 7, '5+x/week': 9, Daily: 10 };
-    return f.exerciseFrequency ? (map[f.exerciseFrequency] ?? 0) : 0;
-  },
-  mental_wellbeing: f => f.lifeSatisfaction ?? 0,
-};
 
 const CATEGORIES = [
   { cat: 'identity',   label: 'Identity' },
@@ -34,23 +21,56 @@ const CATEGORIES = [
   { cat: 'experience', label: 'Life Experience' },
 ] as const;
 
-export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubmit }: Props) {
-  // Build score map
-  const scores: Record<string, number> = {};
-  Object.entries(FORM_DERIVED).forEach(([key, fn]) => {
-    const v = fn(form);
-    if (v > 0) scores[key] = v;
-  });
-  extras.forEach(e => { scores[e.key] = e.score; });
-
-  const setScore = (key: string, score: number) => {
-    const dim = ALL_DIMENSIONS.find(d => d.key === key);
-    const rest = extras.filter(e => e.key !== key);
-    onExtrasChange([...rest, { key, score, label: dim?.label ?? key }]);
+export function ReviewPhase({ form, onFormChange, onSubmit }: Props) {
+  const [addingDim, setAddingDim] = useState<string | null>(null);
+  const [newTrait, setNewTrait] = useState('');
+  
+  // Aggregate all attributes by dimension
+  const attributesByDim: Record<string, {name: string, source: string, id: string}[]> = {};
+  const addAttr = (dim: string, name: string, source: string, id: string) => {
+    if (!attributesByDim[dim]) attributesByDim[dim] = [];
+    if (!attributesByDim[dim].some(a => a.name === name)) {
+      attributesByDim[dim].push({ name, source, id });
+    }
   };
 
-  const filled = ALL_DIMENSIONS.filter(d => (scores[d.key] ?? 0) > 0).length;
+  form.skills?.forEach((s, i) => addAttr('skills', s, 'quiz', `skill-${i}`));
+  form.interests?.forEach((s, i) => addAttr('interests', s, 'quiz', `interest-${i}`));
+  if (form.profession) addAttr('career', form.profession, 'quiz', 'prof');
+  
+  form.extractedAttributes?.forEach((a: any, i: number) => addAttr(
+    a.dimension, 
+    a.name, 
+    a.category === 'user_added' ? 'user_added' : 'ai', 
+    `ea-${i}`
+  ));
+  
+  // Create an attributesCount mapping for the DNA Diagram
+  const attributesCount: Record<string, number> = {};
+  ALL_DIMENSIONS.forEach(d => {
+    attributesCount[d.key] = attributesByDim[d.key]?.length || 0;
+  });
+
+  const filled = Object.values(attributesCount).filter(v => v > 0).length;
   const pct = Math.round((filled / ALL_DIMENSIONS.length) * 100);
+
+  const removeAttr = (dim: string, name: string, source: string) => {
+    if (source === 'quiz') {
+      if (dim === 'skills') onFormChange?.({ skills: form.skills.filter(s => s !== name) });
+      if (dim === 'interests') onFormChange?.({ interests: form.interests.filter(s => s !== name) });
+      if (dim === 'career') onFormChange?.({ profession: '' });
+    } else if (source === 'ai' || source === 'user_added') {
+      onFormChange?.({ extractedAttributes: form.extractedAttributes?.filter((a: any) => !(a.dimension === dim && a.name === name)) });
+    }
+  };
+
+  const submitNewTrait = (dim: string) => {
+    if (!newTrait.trim()) return;
+    const trait = { dimension: dim, name: newTrait.trim(), category: 'user_added', metadata: {} };
+    onFormChange?.({ extractedAttributes: [...(form.extractedAttributes || []), trait] });
+    setNewTrait('');
+    setAddingDim(null);
+  };
 
   return (
     <div className="w-full max-w-5xl">
@@ -58,7 +78,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-slate-900">Tu ADN de vida</h1>
         <p className="mt-2 text-slate-500">
-          Así es como BEAN te ve. Completa las dimensiones que faltan para un perfil más preciso.
+          Así es como BEAN te ve basado en tus respuestas. Revisa tus características.
         </p>
       </div>
 
@@ -66,7 +86,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
       <div className="mb-8 rounded-xl border border-slate-200 bg-white/[0.03] px-6 py-4 flex items-center gap-5">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-slate-900">Completitud del perfil</span>
+            <span className="text-sm font-medium text-slate-900">Dimensiones descubiertas</span>
             <span className="text-sm font-bold text-violet-400">{pct}%</span>
           </div>
           <div className="h-2 rounded-full bg-white overflow-hidden">
@@ -83,53 +103,6 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
           <p className="text-xs text-slate-500">Dimensiones</p>
         </div>
       </div>
-      {/* ── AI Extracted Insights ── */}
-      {(form.extractedAttributes?.length || form.extractedInputs?.length) && (
-        <div className="mb-8 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">✨</span>
-            <h2 className="text-sm font-bold text-violet-400 uppercase tracking-widest">
-              Lo que la IA detectó en tu perfil
-            </h2>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {form.extractedAttributes?.map((attr: any, i: number) => (
-              <div key={`attr-${i}`} className="group relative flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 border border-slate-100 shadow-sm pr-8">
-                <span className="text-[10px] uppercase font-bold text-slate-400">{attr.dimension}</span>
-                <span className="text-xs font-semibold text-slate-800">{attr.name}</span>
-                <button 
-                  onClick={() => {
-                    const next = form.extractedAttributes?.filter((_, index) => index !== i);
-                    onFormChange?.({ extractedAttributes: next });
-                  }}
-                  className="absolute right-1 p-1 hover:text-red-500 text-slate-300 transition-colors"
-                >
-                  <span className="text-xs">✕</span>
-                </button>
-              </div>
-            ))}
-            {form.extractedInputs?.map((input: any, i: number) => (
-              <div key={`input-${i}`} className="relative flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1.5 border border-violet-200 shadow-sm pr-8">
-                <span className="text-[10px] uppercase font-bold text-violet-500">{input.inputType}</span>
-                <span className="text-xs font-semibold text-violet-700">{input.dimension}</span>
-                <button 
-                  onClick={() => {
-                    const next = form.extractedInputs?.filter((_, index) => index !== i);
-                    onFormChange?.({ extractedInputs: next });
-                  }}
-                  className="absolute right-1 p-1 hover:text-red-500 text-violet-400 transition-colors"
-                >
-                  <span className="text-xs">✕</span>
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-[10px] text-slate-400 italic">
-            * Estos datos se guardarán como rasgos y eventos en tu línea de vida. Puedes eliminar los que no sean correctos.
-          </p>
-        </div>
-      )}
 
       {/* ── Main layout: DNA + List ── */}
       <div className="flex flex-col lg:flex-row gap-8">
@@ -139,7 +112,7 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
           <div className="sticky top-8">
             <div className="relative rounded-2xl border border-slate-200 bg-white/[0.03] p-6 backdrop-blur-md shadow-2xl overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-violet-600/5 via-blue-600/5 to-emerald-600/5" />
-              <DNADiagram scores={scores} />
+              <DNADiagram attributesCount={attributesCount} />
 
               {/* Legend */}
               <div className="mt-4 space-y-1.5">
@@ -154,16 +127,15 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
                 })}
               </div>
             </div>
-
-            {/* Category averages */}
+            
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
               {CATEGORIES.map(({ cat, label }) => {
                 const dims = ALL_DIMENSIONS.filter(d => d.cat === cat);
-                const avg = dims.reduce((s, d) => s + (scores[d.key] ?? 0), 0) / dims.length;
+                const catFilled = dims.filter(d => attributesCount[d.key] > 0).length;
                 const c = CAT_COLORS[cat];
                 return (
                   <div key={cat} className="rounded-xl border border-slate-200 bg-white/[0.03] p-3">
-                    <p className={`text-lg font-bold ${c.text}`}>{avg.toFixed(1)}</p>
+                    <p className={`text-lg font-bold ${c.text}`}>{catFilled}/{dims.length}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
                   </div>
                 );
@@ -186,59 +158,75 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
                   <h2 className={`text-xs font-bold uppercase tracking-widest ${c.text}`}>{label}</h2>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {dims.map(dim => {
-                    const score = scores[dim.key] ?? 0;
-                    const hasData = score > 0;
-                    const isFromForm = dim.key in FORM_DERIVED && hasData && !extras.find(e => e.key === dim.key);
-                    const extra = extras.find(e => e.key === dim.key);
+                    const count = attributesCount[dim.key] ?? 0;
+                    const hasData = count > 0;
+                    const attrs = attributesByDim[dim.key] || [];
 
                     return (
                       <div key={dim.key} className={`rounded-xl border p-4 transition-all ${
-                        hasData ? `${c.border} bg-white` : 'border-slate-200 bg-white/[0.02]'
+                        hasData ? `${c.border} bg-white shadow-sm` : 'border-slate-200 bg-slate-50/50 opacity-60'
                       }`}>
                         {/* Row header */}
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-base">{dim.emoji}</span>
-                            <span className={`text-sm font-medium ${hasData ? 'text-slate-900' : 'text-slate-500'}`}>
+                            <span className={`text-sm font-bold ${hasData ? 'text-slate-900' : 'text-slate-500'}`}>
                               {dim.label}
                             </span>
-                            {isFromForm && (
-                              <span className="text-[10px] rounded-full bg-white px-2 py-0.5 text-slate-500">
-                                del quiz
-                              </span>
-                            )}
                           </div>
-                          <span className={`text-sm font-bold ${hasData ? c.text : 'text-slate-400'}`}>
-                            {hasData ? `${score.toFixed(1)}/10` : '—'}
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${hasData ? c.text : 'text-slate-400'}`}>
+                            {hasData ? `${count} atributos` : 'Sin datos'}
                           </span>
                         </div>
 
-                        {/* Progress / Slider */}
-                        {isFromForm ? (
-                          /* From quiz — show read-only bar */
-                          <div className="h-1.5 rounded-full bg-white overflow-hidden">
-                            <div className={`h-full rounded-full ${c.bg} transition-all duration-500`}
-                              style={{ width: `${(score / 10) * 100}%`, opacity: 0.6 }} />
-                          </div>
-                        ) : hasData ? (
-                          /* Extra — editable slider */
-                          <input type="range" min={1} max={10} step={0.5}
-                            value={extra?.score ?? score}
-                            onChange={e => setScore(dim.key, parseFloat(e.target.value))}
-                            className="w-full h-1.5 accent-violet-500 cursor-pointer" />
-                        ) : (
-                          /* Empty — optional fill-in */
-                          <div>
-                            <p className="text-xs text-slate-400 mb-2">
-                              ¿Cómo calificarías esta dimensión? <span className="text-slate-400">(opcional)</span>
-                            </p>
-                            <input type="range" min={1} max={10} step={0.5}
-                              defaultValue={5}
-                              onChange={e => setScore(dim.key, parseFloat(e.target.value))}
-                              className="w-full h-1.5 accent-violet-500 cursor-pointer opacity-40 hover:opacity-100 transition-opacity" />
-                          </div>
+                        {/* Chips */}
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {attrs.map((attr, idx) => (
+                            <div key={`${attr.id}-${idx}`} className="group relative flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-1.5 border border-slate-100 pr-8 transition-colors hover:border-red-200">
+                              {attr.source === 'ai' && <span className="text-[10px] uppercase font-bold text-violet-400">✨ IA</span>}
+                              {attr.source === 'user_added' && <span className="text-[10px] uppercase font-bold text-emerald-500">TÚ</span>}
+                              <span className="text-xs font-semibold text-slate-700">{attr.name}</span>
+                              <button 
+                                onClick={() => removeAttr(dim.key, attr.name, attr.source)}
+                                className="absolute right-1 p-1 hover:text-red-500 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Eliminar atributo"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {/* Add manual trait button/input */}
+                          {addingDim === dim.key ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={newTrait}
+                                onChange={e => setNewTrait(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && submitNewTrait(dim.key)}
+                                placeholder="Escribe aquí..."
+                                className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 w-32"
+                              />
+                              <button onClick={() => submitNewTrait(dim.key)} className="text-xs font-bold text-violet-600 hover:text-violet-800">OK</button>
+                              <button onClick={() => { setAddingDim(null); setNewTrait(''); }} className="text-xs text-slate-400 hover:text-slate-600">✕</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setAddingDim(dim.key)}
+                              className="flex items-center gap-1 rounded-lg border border-dashed border-slate-300 bg-transparent px-3 py-1.5 text-xs font-medium text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-colors"
+                            >
+                              + Añadir
+                            </button>
+                          )}
+                        </div>
+
+                        {!hasData && (
+                          <p className="text-[10px] text-slate-400 font-medium italic">
+                            La IA no encontró datos aquí. ¡Añade los tuyos!
+                          </p>
                         )}
                       </div>
                     );
@@ -252,12 +240,12 @@ export function ReviewPhase({ form, extras, onExtrasChange, onFormChange, onSubm
           <div className="sticky bottom-6 pt-2">
             <button
               onClick={onSubmit}
-              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-sm font-bold text-slate-900 shadow-2xl shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/50"
+              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-4 text-sm font-bold text-white shadow-2xl shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-violet-500/50"
             >
               Generar mi perfil BEAN ✨
             </button>
             <p className="mt-2 text-center text-xs text-slate-400">
-              Puedes completar más dimensiones en cualquier momento desde tu perfil.
+              Podrás agregar o modificar tus características más adelante.
             </p>
           </div>
         </div>

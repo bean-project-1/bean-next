@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 
-const DIMS = ['Identity', 'Capital', 'Wellbeing', 'Insights', 'Trajectory'];
+const DIMS = ['Identity', 'Capital', 'Wellbeing', 'Insights', 'Trajectory', 'Goal Tree'];
 
 export function GeneratingScreen({ name }: { name: string }) {
   const [active, setActive] = useState(0);
@@ -30,7 +30,7 @@ export function GeneratingScreen({ name }: { name: string }) {
         Construyendo tu perfil BEAN{name ? `, ${name.split(' ')[0]}` : ''}…
       </h2>
       <p className="mb-10 text-sm text-slate-500">
-        Nuestro motor analiza tus 19 dimensiones de vida
+        Analizando tu perfil y creando tu plan maestro de metas
       </p>
 
       {/* Dimension progress */}

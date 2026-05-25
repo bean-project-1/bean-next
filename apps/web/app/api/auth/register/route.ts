@@ -1,35 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { setUserCookie } from '@/lib/session';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
 
-export async function POST(req: NextRequest) {
+const registerSchema = z.object({
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  email: z.string().email("Correo inválido"),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
+
+export async function POST(req: Request) {
   try {
-    const { name, email } = await req.json();
-
-    if (!email || !name) {
-      return NextResponse.json({ success: false, error: 'Name and Email are required' }, { status: 400 });
-    }
+    const body = await req.json();
+    const { name, email, password } = registerSchema.parse(body);
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      return NextResponse.json({ success: false, error: 'User with this email already exists' }, { status: 409 });
+      return NextResponse.json(
+        { message: "El correo ya está en uso" },
+        { status: 400 }
+      );
     }
+
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
+        passwordHash,
       },
     });
 
-    const res = NextResponse.json({ success: true, userId: user.id });
-    setUserCookie(res, user.id);
-    return res;
-  } catch (err) {
-    console.error('[POST /api/auth/register]', err);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { message: "Usuario creado exitosamente", user: { id: user.id, email: user.email, name: user.name } },
+      { status: 201 }
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: error.errors[0].message }, { status: 400 });
+    }
+    console.error("Register Error:", error);
+    return NextResponse.json(
+      { message: "Ocurrió un error al registrar el usuario" },
+      { status: 500 }
+    );
   }
 }

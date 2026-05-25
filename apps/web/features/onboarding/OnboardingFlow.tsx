@@ -80,7 +80,9 @@ export function OnboardingFlow() {
         }
       }
 
-      setTimeout(() => router.push('/home'), 500);
+      setTimeout(() => {
+        window.location.href = '/home';
+      }, 500);
     } catch (e: any) {
       console.error(e);
       setPhase('review');

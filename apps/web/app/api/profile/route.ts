@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
     let isNewUser = false;
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     const user = existing
-      ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name } })
-      : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name } }); })();
+      ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name, onboardingCompleted: true } })
+      : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name, onboardingCompleted: true } }); })();
 
     // 2. Persist dimension scores and attributes
     const dimScores = buildDimScores(data);

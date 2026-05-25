@@ -33,6 +33,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const svgRef = useRef<SVGSVGElement>(null);
   const trunkRef = useRef<SVGGElement>(null);
   const seedRef = useRef<SVGGElement>(null);
+  const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
   const [viewBox, setViewBox] = useState({ x: 0, y: -220, w: 800, h: 800 });
@@ -50,10 +51,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   useGSAP(() => {
     const tl = gsap.timeline();
     // 1. Initial UI fade-ins
-    tl.fromTo(scoreRef.current, 
-      { y: -20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
-    );
+    if (scoreRef.current) {
+      tl.fromTo(scoreRef.current, 
+        { y: -20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
+      );
+    }
 
     // 3. Trunk growth from root upward
     if (trunkRef.current) {
@@ -75,7 +78,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
 
       // 5. Fade in the seed label ("Tu BEAN!")
-      tl.to("#seed-label-group", { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
+      if (seedLabelRef.current) {
+        tl.to(seedLabelRef.current, { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
+      }
     }
   }, { scope: containerRef });
 
@@ -439,7 +444,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* 6. Interaction Hint / Label - Tu BEAN! */}
           {!zoomedBranchId && (
-            <g className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
+            <g ref={seedLabelRef} className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
               <text x="485" y="432" className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
                 style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))', textShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
                 Tu BEAN!

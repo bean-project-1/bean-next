@@ -12,14 +12,20 @@ datasource db {
 // ───────────────── USERS ─────────────────
 //
 model User {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  email     String  @unique
-  name      String?
-  avatarUrl String? @map("avatar_url")
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  passwordHash  String?   @map("password_hash")
+  image         String?
+  avatarUrl          String?   @map("avatar_url")
+  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  accounts        Account[]
+  sessions        Session[]
   attributes      UserAttribute[]
   dimensionInputs DimensionInput[]
   lifeStates      LifeState[]
@@ -30,6 +36,57 @@ model User {
   baseCommitments BaseCommitment[]
 
   @@map("users")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @map("user_id") @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id") @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+  @@map("password_reset_tokens")
 }
 
 model BaseCommitment {

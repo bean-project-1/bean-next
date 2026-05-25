@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Branch as BranchType } from './types';
@@ -18,15 +18,17 @@ interface BranchProps {
   onEdit?: (branch: BranchType) => void;
   onDelete?: (branch: BranchType) => void;
   isZoomed?: boolean;
-  opacity?: number;
   zoomedPhaseId?: string | null;
+  activeLeafId?: string | null;
+  activePhaseId?: string | null;
   currentRotation?: number;
+  opacity?: number;
 }
 
 export const Branch = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
   onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
-  currentRotation = 0
+  activeLeafId, activePhaseId, currentRotation = 0
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
 
@@ -105,6 +107,20 @@ export const Branch = ({
       len: subLen
     };
   };
+
+  // Auto-focus camera on phase if requested by UI
+  useEffect(() => {
+    if (activePhaseId && activePhaseId !== zoomedPhaseId) {
+      const phaseIdx = phases.findIndex(p => p.id === activePhaseId);
+      if (phaseIdx !== -1) {
+        const phase = phases[phaseIdx];
+        const sub = getSubBranchData(phaseIdx, phases.length, phase.activities?.length || 0);
+        const midX = (sub.start.x + sub.end.x) / 2;
+        const midY = (sub.start.y + sub.end.y) / 2;
+        onPhaseClick(phase.id, midX, midY, sub.rad, sub.start.x, sub.start.y, branch.id, sub.len);
+      }
+    }
+  }, [activePhaseId, zoomedPhaseId, phases]);
 
   const branchColor = '#7c4a1e';
 
@@ -227,6 +243,7 @@ export const Branch = ({
               angle={(sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1))}
               delay={2.8 + index * 0.1 + pIdx * 0.1}
               isSelected={clickedLeafId === phase.id}
+              isActive={activeLeafId === phase.id}
               onHover={onHover}
               onClick={onClick}
             />
@@ -260,6 +277,7 @@ export const Branch = ({
                     angle={(sub.rad * 180) / Math.PI + (60 * side)}
                     delay={3.0 + index * 0.1 + lIdx * 0.1}
                     isSelected={clickedLeafId === leaf.id}
+                    isActive={activeLeafId === leaf.id}
                     onHover={onHover}
                     onClick={onClick}
                   />
@@ -298,6 +316,7 @@ export const Branch = ({
                 angle={angle + (60 * side)}
                 delay={2.8 + index * 0.1 + oIdx * 0.1}
                 isSelected={clickedLeafId === leaf.id}
+                isActive={activeLeafId === leaf.id}
                 onHover={onHover}
                 onClick={onClick}
               />

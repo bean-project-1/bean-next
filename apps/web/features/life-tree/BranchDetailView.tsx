@@ -13,6 +13,8 @@ interface Props {
   onLeafClick?: (id: string) => void;
   onUpdateGoal?: (id: string, data: { goal?: string; description?: string }) => Promise<void>;
   onAddAction?: (goalId: string, name: string, data?: { targetDate?: string }) => Promise<any>;
+  zoomedPhaseId?: string | null;
+  onPhaseSelect?: (phaseId: string | null) => void;
 }
 
 const PALETTES: Record<string, { primary: string; light: string; mid: string; road: string }> = {
@@ -269,7 +271,7 @@ function LeafPanel({
 }
 
 // ── Main View ────────────────────────────────────
-export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction }: Props) {
+export function BranchDetailView({ branch, zoomedPhaseId, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction, onPhaseSelect }: Props) {
   const palette = getPalette(branch.id);
   const [mounted, setMounted] = useState(false);
   const [selectedLeaf, setSelectedLeaf] = useState<Branch['leaves'][0] | null>(null);
@@ -281,7 +283,7 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
   const [newName, setNewName] = useState('');
   const [newDate, setNewDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(null);
+  const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(zoomedPhaseId || null);
   // Local copy of leaves — persists task state across panel open/close
   const [localLeaves, setLocalLeaves] = useState(() => branch.leaves);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -290,6 +292,20 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
 
   // Sync localLeaves if branch prop changes (e.g. full data reload from parent)
   useEffect(() => { setLocalLeaves(branch.leaves); }, [branch.leaves]);
+
+  // Sync expanded phase with external zoom clicks
+  useEffect(() => {
+    if (zoomedPhaseId) {
+      setExpandedPhaseId(zoomedPhaseId);
+      // Wait for the accordion to animate open, then scroll smoothly
+      setTimeout(() => {
+        const el = document.getElementById(`phase-${zoomedPhaseId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
+  }, [zoomedPhaseId]);
 
   // Update a single task across localLeaves
   const updateTaskInLeaves = (taskId: string, done: boolean) => {
@@ -307,9 +323,9 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
   const pct = phases.length > 0 ? Math.round((completed / phases.length) * 100) : 0;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex items-center p-4 sm:py-6 sm:pr-6 pointer-events-none">
+    <div className="fixed inset-x-0 bottom-0 w-full h-[65vh] sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full z-50 block sm:flex sm:items-center sm:p-6 pointer-events-none m-0 p-0">
       <div 
-        className="w-full sm:w-[450px] h-full bg-white rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 duration-500 pointer-events-auto border border-slate-100"
+        className="w-full h-full flex-1 sm:flex-none sm:w-[450px] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-right-8 duration-500 pointer-events-auto border-t sm:border border-slate-100 m-0"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -426,11 +442,16 @@ export function BranchDetailView({ branch, onClose, onDelete, onUpdateGoal, onTo
                 return (
                   <div 
                     key={phase.id} 
+                    id={`phase-${phase.id}`}
                     className={`rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-emerald-100 shadow-xl' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
                   >
                     <div 
                       className="p-5 flex items-center gap-4 cursor-pointer"
-                      onClick={() => setExpandedPhaseId(isExpanded ? null : phase.id)}
+                      onClick={() => {
+                        const newId = isExpanded ? null : phase.id;
+                        setExpandedPhaseId(newId);
+                        onPhaseSelect?.(newId);
+                      }}
                     >
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                         {phase.completed ? '✓' : '⏳'}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -16,9 +16,12 @@ interface LifeTreeProps {
   onRefresh?: () => void;
   onDeleteBranch?: (branch: BranchData) => void;
   onEditBranch?: (branch: BranchData | null) => void;
+  onPhaseClick?: (phaseId: string | null) => void;
+  activePhaseId?: string | null;
+  activeLeafId?: string | null;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, activePhaseId, activeLeafId }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -113,9 +116,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       // We want (400, 350) to be at the bottom-center of the zoomed view.
       // Dynamic zoom based on branch length
       const zoomSize = length * 1.5; // Increased slightly for better view
-      // Shift camera to the right by 20% to leave the branch on the left side of the screen
-      const targetX = (400 - zoomSize / 2) + (zoomSize * 0.2);
-      const targetY = 350 - zoomSize * 0.85; // Trunk base near bottom
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      
+      // Desktop: Shift camera right by 20% (branch moves left). Mobile: Center X.
+      const targetX = isMobile ? 400 - zoomSize / 2 : (400 - zoomSize / 2) + (zoomSize * 0.2);
+      // Desktop: Center Y. Mobile: Shift camera down by 25% (branch moves up).
+      const targetY = isMobile ? (350 - zoomSize * 0.85) + (zoomSize * 0.25) : 350 - zoomSize * 0.85;
 
       gsap.to(viewBox, {
         x: targetX,
@@ -150,6 +156,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       if (branch) handleBranchClick(branch);
     } else {
       setZoomedPhaseId(phaseId);
+      onPhaseClick?.(phaseId); // Sync with sidebar
       
       // If we clicked directly from full tree, we must also set the zoomed branch
       if (branchId && zoomedBranchId !== branchId) {
@@ -174,9 +181,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
         const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
 
-        // Shift camera to the right by 20% to leave the phase on the left side of the screen
-        const targetX = (rx - zoomSize / 2) + (zoomSize * 0.2);
-        const targetY = ry - zoomSize * 0.9; // Base at 90% height to show more above
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
+        // Desktop: Shift camera right by 20% (phase moves left). Mobile: Center X.
+        const targetX = isMobile ? rx - zoomSize / 2 : (rx - zoomSize / 2) + (zoomSize * 0.2);
+        // Desktop: Center Y. Mobile: Shift camera down by 25% (phase moves up).
+        const targetY = isMobile ? ry - zoomSize * 0.9 + (zoomSize * 0.25) : ry - zoomSize * 0.9;
 
         gsap.to(viewBox, {
           x: targetX,
@@ -207,6 +217,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     setZoomedBranchId(null);
     setZoomedPhaseId(null);
     onEditBranch?.(null); // Notify parent to close the panel
+    onPhaseClick?.(null); // Clear phase selection
 
     gsap.to(viewBox, {
       x: 0,
@@ -267,13 +278,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     });
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click for pan
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for pan if using mouse
     setIsPanning(true);
     panStart.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isPanning) return;
     
     const dx = (e.clientX - panStart.current.x) * (viewBox.w / (svgRef.current?.clientWidth || 800));
@@ -288,7 +299,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     panStart.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = () => setIsPanning(false);
+  const handlePointerUp = () => setIsPanning(false);
 
   const handleLeafClickHandler = (id: string, name: string) => {
     setClickedLeafId(id === clickedLeafId ? null : id);
@@ -343,12 +354,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
         className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} transition-all duration-300`}
+        style={{ touchAction: 'none' }}
         xmlns="http://www.w3.org/2000/svg"
         onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
       >
         <defs>
           {/* Wood gradient: darker edges, light center highlight */}
@@ -458,6 +470,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 isZoomed={zoomedBranchId === branch.id}
                 opacity={branchOpacity}
                 zoomedPhaseId={zoomedBranchId === branch.id ? zoomedPhaseId : null}
+                activeLeafId={activeLeafId}
+                activePhaseId={activePhaseId}
                 currentRotation={rotation}
               />
             );

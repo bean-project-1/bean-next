@@ -13,6 +13,7 @@ export default function HomePage() {
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
 
@@ -100,7 +101,10 @@ export default function HomePage() {
             onLeafClick={handleLeafClick}
             onScoreClick={() => setIsDnaOpen(true)}
             onRefresh={refresh}
+            activePhaseId={selectedPhaseId}
+            activeLeafId={selectedAction?.id}
             onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
+            onPhaseClick={setSelectedPhaseId}
             onDeleteBranch={(b) => handleDeleteGoal(b.id)}
           />
         </main>
@@ -114,6 +118,8 @@ export default function HomePage() {
         return (
           <BranchDetailView
             branch={branch}
+            zoomedPhaseId={selectedPhaseId}
+            onPhaseSelect={setSelectedPhaseId}
             onClose={() => setSelectedBranchId(null)}
             onDelete={handleDeleteGoal}
             onUpdateGoal={async (id, data) => {

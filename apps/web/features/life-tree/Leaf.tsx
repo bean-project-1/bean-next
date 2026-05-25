@@ -12,11 +12,12 @@ interface LeafProps {
   angle: number;
   delay: number;
   isSelected?: boolean;
+  isActive?: boolean;
   onHover: (name: string | null) => void;
   onClick: (id: string, name: string) => void;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }: LeafProps) => {
+export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, onClick }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
@@ -54,6 +55,18 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, onHover, onClick }:
             <stop offset="100%" stopColor="black" stopOpacity="0.1" />
           </linearGradient>
         </defs>
+
+        {/* Active Glow/Pulse Overlay */}
+        {isActive && (
+          <path
+            d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
+            fill="none"
+            stroke={leaf.completed ? "#10b981" : "#f59e0b"} // Emerald or Amber depending on completion
+            strokeWidth="4"
+            className="animate-pulse"
+            style={{ filter: 'blur(3px)' }}
+          />
+        )}
 
         {/* The Realistic Leaf Body */}
         <path

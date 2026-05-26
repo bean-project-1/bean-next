@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { GoalService } from '@/services/goal-service';
+import { openai } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
         ${rawChat}
       `;
       
-      const distillationRes = await goalService.openai.chat.completions.create({
+      const distillationRes = await goalService.getClient().chat.completions.create({
         model: process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat",
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
       });
@@ -115,23 +116,20 @@ export async function POST(req: NextRequest) {
           }
         });
 
-        if (phaseData.tasks) {
-          for (const t of phaseData.tasks) {
-            await tx.goalAction.create({
-              data: {
-                goalId: goal.id,
-                parentId: phase.id,
-                title: t.name,
-                description: t.description || null,
-                type: 'task',
-                startDate: t.startDate ? new Date(t.startDate) : null,
-                targetDate: t.targetDate ? new Date(t.targetDate) : null,
-                estimatedHours: t.estimatedHours || 0,
-                dimensions: t.dimensions || [],
-                attributes: t.attributes || []
-              }
-            });
-          }
+        if (phaseData.tasks && phaseData.tasks.length > 0) {
+          const tasksData = phaseData.tasks.map((t: any) => ({
+            goalId: goal.id,
+            parentId: phase.id,
+            title: t.name,
+            description: t.description || null,
+            type: 'task',
+            startDate: t.startDate ? new Date(t.startDate) : null,
+            targetDate: t.targetDate ? new Date(t.targetDate) : null,
+            estimatedHours: t.estimatedHours || 0,
+            dimensions: t.dimensions || [],
+            attributes: t.attributes || []
+          }));
+          await tx.goalAction.createMany({ data: tasksData });
         }
 
         if (phaseData.milestone) {
@@ -158,24 +156,24 @@ export async function POST(req: NextRequest) {
       }
 
       // Habits
-      if (plan.habits) {
-        for (const habitData of plan.habits) {
-          await tx.goalAction.create({
-            data: {
-              goalId: goal.id,
-              title: habitData.title,
-              description: habitData.description || null,
-              type: 'habit',
-              frequency: habitData.frequency || null,
-              estimatedHours: habitData.estimatedHours || 0,
-              dimensions: habitData.dimensions || [],
-              attributes: habitData.attributes || []
-            }
-          });
-        }
+      if (plan.habits && plan.habits.length > 0) {
+        const habitsData = plan.habits.map((habitData: any) => ({
+          goalId: goal.id,
+          title: habitData.title,
+          description: habitData.description || null,
+          type: 'habit',
+          frequency: habitData.frequency || null,
+          estimatedHours: habitData.estimatedHours || 0,
+          dimensions: habitData.dimensions || [],
+          attributes: habitData.attributes || []
+        }));
+        await tx.goalAction.createMany({ data: habitsData });
       }
 
       return goal;
+    }, {
+      timeout: 40000, // 40 seconds
+      maxWait: 10000  // 10 seconds
     });
 
     return NextResponse.json({ success: true, goal: result, plan });

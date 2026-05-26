@@ -4,6 +4,7 @@
 // =======================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deepseek } from '@/lib/openai';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,24 +96,14 @@ export async function GET(req: NextRequest) {
       ]
     `.trim();
 
-    const aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
-        max_tokens: 1500,
-      })
+    const aiRes = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.9,
+      max_tokens: 1500,
     });
 
-    if (!aiRes.ok) throw new Error(`Deepseek error: ${aiRes.status}`);
-
-    const aiData = await aiRes.json();
-    const raw = aiData.choices[0]?.message?.content ?? '[]';
+    const raw = aiRes.choices[0]?.message?.content ?? '[]';
 
     let pathsData;
     try {
@@ -206,22 +197,13 @@ export async function POST(req: NextRequest) {
       Responde SOLO con el objeto JSON para este camino único (no array, solo el objeto).
     `.trim();
 
-    const aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
-      })
+    const aiRes = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.9,
     });
 
-    if (!aiRes.ok) throw new Error(`Deepseek error: ${aiRes.status}`);
-    const aiData = await aiRes.json();
-    const raw = aiData.choices[0]?.message?.content ?? '{}';
+    const raw = aiRes.choices[0]?.message?.content ?? '{}';
     
     let newPathData;
     try {

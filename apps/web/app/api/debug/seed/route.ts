@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  const p = new PrismaClient();
+
   try {
     const email = 'daniel@bean.app';
-    const user = await ((p as any).user.findUnique({ where: { email } }));
+    const user = await (prisma.user.findUnique({ where: { email } }));
     if (!user) return NextResponse.json({ error: 'User not found' });
 
-    // Clear existing
-    await (p as any).goalAction.deleteMany({ where: { goal: { userId: user.id } } });
-    await (p as any).goal.deleteMany({ where: { userId: user.id } });
+    await prisma.user.deleteMany({});
+    await prisma.dimension.deleteMany({});
+    await prisma.userAttribute.deleteMany({});
+    await prisma.lifeState.deleteMany({ where: { userId: user.id } });
 
     // Add 3 Goals
     const goals = [
@@ -33,11 +34,11 @@ export async function GET(req: NextRequest) {
     ];
 
     for (const g of goals) {
-      const goal = await (p as any).goal.create({
+      const goal = await (prisma as any).goal.create({
         data: { userId: user.id, title: g.title, progress: g.progress }
       });
       for (const action of g.actions) {
-        await (p as any).goalAction.create({
+        await (prisma as any).goalAction.create({
           data: { goalId: goal.id, title: action.title, isCompleted: action.isCompleted }
         });
       }
@@ -47,6 +48,6 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   } finally {
-    await p.$disconnect();
+    await prisma.$disconnect();
   }
 }

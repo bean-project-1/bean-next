@@ -1,4 +1,3 @@
-export * from './WelcomePhase';
 export * from './MethodPhase';
 export * from './QuizPhase';
 export * from './LLMPhase';

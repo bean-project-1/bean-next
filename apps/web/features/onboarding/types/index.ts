@@ -1,5 +1,5 @@
-export type Method = 'welcome' | 'llm' | 'cv' | 'quiz' | 'coach';
-export type Phase = 'welcome' | 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'goals' | 'generating';
+export type Method = 'llm' | 'cv' | 'quiz' | 'coach';
+export type Phase = 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'goals' | 'generating';
 
 export interface FormData {
   name: string;
@@ -8,28 +8,29 @@ export interface FormData {
   values: string[];          // core values tags
   personality: string;       // explorer | analyst | empathic | pragmatic
   interests: string[];       // passion tags
-  purpose: number;           // 0-10 slider
+  purpose: string;           // choice
   motivations: string;       // achievement | recognition | connection | autonomy
   // ── Capital ────────────────────────────────────────
-  knowledge: number;         // 0-10 slider
+  knowledge: string;         // choice
   skills: string[];          // skill tags
   profession: string;        // career text input
   income: string;            // income level id
-  socialCapital: number;     // 0-10 slider
+  socialCapital: string;     // choice
   exerciseFrequency: string; // physical health choice
-  resilience: number;        // 0-10 slider
+  resilience: string;        // choice
   // ── Experiencia ────────────────────────────────────
-  workSatisfaction: number;  // 0-10 slider
-  relationships: number;     // 0-10 slider
-  lifeSatisfaction: number;  // mental_wellbeing 0-10
+  workSatisfaction: string;  // choice
+  relationships: string;     // choice
+  lifeSatisfaction: string;  // choice
   freeTime: string;          // free time id
-  personalGrowth: number;    // 0-10 slider
-  impact: number;            // 0-10 slider
-  financialSecurity: number; // 0-10 slider
+  personalGrowth: string;    // choice
+  impact: string;            // choice
+  financialSecurity: string; // choice
   // ── Metas ──────────────────────────────────────────
   goals: { title: string }[];
   extractedAttributes?: any[];
   extractedInputs?: any[];
+  details: Record<string, string>;
 }
 
 export interface DimExtra {

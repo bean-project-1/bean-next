@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+import { deepseek } from '@/lib/openai';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -22,28 +22,13 @@ REGLAS:
 
     const openAiMessages = [systemPrompt, ...messages];
 
-    // Llamada a DeepSeek
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: openAiMessages,
-        temperature: 0.7,
-      })
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: openAiMessages as any,
+      temperature: 0.7,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[DeepSeek API Error / Task Coach]:', errorText);
-      return NextResponse.json({ error: `DeepSeek Error: ${response.status} - ${errorText}` }, { status: response.status });
-    }
-
-    const data = await response.json();
-    const reply = data.choices[0]?.message?.content || 'No pude generar una respuesta.';
+    const reply = response.choices[0]?.message?.content || 'No pude generar una respuesta.';
 
     return NextResponse.json({ success: true, reply });
   } catch (error: any) {

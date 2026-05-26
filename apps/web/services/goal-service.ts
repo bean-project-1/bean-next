@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import OpenAI from 'openai';
+import { openai, deepseek } from '@/lib/openai';
 
 // Removed static GOAL_TYPE_WEIGHTS in favor of dynamic analysis
 
@@ -9,14 +9,10 @@ const DEFAULT_WEIGHTS = {
 };
 
 export class GoalService {
-  public openai: OpenAI;
-
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || (process.env.DEEPSEEK_API_KEY ? 'https://api.deepseek.com/v1' : undefined)
-    });
+  public getClient() {
+    return process.env.OPENAI_API_KEY ? openai : deepseek;
   }
+
 
   async parseGoalWithAI(text: string) {
     const prompt = `
@@ -38,9 +34,10 @@ export class GoalService {
     `;
 
     const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
+    const client = this.getClient();
 
     try {
-      const response = await this.openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: model,
         messages: [{ role: "system", content: "You are a Goal Architecture AI. Return JSON only." }, { role: "user", content: prompt }],
         response_format: { type: "json_object" }
@@ -252,9 +249,10 @@ export class GoalService {
     `;
 
     const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
+    const client = this.getClient();
 
     try {
-      const response = await this.openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: model,
         messages: [
           { role: "system", content: "You are a professional Life Architect. You provide detailed, structured JSON plans. You split long tasks into digestible blocks of 1-4 hours." },

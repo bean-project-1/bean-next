@@ -1,5 +1,4 @@
 export * from './OnboardingFlow';
-export * from './components/WelcomePhase';
 export * from './components/MethodPhase';
 export * from './components/QuizPhase';
 export * from './components/LLMPhase';

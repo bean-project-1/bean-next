@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 // POST - Add a new action to a goal
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const prisma = new PrismaClient();
+
   const { id: goalId } = await params;
 
   try {
@@ -62,6 +62,6 @@ export async function POST(
       detail: error.message 
     }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // await prisma.$disconnect(); - Removed because we use a global instance
   }
 }

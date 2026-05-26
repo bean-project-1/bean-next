@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
-  const prisma = new PrismaClient();
+
   try {
     const userId = req.cookies.get('bean_user_id')?.value;
     if (!userId) {
@@ -43,7 +43,5 @@ export async function POST(req: NextRequest) {
       error: 'Internal server error',
       detail: msg
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

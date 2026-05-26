@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  const p = new PrismaClient();
+
   try {
-    const goals = await (p as any).goal.findMany({
+    const users = await (prisma as any).user.findMany();
+    const dimensions = await (prisma as any).dimension.findMany();
+    const lifeStates = await (prisma as any).lifeState.findMany();
+    const goals = await (prisma as any).goal.findMany({
       where: { user: { email: 'daniel@bean.app' } },
       include: { actions: true }
     });
@@ -12,6 +15,6 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   } finally {
-    await p.$disconnect();
+    await prisma.$disconnect();
   }
 }

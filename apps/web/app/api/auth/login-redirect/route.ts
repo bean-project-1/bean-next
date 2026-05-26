@@ -14,7 +14,13 @@ export async function GET(request: Request) {
       select: { onboardingCompleted: true }
     });
 
-    if (user?.onboardingCompleted) {
+    if (!user) {
+      // If the user was deleted from DB but still has a valid JWT cookie,
+      // redirect to signout to destroy the cookie and prevent infinite redirect loops.
+      return NextResponse.redirect(new URL("/api/auth/signout?callbackUrl=/login", request.url));
+    }
+
+    if (user.onboardingCompleted) {
       return NextResponse.redirect(new URL("/home", request.url));
     } else {
       return NextResponse.redirect(new URL("/onboarding", request.url));

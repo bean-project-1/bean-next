@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { openai } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,11 +14,6 @@ export async function POST(req: NextRequest) {
     if (!submission) {
       return NextResponse.json({ error: 'No submission provided' }, { status: 400 });
     }
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL,
-    });
 
     const systemPrompt = `Eres un evaluador de logros personales empático y estricto. 
 Tu trabajo es analizar la evidencia que presenta un usuario y determinar si ha completado exitosamente su hito/logro.

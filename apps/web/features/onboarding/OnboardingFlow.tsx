@@ -2,46 +2,46 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { WelcomePhase, MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GoalPhase, GeneratingScreen } from './components';
+import { MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GoalPhase, GeneratingScreen } from './components';
 import { SKILL_SUGGESTIONS, INTEREST_SUGGESTIONS, PROFESSION_SUGGESTIONS } from './constants';
 import type { Phase, FormData } from './types';
 
 const INITIAL_FORM: FormData = {
   name: '', email: '',
   // identidad
-  values: [], personality: '', interests: [], purpose: 5, motivations: '',
+  values: [], personality: '', interests: [], purpose: '', motivations: '',
   // capital
-  knowledge: 5, skills: [], profession: '', income: '', socialCapital: 5,
-  exerciseFrequency: '', resilience: 5,
+  knowledge: '', skills: [], profession: '', income: '', socialCapital: '',
+  exerciseFrequency: '', resilience: '',
   // experiencia
-  workSatisfaction: 5, relationships: 5, lifeSatisfaction: 5,
-  freeTime: '', personalGrowth: 5, impact: 5, financialSecurity: 5,
+  workSatisfaction: '', relationships: '', lifeSatisfaction: '',
+  freeTime: '', personalGrowth: '', impact: '', financialSecurity: '',
   // metas
   goals: [],
+  // detalles complementarios
+  details: {},
 };
 
 export function OnboardingFlow() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>('welcome');
+  const [phase, setPhase] = useState<Phase>('method');
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [error, setError] = useState('');
 
   // Auto-fetch existing user session and skip Welcome phase
   useEffect(() => {
-    fetch('/api/profile')
+    fetch('/api/auth/session')
       .then(res => res.json())
-      .then(json => {
-        if (json.success && json.data?.user) {
+      .then(session => {
+        if (session && session.user) {
           setForm(f => ({
             ...f,
-            name: json.data.user.name || '',
-            email: json.data.user.email || ''
+            name: session.user.name || '',
+            email: session.user.email || ''
           }));
-          // Jump straight to the method phase if session exists
-          setPhase('method');
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
   }, []);
 
   const submit = useCallback(async () => {
@@ -143,14 +143,7 @@ export function OnboardingFlow() {
           </div>
         )}
 
-        {phase === 'welcome' && (
-          <WelcomePhase
-            name={form.name} email={form.email}
-            onName={v => setForm(f => ({ ...f, name: v }))}
-            onEmail={v => setForm(f => ({ ...f, email: v }))}
-            onNext={() => setPhase('method')}
-          />
-        )}
+
 
         {phase === 'method' && (
           <MethodPhase name={form.name} onSelect={m => setPhase(m)} />

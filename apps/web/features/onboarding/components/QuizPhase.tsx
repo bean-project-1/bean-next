@@ -12,6 +12,10 @@ import {
   VALUES_SUGGESTIONS, PERSONALITY_OPTIONS, INTEREST_SUGGESTIONS,
   MOTIVATION_OPTIONS, SKILL_SUGGESTIONS, PROFESSION_SUGGESTIONS,
   INCOME_OPTIONS, EXERCISE_OPTIONS, FREE_TIME_OPTIONS,
+  PURPOSE_OPTIONS, KNOWLEDGE_OPTIONS, SOCIAL_CAPITAL_OPTIONS,
+  RESILIENCE_OPTIONS, WORK_SATISFACTION_OPTIONS, RELATIONSHIPS_OPTIONS,
+  MENTAL_WELLBEING_OPTIONS, PERSONAL_GROWTH_OPTIONS, IMPACT_OPTIONS,
+  FINANCIAL_SECURITY_OPTIONS,
 } from '../constants';
 import type { FormData } from '../types';
 
@@ -22,30 +26,6 @@ interface Props {
   onBack: () => void;
 }
 
-// ── Reusable Slider ───────────────────────────────────────
-function ScoreSlider({
-  value, onChange, lo = 'Bajo', hi = 'Alto',
-}: { value: number; onChange: (v: number) => void; lo?: string; hi?: string }) {
-  return (
-    <div>
-      <div className="mb-4 flex items-end justify-between">
-        <span className="text-xs font-medium text-slate-400">{lo}</span>
-        <span className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">
-          {value}
-        </span>
-        <span className="text-xs font-medium text-slate-400">{hi}</span>
-      </div>
-      <input
-        type="range" min={0} max={10} step={1} value={value}
-        onChange={e => onChange(parseInt(e.target.value, 10))}
-        className="w-full h-2 rounded-full appearance-none bg-slate-200 accent-violet-600 cursor-pointer"
-      />
-      <div className="mt-2 flex justify-between text-[10px] text-slate-300 select-none font-bold">
-        {Array.from({ length: 11 }, (_, i) => <span key={i}>{i}</span>)}
-      </div>
-    </div>
-  );
-}
 
 // ── Choice Grid ───────────────────────────────────────────
 type Option = { id: string; emoji?: string; label: string; desc?: string };
@@ -136,8 +116,8 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
     {
       cat: 'identity', dimKey: 'purpose', emoji: '🧭', title: 'Tu propósito',
       subtitle: '¿Qué tan claro tienes tu propósito de vida hoy?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.purpose} onChange={v => setForm(f => ({ ...f, purpose: v }))} lo="Nada claro" hi="Muy claro" />,
+      isValid: () => form.purpose.length > 0,
+      content: <ChoiceGrid options={PURPOSE_OPTIONS} selected={form.purpose} onSelect={id => setForm(f => ({ ...f, purpose: id }))} />,
     },
     {
       cat: 'identity', dimKey: 'motivations', emoji: '🔥', title: 'Tu motivación',
@@ -155,8 +135,8 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
     {
       cat: 'capital', dimKey: 'knowledge', emoji: '📚', title: 'Tu conocimiento',
       subtitle: '¿Cómo valoras tu nivel de formación en tu área?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.knowledge} onChange={v => setForm(f => ({ ...f, knowledge: v }))} lo="Básico" hi="Experto" />,
+      isValid: () => form.knowledge.length > 0,
+      content: <ChoiceGrid options={KNOWLEDGE_OPTIONS} selected={form.knowledge} onSelect={id => setForm(f => ({ ...f, knowledge: id }))} />,
     },
     {
       cat: 'capital', dimKey: 'skills', emoji: '🧠', title: 'Tus habilidades',
@@ -209,8 +189,8 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
     {
       cat: 'capital', dimKey: 'social_capital', emoji: '🤝', title: 'Tu red de contactos',
       subtitle: '¿Qué tan amplia y sólida es tu red profesional?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.socialCapital} onChange={v => setForm(f => ({ ...f, socialCapital: v }))} lo="Pequeña" hi="Muy amplia" />,
+      isValid: () => form.socialCapital.length > 0,
+      content: <ChoiceGrid options={SOCIAL_CAPITAL_OPTIONS} selected={form.socialCapital} onSelect={id => setForm(f => ({ ...f, socialCapital: id }))} />,
     },
     {
       cat: 'capital', dimKey: 'physical_health', emoji: '🏃', title: 'Salud física',
@@ -234,27 +214,27 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
     {
       cat: 'capital', dimKey: 'resilience', emoji: '🛡️', title: 'Tu resiliencia',
       subtitle: '¿Cómo te recuperas después de un momento difícil?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.resilience} onChange={v => setForm(f => ({ ...f, resilience: v }))} lo="Me cuesta mucho" hi="Me recupero rápido" />,
+      isValid: () => form.resilience.length > 0,
+      content: <ChoiceGrid options={RESILIENCE_OPTIONS} selected={form.resilience} onSelect={id => setForm(f => ({ ...f, resilience: id }))} />,
     },
     // ── EXPERIENCIA ───────────────────────────────────────────
     {
       cat: 'experience', dimKey: 'work_satisfaction', emoji: '😊', title: 'Satisfacción laboral',
       subtitle: '¿Qué tan satisfecho/a estás con tu trabajo o actividad principal?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.workSatisfaction} onChange={v => setForm(f => ({ ...f, workSatisfaction: v }))} lo="Nada" hi="Muy satisfecho" />,
+      isValid: () => form.workSatisfaction.length > 0,
+      content: <ChoiceGrid options={WORK_SATISFACTION_OPTIONS} selected={form.workSatisfaction} onSelect={id => setForm(f => ({ ...f, workSatisfaction: id }))} />,
     },
     {
       cat: 'experience', dimKey: 'relationships', emoji: '💞', title: 'Tus relaciones',
       subtitle: '¿Cómo calificarías la calidad de tus relaciones personales?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.relationships} onChange={v => setForm(f => ({ ...f, relationships: v }))} lo="Distantes" hi="Profundas y ricas" />,
+      isValid: () => form.relationships.length > 0,
+      content: <ChoiceGrid options={RELATIONSHIPS_OPTIONS} selected={form.relationships} onSelect={id => setForm(f => ({ ...f, relationships: id }))} />,
     },
     {
       cat: 'experience', dimKey: 'mental_wellbeing', emoji: '🧘', title: 'Bienestar mental',
       subtitle: '¿Cómo está tu paz mental y estado emocional hoy?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.lifeSatisfaction} onChange={v => setForm(f => ({ ...f, lifeSatisfaction: v }))} lo="Estresado" hi="En calma" />,
+      isValid: () => form.lifeSatisfaction.length > 0,
+      content: <ChoiceGrid options={MENTAL_WELLBEING_OPTIONS} selected={form.lifeSatisfaction} onSelect={id => setForm(f => ({ ...f, lifeSatisfaction: id }))} />,
     },
     {
       cat: 'experience', dimKey: 'free_time', emoji: '🕐', title: 'Tiempo libre',
@@ -272,20 +252,20 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
     {
       cat: 'experience', dimKey: 'personal_growth', emoji: '🌱', title: 'Crecimiento personal',
       subtitle: '¿Sientes que estás creciendo y avanzando como persona este año?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.personalGrowth} onChange={v => setForm(f => ({ ...f, personalGrowth: v }))} lo="Estancado" hi="Creciendo mucho" />,
+      isValid: () => form.personalGrowth.length > 0,
+      content: <ChoiceGrid options={PERSONAL_GROWTH_OPTIONS} selected={form.personalGrowth} onSelect={id => setForm(f => ({ ...f, personalGrowth: id }))} />,
     },
     {
       cat: 'experience', dimKey: 'impact', emoji: '🌍', title: 'Tu impacto',
       subtitle: '¿Sientes que tu trabajo o acciones tienen impacto real en otros?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.impact} onChange={v => setForm(f => ({ ...f, impact: v }))} lo="Ninguno" hi="Mucho impacto" />,
+      isValid: () => form.impact.length > 0,
+      content: <ChoiceGrid options={IMPACT_OPTIONS} selected={form.impact} onSelect={id => setForm(f => ({ ...f, impact: id }))} />,
     },
     {
       cat: 'experience', dimKey: 'financial_security', emoji: '🏦', title: 'Seguridad financiera',
       subtitle: '¿Qué tan seguro/a te sientes financieramente hoy?',
-      isValid: () => true,
-      content: <ScoreSlider value={form.financialSecurity} onChange={v => setForm(f => ({ ...f, financialSecurity: v }))} lo="Inseguro" hi="Muy seguro" />,
+      isValid: () => form.financialSecurity.length > 0,
+      content: <ChoiceGrid options={FINANCIAL_SECURITY_OPTIONS} selected={form.financialSecurity} onSelect={id => setForm(f => ({ ...f, financialSecurity: id }))} />,
     },
   ];
 
@@ -315,9 +295,22 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
         <h1 className="text-2xl font-bold text-slate-900">{current.title}</h1>
         <p className="mt-1.5 mb-6 text-sm text-slate-500">{current.subtitle}</p>
 
-        <div className="min-h-[160px]">{current.content}</div>
+        <div className="min-h-[160px]">
+          {current.content}
+          
+          <div className="mt-6 border-t border-slate-100 pt-4 animate-in fade-in duration-300">
+            <label className="text-sm font-medium text-slate-500 mb-2 block">¿Quieres detallar tu respuesta? (Opcional)</label>
+            <textarea
+              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 resize-none"
+              rows={2}
+              placeholder="Escribe más detalles aquí..."
+              value={form.details?.[current.dimKey] || ''}
+              onChange={e => setForm(f => ({ ...f, details: { ...(f.details || {}), [current.dimKey]: e.target.value } }))}
+            />
+          </div>
+        </div>
 
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between">
           <div />
           <button
             onClick={isLast ? onDone : () => setStep(s => s + 1)}

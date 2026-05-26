@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { openai, deepseek } from '@/lib/openai';
 import { langfuse } from '@/lib/langfuse';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ function getAIClient() {
 
   if (gptKey) {
     return {
-      client: new OpenAI({ apiKey: gptKey }),
+      client: openai,
       model: "gpt-4o-mini",
       provider: 'openai'
     };
@@ -22,10 +22,7 @@ function getAIClient() {
 
   if (deepseekKey) {
     return {
-      client: new OpenAI({
-        apiKey: deepseekKey,
-        baseURL: "https://api.deepseek.com",
-      }),
+      client: deepseek,
       model: "deepseek-chat",
       provider: 'deepseek'
     };

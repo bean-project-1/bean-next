@@ -17,24 +17,24 @@ const onboardingSchema = z.object({
   values: z.array(z.string()).default([]),
   personality: z.string().default(''),
   interests: z.array(z.string()).default([]),
-  purpose: z.number().min(0).max(10).default(5),
+  purpose: z.string().default(''),
   motivations: z.string().default(''),
   // capital
-  knowledge: z.number().min(0).max(10).default(5),
+  knowledge: z.string().default(''),
   skills: z.array(z.string()).default([]),
   profession: z.string().default(''),
   income: z.string().default(''),
-  socialCapital: z.number().min(0).max(10).default(5),
+  socialCapital: z.string().default(''),
   exerciseFrequency: z.string().default(''),
-  resilience: z.number().min(0).max(10).default(5),
+  resilience: z.string().default(''),
   // experiencia
-  workSatisfaction: z.number().min(0).max(10).default(5),
-  relationships: z.number().min(0).max(10).default(5),
-  lifeSatisfaction: z.number().min(0).max(10).default(5),
+  workSatisfaction: z.string().default(''),
+  relationships: z.string().default(''),
+  lifeSatisfaction: z.string().default(''),
   freeTime: z.string().default(''),
-  personalGrowth: z.number().min(0).max(10).default(5),
-  impact: z.number().min(0).max(10).default(5),
-  financialSecurity: z.number().min(0).max(10).default(5),
+  personalGrowth: z.string().default(''),
+  impact: z.string().default(''),
+  financialSecurity: z.string().default(''),
   // review + goals
   extractedAttributes: z.array(z.any()).optional(),
   extractedInputs: z.array(z.any()).optional(),
@@ -42,41 +42,21 @@ const onboardingSchema = z.object({
     .array(z.object({ title: z.string().min(1) }))
     .max(3)
     .default([]),
+  details: z.record(z.string(), z.string()).default({}),
 });
 
-// Map onboarding fields → dimension keys + initial score
-function buildDimScores(
-  data: z.infer<typeof onboardingSchema>
-): { key: string; score: number }[] {
-  // Aggregate counts of attributes per dimension
-  const counts: Record<string, number> = {};
-  const add = (key: string) => { counts[key] = (counts[key] || 0) + 1; };
+import {
+  PERSONALITY_OPTIONS, MOTIVATION_OPTIONS, INCOME_OPTIONS, FREE_TIME_OPTIONS,
+  PURPOSE_OPTIONS, KNOWLEDGE_OPTIONS, SOCIAL_CAPITAL_OPTIONS,
+  RESILIENCE_OPTIONS, WORK_SATISFACTION_OPTIONS, RELATIONSHIPS_OPTIONS,
+  MENTAL_WELLBEING_OPTIONS, PERSONAL_GROWTH_OPTIONS, IMPACT_OPTIONS,
+  FINANCIAL_SECURITY_OPTIONS
+} from '../../../features/onboarding/constants';
 
-  data.skills?.forEach(() => add('skills'));
-  data.interests?.forEach(() => add('interests'));
-  if (data.profession) add('career');
-  if (data.values?.length) data.values.forEach(() => add('values'));
-  if (data.personality) add('personality');
-  if (data.motivations) add('motivations');
-
-  data.extractedAttributes?.forEach(attr => add(attr.dimension));
-
-  const ALL_DIMENSIONS = [
-    'values', 'personality', 'interests', 'purpose', 'motivations',
-    'knowledge', 'skills', 'career', 'income', 'social_capital',
-    'physical_health', 'resilience', 'work_satisfaction', 'relationships',
-    'mental_wellbeing', 'free_time', 'personal_growth', 'impact', 'financial_security'
-  ];
-
-  return ALL_DIMENSIONS.map(key => {
-    const c = counts[key] || 0;
-    // Base score is 3, +1 for each attribute, max 10.
-    const score = Math.min(10, 3 + c * 1.5);
-    return { key, score };
-  });
+function getLabel(options: any[], id: string) {
+  if (!id) return '';
+  return options.find(o => o.id === id)?.label || id;
 }
-
-
 // ── POST — Onboarding: create User + BeanProfile + DimensionScores ──
 export async function POST(req: NextRequest) {
   try {
@@ -99,48 +79,52 @@ export async function POST(req: NextRequest) {
       ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name, onboardingCompleted: true } })
       : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name, onboardingCompleted: true } }); })();
 
-    // 2. Persist dimension scores and attributes
-    const dimScores = buildDimScores(data);
+    // 2. Persist attributes and inputs
     const dimensions = await prisma.dimension.findMany();
     const dimMap = new Map(dimensions.map(d => [d.name, d.id]));
 
-    // 2.1 Create User Attributes (Skills, Interests, etc.)
-    // Clear old ones first (simple strategy for this iteration)
+    // Clear old attributes first
     await prisma.userAttribute.deleteMany({ where: { userId: user.id } });
 
     const attributeOps: any[] = [];
 
-    // Map skills to 'skills' dimension
-    if (data.skills.length && dimMap.has('skills')) {
-      const dimId = dimMap.get('skills')!;
-      data.skills.forEach(skill => {
+    const addAttr = (dimName: string, type: string, val: string, formKey?: string) => {
+      if (val && dimMap.has(dimName)) {
+        const detail = data.details[formKey || dimName];
         attributeOps.push(prisma.userAttribute.create({
-          data: { userId: user.id, dimensionId: dimId, name: skill, category: 'skill' }
+          data: {
+            userId: user.id,
+            dimensionId: dimMap.get(dimName)!,
+            name: val,
+            category: type,
+            metadata: detail ? { details: detail } : {}
+          }
         }));
-      });
-    }
+      }
+    };
 
-    // Map interests to 'interests' dimension
-    if (data.interests.length && dimMap.has('interests')) {
-      const dimId = dimMap.get('interests')!;
-      data.interests.forEach(interest => {
-        attributeOps.push(prisma.userAttribute.create({
-          data: { userId: user.id, dimensionId: dimId, name: interest, category: 'interest' }
-        }));
-      });
-    }
+    // Arrays
+    data.skills.forEach(v => addAttr('skills', 'skill', v));
+    data.interests.forEach(v => addAttr('interests', 'interest', v));
+    data.values.forEach(v => addAttr('values', 'value', v));
 
-    // Add profession as an attribute to 'career'
-    if (data.profession && dimMap.has('career')) {
-      attributeOps.push(prisma.userAttribute.create({
-        data: {
-          userId: user.id,
-          dimensionId: dimMap.get('career')!,
-          name: data.profession,
-          category: 'profession'
-        }
-      }));
-    }
+    // Direct string
+    addAttr('career', 'profession', data.profession, 'profession');
+    
+    // Mapped Choices
+    addAttr('personality', 'trait', getLabel(PERSONALITY_OPTIONS, data.personality), 'personality');
+    addAttr('motivations', 'trait', getLabel(MOTIVATION_OPTIONS, data.motivations), 'motivations');
+    addAttr('purpose', 'self_assessment', getLabel(PURPOSE_OPTIONS, data.purpose), 'purpose');
+    addAttr('knowledge', 'self_assessment', getLabel(KNOWLEDGE_OPTIONS, data.knowledge), 'knowledge');
+    addAttr('income', 'self_assessment', getLabel(INCOME_OPTIONS, data.income), 'income');
+    addAttr('social_capital', 'self_assessment', getLabel(SOCIAL_CAPITAL_OPTIONS, data.socialCapital), 'socialCapital');
+    addAttr('resilience', 'self_assessment', getLabel(RESILIENCE_OPTIONS, data.resilience), 'resilience');
+    addAttr('work_satisfaction', 'self_assessment', getLabel(WORK_SATISFACTION_OPTIONS, data.workSatisfaction), 'workSatisfaction');
+    addAttr('relationships', 'self_assessment', getLabel(RELATIONSHIPS_OPTIONS, data.relationships), 'relationships');
+    addAttr('mental_wellbeing', 'self_assessment', getLabel(MENTAL_WELLBEING_OPTIONS, data.lifeSatisfaction), 'lifeSatisfaction');
+    addAttr('personal_growth', 'self_assessment', getLabel(PERSONAL_GROWTH_OPTIONS, data.personalGrowth), 'personalGrowth');
+    addAttr('impact', 'self_assessment', getLabel(IMPACT_OPTIONS, data.impact), 'impact');
+    addAttr('financial_security', 'self_assessment', getLabel(FINANCIAL_SECURITY_OPTIONS, data.financialSecurity), 'financialSecurity');
 
     // 2.2 Add AI extracted attributes
     if (data.extractedAttributes?.length) {
@@ -161,40 +145,57 @@ export async function POST(req: NextRequest) {
 
     await Promise.all(attributeOps);
 
-    // 2.3 Add AI extracted inputs
+    // 2.3 Add dynamic inputs
+    const inputOps: any[] = [];
+
+    // Add AI extracted inputs
     if (data.extractedInputs?.length) {
-      const inputOps = data.extractedInputs
-        .filter((input: any) => dimMap.has(input.dimension))
-        .map((input: any) => prisma.dimensionInput.create({
-          data: {
-            userId: user.id,
-            dimensionId: dimMap.get(input.dimension)!,
-            inputType: input.inputType || 'event',
-            valueJson: input.valueJson || {},
-            source: 'ai_onboarding'
+      data.extractedInputs.forEach((input: any) => {
+        if (dimMap.has(input.dimension)) {
+          inputOps.push(prisma.dimensionInput.create({
+            data: {
+              userId: user.id,
+              dimensionId: dimMap.get(input.dimension)!,
+              inputType: input.inputType || 'event',
+              valueJson: input.valueJson || {},
+              source: 'ai_onboarding'
+            }
+          }));
+        }
+      });
+    }
+    const addInput = (dimName: string, type: string, val: string, formKey?: string) => {
+      if (val && dimMap.has(dimName)) {
+        const detail = data.details[formKey || dimName];
+        inputOps.push(prisma.dimensionInput.create({
+          data: { 
+            userId: user.id, 
+            dimensionId: dimMap.get(dimName)!, 
+            inputType: type, 
+            valueJson: detail ? { value: val, details: detail } : { value: val }, 
+            source: 'manual' 
           }
         }));
+      }
+    };
+
+    addInput('physical_health', 'routine', data.exerciseFrequency, 'exerciseFrequency');
+    addInput('free_time', 'routine', getLabel(FREE_TIME_OPTIONS, data.freeTime), 'freeTime');
+
+    if (inputOps.length > 0) {
       await Promise.all(inputOps);
     }
 
-    // 3. Create initial LifeState snapshot with embedded scores
-    const lifeScore = dimScores.reduce((s, d) => s + d.score, 0) / dimScores.length * 10;
-
+    // 3. Create initial LifeState snapshot (without scores)
     await prisma.lifeState.create({
       data: {
         userId: user.id,
-        lifeScore,
-        balanceScore: 0.5,     // Placeholder/Initial
-        alignmentScore: 0.5,   // Placeholder/Initial
-        energyIndex: 0.5,      // Placeholder/Initial
+        lifeScore: 0,
+        balanceScore: 0,
+        alignmentScore: 0,
+        energyIndex: 0,
         triggeredBy: 'onboarding',
-        scores: dimScores
-          .filter(ds => dimMap.has(ds.key))
-          .map(ds => ({
-            dimensionId: dimMap.get(ds.key)!,
-            score: ds.score,
-            trend: 'stable'
-          }))
+        scores: []
       },
     });
 

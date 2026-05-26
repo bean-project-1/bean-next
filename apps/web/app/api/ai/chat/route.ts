@@ -4,6 +4,7 @@
 // =======================================================
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deepseek } from '@/lib/openai';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,28 +146,14 @@ REGLAS DE FORMATO:
     ];
 
     // 6. Call Deepseek
-    const aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: aiMessages,
-        temperature: 0.8,
-        max_tokens: 1500,
-      })
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: aiMessages as any,
+      temperature: 0.8,
+      max_tokens: 1500,
     });
 
-    if (!aiRes.ok) {
-      const err = await aiRes.text();
-      console.error('Deepseek API error:', err);
-      throw new Error(`Deepseek error: ${aiRes.status}`);
-    }
-
-    const aiData = await aiRes.json();
-    const replyText: string = aiData.choices[0]?.message?.content ?? 'Error al procesar respuesta.';
+    const replyText: string = response.choices[0]?.message?.content ?? 'Error al procesar respuesta.';
 
     // 7. Parse CREATE_BRANCH if present
     const branchMatch = replyText.match(/<CREATE_BRANCH>([\s\S]*?)<\/CREATE_BRANCH>/);

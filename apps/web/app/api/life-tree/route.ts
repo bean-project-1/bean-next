@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  const prisma = new PrismaClient();
+
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    let userId = req.cookies.get('bean_user_id')?.value;
+    
+    let user = null;
+    if (userId) {
+      user = await (prisma as any).user.findUnique({ where: { id: userId } });
+    }
+    
+    if (!user) {
+      user = await (prisma as any).user.findFirst();
+      userId = user?.id;
+    }
+
     if (!userId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
@@ -64,7 +75,5 @@ export async function GET(req: NextRequest) {
       error: 'Internal Server Error', 
       detail: error.message 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

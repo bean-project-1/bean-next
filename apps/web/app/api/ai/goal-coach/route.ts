@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { GoalService } from '@/services/goal-service';
-
+import { deepseek } from '@/lib/openai';
 export async function POST(req: NextRequest) {
   try {
     const userId = req.cookies.get('bean_user_id')?.value;
@@ -76,29 +76,14 @@ REGLAS DE CONVERSACIÓN Y GATEKEEPING (CRÍTICO):
 
     const openAiMessages = [systemPrompt, ...messages];
 
-    // Llamada Nativa Fetch (Para evitar el bug de Windows con openai formdata-node SDK)
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: openAiMessages,
-        temperature: 0.7,
-        max_tokens: 500,
-      })
+    const response = await deepseek.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: openAiMessages as any,
+      temperature: 0.7,
+      max_tokens: 500,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[DeepSeek API Error]:', errorText);
-      return NextResponse.json({ error: `DeepSeek Error: ${response.status} - ${errorText}` }, { status: response.status });
-    }
-
-    const data = await response.json();
-    const reply = data.choices[0]?.message?.content || 'Hubo un error al procesar tu solicitud.';
+    const reply = response.choices[0]?.message?.content || 'Hubo un error al procesar tu solicitud.';
 
     return NextResponse.json({ reply });
 

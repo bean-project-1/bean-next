@@ -6,10 +6,10 @@
 // Called from the /dna page "Save" button.
 // =======================================================
 import { NextRequest, NextResponse } from 'next/server';
-const { PrismaClient } = require('../../../../lib/generated-prisma');
+import { prisma } from '@/lib/prisma';
 
 export async function PATCH(req: NextRequest) {
-  const prisma = new PrismaClient();
+
   try {
     const userId = req.cookies.get('bean_user_id')?.value;
     if (!userId) {

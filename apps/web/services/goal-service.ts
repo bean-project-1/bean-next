@@ -10,7 +10,8 @@ const DEFAULT_WEIGHTS = {
 
 export class GoalService {
   public getClient() {
-    return process.env.OPENAI_API_KEY ? openai : deepseek;
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+    return hasOpenAI ? openai : deepseek;
   }
 
 
@@ -33,7 +34,8 @@ export class GoalService {
       8. "domainExpertiseNeeded": (string) A comma-separated list of technical/domain knowledge needed.
     `;
 
-    const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+    const model = hasOpenAI ? "gpt-4o-mini" : "deepseek-chat";
     const client = this.getClient();
 
     try {
@@ -248,7 +250,8 @@ export class GoalService {
       }
     `;
 
-    const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+    const model = hasOpenAI ? "gpt-4o-mini" : "deepseek-chat";
     const client = this.getClient();
 
     try {

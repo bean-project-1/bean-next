@@ -52,8 +52,9 @@ export async function POST(req: NextRequest) {
         ${rawChat}
       `;
       
+      const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
       const distillationRes = await goalService.getClient().chat.completions.create({
-        model: process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat",
+        model: hasOpenAI ? "gpt-4o-mini" : "deepseek-chat",
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
       });
       

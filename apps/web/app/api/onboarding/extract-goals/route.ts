@@ -10,9 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || (process.env.DEEPSEEK_API_KEY ? 'https://api.deepseek.com/v1' : undefined)
+      apiKey: hasOpenAI ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL || (!hasOpenAI && process.env.DEEPSEEK_API_KEY ? 'https://api.deepseek.com/v1' : undefined)
     });
 
     const langfuse = new Langfuse();
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
       metadata: { textLength: text.length }
     });
 
-    const model = process.env.OPENAI_API_KEY ? "gpt-4o-mini" : "deepseek-chat";
+    const model = hasOpenAI ? "gpt-4o-mini" : "deepseek-chat";
 
     const prompt = `You are an expert AI Life Coach for the BEAN platform.
 Your task is to extract structured life goals from a user's natural language response.

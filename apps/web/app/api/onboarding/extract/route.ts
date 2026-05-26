@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
  * Priority: GPT (if key) > DeepSeek (if key)
  */
 function getAIClient() {
-  const gptKey = process.env.OPENAI_API_KEY;
+  const gptKey = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
   if (gptKey) {

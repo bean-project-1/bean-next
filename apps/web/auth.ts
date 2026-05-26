@@ -60,5 +60,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     }
+  },
+  events: {
+    async createUser({ user }) {
+      if (!user.id) return;
+      const dim = await prisma.dimension.findUnique({ where: { name: 'physical_health' }});
+      await prisma.baseCommitment.create({
+        data: {
+          userId: user.id,
+          title: 'Dormir',
+          type: 'routine',
+          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+          hoursPerDay: 8,
+          commuteHours: 0,
+          dimensionId: dim?.id || null
+        }
+      });
+    }
   }
 });

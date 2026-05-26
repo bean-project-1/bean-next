@@ -35,6 +35,20 @@ export async function POST(req: Request) {
       },
     });
 
+    const dim = await prisma.dimension.findUnique({ where: { name: 'physical_health' }});
+    
+    await prisma.baseCommitment.create({
+      data: {
+        userId: user.id,
+        title: 'Dormir',
+        type: 'routine',
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        hoursPerDay: 8,
+        commuteHours: 0,
+        dimensionId: dim?.id || null
+      }
+    });
+
     return NextResponse.json(
       { message: "Usuario creado exitosamente", user: { id: user.id, email: user.email, name: user.name } },
       { status: 201 }

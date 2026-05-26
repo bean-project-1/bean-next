@@ -215,21 +215,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Create default Sleep commitment
-    if (isNewUser) {
-      const physicalHealthId = dimMap.get('physical_health');
-      await prisma.baseCommitment.create({
-        data: {
-          userId: user.id,
-          title: 'Dormir',
-          type: 'routine',
-          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-          hoursPerDay: 8,
-          commuteHours: 0,
-          dimensionId: physicalHealthId || null
-        }
-      });
-    }
+    // Default sleep commitment is now created globally at User registration level
 
     // 6. Set session cookie
     const res = NextResponse.json(

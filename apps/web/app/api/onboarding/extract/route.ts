@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { openai, deepseek } from '@/lib/openai';
 import { langfuse } from '@/lib/langfuse';
 
@@ -33,7 +34,8 @@ function getAIClient() {
 
 export async function POST(req: NextRequest) {
   // Try to get userId for tracing
-  const userId = req.cookies.get('bean_user_id')?.value;
+  const session = await auth();
+    const userId = session?.user?.id;
 
   // Start Langfuse trace
   const trace = langfuse.trace({

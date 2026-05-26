@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const commitments = await prisma.baseCommitment.findMany({
@@ -21,7 +23,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();

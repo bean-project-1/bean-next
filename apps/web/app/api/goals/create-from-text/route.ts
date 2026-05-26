@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GoalService } from '@/services/goal-service';
 
@@ -7,7 +8,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     // 1. Auth check
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }

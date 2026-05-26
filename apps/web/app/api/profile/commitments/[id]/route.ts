@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     await prisma.baseCommitment.delete({
@@ -23,7 +25,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();

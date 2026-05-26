@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
 
   try {
-    let userId = req.cookies.get('bean_user_id')?.value;
-    
-    let user = null;
-    if (userId) {
-      user = await (prisma as any).user.findUnique({ where: { id: userId } });
-    }
-    
-    if (!user) {
-      user = await (prisma as any).user.findFirst();
-      userId = user?.id;
-    }
-
+    const session = await auth();
+    let userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

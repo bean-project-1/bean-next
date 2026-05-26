@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
-    "@bean/types": "*",
     "@bean/ui": "*",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.4.0",
@@ -34,7 +33,6 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-hook-form": "^7.76.1",
-    "reactflow": "^11.11.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {

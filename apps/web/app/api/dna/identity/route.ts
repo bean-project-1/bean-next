@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { identityService } from '@/services/identity-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const identity = await identityService.getFullIdentity(userId);

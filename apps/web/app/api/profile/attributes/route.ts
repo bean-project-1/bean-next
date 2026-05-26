@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
 
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }

@@ -3,9 +3,9 @@
 // apps/web/app/api/profile/route.ts
 // =======================================================
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { setUserCookie } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
       { success: true as const, data: { userId: user.id, isNewUser } },
       { status: 201 }
     );
-    setUserCookie(res, user.id);
+    // Cookie is now managed by NextAuth during sign-in, not here
     return res;
 
   } catch (err) {
@@ -257,7 +257,8 @@ export async function POST(req: NextRequest) {
 // ── GET — Fetch current user + profile + dimension scores ──
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
@@ -335,7 +336,8 @@ export async function GET(req: NextRequest) {
 // ── PUT — Update basic user profile (name) ──
 export async function PUT(req: NextRequest) {
   try {
-    const userId = req.cookies.get('bean_user_id')?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },

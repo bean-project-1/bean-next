@@ -73,7 +73,7 @@ export async function generateInsights(request) {
     //   model: process.env.OPENAI_MODEL ?? 'gpt-4-turbo-preview',
     //   messages: [
     //     { role: 'system', content: buildSystemPrompt() },
-    //     { role: 'user', content: buildProfilePrompt(request.profile) },
+    //     { role: 'user', content: buildProfilePrompt({ dimensionScores: [] }) },
     //   ],
     //   response_format: { type: 'json_object' },
     // });

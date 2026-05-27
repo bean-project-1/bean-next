@@ -130,6 +130,34 @@ export async function GET(req: NextRequest) {
       });
     });
 
+    // 3. Fetch DailyTasks
+    const dailyTasks = await prisma.dailyTask.findMany({
+      where: { userId }
+    });
+
+    dailyTasks.forEach(task => {
+      // Logic for overdue tasks: if incomplete and date is in the past, treat as today
+      let targetDate = new Date(task.date);
+      let isOverdue = false;
+
+      if (!task.isCompleted && targetDate < startOfToday) {
+        targetDate = new Date(startOfToday); // Carry over to today
+        isOverdue = true;
+      }
+
+      events.push({
+        id: task.id,
+        title: task.title,
+        description: isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida',
+        date: targetDate.toISOString(),
+        type: 'daily',
+        estimatedHours: task.estimatedHours || 0,
+        status: task.isCompleted ? 'completed' : 'pending',
+        itemType: 'daily',
+        isOverdue
+      });
+    });
+
     return NextResponse.json({ success: true, events });
   } catch (error: any) {
     console.error('[GET /api/schedule] Error:', error);

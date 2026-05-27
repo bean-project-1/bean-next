@@ -137,6 +137,7 @@ function AgendaContent({
   selectedDay,
   onOpenActivity,
   onItemClick,
+  onRefresh,
 }: {
   loading: boolean;
   dailyTasks: ScheduledEvent[];
@@ -147,10 +148,55 @@ function AgendaContent({
   selectedDay: Date;
   onOpenActivity: (event: ScheduledEvent) => void;
   onItemClick?: () => void;
+  onRefresh?: () => void;
 }) {
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskHours, setNewTaskHours] = useState('');
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+
   const handleClick = (event: ScheduledEvent) => {
+    // If it's a daily task, just toggle it directly instead of opening full modal (optional, but requested simple checkboxes)
+    if (event.itemType === 'daily') {
+      handleToggleDaily(event);
+      return;
+    }
     onOpenActivity(event);
     onItemClick?.();
+  };
+
+  const handleToggleDaily = async (event: ScheduledEvent) => {
+    try {
+      await fetch(`/api/schedule/daily-tasks/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: event.status !== 'completed' })
+      });
+      onRefresh?.();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCreateDailyTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    setIsCreatingTask(true);
+    try {
+      await fetch('/api/schedule/daily-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTaskTitle,
+          estimatedHours: parseFloat(newTaskHours) || 0,
+          date: selectedDay.toISOString()
+        })
+      });
+      setNewTaskTitle('');
+      setNewTaskHours('');
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCreatingTask(false);
+    }
   };
 
   return (
@@ -172,12 +218,12 @@ function AgendaContent({
               <div
                 key={event.id}
                 onClick={() => handleClick(event)}
-                className="group bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+                className={`group bg-white p-4 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] ${event.status === 'completed' ? 'border-slate-100 opacity-60' : (event as any).isOverdue ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border flex items-center gap-1
                     ${event.status === 'completed' ? 'bg-slate-50 text-slate-400 border-slate-200' : 'bg-green-50 text-green-700 border-green-100'}`}>
-                    {event.type}
+                    {event.status === 'completed' ? '✓' : '○'} {event.type}
                     {event.estimatedHours > 0 && (
                       <>
                         <span className="opacity-40">•</span>
@@ -188,9 +234,16 @@ function AgendaContent({
                       </>
                     )}
                   </span>
-                  <span className="text-[9px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase">
-                    {event.goalTitle}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {(event as any).isOverdue && !event.status.includes('completed') && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold" title="Atrasada">
+                        ⚠️ Ayer
+                      </span>
+                    )}
+                    <span className="text-[9px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase">
+                      {event.goalTitle || 'Rápida'}
+                    </span>
+                  </div>
                 </div>
                 <h3 className={`text-xs font-black text-slate-800 leading-tight ${event.status === 'completed' ? 'line-through opacity-50' : ''}`}>
                   {event.title}
@@ -198,6 +251,30 @@ function AgendaContent({
               </div>
             ))
           )}
+
+          {/* Create Daily Task Form */}
+          <form onSubmit={handleCreateDailyTask} className="mt-4 flex gap-2 items-center bg-white p-2 rounded-2xl border border-stone-200 shadow-sm focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+            <button type="submit" disabled={isCreatingTask || !newTaskTitle.trim()} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-xl bg-stone-100 text-stone-400 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50">
+              +
+            </button>
+            <input 
+              type="text" 
+              placeholder="Añadir tarea..." 
+              value={newTaskTitle}
+              onChange={e => setNewTaskTitle(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-stone-700 placeholder-stone-400"
+            />
+            <input 
+              type="number" 
+              placeholder="Horas" 
+              step="0.1"
+              min="0"
+              value={newTaskHours}
+              onChange={e => setNewTaskHours(e.target.value)}
+              className="w-14 bg-stone-50 border border-stone-100 rounded-lg p-1.5 text-center text-[10px] font-bold text-stone-600 outline-none focus:border-emerald-500"
+              title="Horas estimadas (opcional)"
+            />
+          </form>
         </div>
       </div>
 
@@ -484,6 +561,7 @@ export function ScheduleView() {
     totalDailyHours,
     selectedDay,
     onOpenActivity: handleOpenActivity,
+    onRefresh: fetchEvents,
   };
 
   return (

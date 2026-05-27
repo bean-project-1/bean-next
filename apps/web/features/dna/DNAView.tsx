@@ -24,6 +24,10 @@ export function DNAView() {
   const [loadingCommitments, setLoadingCommitments] = useState(true);
   const [editingCommitment, setEditingCommitment] = useState<any | null>(null);
 
+  const [addingAttributeForDim, setAddingAttributeForDim] = useState<string | null>(null);
+  const [newAttributeName, setNewAttributeName] = useState('');
+  const [savingAttribute, setSavingAttribute] = useState(false);
+
   const fetchCommitments = useCallback(() => {
     setLoadingCommitments(true);
     fetch('/api/profile/commitments')
@@ -40,6 +44,7 @@ export function DNAView() {
       .then(json => {
         if (json.success) setIdentity(json.identity);
       })
+      .catch(e => console.error('Error fetching identity:', e))
       .finally(() => setLoadingIdentity(false));
 
     fetchCommitments();
@@ -353,7 +358,65 @@ export function DNAView() {
                               </div>
                             ))
                           ) : (
-                            <p className="text-xs text-slate-400 italic">No hay atributos definidos.</p>
+                            <p className="text-xs text-slate-400 italic w-full mb-1">No hay atributos definidos.</p>
+                          )}
+                          
+                          {addingAttributeForDim === selectedDimKey ? (
+                            <form 
+                              className="flex items-center gap-2 w-full mt-2" 
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!newAttributeName.trim() || savingAttribute) return;
+                                setSavingAttribute(true);
+                                try {
+                                  const res = await fetch('/api/dna/attributes', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      dimensionId: identity?.[selectedDimKey]?.dimension?.id,
+                                      name: newAttributeName
+                                    })
+                                  });
+                                  if (res.ok) {
+                                    setNewAttributeName('');
+                                    setAddingAttributeForDim(null);
+                                    fetch('/api/dna/identity')
+                                      .then(r => r.json())
+                                      .then(json => {
+                                        if (json.success) setIdentity(json.identity);
+                                      });
+                                  }
+                                } finally {
+                                  setSavingAttribute(false);
+                                }
+                              }}
+                            >
+                              <input 
+                                type="text"
+                                value={newAttributeName}
+                                onChange={e => setNewAttributeName(e.target.value)}
+                                placeholder="Ej: Pensamiento Crítico"
+                                className="flex-1 px-4 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-violet-500 shadow-inner"
+                                autoFocus
+                                disabled={savingAttribute}
+                              />
+                              <button type="submit" disabled={savingAttribute || !newAttributeName.trim()} className="bg-violet-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                                {savingAttribute ? '...' : 'Guardar'}
+                              </button>
+                              <button type="button" onClick={() => setAddingAttributeForDim(null)} className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
+                                ✕
+                              </button>
+                            </form>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                setAddingAttributeForDim(selectedDimKey);
+                                setNewAttributeName('');
+                              }}
+                              className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold uppercase hover:border-violet-300 hover:text-violet-500 transition-all flex items-center gap-2 w-fit mt-1"
+                            >
+                              <span>+</span> Añadir Característica
+                            </button>
                           )}
                         </div>
                       </div>

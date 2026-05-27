@@ -111,7 +111,7 @@ export default function HomePage() {
   if (!treeData) return null;
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-transparent">
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <main className="flex-1 relative">
           <LifeTree 

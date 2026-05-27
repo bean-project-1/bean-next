@@ -7,17 +7,17 @@
    apps/web/app/globals.css
    ===================================================== */
 
-/* ----- CSS Variables (Light Theme) ----- */
+/* ----- CSS Variables (Warm Organic Light Theme) ----- */
 :root {
-  --background: #020617; /* Deep Navy Obsidian */
-  --foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --border: rgba(255, 255, 255, 0.08);
-  --card: rgba(15, 23, 42, 0.6);
-  --primary: #8b5cf6;
+  --background: #fafaf9; /* stone-50 */
+  --foreground: #292524; /* stone-800 */
+  --muted: #f5f5f4; /* stone-100 */
+  --muted-foreground: #78716c; /* stone-500 */
+  --border: rgba(0, 0, 0, 0.05);
+  --card: rgba(255, 255, 255, 0.8);
+  --primary: #4f46e5; /* keeping indigo/violet but slightly softer */
   --primary-foreground: #ffffff;
-  --accent: #3b82f6;
+  --accent: #10b981; /* emerald */
   --radius: 1rem;
 }
 
@@ -69,7 +69,7 @@ body {
   }
 
   .glass {
-    @apply border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl;
+    @apply border border-black/5 bg-white/60 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)];
   }
 
   .section-container {
@@ -86,10 +86,10 @@ body {
 
   .mesh-gradient {
     background-image: 
-      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(245, 245, 244, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(254, 252, 232, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(240, 253, 244, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(238, 242, 255, 1) 0px, transparent 50%);
   }
 }
 

@@ -33,6 +33,8 @@ model User {
   chatSessions    ChatSession[]
   suggestedPaths  SuggestedPath[]
   baseCommitments BaseCommitment[]
+  postIts         PostIt[]
+  dailyTasks      DailyTask[]
 
   @@map("users")
 }
@@ -395,4 +397,45 @@ model ChatMessage {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
+}
+
+//
+// ───────────────── POST-ITS (TABLERO) ─────────────────
+//
+model PostIt {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  content   String
+  color     String   @default("yellow")
+  x         Float    @default(0) // Para arrastrar
+  y         Float    @default(0) // Para arrastrar
+  rotation  Float    @default(0) // Rotación orgánica
+  zIndex    Int      @default(0)
+  isPinned  Boolean  @default(false) @map("is_pinned")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("post_its")
+}
+
+//
+// ───────────────── DAILY TASKS (AGENDA RÁPIDA) ─────────────────
+//
+model DailyTask {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @map("user_id") @db.ObjectId
+  title          String
+  isCompleted    Boolean  @default(false) @map("is_completed")
+  date           DateTime // La fecha para la que se creó o a la que se arrastró
+  estimatedHours Float?   @map("estimated_hours") // Opcional, tiempo estimado
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("daily_tasks")
 }

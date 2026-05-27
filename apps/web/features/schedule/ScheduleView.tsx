@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PostItWall } from './PostItWall';
 
 import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
 import { Leaf } from '@/features/life-tree/types';
@@ -135,6 +137,7 @@ function AgendaContent({
   selectedDay,
   onOpenActivity,
   onItemClick,
+  onRefresh,
 }: {
   loading: boolean;
   dailyTasks: ScheduledEvent[];
@@ -145,10 +148,55 @@ function AgendaContent({
   selectedDay: Date;
   onOpenActivity: (event: ScheduledEvent) => void;
   onItemClick?: () => void;
+  onRefresh?: () => void;
 }) {
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskHours, setNewTaskHours] = useState('');
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+
   const handleClick = (event: ScheduledEvent) => {
+    // If it's a daily task, just toggle it directly instead of opening full modal (optional, but requested simple checkboxes)
+    if (event.itemType === 'daily') {
+      handleToggleDaily(event);
+      return;
+    }
     onOpenActivity(event);
     onItemClick?.();
+  };
+
+  const handleToggleDaily = async (event: ScheduledEvent) => {
+    try {
+      await fetch(`/api/schedule/daily-tasks/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: event.status !== 'completed' })
+      });
+      onRefresh?.();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCreateDailyTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    setIsCreatingTask(true);
+    try {
+      await fetch('/api/schedule/daily-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTaskTitle,
+          estimatedHours: parseFloat(newTaskHours) || 0,
+          date: selectedDay.toISOString()
+        })
+      });
+      setNewTaskTitle('');
+      setNewTaskHours('');
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCreatingTask(false);
+    }
   };
 
   return (
@@ -170,12 +218,12 @@ function AgendaContent({
               <div
                 key={event.id}
                 onClick={() => handleClick(event)}
-                className="group bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+                className={`group bg-white p-4 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] ${event.status === 'completed' ? 'border-slate-100 opacity-60' : (event as any).isOverdue ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border flex items-center gap-1
                     ${event.status === 'completed' ? 'bg-slate-50 text-slate-400 border-slate-200' : 'bg-green-50 text-green-700 border-green-100'}`}>
-                    {event.type}
+                    {event.status === 'completed' ? '✓' : '○'} {event.type}
                     {event.estimatedHours > 0 && (
                       <>
                         <span className="opacity-40">•</span>
@@ -186,9 +234,16 @@ function AgendaContent({
                       </>
                     )}
                   </span>
-                  <span className="text-[9px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase">
-                    {event.goalTitle}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {(event as any).isOverdue && !event.status.includes('completed') && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold" title="Atrasada">
+                        ⚠️ Ayer
+                      </span>
+                    )}
+                    <span className="text-[9px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase">
+                      {event.goalTitle || 'Rápida'}
+                    </span>
+                  </div>
                 </div>
                 <h3 className={`text-xs font-black text-slate-800 leading-tight ${event.status === 'completed' ? 'line-through opacity-50' : ''}`}>
                   {event.title}
@@ -196,6 +251,30 @@ function AgendaContent({
               </div>
             ))
           )}
+
+          {/* Create Daily Task Form */}
+          <form onSubmit={handleCreateDailyTask} className="mt-4 flex gap-2 items-center bg-white p-2 rounded-2xl border border-stone-200 shadow-sm focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+            <button type="submit" disabled={isCreatingTask || !newTaskTitle.trim()} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-xl bg-stone-100 text-stone-400 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50">
+              +
+            </button>
+            <input 
+              type="text" 
+              placeholder="Añadir tarea..." 
+              value={newTaskTitle}
+              onChange={e => setNewTaskTitle(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-stone-700 placeholder-stone-400"
+            />
+            <input 
+              type="number" 
+              placeholder="Horas" 
+              step="0.1"
+              min="0"
+              value={newTaskHours}
+              onChange={e => setNewTaskHours(e.target.value)}
+              className="w-14 bg-stone-50 border border-stone-100 rounded-lg p-1.5 text-center text-[10px] font-bold text-stone-600 outline-none focus:border-emerald-500"
+              title="Horas estimadas (opcional)"
+            />
+          </form>
         </div>
       </div>
 
@@ -278,12 +357,23 @@ function AgendaContent({
 
 // ─── Main ScheduleView ────────────────────────────────────────────────────────
 export function ScheduleView() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [loadedMonths, setLoadedMonths] = useState<Date[]>([
+    startOfMonth(subMonths(new Date(), 1)),
+    startOfMonth(new Date()),
+    startOfMonth(addMonths(new Date(), 1))
+  ]);
+  const [activeVisibleMonth, setActiveVisibleMonth] = useState<Date>(startOfMonth(new Date()));
   const [events, setEvents] = useState<ScheduledEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Leaf | null>(null);
+
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const topTriggerRef = useRef<HTMLDivElement>(null);
+  const bottomTriggerRef = useRef<HTMLDivElement>(null);
 
   const fetchEvents = () => {
     fetch('/api/schedule')
@@ -296,15 +386,84 @@ export function ScheduleView() {
 
   useEffect(() => { fetchEvents(); }, []);
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  // Observers for infinite scroll
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (entry.target.id === 'top-trigger') {
+            setLoadedMonths(prev => {
+              const first = prev[0];
+              if (prev.length > 24) return prev; 
+              return [startOfMonth(subMonths(first, 1)), ...prev];
+            });
+          } else if (entry.target.id === 'bottom-trigger') {
+            setLoadedMonths(prev => {
+              const last = prev[prev.length - 1];
+              if (prev.length > 24) return prev;
+              return [...prev, startOfMonth(addMonths(last, 1))];
+            });
+          }
+        }
+      });
+    }, { root: scrollContainerRef.current, rootMargin: '400px' });
 
-  // Calendar logic
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart);
-  const endDate = endOfWeek(monthEnd);
-  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+    if (topTriggerRef.current) observer.observe(topTriggerRef.current);
+    if (bottomTriggerRef.current) observer.observe(bottomTriggerRef.current);
+
+    return () => observer.disconnect();
+  }, [loadedMonths]);
+
+  // Observer for active month (to update header)
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+          const monthTime = parseInt(entry.target.getAttribute('data-month') || '0');
+          if (monthTime) {
+            setActiveVisibleMonth(new Date(monthTime));
+          }
+        }
+      });
+    }, { root: scrollContainerRef.current, threshold: 0.3 });
+
+    document.querySelectorAll('.month-block').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, [loadedMonths]);
+
+  // Initial scroll to current month
+  const didInitialScroll = useRef(false);
+  useEffect(() => {
+    if (!didInitialScroll.current && loadedMonths.length > 0) {
+      const el = document.getElementById(`month-${startOfMonth(new Date()).getTime()}`);
+      if (el && scrollContainerRef.current) {
+        el.scrollIntoView({ block: 'start' });
+        didInitialScroll.current = true;
+      }
+    }
+  }, [loadedMonths]);
+
+  const jumpToMonth = (date: Date) => {
+    const target = startOfMonth(date);
+    setLoadedMonths([
+      startOfMonth(subMonths(target, 1)),
+      target,
+      startOfMonth(addMonths(target, 1))
+    ]);
+    setActiveVisibleMonth(target);
+    setIsMonthPickerOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById(`month-${target.getTime()}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const jumpToToday = () => {
+    setSelectedDay(new Date());
+    jumpToMonth(new Date());
+  };
 
   const getEventsForDay = (day: Date) =>
     events.filter(e => {
@@ -402,207 +561,275 @@ export function ScheduleView() {
     totalDailyHours,
     selectedDay,
     onOpenActivity: handleOpenActivity,
+    onRefresh: fetchEvents,
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-[calc(100vh-8rem)] bg-transparent relative">
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="px-4 sm:px-6 py-4 sm:py-8 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+      {/* ── Header & Quick Nav ───────────────────────────────────────────── */}
+      <header className="px-4 sm:px-6 py-4 sm:py-6 border-b border-stone-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 bg-white/40 backdrop-blur-md z-20">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
             📅 Mi Calendario
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-0.5 font-medium">Gestiona tu tiempo y carga de trabajo</p>
+          <p className="text-xs sm:text-sm text-stone-500 mt-0.5 font-medium">Gestiona tu tiempo y carga de trabajo</p>
         </div>
 
-        {/* Month navigation */}
-        <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 p-1 sm:p-1.5 rounded-2xl border border-slate-100 self-start sm:self-auto">
+        {/* Month Dropdown Trigger & Today Button */}
+        <div className="flex items-center gap-2 sm:gap-3 bg-stone-50/80 backdrop-blur-sm p-1.5 rounded-2xl border border-stone-200/50 shadow-sm relative">
           <button
-            onClick={prevMonth}
-            id="calendar-prev-month"
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm transition-all text-slate-500 active:scale-90"
+            onClick={jumpToToday}
+            className="px-3 sm:px-4 py-2 flex items-center justify-center rounded-xl hover:bg-emerald-50 hover:text-emerald-700 transition-all text-stone-600 font-bold text-xs uppercase tracking-widest active:scale-95"
           >
-            ←
+            Hoy
           </button>
-          <span className="text-xs sm:text-sm font-bold text-slate-700 min-w-[100px] sm:min-w-[120px] text-center uppercase tracking-widest px-1 sm:px-2">
-            {format(currentMonth, 'MMMM yyyy', { locale: es })}
-          </span>
+          <div className="w-px h-6 bg-stone-200"></div>
           <button
-            onClick={nextMonth}
-            id="calendar-next-month"
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm transition-all text-slate-500 active:scale-90"
+            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
+            className="px-3 sm:px-4 py-2 flex items-center gap-2 rounded-xl hover:bg-white hover:shadow-sm transition-all text-stone-700 active:scale-95"
           >
-            →
+            <span className="text-xs sm:text-sm font-black uppercase tracking-widest">
+              {format(activeVisibleMonth, 'MMMM yyyy', { locale: es })}
+            </span>
+            <span className="text-[10px]">▼</span>
           </button>
+
+          {/* Month Picker Popover */}
+          {isMonthPickerOpen && (
+            <div className="absolute top-full mt-2 right-0 w-64 bg-white/90 backdrop-blur-2xl border border-stone-200/50 rounded-3xl shadow-2xl p-4 z-50 animate-in zoom-in-95 duration-200">
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const m = new Date(activeVisibleMonth.getFullYear(), i, 1);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => jumpToMonth(m)}
+                      className={`p-2 rounded-xl text-xs font-bold uppercase tracking-tighter transition-all
+                        ${i === activeVisibleMonth.getMonth() ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-stone-100 text-stone-600'}`}
+                    >
+                      {format(m, 'MMM', { locale: es })}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-100">
+                <button onClick={() => jumpToMonth(subMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">← {activeVisibleMonth.getFullYear() - 1}</button>
+                <span className="text-sm font-black text-stone-800">{activeVisibleMonth.getFullYear()}</span>
+                <button onClick={() => jumpToMonth(addMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">{activeVisibleMonth.getFullYear() + 1} →</button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* Calendar grid */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-6">
-          <div className="grid grid-cols-7 border-t border-l border-slate-100 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
+        {/* ── Left Sidebar (Room Board) ──────────────────────────────────── */}
+        <aside className="hidden xl:flex w-72 flex-col border-r border-stone-200/50 bg-stone-50/50 backdrop-blur-xl z-20">
+          <div className="p-6 border-b border-stone-200/50 bg-white/60 shrink-0">
+            <h2 className="text-sm font-black text-stone-900 uppercase tracking-tighter">Tablero</h2>
+            <p className="text-[11px] text-stone-400 font-bold mt-1 uppercase tracking-widest">Notas & Foco</p>
+          </div>
+          <div className="flex-1 relative overflow-hidden bg-stone-100/30">
+            {/* Polaroid Focus Widget */}
+            <div className="absolute top-4 right-4 rotate-3 bg-white p-2 pb-6 shadow-md border border-stone-200 z-10 w-32 hover:rotate-0 hover:scale-105 transition-all">
+              <div className="bg-stone-100 w-full h-24 mb-2 flex items-center justify-center overflow-hidden">
+                <span className="text-4xl">🚀</span>
+              </div>
+              <p className="text-center italic font-medium text-xs text-stone-600">Focus del mes</p>
+              {/* Tape */}
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-white/40 backdrop-blur-sm border border-white/20 shadow-sm rotate-[-5deg]"></div>
+            </div>
 
-            {/* Day headers */}
+            <PostItWall />
+          </div>
+        </aside>
+
+        {/* Infinite Scroll Calendar Area */}
+        <div className="flex-1 flex flex-col overflow-hidden p-2 sm:p-6 pb-0 sm:pb-0">
+          
+          {/* Sticky Day Headers */}
+          <div className="grid grid-cols-7 border-t border-l border-r border-stone-200/50 bg-stone-50/80 backdrop-blur-md rounded-t-2xl sm:rounded-t-[2rem] overflow-hidden z-10 shrink-0">
             {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((dayShort, i) => (
-              <div
-                key={i}
-                className="py-2 sm:py-4 bg-slate-50 border-b border-r border-slate-100 text-center"
-              >
-                {/* Show short letter on mobile, full abbrev on desktop */}
-                <span className="sm:hidden text-[9px] font-black text-slate-400 uppercase">{dayShort}</span>
-                <span className="hidden sm:inline text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+              <div key={i} className="py-2 sm:py-4 border-b border-r border-stone-200/50 text-center">
+                <span className="sm:hidden text-[9px] font-black text-stone-400 uppercase">{dayShort}</span>
+                <span className="hidden sm:inline text-[10px] font-black text-stone-500 uppercase tracking-tighter">
                   {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}
                 </span>
               </div>
             ))}
+          </div>
 
-            {/* Day cells */}
-            {calendarDays.map((day, i) => {
-              const dayEvents = getEventsForDay(day);
-              const validEventsForHours = dayEvents.filter(e => {
-                if (e.itemType === 'commitment' || e.itemType === 'habit') return true;
-                if (!e.startDate) return true;
-                return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) <= 14 * 24 * 60 * 60 * 1000;
-              });
-              const dayHours = validEventsForHours.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
-
-              const isCurrentMonth = isSameMonth(day, monthStart);
-              const isSelected = isSameDay(day, selectedDay);
-              const today = isToday(day);
+          {/* Scrollable Container */}
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative rounded-b-2xl sm:rounded-b-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" style={{ overflowAnchor: 'auto' }}>
+            
+            <div id="top-trigger" ref={topTriggerRef} className="h-4 w-full" />
+            
+            {loadedMonths.map(month => {
+              const monthStart = startOfMonth(month);
+              const startDate = startOfWeek(monthStart);
+              const endDate = endOfWeek(endOfMonth(monthStart));
+              const days = eachDayOfInterval({ start: startDate, end: endDate });
 
               return (
-                <div
-                  key={i}
-                  onClick={() => {
-                    setSelectedDay(day);
-                    setIsBottomSheetOpen(true);
-                  }}
-                  className={`
-                    min-h-[60px] sm:min-h-[120px] p-1.5 sm:p-3
-                    border-b border-r border-slate-100 transition-all cursor-pointer group
-                    ${!isCurrentMonth ? 'bg-slate-50/30' : 'bg-white'}
-                    ${isSelected ? 'ring-2 ring-inset ring-green-500 bg-green-50/20' : 'hover:bg-slate-50/50'}
-                    active:bg-green-50/30
-                  `}
-                >
-                  {/* Date number + hours badge */}
-                  <div className="flex items-center justify-between mb-1 sm:mb-2">
-                    <span className={`
-                      text-[10px] sm:text-xs font-black
-                      w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md sm:rounded-lg
-                      transition-colors
-                      ${today ? 'bg-green-500 text-white shadow-md shadow-green-500/20'
-                        : isSelected ? 'text-green-700'
-                        : 'text-slate-400'}
-                    `}>
-                      {format(day, 'd')}
+                <div key={month.getTime()} id={`month-${month.getTime()}`} data-month={month.getTime()} className="month-block relative">
+                  
+                  {/* Sticky Month Divider */}
+                  <div className="sticky top-0 z-[5] py-2 sm:py-3 text-center bg-white/60 backdrop-blur-md border-b border-l border-r border-stone-200/50 shadow-sm">
+                    <span className="text-[10px] sm:text-xs font-black text-stone-700 uppercase tracking-widest">
+                      {format(month, 'MMMM yyyy', { locale: es })}
                     </span>
-                    {dayHours > 0 && (
-                      <span className={`
-                        hidden sm:inline
-                        text-[9px] font-black px-1.5 py-0.5 rounded-md
-                        ${dayHours > 6 ? 'bg-red-100 text-red-600' : dayHours > 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}
-                      `}>
-                        {dayHours}h
-                      </span>
-                    )}
                   </div>
 
-                  {/* Event pills — on mobile just show dots, desktop shows pills */}
-                  <div className="hidden sm:block space-y-1">
-                    {(() => {
-                      const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
-                      const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
-                      const displayLimit = cellCommitments.length > 0 ? 2 : 3;
-                      
-                      const visibleEvents = regularEvents.slice(0, displayLimit);
-                      const hasMoreEvents = regularEvents.length > displayLimit;
+                  <div className="grid grid-cols-7 border-l border-r border-stone-200/50 bg-white/40 backdrop-blur-md">
+                    {days.map((day, i) => {
+                      const dayEvents = getEventsForDay(day);
+                      const validEventsForHours = dayEvents.filter(e => {
+                        if (e.itemType === 'commitment' || e.itemType === 'habit') return true;
+                        if (!e.startDate) return true;
+                        return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) <= 14 * 24 * 60 * 60 * 1000;
+                      });
+                      const dayHours = validEventsForHours.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
+
+                      const isCurrentMonth = isSameMonth(day, monthStart);
+                      const isSelected = isSameDay(day, selectedDay);
+                      const today = isToday(day);
 
                       return (
-                        <>
-                          {visibleEvents.map(e => {
-                            const isLongRange = e.startDate &&
-                              (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
-                            return (
-                              <div
-                                key={e.id}
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  handleOpenActivity(e);
-                                }}
-                                className={`text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80
-                                  ${e.status === 'completed'
-                                    ? 'bg-slate-100 text-slate-400 border-slate-300'
-                                    : isLongRange
-                                      ? 'bg-violet-50 text-violet-700 border-violet-400 opacity-60'
-                                      : 'bg-white text-slate-700 border-green-500'}`}
-                              >
-                                {e.title}
-                              </div>
-                            );
-                          })}
-                          
-                          {cellCommitments.length > 0 && (
-                            <div className="text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm bg-slate-50 text-slate-400 border-slate-300 italic">
-                              🔒 {cellCommitments.length} Compromiso{cellCommitments.length > 1 ? 's' : ''} Base
+                        <div
+                          key={i}
+                          onClick={() => {
+                            setSelectedDay(day);
+                            setIsBottomSheetOpen(true);
+                          }}
+                          className={`
+                            min-h-[60px] sm:min-h-[85px] lg:min-h-[95px] p-1.5 sm:p-3
+                            border-b border-r border-stone-200/50 transition-all cursor-pointer group
+                            ${!isCurrentMonth ? 'bg-stone-50/30' : 'bg-transparent'}
+                            ${isSelected ? 'ring-2 ring-inset ring-emerald-500 bg-emerald-50/40' : 'hover:bg-white/90'}
+                            active:bg-emerald-50/50
+                          `}
+                        >
+                          <div className="flex items-center justify-between mb-1 sm:mb-2">
+                            <span className={`
+                              text-[10px] sm:text-xs font-black
+                              w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md sm:rounded-lg
+                              transition-colors
+                              ${today ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                                : isSelected ? 'text-emerald-700'
+                                : 'text-stone-400'}
+                            `}>
+                              {format(day, 'd')}
+                            </span>
+                            {dayHours > 0 && (
+                              <span className={`
+                                hidden sm:inline
+                                text-[9px] font-black px-1.5 py-0.5 rounded-md
+                                ${dayHours > 6 ? 'bg-red-100 text-red-600' : dayHours > 3 ? 'bg-amber-100 text-amber-600' : 'bg-stone-100 text-stone-500'}
+                              `}>
+                                {dayHours}h
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="hidden sm:block space-y-1">
+                            {(() => {
+                              const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
+                              const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
+                              const displayLimit = cellCommitments.length > 0 ? 2 : 3;
+                              
+                              const visibleEvents = regularEvents.slice(0, displayLimit);
+                              const hasMoreEvents = regularEvents.length > displayLimit;
+
+                              return (
+                                <>
+                                  {visibleEvents.map(e => {
+                                    const isLongRange = e.startDate &&
+                                      (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
+                                    return (
+                                      <div
+                                        key={e.id}
+                                        onClick={(ev) => {
+                                          ev.stopPropagation();
+                                          handleOpenActivity(e);
+                                        }}
+                                        className={`text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80
+                                          ${e.status === 'completed'
+                                            ? 'bg-stone-100 text-stone-400 border-stone-300'
+                                            : isLongRange
+                                              ? 'bg-violet-50 text-violet-700 border-violet-400 opacity-60'
+                                              : 'bg-white text-stone-700 border-emerald-500'}`}
+                                      >
+                                        {e.title}
+                                      </div>
+                                    );
+                                  })}
+                                  
+                                  {cellCommitments.length > 0 && (
+                                    <div className="text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm bg-stone-50 text-stone-400 border-stone-300 italic">
+                                      🔒 {cellCommitments.length} Compromiso{cellCommitments.length > 1 ? 's' : ''} Base
+                                    </div>
+                                  )}
+
+                                  {hasMoreEvents && (
+                                    <div className="text-[8px] text-stone-400 font-bold pl-2">+{regularEvents.length - displayLimit} más</div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+
+                          {dayEvents.length > 0 && (
+                            <div className="sm:hidden flex gap-0.5 flex-wrap mt-1">
+                              {(() => {
+                                const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
+                                const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
+                                
+                                return (
+                                  <>
+                                    {regularEvents.slice(0, 3).map((e, idx) => (
+                                      <span
+                                        key={idx}
+                                        className={`w-1.5 h-1.5 rounded-full shrink-0
+                                          ${e.status === 'completed' ? 'bg-stone-200'
+                                            : e.startDate && (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000
+                                              ? 'bg-violet-400'
+                                              : 'bg-emerald-500'}`}
+                                      />
+                                    ))}
+                                    {cellCommitments.length > 0 && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 shrink-0" />
+                                    )}
+                                    {regularEvents.length > 3 && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0" />
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
-
-                          {hasMoreEvents && (
-                            <div className="text-[8px] text-slate-400 font-bold pl-2">+{regularEvents.length - displayLimit} más</div>
-                          )}
-                        </>
+                        </div>
                       );
-                    })()}
+                    })}
                   </div>
-
-                  {/* Mobile: coloured dot indicators */}
-                  {dayEvents.length > 0 && (
-                    <div className="sm:hidden flex gap-0.5 flex-wrap mt-1">
-                      {(() => {
-                        const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
-                        const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
-                        
-                        return (
-                          <>
-                            {regularEvents.slice(0, 3).map((e, idx) => (
-                              <span
-                                key={idx}
-                                className={`w-1.5 h-1.5 rounded-full shrink-0
-                                  ${e.status === 'completed' ? 'bg-slate-200'
-                                    : e.startDate && (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000
-                                      ? 'bg-violet-400'
-                                      : 'bg-green-500'}`}
-                              />
-                            ))}
-                            {cellCommitments.length > 0 && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                            )}
-                            {regularEvents.length > 3 && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0" />
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
                 </div>
               );
             })}
+
+            <div id="bottom-trigger" ref={bottomTriggerRef} className="h-4 w-full" />
           </div>
         </div>
 
         {/* ── Desktop Sidebar Agenda (hidden on mobile) ─────────────────── */}
-        <aside className="hidden lg:flex w-80 border-l border-slate-100 bg-slate-50/30 flex-col">
-          <div className="p-6 border-b border-slate-100 bg-white shrink-0">
+        <aside className="hidden lg:flex w-80 border-l border-stone-200/50 bg-stone-50/50 backdrop-blur-xl flex-col z-20">
+          <div className="p-6 border-b border-stone-200/50 bg-white/60 shrink-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Agenda del Día</h2>
+              <h2 className="text-sm font-black text-stone-900 uppercase tracking-tighter">Agenda del Día</h2>
               <div className="flex items-center gap-1.5">
                 {totalDailyHours > 0 && (
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-600'}`}>
                     {Math.round(totalDailyHours)}h ocupadas
                   </span>
                 )}
@@ -611,7 +838,7 @@ export function ScheduleView() {
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+            <p className="text-[11px] text-stone-400 font-bold mt-1 uppercase tracking-widest">
               {format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
             </p>
           </div>
@@ -629,11 +856,10 @@ export function ScheduleView() {
           title="Agenda del Día"
           subtitle={format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
         >
-          {/* Hour summary pill */}
           <div className="flex items-center gap-2 mb-2">
             {totalDailyHours > 0 && (
               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black
-                ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-600'}`}>
                 ⏱ {Math.round(totalDailyHours)}h ocupadas
               </span>
             )}

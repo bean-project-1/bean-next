@@ -36,16 +36,16 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
-  const [viewBox, setViewBox] = useState({ x: 0, y: -220, w: 800, h: 800 });
+  // The tree is now naturally centered since there is no sidebar.
+  // We adjust the initial viewBox to 600x600 to make the tree much larger.
+  // By shifting y to -20 (camera center y=280), we center the tree perfectly on the screen.
+  const [viewBox, setViewBox] = useState({ x: 100, y: -20, w: 600, h: 600 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
 
-  // Offset the tree on desktop initially so it centers visually with the left sidebar
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 640) {
-      setViewBox(v => ({ ...v, x: -100 }));
-    }
+    // No more offset needed.
   }, []);
 
   useGSAP(() => {
@@ -238,10 +238,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
     gsap.to(viewBox, {
-      x: isMobile ? 0 : -100,
-      y: -220,
-      w: 800,
-      h: 800,
+      x: 100,
+      y: -20,
+      w: 600,
+      h: 600,
       duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
@@ -339,7 +339,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
 
   return (
-    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-[#fafafa] font-sans overflow-hidden z-10">
+    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
       {/* Interaction Hints - Only visible when NOT zoomed */}
       {!zoomedBranchId && hoveredLeafName && (
         <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -351,10 +351,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
 
 
-      {(zoomedBranchId || viewBox.w !== 800) && (
+      {(zoomedBranchId || viewBox.w !== 700) && (
         <button 
           onClick={resetZoom}
-          className="absolute top-6 left-6 sm:top-8 sm:left-[264px] bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-50 animate-in fade-in slide-in-from-top-4"
+          className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-50 animate-in fade-in slide-in-from-top-4"
         >
           ← Ver Árbol Completo
         </button>

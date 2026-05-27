@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { signOut } from 'next-auth/react';
 
 interface User { id: string; name?: string; email: string; createdAt: string; }
 
@@ -70,32 +71,34 @@ export function ProfileView() {
     .split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 max-w-2xl bg-transparent pb-24 sm:pb-8">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-8 sm:mb-10 tracking-tight">Mi Perfil</h1>
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 max-w-md mx-auto w-full pb-24 sm:pb-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-8 sm:mb-10 tracking-tight text-center">Mi Perfil</h1>
 
-      <div className="flex items-center gap-5 mb-10 p-6 glass rounded-3xl">
-        <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-violet-500/30 flex-shrink-0">
+      <div className="flex flex-col items-center p-8 glass rounded-3xl mb-8">
+        <div className="h-24 w-24 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-violet-500/30 mb-5">
           {initials}
         </div>
-        <div className="flex-1">
+        <div className="w-full">
           {isEditing ? (
-            <div className="space-y-3">
-              <input 
-                type="text" 
-                value={editName} 
-                onChange={e => setEditName(e.target.value)} 
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-lg font-semibold focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none shadow-sm transition-all"
-                placeholder="Tu nombre completo"
-                autoFocus
-              />
-              <p className="text-sm text-slate-500 font-medium">{user.email} (No editable por seguridad)</p>
-              <div className="flex gap-2 pt-2">
+            <div className="space-y-4 w-full">
+              <div>
+                <input 
+                  type="text" 
+                  value={editName} 
+                  onChange={e => setEditName(e.target.value)} 
+                  className="w-full bg-white/80 border border-slate-200 rounded-2xl px-4 py-3.5 text-slate-900 text-center text-lg font-semibold focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none shadow-sm transition-all"
+                  placeholder="Tu nombre completo"
+                  autoFocus
+                />
+                <p className="text-xs text-slate-500 font-medium text-center mt-2">{user.email}</p>
+              </div>
+              <div className="flex flex-col gap-2 pt-2">
                 <button 
                   onClick={handleSaveProfile}
                   disabled={saving || !editName.trim()}
-                  className="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-violet-500/20 transition-all disabled:opacity-50"
+                  className="w-full bg-violet-600 hover:bg-violet-700 text-white px-5 py-3.5 rounded-2xl text-sm font-bold shadow-md shadow-violet-500/20 transition-all disabled:opacity-50"
                 >
-                  {saving ? 'Guardando...' : 'Guardar y Actualizar'}
+                  {saving ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
                 <button 
                   onClick={() => {
@@ -103,68 +106,56 @@ export function ProfileView() {
                     setEditName(user.name || '');
                   }}
                   disabled={saving}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all"
                 >
                   Cancelar
                 </button>
               </div>
             </div>
           ) : (
-            <>
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{user.name ?? '—'}</p>
-                  <p className="text-base text-slate-500 font-medium">{user.email}</p>
-                </div>
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className="text-slate-500 hover:text-violet-600 bg-slate-100/50 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-all text-sm font-bold flex gap-2 items-center"
-                  title="Editar Perfil"
-                >
-                  <span className="text-lg">✏️</span> Editar
-                </button>
-              </div>
-              <p className="text-sm text-slate-400 font-medium mt-3">
+            <div className="flex flex-col items-center text-center">
+              <h2 className="text-2xl font-bold text-slate-900">{user.name ?? '—'}</h2>
+              <p className="text-sm text-slate-500 font-medium mt-1">{user.email}</p>
+              
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="mt-5 text-violet-600 bg-violet-50 hover:bg-violet-100 px-6 py-2.5 rounded-full font-bold transition-all text-sm flex items-center gap-2"
+                title="Editar Nombre"
+              >
+                <span>✏️</span> Editar perfil
+              </button>
+              
+              <p className="text-xs text-slate-400 font-medium mt-6">
                 Miembro desde {new Date(user.createdAt).toLocaleDateString('es', { month: 'long', year: 'numeric' })}
               </p>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <a href="/dna"
-          className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 transition-all group">
-          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">🧬</span>
-          <p className="font-bold text-slate-900 text-base">Mi ADN de vida</p>
-          <p className="text-sm text-slate-500 font-medium mt-1">Editar las 19 dimensiones</p>
-        </a>
-        <a href="/dashboard"
-          className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 transition-all group">
-          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">📊</span>
-          <p className="font-bold text-slate-900 text-base">Dashboard</p>
-          <p className="text-sm text-slate-500 font-medium mt-1">Ver mis gráficas</p>
-        </a>
-        <a href="/insights"
-          className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 transition-all group">
-          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">💡</span>
-          <p className="font-bold text-slate-900 text-base">Insights</p>
-          <p className="text-sm text-slate-500 font-medium mt-1">Recomendaciones de IA</p>
-        </a>
+      <div className="space-y-3">
         <a href="/onboarding"
-          className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 transition-all group">
-          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">✏️</span>
-          <p className="font-bold text-slate-900 text-base">Repetir onboarding</p>
-          <p className="text-sm text-slate-500 font-medium mt-1">Actualizar mi perfil</p>
+          className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm hover:border-violet-300 hover:shadow-md hover:shadow-violet-100 transition-all group">
+          <div className="flex items-center gap-4">
+             <span className="text-2xl group-hover:scale-110 transition-transform">✏️</span>
+             <div className="text-left">
+               <p className="font-bold text-slate-900 text-base">Repetir onboarding</p>
+               <p className="text-xs text-slate-500 font-medium mt-0.5">Volver a configurar mis metas</p>
+             </div>
+          </div>
+          <span className="text-slate-300 group-hover:text-violet-500 transition-colors font-bold text-lg">→</span>
         </a>
-        <button onClick={async () => {
-          await fetch('/api/auth/logout', { method: 'POST' });
-          window.location.href = '/login';
-        }}
-          className="rounded-3xl border border-red-100 bg-red-50/50 p-6 shadow-sm hover:shadow-lg hover:shadow-red-200/50 hover:border-red-200 transition-all group text-left">
-          <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform origin-left">🚪</span>
-          <p className="font-bold text-red-700 text-base">Cerrar Sesión</p>
-          <p className="text-sm text-red-500/70 font-medium mt-1">Salir de mi cuenta</p>
+
+        <button onClick={() => signOut({ callbackUrl: '/login' })}
+          className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 shadow-sm hover:border-red-200 hover:shadow-md hover:shadow-red-100 transition-all group text-left">
+          <div className="flex items-center gap-4">
+             <span className="text-2xl group-hover:scale-110 transition-transform">🚪</span>
+             <div className="text-left">
+               <p className="font-bold text-red-700 text-base">Cerrar Sesión</p>
+               <p className="text-xs text-red-500/70 font-medium mt-0.5">Salir de mi cuenta de forma segura</p>
+             </div>
+          </div>
+          <span className="text-red-300 group-hover:text-red-500 transition-colors font-bold text-lg">→</span>
         </button>
       </div>
     </div>

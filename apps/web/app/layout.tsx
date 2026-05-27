@@ -3,7 +3,11 @@
 // apps/web/app/layout.tsx
 // =======================================================
 import type { Metadata, Viewport } from 'next';
+import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 export const metadata: Metadata = {
   title: {
@@ -27,24 +31,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#fafafa',
+  themeColor: '#fafaf9',
   colorScheme: 'light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
-      </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-violet-200 selection:text-violet-900">
-        {/* Ambient background glow for light mode */}
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-violet-400/20 blur-[120px]" />
-          <div className="absolute top-1/2 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-400/15 blur-[100px]" />
-          <div className="absolute bottom-0 right-1/3 h-[300px] w-[300px] rounded-full bg-fuchsia-400/15 blur-[100px]" />
+      <body className={`${inter.variable} ${outfit.variable} font-sans min-h-screen bg-background text-foreground antialiased selection:bg-emerald-200 selection:text-emerald-900`}>
+        {/* Ambient warm background glow */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+          <div className="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-amber-100/50 blur-[120px]" />
+          <div className="absolute top-1/2 -left-40 h-[500px] w-[500px] rounded-full bg-emerald-50/50 blur-[100px]" />
+          <div className="absolute bottom-0 right-1/3 h-[400px] w-[400px] rounded-full bg-orange-50/50 blur-[120px]" />
         </div>
 
         <div className="relative z-10">{children}</div>

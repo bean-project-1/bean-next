@@ -1,52 +1,53 @@
 // =======================================================
-// BEAN — Home Page
+// BEAN — Home Page (Organic V2)
 // apps/web/app/page.tsx
 // =======================================================
 import Link from 'next/link';
+import { Compass, Briefcase, Heart } from 'lucide-react';
 
 const dimensions = [
-  { icon: '🧭', label: 'Identity', desc: 'Values, interests & motivations' },
-  { icon: '💼', label: 'Capital', desc: 'Knowledge, skills, career & income' },
-  { icon: '❤️', label: 'Wellbeing', desc: 'Health, relationships & happiness' },
+  { icon: Compass, label: 'Identidad', desc: 'Valores, intereses y motivaciones profundas.' },
+  { icon: Briefcase, label: 'Capital', desc: 'Conocimiento, habilidades y trayectoria.' },
+  { icon: Heart, label: 'Bienestar', desc: 'Salud, relaciones y paz mental.' },
 ];
 
 const stats = [
-  { value: '10', label: 'Life Dimensions' },
-  { value: 'AI', label: 'Powered Analysis' },
-  { value: '360°', label: 'Life View' },
+  { value: '10', label: 'Dimensiones' },
+  { value: 'IA', label: 'Coaching Activo' },
+  { value: '360°', label: 'Visión de Vida' },
 ];
 
 export default function HomePage() {
   return (
-    <main className="mesh-gradient flex min-h-screen flex-col bg-[#020617] selection:bg-violet-500/30">
+    <main className="mesh-gradient flex min-h-screen flex-col bg-transparent selection:bg-emerald-500/20">
       {/* ---- Navigation ---- */}
-      <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#020617]/50 backdrop-blur-md">
+      <nav className="fixed top-0 z-50 w-full border-b border-black/5 bg-white/50 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/20">
-              <span className="text-base font-black text-white">B</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 shadow-inner">
+              <span className="text-base font-black text-emerald-700">B</span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">BEAN</span>
+            <span className="text-xl font-display font-bold tracking-tight text-stone-800">BEAN</span>
           </div>
-          <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <Link
               href="/home"
-              className="hidden sm:inline text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+              className="hidden sm:inline text-sm font-semibold text-stone-500 transition-colors hover:text-stone-900"
             >
               Mi Árbol
             </Link>
-            <div className="hidden sm:block h-4 w-px bg-white/10" />
+            <div className="hidden sm:block h-4 w-px bg-stone-200" />
             <Link
               href="/login"
-              className="hidden sm:inline text-sm font-medium text-neutral-400 transition-colors hover:text-white"
+              className="hidden sm:inline text-sm font-semibold text-stone-500 transition-colors hover:text-stone-900"
             >
-              Login
+              Iniciar Sesión
             </Link>
             <Link
               href="/onboarding"
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-white transition-all hover:scale-105 hover:from-violet-500 hover:to-indigo-500 active:scale-95 shadow-lg shadow-violet-600/20"
+              className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-bold text-white transition-all hover:scale-105 hover:bg-stone-800 active:scale-95 shadow-[0_4px_20px_rgb(0,0,0,0.15)]"
             >
-              Get Started
+              Comenzar
             </Link>
           </div>
         </div>
@@ -54,58 +55,55 @@ export default function HomePage() {
 
       {/* ---- Hero ---- */}
       <section className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center">
-        {/* Decorative backdrop glow */}
-        <div className="absolute top-1/2 left-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/20 blur-[120px]" />
-        
         <div className="animate-slide-up max-w-4xl">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-xs font-semibold tracking-wider text-violet-300 uppercase">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-amber-200/60 bg-white/60 backdrop-blur-md px-4 py-1.5 text-xs font-bold tracking-wider text-amber-700 uppercase shadow-sm">
             <span className="flex h-2 w-2 items-center justify-center">
-              <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-violet-400 opacity-75" />
-              <span className="relative h-1.5 w-1.5 rounded-full bg-violet-400" />
+              <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-amber-500 opacity-75" />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-amber-500" />
             </span>
-            Life Intelligence Platform
+            Tu Asistente de Vida Inteligente
           </div>
 
           {/* Headline */}
-          <h1 className="mb-6 sm:mb-8 text-4xl sm:text-6xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight text-white">
-            Engineer your{' '}
-            <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              ideal life
+          <h1 className="mb-6 sm:mb-8 text-5xl sm:text-7xl lg:text-[5.5rem] font-display font-extrabold leading-[1.05] tracking-tight text-stone-900">
+            Diseña tu{' '}
+            <span className="text-emerald-600">
+              vida ideal
             </span>
           </h1>
 
           {/* Sub-headline */}
-          <p className="mx-auto mb-10 sm:mb-12 max-w-2xl text-base sm:text-lg leading-relaxed text-neutral-400 sm:text-xl">
-            BEAN uses advanced AI to synthesize your identity, professional capital, and wellbeing into a unified intelligence engine. Make decisions backed by data, not guesswork.
+          <p className="mx-auto mb-10 sm:mb-12 max-w-2xl text-base sm:text-xl leading-relaxed text-stone-600 font-medium">
+            Descubre patrones, establece metas con propósito y recibe acompañamiento diario. BEAN es tu espacio personal para cultivar la mejor versión de ti mismo.
           </p>
 
           {/* CTA Group */}
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/onboarding"
-              className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-white px-8 py-4 text-base font-bold text-black transition-all hover:bg-neutral-100 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]"
+              className="group relative flex items-center gap-2 overflow-hidden rounded-full bg-emerald-600 px-8 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)]"
             >
-              Start Life Assessment
+              Crear mi perfil
               <span className="transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
             <Link
               href="/home"
-              className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20"
+              className="rounded-full border border-stone-200 bg-white/60 px-8 py-4 text-base font-bold text-stone-700 backdrop-blur-xl transition-all hover:bg-white hover:border-stone-300 shadow-sm"
             >
-              Explorar Mi Árbol
+              Explorar
             </Link>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="mt-16 sm:mt-20 flex flex-wrap items-center justify-center gap-8 sm:gap-16">
+        <div className="mt-16 sm:mt-24 flex flex-wrap items-center justify-center gap-8 sm:gap-16">
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col items-center gap-2">
-              <span className="text-4xl font-black tracking-tighter text-white">
+              <span className="text-4xl font-display font-black tracking-tighter text-stone-800">
                 {s.value}
               </span>
-              <span className="text-xs font-bold tracking-widest text-neutral-500 uppercase">
+              <span className="text-[10px] font-bold tracking-widest text-stone-400 uppercase">
                 {s.label}
               </span>
             </div>
@@ -114,59 +112,46 @@ export default function HomePage() {
       </section>
 
       {/* ---- Pillars ---- */}
-      <section className="relative border-t border-white/5 px-6 py-32">
+      <section className="relative px-6 py-32 bg-white/40 border-t border-stone-100">
         <div className="mx-auto max-w-7xl">
           <div className="mb-20 text-center">
-            <h2 className="mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl">The DNA of Intelligence</h2>
-            <p className="mx-auto max-w-xl text-neutral-400">
-              Our framework analyzes three core resonance fields to build your unique life profile.
+            <h2 className="mb-6 text-4xl font-display font-bold tracking-tight text-stone-900 sm:text-5xl">El ADN de tu Desarrollo</h2>
+            <p className="mx-auto max-w-xl text-stone-500 font-medium text-lg">
+              Analizamos tres dimensiones fundamentales para ayudarte a encontrar el equilibrio perfecto.
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            {dimensions.map((d, i) => (
-              <div
-                key={d.label}
-                className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br p-8 transition-all hover:-translate-y-2 hover:border-white/20 ${
-                  i === 0 ? 'hover:shadow-violet-500/10' : 
-                  i === 1 ? 'hover:shadow-blue-500/10' : 
-                  'hover:shadow-emerald-500/10'
-                }`}
-              >
-                {/* Accent Glow */}
-                <div className={`absolute -right-4 -top-4 h-24 w-24 blur-3xl opacity-0 transition-opacity group-hover:opacity-40 ${
-                  i === 0 ? 'bg-violet-500' : 
-                  i === 1 ? 'bg-blue-500' : 
-                  'bg-emerald-500'
-                }`} />
-
-                <div className="relative z-10">
-                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner ${
-                    i === 0 ? 'bg-violet-500/10 text-violet-400' : 
-                    i === 1 ? 'bg-blue-500/10 text-blue-400' : 
-                    'bg-emerald-500/10 text-emerald-400'
-                  }`}>
-                    {d.icon}
+            {dimensions.map((d, i) => {
+              const Icon = d.icon;
+              return (
+                <div
+                  key={d.label}
+                  className="group relative overflow-hidden rounded-[2rem] border border-stone-100 bg-white/80 p-8 transition-all hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]"
+                >
+                  <div className="relative z-10">
+                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner bg-stone-50 text-emerald-600 border border-stone-100 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="mb-3 text-2xl font-display font-bold text-stone-800 tracking-tight">{d.label}</h3>
+                    <p className="text-stone-500 font-medium leading-relaxed">{d.desc}</p>
                   </div>
-                  <h3 className="mb-3 text-2xl font-bold text-white tracking-tight">{d.label}</h3>
-                  <p className="text-neutral-400 leading-relaxed text-sm">{d.desc}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ---- Footer ---- */}
-      <footer className="border-t border-white/5 px-6 py-12 text-center">
+      <footer className="border-t border-black/5 px-6 py-12 text-center bg-transparent">
         <div className="mx-auto max-w-7xl flex flex-col items-center justify-between gap-6 sm:flex-row">
-          <p className="text-sm font-medium text-neutral-500">
-            © {new Date().getFullYear()} BEAN — Life Intelligence. Engineered for growth.
+          <p className="text-sm font-semibold text-stone-400">
+            © {new Date().getFullYear()} BEAN — Inteligencia de Vida.
           </p>
-          <div className="flex gap-8 text-neutral-500">
-            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Privacy</span>
-            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Terms</span>
-            <span className="text-xs font-bold uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Docs</span>
+          <div className="flex gap-8 text-stone-400">
+            <span className="text-[11px] font-bold uppercase tracking-widest hover:text-stone-800 cursor-pointer transition-colors">Privacidad</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest hover:text-stone-800 cursor-pointer transition-colors">Términos</span>
           </div>
         </div>
       </footer>

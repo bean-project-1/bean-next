@@ -61,17 +61,17 @@ export default function LoginPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl"
+      className="bg-white/80 backdrop-blur-xl border border-stone-200/60 p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-md w-full mx-auto mt-20"
     >
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Bienvenido de vuelta</h1>
-        <p className="text-neutral-400 text-sm">Inicia sesión en tu cuenta de BEAN</p>
+        <h1 className="text-3xl font-display font-bold text-stone-900 mb-2">Bienvenido de vuelta</h1>
+        <p className="text-stone-500 font-medium text-sm">Inicia sesión en tu cuenta de BEAN</p>
       </div>
 
       <button
         onClick={handleGoogleSignIn}
         disabled={isGoogleLoading || isLoading}
-        className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-100 text-black font-medium py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+        className="w-full flex items-center justify-center gap-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-800 font-bold py-3 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6 shadow-sm"
       >
         {isGoogleLoading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -99,46 +99,46 @@ export default function LoginPage() {
       </button>
 
       <div className="flex items-center gap-4 mb-6">
-        <div className="h-px bg-white/10 flex-1"></div>
-        <span className="text-neutral-500 text-sm">o con email</span>
-        <div className="h-px bg-white/10 flex-1"></div>
+        <div className="h-px bg-stone-200 flex-1"></div>
+        <span className="text-stone-400 font-medium text-sm">o con email</span>
+        <div className="h-px bg-stone-200 flex-1"></div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl text-sm text-center">
+          <div className="bg-red-50 border border-red-200 text-red-600 font-medium p-3 rounded-xl text-sm text-center">
             {error}
           </div>
         )}
 
         <div>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
             <input
               {...register("email")}
               type="email"
               placeholder="tu@email.com"
-              className="w-full bg-white/5 border border-white/10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white rounded-xl py-3 pl-12 pr-4 outline-none transition-all placeholder:text-neutral-500"
+              className="w-full bg-white border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-stone-900 rounded-2xl py-3 pl-12 pr-4 outline-none transition-all placeholder:text-stone-400 font-medium shadow-sm"
             />
           </div>
-          {errors.email && <p className="text-red-400 text-xs mt-1 ml-2">{errors.email.message}</p>}
+          {errors.email && <p className="text-red-500 font-medium text-xs mt-1 ml-2">{errors.email.message}</p>}
         </div>
 
         <div>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
             <input
               {...register("password")}
               type="password"
               placeholder="Contraseña"
-              className="w-full bg-white/5 border border-white/10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white rounded-xl py-3 pl-12 pr-4 outline-none transition-all placeholder:text-neutral-500"
+              className="w-full bg-white border border-stone-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-stone-900 rounded-2xl py-3 pl-12 pr-4 outline-none transition-all placeholder:text-stone-400 font-medium shadow-sm"
             />
           </div>
-          {errors.password && <p className="text-red-400 text-xs mt-1 ml-2">{errors.password.message}</p>}
+          {errors.password && <p className="text-red-500 font-medium text-xs mt-1 ml-2">{errors.password.message}</p>}
         </div>
 
         <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+          <Link href="/forgot-password" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
@@ -146,7 +146,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading || isGoogleLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+          className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-3 px-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]"
         >
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
             <>
@@ -157,9 +157,9 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="text-center text-neutral-400 text-sm mt-8">
+      <p className="text-center font-medium text-stone-500 text-sm mt-8">
         ¿No tienes una cuenta?{" "}
-        <Link href="/register" className="text-white hover:text-blue-400 font-medium transition-colors">
+        <Link href="/register" className="text-stone-900 hover:text-emerald-600 font-bold transition-colors">
           Regístrate
         </Link>
       </p>

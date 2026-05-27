@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     let userId = session?.user?.id;
@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const task = await prisma.dailyTask.update({
@@ -26,12 +26,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     return NextResponse.json({ success: true, task });
   } catch (error: any) {
-    console.error(`[PATCH /api/schedule/daily-tasks/${params.id}] Error:`, error);
+    console.error(`[PATCH /api/schedule/daily-tasks] Error:`, error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     let userId = session?.user?.id;
@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     await prisma.dailyTask.delete({
       where: { id, userId }
@@ -47,7 +47,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error(`[DELETE /api/schedule/daily-tasks/${params.id}] Error:`, error);
+    console.error(`[DELETE /api/schedule/daily-tasks] Error:`, error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

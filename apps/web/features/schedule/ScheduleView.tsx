@@ -19,9 +19,9 @@ interface ScheduledEvent {
   date: string;
   type: string;
   status: string;
-  goalTitle: string;
+  goalTitle?: string;
   estimatedHours: number;
-  itemType: 'action' | 'habit' | 'task' | 'commitment';
+  itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily';
   dimensions?: string[];
   attributes?: string[];
   tasks?: any[];

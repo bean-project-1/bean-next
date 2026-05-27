@@ -34,7 +34,7 @@ export default function HomePage() {
               href="/home"
               className="hidden sm:inline text-sm font-semibold text-stone-500 transition-colors hover:text-stone-900"
             >
-              Mi Árbol
+              Árbol
             </Link>
             <div className="hidden sm:block h-4 w-px bg-stone-200" />
             <Link

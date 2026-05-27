@@ -20,6 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: {
         isCompleted: body.isCompleted !== undefined ? body.isCompleted : undefined,
         title: body.title,
+        description: body.description,
         estimatedHours: body.estimatedHours
       }
     });

@@ -37,9 +37,10 @@ export async function GET(req: NextRequest) {
 
     const events: any[] = [];
 
-    // Project Base Commitments over the next 30 days
+    // Project Base Commitments over a year horizon (30 days past, 365 days future)
     const horizonStart = new Date(startOfToday);
-    for (let i = 0; i < 30; i++) {
+    horizonStart.setDate(horizonStart.getDate() - 30);
+    for (let i = 0; i < 395; i++) {
       const d = new Date(horizonStart);
       d.setDate(d.getDate() + i);
       const dayOfWeek = d.getDay();
@@ -148,13 +149,32 @@ export async function GET(req: NextRequest) {
       events.push({
         id: task.id,
         title: task.title,
-        description: isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida',
+        description: task.description || (isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida'),
         date: targetDate.toISOString(),
         type: 'daily',
         estimatedHours: task.estimatedHours || 0,
         status: task.isCompleted ? 'completed' : 'pending',
         itemType: 'daily',
         isOverdue
+      });
+    });
+
+    // 4. Fetch Anchored Post-Its
+    const anchoredPostIts = await prisma.postIt.findMany({
+      where: { userId, anchoredDate: { not: null } }
+    });
+
+    anchoredPostIts.forEach(postIt => {
+      events.push({
+        id: postIt.id,
+        title: postIt.content,
+        description: 'Nota rápida',
+        date: postIt.anchoredDate!.toISOString(),
+        type: 'post-it',
+        estimatedHours: 0,
+        status: 'pending',
+        itemType: 'post-it',
+        originalPostIt: postIt
       });
     });
 

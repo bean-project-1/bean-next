@@ -8,8 +8,9 @@ import { PostItWall } from './PostItWall';
 
 import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
 import { Leaf } from '@/features/life-tree/types';
+import { TaskDetailModal } from './TaskDetailModal';
 
-interface ScheduledEvent {
+export interface ScheduledEvent {
   id: string;
   title: string;
   description?: string;
@@ -21,10 +22,11 @@ interface ScheduledEvent {
   status: string;
   goalTitle?: string;
   estimatedHours: number;
-  itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily';
+  itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily' | 'post-it';
   dimensions?: string[];
   attributes?: string[];
   tasks?: any[];
+  originalPostIt?: any;
 }
 
 // ─── Bottom Sheet Component (mobile agenda drawer) ───────────────────────────
@@ -133,6 +135,7 @@ function AgendaContent({
   continuousProjects,
   commitments,
   events,
+  anchoredNotes,
   totalDailyHours,
   selectedDay,
   onOpenActivity,
@@ -144,6 +147,7 @@ function AgendaContent({
   continuousProjects: ScheduledEvent[];
   commitments: ScheduledEvent[];
   events: ScheduledEvent[];
+  anchoredNotes: ScheduledEvent[];
   totalDailyHours: number;
   selectedDay: Date;
   onOpenActivity: (event: ScheduledEvent) => void;
@@ -155,9 +159,9 @@ function AgendaContent({
   const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   const handleClick = (event: ScheduledEvent) => {
-    // If it's a daily task, just toggle it directly instead of opening full modal (optional, but requested simple checkboxes)
-    if (event.itemType === 'daily') {
-      handleToggleDaily(event);
+    if (event.itemType === 'post-it') {
+      window.dispatchEvent(new CustomEvent('open-postit-modal', { detail: event.originalPostIt }));
+      onItemClick?.();
       return;
     }
     onOpenActivity(event);
@@ -201,6 +205,34 @@ function AgendaContent({
 
   return (
     <div className="space-y-6">
+      {/* Anchored Notes */}
+      {anchoredNotes && anchoredNotes.length > 0 && (
+        <div>
+          <h2 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-4">Notas Ancladas</h2>
+          <div className="flex gap-2 overflow-x-auto pb-2 snap-x">
+            {anchoredNotes.map(note => (
+              <div 
+                key={note.id}
+                onClick={() => handleClick(note)}
+                className={`snap-start shrink-0 w-32 p-3 rounded shadow-sm border rotate-[-1deg] cursor-pointer hover:-translate-y-1 transition-transform 
+                  ${note.originalPostIt?.color === 'emerald' ? 'bg-emerald-100/90 text-emerald-900 border-emerald-200/50' :
+                  note.originalPostIt?.color === 'rose' ? 'bg-rose-100/90 text-rose-900 border-rose-200/50' :
+                  note.originalPostIt?.color === 'blue' ? 'bg-blue-100/90 text-blue-900 border-blue-200/50' :
+                  note.originalPostIt?.color === 'violet' ? 'bg-violet-100/90 text-violet-900 border-violet-200/50' :
+                  'bg-yellow-100/90 text-yellow-900 border-yellow-200/50'}`}
+              >
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[12px]">📌</span>
+                </div>
+                <p className="text-[10px] font-medium leading-tight overflow-hidden text-ellipsis line-clamp-3">
+                  {note.title}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Daily Tasks */}
       <div>
         <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Tareas de Hoy</h2>
@@ -368,6 +400,7 @@ export function ScheduleView() {
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Leaf | null>(null);
+  const [selectedTask, setSelectedTask] = useState<ScheduledEvent | null>(null);
 
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
@@ -384,7 +417,12 @@ export function ScheduleView() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchEvents(); }, []);
+  useEffect(() => { 
+    fetchEvents();
+    const handleRefresh = () => fetchEvents();
+    window.addEventListener('refresh-schedule', handleRefresh);
+    return () => window.removeEventListener('refresh-schedule', handleRefresh);
+  }, []);
 
   // Observers for infinite scroll
   useEffect(() => {
@@ -433,19 +471,32 @@ export function ScheduleView() {
     return () => observer.disconnect();
   }, [loadedMonths]);
 
-  // Initial scroll to current month
+  // Initial scroll to current day
   const didInitialScroll = useRef(false);
   useEffect(() => {
     if (!didInitialScroll.current && loadedMonths.length > 0) {
-      const el = document.getElementById(`month-${startOfMonth(new Date()).getTime()}`);
-      if (el && scrollContainerRef.current) {
-        el.scrollIntoView({ block: 'start' });
-        didInitialScroll.current = true;
-      }
+      setTimeout(() => {
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        const el = document.querySelector(`[data-date="${todayMidnight.getTime()}"]`);
+        
+        if (el && scrollContainerRef.current) {
+          el.scrollIntoView({ block: 'start' });
+          // Offset for sticky headers
+          scrollContainerRef.current.scrollBy({ top: -60 });
+          didInitialScroll.current = true;
+        } else {
+          const monthEl = document.getElementById(`month-${startOfMonth(new Date()).getTime()}`);
+          if (monthEl && scrollContainerRef.current) {
+            monthEl.scrollIntoView({ block: 'start' });
+            didInitialScroll.current = true;
+          }
+        }
+      }, 50); // slight delay to ensure DOM is ready
     }
   }, [loadedMonths]);
 
-  const jumpToMonth = (date: Date) => {
+  const jumpToMonth = (date: Date, scrollToDay?: Date) => {
     const target = startOfMonth(date);
     setLoadedMonths([
       startOfMonth(subMonths(target, 1)),
@@ -455,14 +506,21 @@ export function ScheduleView() {
     setActiveVisibleMonth(target);
     setIsMonthPickerOpen(false);
     setTimeout(() => {
-      const el = document.getElementById(`month-${target.getTime()}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (scrollToDay) {
+        const dayId = `day-${format(scrollToDay, 'yyyy-MM-dd')}`;
+        const el = document.getElementById(dayId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const el = document.getElementById(`month-${target.getTime()}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }, 100);
   };
 
   const jumpToToday = () => {
-    setSelectedDay(new Date());
-    jumpToMonth(new Date());
+    const today = new Date();
+    setSelectedDay(today);
+    jumpToMonth(today, today);
   };
 
   const getEventsForDay = (day: Date) =>
@@ -478,10 +536,12 @@ export function ScheduleView() {
   const selectedDayEvents = getEventsForDay(selectedDay);
 
   const dailyTasks = selectedDayEvents.filter(e => {
-    if (e.itemType === 'commitment' || e.itemType === 'habit') return false;
+    if (e.itemType === 'commitment' || e.itemType === 'habit' || e.itemType === 'post-it') return false;
     if (!e.startDate) return true;
     return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) <= 14 * 24 * 60 * 60 * 1000;
   });
+
+  const anchoredNotes = selectedDayEvents.filter(e => e.itemType === 'post-it');
 
   const continuousProjects = selectedDayEvents.filter(e => {
     if (e.itemType === 'commitment' || e.itemType === 'habit') return false;
@@ -499,6 +559,12 @@ export function ScheduleView() {
 
   const handleOpenActivity = (event: ScheduledEvent) => {
     if (event.itemType === 'commitment') return;
+
+    if (event.itemType === 'task' || event.itemType === 'action' || event.itemType === 'daily' || event.itemType === 'habit') {
+      setSelectedTask(event);
+      return;
+    }
+
     const leaf: Leaf = {
       id: event.id,
       name: event.title,
@@ -529,17 +595,72 @@ export function ScheduleView() {
 
   const handleToggleTask = async (taskId: string, isCompleted: boolean) => {
     try {
-      const res = await fetch(`/api/profile/goals/tasks/${taskId}`, {
+      let endpoint = `/api/profile/goals/tasks/${taskId}`;
+      if (selectedTask?.id === taskId) {
+        if (selectedTask.type === 'daily') endpoint = `/api/schedule/daily-tasks/${taskId}`;
+        else if (selectedTask.itemType === 'action' || selectedTask.itemType === 'habit') endpoint = `/api/profile/goals/actions/${taskId}`;
+      }
+
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         body: JSON.stringify({ isCompleted }),
       });
       if (res.ok) {
         fetchEvents();
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask({ ...selectedTask, status: isCompleted ? 'completed' : 'pending' });
+        }
         if (selectedActivity) {
           const updatedTasks = selectedActivity.tasks?.map(t =>
             t.id === taskId ? { ...t, isCompleted } : t
           );
           setSelectedActivity({ ...selectedActivity, tasks: updatedTasks });
+        }
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleUpdateTask = async (taskId: string, data: { title: string; description: string }) => {
+    try {
+      let endpoint = `/api/profile/goals/tasks/${taskId}`;
+      if (selectedTask?.id === taskId) {
+        if (selectedTask.type === 'daily') endpoint = `/api/schedule/daily-tasks/${taskId}`;
+        else if (selectedTask.itemType === 'action' || selectedTask.itemType === 'habit') endpoint = `/api/profile/goals/actions/${taskId}`;
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        fetchEvents();
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask({ ...selectedTask, title: data.title, description: data.description });
+        }
+        if (selectedActivity) {
+          const updatedTasks = selectedActivity.tasks?.map(t =>
+            t.id === taskId ? { ...t, ...data } : t
+          );
+          setSelectedActivity({ ...selectedActivity, tasks: updatedTasks });
+        }
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      let endpoint = `/api/profile/goals/tasks/${taskId}`;
+      if (selectedTask?.id === taskId) {
+        if (selectedTask.type === 'daily') endpoint = `/api/schedule/daily-tasks/${taskId}`;
+        else if (selectedTask.itemType === 'action' || selectedTask.itemType === 'habit') endpoint = `/api/profile/goals/actions/${taskId}`;
+      }
+
+      const res = await fetch(endpoint, { method: 'DELETE' });
+      if (res.ok) {
+        fetchEvents();
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(null);
         }
       }
     } catch (e) { console.error(e); }
@@ -557,6 +678,7 @@ export function ScheduleView() {
     dailyTasks,
     continuousProjects,
     commitments,
+    anchoredNotes,
     events,
     totalDailyHours,
     selectedDay,
@@ -565,7 +687,13 @@ export function ScheduleView() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] bg-transparent relative">
+    <div 
+      className="flex flex-col h-[100dvh] relative overflow-hidden"
+      style={{
+        backgroundColor: '#f8f5f0',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E")`
+      }}
+    >
 
       {/* ── Header & Quick Nav ───────────────────────────────────────────── */}
       <header className="px-4 sm:px-6 py-4 sm:py-6 border-b border-stone-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 bg-white/40 backdrop-blur-md z-20">
@@ -624,34 +752,27 @@ export function ScheduleView() {
       </header>
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden">
-
-        {/* ── Left Sidebar (Room Board) ──────────────────────────────────── */}
-        <aside className="hidden xl:flex w-72 flex-col border-r border-stone-200/50 bg-stone-50/50 backdrop-blur-xl z-20">
-          <div className="p-6 border-b border-stone-200/50 bg-white/60 shrink-0">
-            <h2 className="text-sm font-black text-stone-900 uppercase tracking-tighter">Tablero</h2>
-            <p className="text-[11px] text-stone-400 font-bold mt-1 uppercase tracking-widest">Notas & Foco</p>
+      <div className="flex-1 flex overflow-hidden relative">
+        
+        {/* Ideas Zone Background */}
+        <div className="hidden xl:flex w-[280px] shrink-0 border-r-2 border-dashed border-stone-300/40 relative z-0 flex-col bg-white/10 backdrop-blur-[2px]">
+          <div className="p-8 opacity-40">
+            <h2 className="text-xl font-black text-stone-500 uppercase tracking-widest text-center">Ideas</h2>
+            <p className="text-[10px] font-bold text-stone-400 text-center mt-2 leading-tight">Espacio libre para tus notas. Arrástralas al calendario para anclarlas a un día.</p>
           </div>
-          <div className="flex-1 relative overflow-hidden bg-stone-100/30">
-            {/* Polaroid Focus Widget */}
-            <div className="absolute top-4 right-4 rotate-3 bg-white p-2 pb-6 shadow-md border border-stone-200 z-10 w-32 hover:rotate-0 hover:scale-105 transition-all">
-              <div className="bg-stone-100 w-full h-24 mb-2 flex items-center justify-center overflow-hidden">
-                <span className="text-4xl">🚀</span>
-              </div>
-              <p className="text-center italic font-medium text-xs text-stone-600">Focus del mes</p>
-              {/* Tape */}
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-white/40 backdrop-blur-sm border border-white/20 shadow-sm rotate-[-5deg]"></div>
-            </div>
+        </div>
 
-            <PostItWall />
-          </div>
-        </aside>
+        <PostItWall />
 
-        {/* Infinite Scroll Calendar Area */}
-        <div className="flex-1 flex flex-col overflow-hidden p-2 sm:p-6 pb-0 sm:pb-0">
-          
-          {/* Sticky Day Headers */}
-          <div className="grid grid-cols-7 border-t border-l border-r border-stone-200/50 bg-stone-50/80 backdrop-blur-md rounded-t-2xl sm:rounded-t-[2rem] overflow-hidden z-10 shrink-0">
+        {/* Infinite Scroll Calendar Area (Paper Sheet) */}
+        <div className="flex-1 flex flex-col overflow-hidden p-4 pb-28 sm:p-8 sm:pb-32 lg:p-12 lg:pb-32 relative z-10">
+          <div className="flex-1 flex flex-col relative max-w-5xl mx-auto w-full min-h-0">
+            {/* Top Tape */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-white/70 backdrop-blur-md shadow-sm border border-stone-200/50 rotate-[-1deg] z-20" />
+            
+            <div className="flex-1 flex flex-col bg-[#fffcf8] rounded shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-stone-200/60 overflow-hidden w-full h-full">
+            {/* Sticky Day Headers */}
+            <div className="grid grid-cols-7 border-b border-stone-200/60 bg-[#fffcf8]/90 backdrop-blur-md overflow-hidden z-10 shrink-0">
             {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((dayShort, i) => (
               <div key={i} className="py-2 sm:py-4 border-b border-r border-stone-200/50 text-center">
                 <span className="sm:hidden text-[9px] font-black text-stone-400 uppercase">{dayShort}</span>
@@ -696,9 +817,12 @@ export function ScheduleView() {
                       const isCurrentMonth = isSameMonth(day, monthStart);
                       const isSelected = isSameDay(day, selectedDay);
                       const today = isToday(day);
+                      const hasPostIt = dayEvents.some(e => e.itemType === 'post-it');
 
                       return (
                         <div
+                          id={`day-${format(day, 'yyyy-MM-dd')}`}
+                          data-date={day.getTime()}
                           key={i}
                           onClick={() => {
                             setSelectedDay(day);
@@ -706,7 +830,7 @@ export function ScheduleView() {
                           }}
                           className={`
                             min-h-[60px] sm:min-h-[85px] lg:min-h-[95px] p-1.5 sm:p-3
-                            border-b border-r border-stone-200/50 transition-all cursor-pointer group
+                            border-b border-r border-stone-200/50 transition-all cursor-pointer group relative
                             ${!isCurrentMonth ? 'bg-stone-50/30' : 'bg-transparent'}
                             ${isSelected ? 'ring-2 ring-inset ring-emerald-500 bg-emerald-50/40' : 'hover:bg-white/90'}
                             active:bg-emerald-50/50
@@ -723,13 +847,9 @@ export function ScheduleView() {
                             `}>
                               {format(day, 'd')}
                             </span>
-                            {dayHours > 0 && (
-                              <span className={`
-                                hidden sm:inline
-                                text-[9px] font-black px-1.5 py-0.5 rounded-md
-                                ${dayHours > 6 ? 'bg-red-100 text-red-600' : dayHours > 3 ? 'bg-amber-100 text-amber-600' : 'bg-stone-100 text-stone-500'}
-                              `}>
-                                {dayHours}h
+                            {hasPostIt && (
+                              <span className="absolute top-1 right-1 sm:top-2 sm:right-2 text-[12px] sm:text-[14px] drop-shadow-md z-10 animate-in fade-in zoom-in duration-300" title="Contiene nota anclada">
+                                📌
                               </span>
                             )}
                           </div>
@@ -737,8 +857,7 @@ export function ScheduleView() {
                           <div className="hidden sm:block space-y-1">
                             {(() => {
                               const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
-                              const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
-                              const displayLimit = cellCommitments.length > 0 ? 2 : 3;
+                              const displayLimit = 3;
                               
                               const visibleEvents = regularEvents.slice(0, displayLimit);
                               const hasMoreEvents = regularEvents.length > displayLimit;
@@ -746,8 +865,32 @@ export function ScheduleView() {
                               return (
                                 <>
                                   {visibleEvents.map(e => {
+                                    const isPostIt = e.itemType === 'post-it';
                                     const isLongRange = e.startDate &&
                                       (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
+                                    
+                                    if (isPostIt) {
+                                      const colorClass = e.originalPostIt?.color === 'emerald' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
+                                        e.originalPostIt?.color === 'rose' ? 'bg-rose-100 text-rose-900 border-rose-300' :
+                                        e.originalPostIt?.color === 'blue' ? 'bg-blue-100 text-blue-900 border-blue-300' :
+                                        e.originalPostIt?.color === 'violet' ? 'bg-violet-100 text-violet-900 border-violet-300' :
+                                        'bg-yellow-100 text-yellow-900 border-yellow-300';
+                                        
+                                      return (
+                                        <div
+                                          key={e.id}
+                                          onClick={(ev) => {
+                                            ev.stopPropagation();
+                                            // Dispatch event to open modal in PostItWall
+                                            window.dispatchEvent(new CustomEvent('open-postit-modal', { detail: e.originalPostIt }));
+                                          }}
+                                          className={`text-[9px] px-2 py-1 rounded truncate font-bold shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform border ${colorClass} rotate-[-1deg]`}
+                                        >
+                                          📌 {e.title}
+                                        </div>
+                                      );
+                                    }
+                                    
                                     return (
                                       <div
                                         key={e.id}
@@ -767,12 +910,6 @@ export function ScheduleView() {
                                     );
                                   })}
                                   
-                                  {cellCommitments.length > 0 && (
-                                    <div className="text-[9px] px-2 py-1 rounded-lg truncate font-bold border-l-2 shadow-sm bg-stone-50 text-stone-400 border-stone-300 italic">
-                                      🔒 {cellCommitments.length} Compromiso{cellCommitments.length > 1 ? 's' : ''} Base
-                                    </div>
-                                  )}
-
                                   {hasMoreEvents && (
                                     <div className="text-[8px] text-stone-400 font-bold pl-2">+{regularEvents.length - displayLimit} más</div>
                                   )}
@@ -785,7 +922,6 @@ export function ScheduleView() {
                             <div className="sm:hidden flex gap-0.5 flex-wrap mt-1">
                               {(() => {
                                 const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
-                                const cellCommitments = dayEvents.filter(e => e.itemType === 'commitment');
                                 
                                 return (
                                   <>
@@ -799,9 +935,6 @@ export function ScheduleView() {
                                               : 'bg-emerald-500'}`}
                                       />
                                     ))}
-                                    {cellCommitments.length > 0 && (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 shrink-0" />
-                                    )}
                                     {regularEvents.length > 3 && (
                                       <span className="w-1.5 h-1.5 rounded-full bg-stone-200 shrink-0" />
                                     )}
@@ -821,32 +954,43 @@ export function ScheduleView() {
             <div id="bottom-trigger" ref={bottomTriggerRef} className="h-4 w-full" />
           </div>
         </div>
+        </div>
+        </div>
 
         {/* ── Desktop Sidebar Agenda (hidden on mobile) ─────────────────── */}
-        <aside className="hidden lg:flex w-80 border-l border-stone-200/50 bg-stone-50/50 backdrop-blur-xl flex-col z-20">
-          <div className="p-6 border-b border-stone-200/50 bg-white/60 shrink-0">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900 uppercase tracking-tighter">Agenda del Día</h2>
-              <div className="flex items-center gap-1.5">
-                {totalDailyHours > 0 && (
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-600'}`}>
-                    {Math.round(totalDailyHours)}h ocupadas
+        <div className="hidden lg:flex w-[380px] shrink-0 flex-col pt-12 pb-32 pr-12 relative z-10">
+          <div className="flex-1 flex flex-col relative min-h-0 rotate-[1deg]">
+            {/* Top Clip */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-8 bg-stone-300 rounded-sm shadow-md border border-stone-400 rotate-[-2deg] z-20">
+              <div className="absolute inset-x-2 top-2 h-1 bg-stone-400/50 rounded-full" />
+            </div>
+
+            {/* Paper Notebook Effect Container */}
+            <div className="flex-1 bg-[#fffdf8] rounded-md shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] border border-stone-200/80 overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-stone-200/50 bg-[#fffdf8] shrink-0 pt-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-black text-stone-900 uppercase tracking-tighter">Agenda del Día</h2>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    {Math.max(0, 24 - Math.round(totalDailyHours))}h libres
                   </span>
-                )}
-                <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                  {Math.max(0, 24 - Math.round(totalDailyHours))}h libres
-                </span>
+                </div>
+              </div>
+              <p className="text-[11px] text-stone-400 font-bold mt-1 uppercase tracking-widest">
+                {format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
+              </p>
+            </div>
+            
+            {/* Ruled lines background for the agenda content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-[#fffdf8] bg-[linear-gradient(transparent_27px,#f1f5f9_28px)] bg-[length:100%_28px]">
+              <div className="relative z-10">
+                <AgendaContent {...agendaProps} />
               </div>
             </div>
-            <p className="text-[11px] text-stone-400 font-bold mt-1 uppercase tracking-widest">
-              {format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
-            </p>
           </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            <AgendaContent {...agendaProps} />
-          </div>
-        </aside>
+        </div>
       </div>
+    </div>
 
       {/* ── Mobile Bottom Sheet (hidden on lg+) ──────────────────────────── */}
       <div className="lg:hidden">
@@ -857,12 +1001,6 @@ export function ScheduleView() {
           subtitle={format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
         >
           <div className="flex items-center gap-2 mb-2">
-            {totalDailyHours > 0 && (
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black
-                ${totalDailyHours > 16 ? 'bg-red-50 text-red-600' : 'bg-stone-100 text-stone-600'}`}>
-                ⏱ {Math.round(totalDailyHours)}h ocupadas
-              </span>
-            )}
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 text-emerald-600 border border-emerald-100">
               ✨ {Math.max(0, 24 - Math.round(totalDailyHours))}h libres
             </span>
@@ -882,6 +1020,17 @@ export function ScheduleView() {
           onDelete={handleDeleteAction}
           onToggle={handleToggleAction}
           onToggleTask={handleToggleTask}
+        />
+      )}
+
+      {/* ── Task Detail Modal ─────────────────────────────────────────────── */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onDelete={handleDeleteTask}
+          onToggle={handleToggleTask}
+          onUpdate={handleUpdateTask}
         />
       )}
     </div>

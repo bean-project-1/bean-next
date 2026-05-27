@@ -63,7 +63,7 @@ function PathCard({
     >
       {/* Top Gradient Bar */}
       <div className={`h-2 w-full bg-gradient-to-r ${g.from} ${g.to}`} />
-      
+
       {/* Dimension Badge */}
       {path.dimensionName && (
         <div className="absolute top-5 right-5 z-10">
@@ -102,9 +102,9 @@ function PathCard({
         </div>
 
         <div className={`mt-4 pt-4 border-t border-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
-           <span className={`text-[11px] font-bold ${g.text} flex items-center gap-1`}>
-             Ver detalles <span className="text-base">→</span>
-           </span>
+          <span className={`text-[11px] font-bold ${g.text} flex items-center gap-1`}>
+            Ver detalles <span className="text-base">→</span>
+          </span>
         </div>
       </div>
     </div>
@@ -116,10 +116,10 @@ function PathCard({
 // ─────────────────────────────────────────────────────────
 function PathDetailPanel({
   path, index, onClose, onBranchCreated, onReplace
-}: { 
-  path: LifePath; 
-  index: number; 
-  onClose: () => void; 
+}: {
+  path: LifePath;
+  index: number;
+  onClose: () => void;
   onBranchCreated: () => void;
   onReplace: (path: LifePath) => void;
 }) {
@@ -183,7 +183,7 @@ function PathDetailPanel({
           <div className={`rounded-2xl ${g.light} border ${g.border} p-4`}>
             <div className="flex items-center justify-between mb-2">
               <p className={`text-[10px] font-bold uppercase tracking-widest ${g.text}`}>Por qué este camino te va</p>
-              <button 
+              <button
                 onClick={() => onReplace(path)}
                 className="text-[9px] font-bold text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1"
               >
@@ -252,7 +252,7 @@ function PathsCarousel({ paths, onExplore, activePath }: {
           </div>
         ))}
       </div>
-      
+
       {/* Fade Edges */}
       <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-white to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-white to-transparent z-10" />
@@ -293,7 +293,7 @@ export function InsightsView() {
 
   const handleReplacePath = async (pathToReplace: LifePath) => {
     if (!pathToReplace.id) return;
-    
+
     // Optimistic loading or just blocking interaction
     setPathsLoading(true);
     try {
@@ -351,7 +351,7 @@ export function InsightsView() {
             </p>
           </div>
           <a href="/home" className="text-xs text-slate-400 hover:text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors shrink-0 ml-4">
-            🌳 Mi Árbol
+            🌳 Árbol
           </a>
         </div>
 
@@ -379,8 +379,8 @@ export function InsightsView() {
             <p className="text-xs text-slate-400 mt-1 font-medium">Proyecciones de IA basadas en tu ADN único</p>
           </div>
           {!pathsLoading && paths.length > 0 && (
-            <button 
-              onClick={handleRegeneratePaths} 
+            <button
+              onClick={handleRegeneratePaths}
               className="text-xs font-bold text-violet-500 hover:text-violet-700 bg-violet-50 px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 active:scale-95"
             >
               ↻ Regenerar todo

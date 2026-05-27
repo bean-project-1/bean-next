@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         title: body.title,
+        description: body.description,
         date: body.date ? new Date(body.date) : new Date(),
         estimatedHours: body.estimatedHours || 0,
         isCompleted: false

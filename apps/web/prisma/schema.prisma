@@ -429,6 +429,7 @@ model DailyTask {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   userId         String   @map("user_id") @db.ObjectId
   title          String
+  description    String?
   isCompleted    Boolean  @default(false) @map("is_completed")
   date           DateTime // La fecha para la que se creó o a la que se arrastró
   estimatedHours Float?   @map("estimated_hours") // Opcional, tiempo estimado

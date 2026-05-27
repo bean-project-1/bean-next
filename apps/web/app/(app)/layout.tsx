@@ -10,16 +10,16 @@ import { motion } from 'framer-motion';
 import { LayoutDashboard, Calendar, Dna, Lightbulb, User } from 'lucide-react';
 
 const NAV = [
-  { href: '/home',      icon: LayoutDashboard, label: 'Mi Árbol'   },
-  { href: '/schedule',  icon: Calendar,        label: 'Agenda'     },
-  { href: '/dna',       icon: Dna,             label: 'Mi ADN'     },
-  { href: '/insights',  icon: Lightbulb,       label: 'Insights'   },
-  { href: '/profile',   icon: User,            label: 'Perfil'     },
+  { href: '/home', icon: LayoutDashboard, label: 'Árbol' },
+  { href: '/schedule', icon: Calendar, label: 'Agenda' },
+  { href: '/dna', icon: Dna, label: 'Mi ADN' },
+  { href: '/insights', icon: Lightbulb, label: 'Insights' },
+  { href: '/profile', icon: User, label: 'Perfil' },
 ];
 
 function FloatingDock() {
   const path = usePathname();
-  
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
       <nav className="flex items-center gap-2 sm:gap-4 rounded-full bg-white/70 border border-black/5 backdrop-blur-xl px-4 py-3 sm:px-6 sm:py-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)]">

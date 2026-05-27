@@ -37,9 +37,10 @@ export async function GET(req: NextRequest) {
 
     const events: any[] = [];
 
-    // Project Base Commitments over the next 30 days
+    // Project Base Commitments over a year horizon (30 days past, 365 days future)
     const horizonStart = new Date(startOfToday);
-    for (let i = 0; i < 30; i++) {
+    horizonStart.setDate(horizonStart.getDate() - 30);
+    for (let i = 0; i < 395; i++) {
       const d = new Date(horizonStart);
       d.setDate(d.getDate() + i);
       const dayOfWeek = d.getDay();
@@ -148,7 +149,7 @@ export async function GET(req: NextRequest) {
       events.push({
         id: task.id,
         title: task.title,
-        description: isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida',
+        description: task.description || (isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida'),
         date: targetDate.toISOString(),
         type: 'daily',
         estimatedHours: task.estimatedHours || 0,

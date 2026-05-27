@@ -35,6 +35,7 @@ export function PostItWall() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAnchoredDate, setEditingAnchoredDate] = useState<string | null>(null);
+  const [isMobileTrayOpen, setIsMobileTrayOpen] = useState(false);
 
   // Listen for edit requests from Calendar
   useEffect(() => {
@@ -76,23 +77,23 @@ export function PostItWall() {
 
   const handleSaveSubmit = async (overrideAnchoredDate?: null) => {
     if (!newNoteContent.trim()) return;
-    
+
     if (editingId) {
       // Update existing
       const finalAnchoredDate = overrideAnchoredDate !== undefined ? overrideAnchoredDate : editingAnchoredDate;
       const isUnanchoring = editingAnchoredDate && finalAnchoredDate === null;
-      
-      const updates: Partial<PostIt> = { 
-        content: newNoteContent, 
+
+      const updates: Partial<PostIt> = {
+        content: newNoteContent,
         color: newNoteColor,
         anchoredDate: finalAnchoredDate
       };
-      
+
       if (isUnanchoring) {
         // Send it back to the Ideas column (left 0-280px)
         updates.x = Math.random() * 80 + 40; // Random x between 40 and 120
         updates.y = Math.random() * 300 + 150; // Random y between 150 and 450
-        
+
         // Optimistically add to UI immediately
         const optimisticNote: any = {
           id: editingId,
@@ -107,9 +108,9 @@ export function PostItWall() {
         };
         setPostIts((prev: any) => [...prev, optimisticNote]);
       }
-      
+
       updatePostIt(editingId, updates);
-      
+
       // If it was unanchored, we rely on the optimistic update. Just refresh the calendar.
       if (isUnanchoring) {
         setTimeout(() => {
@@ -119,7 +120,7 @@ export function PostItWall() {
         // Just refresh the calendar if it remained anchored but changed text
         setTimeout(() => window.dispatchEvent(new Event('refresh-schedule')), 100);
       }
-      
+
       setIsModalOpen(false);
       return;
     }
@@ -131,6 +132,7 @@ export function PostItWall() {
       body: JSON.stringify({
         content: newNoteContent,
         color: newNoteColor,
+        anchoredDate: editingAnchoredDate,
         x: Math.random() * 50 + 20,
         y: Math.random() * 50 + 20,
         rotation: (Math.random() - 0.5) * 10,
@@ -140,7 +142,11 @@ export function PostItWall() {
     });
     const data = await res.json();
     if (data.success) {
-      setPostIts(prev => [...prev, data.postIt]);
+      if (!editingAnchoredDate) {
+        setPostIts(prev => [...prev, data.postIt]);
+      } else {
+        setTimeout(() => window.dispatchEvent(new Event('refresh-schedule')), 100);
+      }
       setIsModalOpen(false);
       setNewNoteContent('');
       setNewNoteColor('yellow');
@@ -183,12 +189,23 @@ export function PostItWall() {
 
   return (
     <div ref={containerRef} className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-30">
-      <div className="absolute top-[120px] left-[70px] xl:left-[80px] z-40 pointer-events-auto">
-        <button 
-          onClick={openCreateModal}
-          className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-stone-200 shadow-sm text-stone-600 text-xs font-bold px-4 py-2 rounded-xl hover:bg-white hover:scale-105 transition-all active:scale-95"
+      {/* Left Mobile Button: Ideas Tray */}
+      <div className="fixed bottom-28 left-4 z-40 pointer-events-auto xl:hidden">
+        <button
+          onClick={() => setIsMobileTrayOpen(true)}
+          className="flex items-center justify-center gap-2 bg-stone-800 text-white shadow-xl text-xs font-bold px-4 py-3 rounded-full hover:scale-105 transition-all active:scale-95"
         >
-          <span className="text-lg leading-none text-emerald-500">+</span> Nueva Nota
+          📝 Notas ({postIts.length})
+        </button>
+      </div>
+
+      {/* Right Mobile Button & Desktop Button: New Note */}
+      <div className="fixed bottom-28 right-4 xl:absolute xl:bottom-8 xl:left-[140px] xl:-translate-x-1/2 xl:right-auto xl:top-auto z-40 pointer-events-auto">
+        <button
+          onClick={openCreateModal}
+          className="flex items-center justify-center gap-2 bg-white/90 backdrop-blur-md border border-stone-200 shadow-xl xl:shadow-sm text-stone-600 text-xs font-bold w-14 h-14 sm:w-auto sm:h-auto sm:px-4 sm:py-3 xl:px-4 xl:py-2 rounded-full xl:rounded-xl hover:bg-white hover:scale-105 transition-all active:scale-95"
+        >
+          <span className="text-2xl sm:text-lg leading-none text-emerald-500">+</span> <span className="hidden sm:inline xl:inline">Nueva Nota</span>
         </button>
       </div>
 
@@ -212,7 +229,7 @@ export function PostItWall() {
       {/* ── Modal to Create/Edit Post-it ── */}
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -227,7 +244,7 @@ export function PostItWall() {
               <h3 className="text-lg font-black text-stone-800 mb-4 tracking-tighter">
                 {editingId ? 'Editar Nota' : 'Crear Nueva Nota'}
               </h3>
-              
+
               <textarea
                 className="w-full h-32 p-3 bg-stone-50 border border-stone-200 rounded-xl resize-none outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm font-medium text-stone-700"
                 placeholder="¿Qué quieres recordar?"
@@ -236,16 +253,35 @@ export function PostItWall() {
                 autoFocus
               />
 
-              <div className="mt-4">
-                <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Color</p>
-                <div className="flex gap-2">
-                  {['yellow', 'emerald', 'rose', 'blue', 'violet'].map(color => (
-                    <button
-                      key={color}
-                      onClick={() => setNewNoteColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${getColorClasses(color).split(' ')[0]} ${newNoteColor === color ? 'border-stone-800 scale-110' : 'border-transparent hover:scale-105'}`}
-                    />
-                  ))}
+              <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-between">
+                <div>
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Color</p>
+                  <div className="flex gap-2">
+                    {['yellow', 'emerald', 'rose', 'blue', 'violet'].map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setNewNoteColor(color)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${getColorClasses(color).split(' ')[0]} ${newNoteColor === color ? 'border-stone-800 scale-110' : 'border-transparent hover:scale-105'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-auto">
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Fecha (Opcional)</p>
+                  <input
+                    type="date"
+                    className="w-full sm:w-auto p-2 text-xs font-bold uppercase border border-stone-200 rounded-lg text-stone-600 bg-stone-50 outline-none focus:border-emerald-500 transition-colors cursor-pointer hover:bg-stone-100"
+                    value={editingAnchoredDate ? new Date(editingAnchoredDate).toISOString().split('T')[0] : ''}
+                    onChange={e => {
+                      if (!e.target.value) setEditingAnchoredDate(null);
+                      else {
+                        const d = new Date(e.target.value);
+                        const tzDate = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+                        setEditingAnchoredDate(tzDate.toISOString());
+                      }
+                    }}
+                  />
                 </div>
               </div>
 
@@ -278,20 +314,62 @@ export function PostItWall() {
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {isMobileTrayOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-0 z-[100] flex flex-col justify-end xl:hidden pointer-events-auto bg-black/20 backdrop-blur-sm"
+            onClick={() => setIsMobileTrayOpen(false)}
+          >
+            <div
+              className="bg-white w-full h-[80vh] rounded-t-3xl shadow-2xl flex flex-col overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50/80 backdrop-blur-md">
+                <h3 className="text-lg font-black text-stone-800 tracking-tighter">Bandeja de Ideas</h3>
+                <button onClick={() => setIsMobileTrayOpen(false)} className="w-8 h-8 bg-stone-200 text-stone-500 rounded-full font-bold hover:bg-stone-300 transition-colors">✕</button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#fffcf8] bg-[linear-gradient(transparent_27px,#f1f5f9_28px)] bg-[length:100%_28px]">
+                {postIts.length === 0 ? (
+                  <p className="text-sm font-bold text-stone-400 text-center mt-10">No hay notas sueltas. ¡Crea una nueva!</p>
+                ) : (
+                  postIts.map(postIt => (
+                    <div
+                      key={postIt.id}
+                      onClick={() => {
+                        setIsMobileTrayOpen(false);
+                        openEditModal(postIt);
+                      }}
+                      className={`w-full p-4 rounded-xl shadow-sm border cursor-pointer active:scale-[0.98] transition-transform ${getColorClasses(postIt.color)}`}
+                    >
+                      <p className="text-sm font-medium text-stone-800 whitespace-pre-wrap">{postIt.content}</p>
+                      <p className="text-[10px] font-bold opacity-50 mix-blend-multiply mt-2">
+                        {new Date(postIt.createdAt || Date.now()).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function DraggablePostIt({ 
-  postIt, 
-  containerRef, 
-  isDraggingRef, 
-  bringToFront, 
-  setPostIts, 
-  updatePostIt, 
-  openEditModal, 
-  getColorClasses, 
-  deletePostIt 
+function DraggablePostIt({
+  postIt,
+  containerRef,
+  isDraggingRef,
+  bringToFront,
+  setPostIts,
+  updatePostIt,
+  openEditModal,
+  getColorClasses,
+  deletePostIt
 }: any) {
   const [isHoveringDrop, setIsHoveringDrop] = useState(false);
 
@@ -347,17 +425,17 @@ function DraggablePostIt({
         openEditModal(postIt);
       }}
       initial={{ x: postIt.x, y: postIt.y, rotate: postIt.rotation, scale: 0 }}
-      animate={{ 
-        x: postIt.x, 
-        y: postIt.y, 
-        rotate: postIt.rotation, 
-        scale: isHoveringDrop ? 0.3 : 1, 
+      animate={{
+        x: postIt.x,
+        y: postIt.y,
+        rotate: postIt.rotation,
+        scale: isHoveringDrop ? 0.3 : 1,
         zIndex: postIt.zIndex,
         opacity: isHoveringDrop ? 0.8 : 1
       }}
       exit={{ scale: 0, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className={`absolute w-40 h-40 p-4 rounded-md shadow-lg border backdrop-blur-sm cursor-grab active:cursor-grabbing flex flex-col pointer-events-auto ${getColorClasses(postIt.color)}`}
+      className={`hidden xl:flex absolute w-40 h-40 p-4 rounded-md shadow-lg border backdrop-blur-sm cursor-grab active:cursor-grabbing flex-col pointer-events-auto ${getColorClasses(postIt.color)}`}
       style={{ touchAction: 'none' }}
     >
       {/* Top row: Date and Delete button */}
@@ -365,7 +443,7 @@ function DraggablePostIt({
         <span className="text-[10px] font-bold opacity-40 mix-blend-multiply ml-1 mt-0.5">
           {new Date(postIt.createdAt || Date.now()).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
         </span>
-        <button 
+        <button
           onClick={(e) => deletePostIt(postIt.id, e)}
           className="opacity-0 group-hover:opacity-100 text-black/40 hover:text-red-500 transition-all p-1 bg-white/50 rounded-full pointer-events-auto mr-1"
           title="Eliminar"
@@ -373,7 +451,7 @@ function DraggablePostIt({
           ✕
         </button>
       </div>
-      
+
       <p className="flex-1 w-full mt-5 font-medium text-sm leading-tight overflow-hidden break-words whitespace-pre-wrap select-none">
         {postIt.content}
       </p>

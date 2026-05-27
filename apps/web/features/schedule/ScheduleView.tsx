@@ -474,15 +474,28 @@ export function ScheduleView() {
     return () => observer.disconnect();
   }, [loadedMonths]);
 
-  // Initial scroll to current month
+  // Initial scroll to current day
   const didInitialScroll = useRef(false);
   useEffect(() => {
     if (!didInitialScroll.current && loadedMonths.length > 0) {
-      const el = document.getElementById(`month-${startOfMonth(new Date()).getTime()}`);
-      if (el && scrollContainerRef.current) {
-        el.scrollIntoView({ block: 'start' });
-        didInitialScroll.current = true;
-      }
+      setTimeout(() => {
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        const el = document.querySelector(`[data-date="${todayMidnight.getTime()}"]`);
+        
+        if (el && scrollContainerRef.current) {
+          el.scrollIntoView({ block: 'start' });
+          // Offset for sticky headers
+          scrollContainerRef.current.scrollBy({ top: -60 });
+          didInitialScroll.current = true;
+        } else {
+          const monthEl = document.getElementById(`month-${startOfMonth(new Date()).getTime()}`);
+          if (monthEl && scrollContainerRef.current) {
+            monthEl.scrollIntoView({ block: 'start' });
+            didInitialScroll.current = true;
+          }
+        }
+      }, 50); // slight delay to ensure DOM is ready
     }
   }, [loadedMonths]);
 

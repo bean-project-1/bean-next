@@ -92,14 +92,27 @@ export function PostItWall() {
         // Send it back to the Ideas column (left 0-280px)
         updates.x = Math.random() * 80 + 40; // Random x between 40 and 120
         updates.y = Math.random() * 300 + 150; // Random y between 150 and 450
+        
+        // Optimistically add to UI immediately
+        const optimisticNote: any = {
+          id: editingId,
+          content: updates.content,
+          color: updates.color,
+          anchoredDate: null,
+          x: updates.x,
+          y: updates.y,
+          rotation: (Math.random() - 0.5) * 10,
+          zIndex: 999,
+          createdAt: new Date().toISOString()
+        };
+        setPostIts((prev: any) => [...prev, optimisticNote]);
       }
       
       updatePostIt(editingId, updates);
       
-      // If it was unanchored, we need to fetch again so it appears on the wall if we just cleared the date
+      // If it was unanchored, we rely on the optimistic update. Just refresh the calendar.
       if (isUnanchoring) {
         setTimeout(() => {
-          fetch('/api/schedule/post-its').then(r => r.json()).then(d => { if (d.success) setPostIts(d.postIts); });
           window.dispatchEvent(new Event('refresh-schedule'));
         }, 100);
       } else if (finalAnchoredDate) {

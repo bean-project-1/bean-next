@@ -50,10 +50,13 @@ function FloatingDock() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const path = usePathname();
+  const isSchedule = path === '/schedule' || path.startsWith('/schedule/');
+
   return (
     <div className="flex min-h-screen bg-transparent">
       {/* Content area */}
-      <main className="flex-1 w-full pb-32 sm:pb-32 min-h-screen relative overflow-x-hidden">
+      <main className={`flex-1 w-full min-h-screen relative overflow-x-hidden ${isSchedule ? '' : 'pb-32 sm:pb-32'}`}>
         <div className="w-full h-full">
           {children}
         </div>

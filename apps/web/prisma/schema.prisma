@@ -412,6 +412,7 @@ model PostIt {
   rotation  Float    @default(0) // Rotación orgánica
   zIndex    Int      @default(0)
   isPinned  Boolean  @default(false) @map("is_pinned")
+  anchoredDate DateTime? @map("anchored_date")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

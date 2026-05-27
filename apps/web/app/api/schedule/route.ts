@@ -158,6 +158,25 @@ export async function GET(req: NextRequest) {
       });
     });
 
+    // 4. Fetch Anchored Post-Its
+    const anchoredPostIts = await prisma.postIt.findMany({
+      where: { userId, anchoredDate: { not: null } }
+    });
+
+    anchoredPostIts.forEach(postIt => {
+      events.push({
+        id: postIt.id,
+        title: postIt.content,
+        description: 'Nota rápida',
+        date: postIt.anchoredDate!.toISOString(),
+        type: 'post-it',
+        estimatedHours: 0,
+        status: 'pending',
+        itemType: 'post-it',
+        originalPostIt: postIt
+      });
+    });
+
     return NextResponse.json({ success: true, events });
   } catch (error: any) {
     console.error('[GET /api/schedule] Error:', error);

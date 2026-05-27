@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     const postIts = await prisma.postIt.findMany({
-      where: { userId },
+      where: { userId, anchoredDate: null },
       orderBy: { createdAt: 'asc' }
     });
 
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
         y: body.y || 0,
         rotation: body.rotation || 0,
         zIndex: body.zIndex || 0,
-        isPinned: body.isPinned || false
+        isPinned: body.isPinned || false,
+        anchoredDate: body.anchoredDate ? new Date(body.anchoredDate) : null
       }
     });
 

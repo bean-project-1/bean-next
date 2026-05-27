@@ -24,7 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         y: body.y,
         rotation: body.rotation,
         zIndex: body.zIndex,
-        isPinned: body.isPinned
+        isPinned: body.isPinned,
+        anchoredDate: body.anchoredDate !== undefined ? (body.anchoredDate ? new Date(body.anchoredDate) : null) : undefined
       }
     });
 

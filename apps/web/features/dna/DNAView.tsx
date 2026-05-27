@@ -26,7 +26,12 @@ export function DNAView() {
 
   const [addingAttributeForDim, setAddingAttributeForDim] = useState<string | null>(null);
   const [newAttributeName, setNewAttributeName] = useState('');
+  const [newAttributeLevel, setNewAttributeLevel] = useState('');
   const [savingAttribute, setSavingAttribute] = useState(false);
+
+  const [addingIntentForDim, setAddingIntentForDim] = useState<string | null>(null);
+  const [newIntentTitle, setNewIntentTitle] = useState('');
+  const [savingIntent, setSavingIntent] = useState(false);
 
   const fetchCommitments = useCallback(() => {
     setLoadingCommitments(true);
@@ -306,6 +311,7 @@ export function DNAView() {
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div>
                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compromiso Actual</h3>
+                          
                           {dimData?.current?.length > 0 ? (
                             <div className="space-y-3">
                               {dimData.current.map((c: any, idx: number) => (
@@ -319,28 +325,99 @@ export function DNAView() {
                               ))}
                             </div>
                           ) : (
-                            <div className="p-4 rounded-2xl border-2 border-dashed border-slate-50 text-center">
-                              <p className="text-[10px] font-bold text-slate-300 italic">Sin actividad recurrente</p>
-                            </div>
+                            <p className="text-xs text-slate-400 italic w-full mb-1">Sin actividad recurrente.</p>
                           )}
+
+                          <button 
+                            onClick={() => {
+                              setEditingCommitment({ type: 'routine', dimension: { name: selectedDimKey } });
+                              setSelectedDimKey(null);
+                            }}
+                            className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold uppercase hover:border-violet-300 hover:text-violet-500 transition-all flex items-center gap-2 w-fit mt-3"
+                          >
+                            <span>+</span> Añadir Compromiso
+                          </button>
                         </div>
                         <div>
                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Intención Futura</h3>
+                          
                           {dimData?.intent?.length > 0 ? (
-                            <div className="space-y-3">
+                            <div className="space-y-3 mb-2">
                               {dimData.intent.map((i: any, idx: number) => (
                                 <div key={idx} className="p-4 rounded-2xl bg-green-50/30 border border-green-100/50">
                                   <h4 className="text-sm font-black text-green-900">{i.title}</h4>
                                   <div className="mt-2 h-1 w-full bg-green-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-green-500" style={{ width: `${i.progress}%` }} />
+                                    <div className="h-full bg-green-500" style={{ width: `${i.progress || 0}%` }} />
                                   </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="p-4 rounded-2xl border-2 border-dashed border-slate-50 text-center">
-                              <p className="text-[10px] font-bold text-slate-300 italic">Sin metas activas</p>
-                            </div>
+                            !addingIntentForDim && (
+                              <p className="text-xs text-slate-400 italic w-full mb-1">Sin intenciones activas.</p>
+                            )
+                          )}
+
+                          {addingIntentForDim === selectedDimKey ? (
+                            <form 
+                              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full mt-3" 
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!newIntentTitle.trim() || savingIntent) return;
+                                setSavingIntent(true);
+                                try {
+                                  const res = await fetch('/api/dna/attributes', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      dimensionId: identity?.[selectedDimKey]?.dimension?.id,
+                                      name: newIntentTitle,
+                                      category: 'intent',
+                                      level: '0'
+                                    })
+                                  });
+                                  if (res.ok) {
+                                    setNewIntentTitle('');
+                                    setAddingIntentForDim(null);
+                                    fetch('/api/dna/identity')
+                                      .then(r => r.json())
+                                      .then(json => {
+                                        if (json.success) setIdentity(json.identity);
+                                      });
+                                  }
+                                } finally {
+                                  setSavingIntent(false);
+                                }
+                              }}
+                            >
+                              <input 
+                                type="text"
+                                value={newIntentTitle}
+                                onChange={e => setNewIntentTitle(e.target.value)}
+                                placeholder="Ej: Llegar a nivel 9/10"
+                                className="flex-1 px-4 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-green-500 shadow-inner"
+                                autoFocus
+                                disabled={savingIntent}
+                              />
+                              <div className="flex items-center gap-2">
+                                <button type="submit" disabled={savingIntent || !newIntentTitle.trim()} className="flex-1 sm:flex-none bg-green-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-green-600 disabled:opacity-50 transition-colors">
+                                  {savingIntent ? '...' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={() => setAddingIntentForDim(null)} className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
+                                  ✕
+                                </button>
+                              </div>
+                            </form>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                setAddingIntentForDim(selectedDimKey);
+                                setNewIntentTitle('');
+                              }}
+                              className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold uppercase hover:border-green-300 hover:text-green-500 transition-all flex items-center gap-2 w-fit mt-3"
+                            >
+                              <span>+</span> Añadir Intención
+                            </button>
                           )}
                         </div>
                       </div>
@@ -363,7 +440,7 @@ export function DNAView() {
                           
                           {addingAttributeForDim === selectedDimKey ? (
                             <form 
-                              className="flex items-center gap-2 w-full mt-2" 
+                              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full mt-2" 
                               onSubmit={async (e) => {
                                 e.preventDefault();
                                 if (!newAttributeName.trim() || savingAttribute) return;
@@ -374,11 +451,13 @@ export function DNAView() {
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
                                       dimensionId: identity?.[selectedDimKey]?.dimension?.id,
-                                      name: newAttributeName
+                                      name: newAttributeName,
+                                      level: newAttributeLevel || 'learned'
                                     })
                                   });
                                   if (res.ok) {
                                     setNewAttributeName('');
+                                    setNewAttributeLevel('');
                                     setAddingAttributeForDim(null);
                                     fetch('/api/dna/identity')
                                       .then(r => r.json())
@@ -391,27 +470,40 @@ export function DNAView() {
                                 }
                               }}
                             >
-                              <input 
-                                type="text"
-                                value={newAttributeName}
-                                onChange={e => setNewAttributeName(e.target.value)}
-                                placeholder="Ej: Pensamiento Crítico"
-                                className="flex-1 px-4 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-violet-500 shadow-inner"
-                                autoFocus
-                                disabled={savingAttribute}
-                              />
-                              <button type="submit" disabled={savingAttribute || !newAttributeName.trim()} className="bg-violet-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                                {savingAttribute ? '...' : 'Guardar'}
-                              </button>
-                              <button type="button" onClick={() => setAddingAttributeForDim(null)} className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
-                                ✕
-                              </button>
+                              <div className="flex items-center gap-2 flex-1">
+                                <input 
+                                  type="text"
+                                  value={newAttributeName}
+                                  onChange={e => setNewAttributeName(e.target.value)}
+                                  placeholder="Ej: Piano"
+                                  className="flex-1 px-4 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-violet-500 shadow-inner min-w-[100px]"
+                                  autoFocus
+                                  disabled={savingAttribute}
+                                />
+                                <input 
+                                  type="text"
+                                  value={newAttributeLevel}
+                                  onChange={e => setNewAttributeLevel(e.target.value)}
+                                  placeholder="Nivel (5/10)"
+                                  className="w-24 sm:w-28 px-4 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-violet-500 shadow-inner"
+                                  disabled={savingAttribute}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button type="submit" disabled={savingAttribute || !newAttributeName.trim()} className="flex-1 sm:flex-none bg-violet-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                                  {savingAttribute ? '...' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={() => setAddingAttributeForDim(null)} className="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">
+                                  ✕
+                                </button>
+                              </div>
                             </form>
                           ) : (
                             <button 
                               onClick={() => {
                                 setAddingAttributeForDim(selectedDimKey);
                                 setNewAttributeName('');
+                                setNewAttributeLevel('');
                               }}
                               className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold uppercase hover:border-violet-300 hover:text-violet-500 transition-all flex items-center gap-2 w-fit mt-1"
                             >

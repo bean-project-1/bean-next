@@ -33,7 +33,7 @@ export class IdentityService {
       },
       identity: {
         // Assets: What I have/know
-        assets: dimension.attributes.map(a => ({
+        assets: dimension.attributes.filter(a => a.category !== 'intent').map(a => ({
           name: a.name,
           category: a.category,
           level: (a.metadata as any)?.level || 'learned'
@@ -42,7 +42,10 @@ export class IdentityService {
         current: dimension.baseCommitments.map(c => ({
           title: c.title,
           type: c.type,
-          hoursPerDay: c.hoursPerDay
+          hoursPerDay: c.hoursPerDay,
+          commuteHours: c.commuteHours,
+          startTime: c.startTime,
+          endTime: c.endTime
         })),
         // History: Where I've been
         history: dimension.lifeEvents.map(e => ({
@@ -52,10 +55,16 @@ export class IdentityService {
           description: e.description
         })),
         // Intent: Where I'm going
-        intent: goals.map(g => ({
-          title: g.title,
-          progress: g.progress
-        }))
+        intent: [
+          ...goals.map(g => ({
+            title: g.title,
+            progress: g.progress
+          })),
+          ...dimension.attributes.filter(a => a.category === 'intent').map(a => ({
+            title: a.name,
+            progress: (a.metadata as any)?.progress || 0
+          }))
+        ]
       }
     };
   }

@@ -157,8 +157,8 @@ export function PermanentAIChat({
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-slate-400">
-          <div className="w-8 h-8 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
+        <div className="flex flex-col items-center gap-3 text-stone-400">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
           <span className="text-sm font-medium">Cargando conversación...</span>
         </div>
       </div>
@@ -171,12 +171,12 @@ export function PermanentAIChat({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-16 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-3xl shadow-lg">
-              🧠
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/10">
+              💡
             </div>
             <div>
-              <p className="text-slate-700 font-semibold text-lg">{emptyStateMessage}</p>
-              <p className="text-slate-400 text-sm mt-2 max-w-sm">
+              <p className="text-stone-700 font-bold text-lg">{emptyStateMessage}</p>
+              <p className="text-stone-400 text-sm mt-2 max-w-sm">
                 Puedo analizar tu ADN y proyectar caminos de vida posibles, o ayudarte a construir un plan concreto paso a paso.
               </p>
             </div>
@@ -184,16 +184,16 @@ export function PermanentAIChat({
               {initialMessage && (
                 <button
                   onClick={() => { setInput(initialMessage); }}
-                  className="px-4 py-2 bg-violet-600 border border-violet-500 text-white rounded-xl text-sm hover:bg-violet-700 transition-all shadow-sm font-bold animate-in zoom-in-95 duration-500"
+                  className="px-4 py-2.5 bg-emerald-600 border border-emerald-500 text-white rounded-xl text-xs hover:bg-emerald-700 transition-all shadow-sm font-bold animate-in zoom-in-95 duration-500"
                 >
                   🚀 {initialMessage}
                 </button>
               )}
-              {['¿Qué caminos de vida se alinean con mi perfil?', 'Analiza mi estado actual'].map(q => (
+              {['¿Qué caminos de vida se alinea con mi perfil?', 'Analiza mi estado actual'].map(q => (
                 <button
                   key={q}
                   onClick={() => { setInput(q); }}
-                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 transition-all"
+                  className="px-4 py-2 bg-white border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all"
                 >
                   {q}
                 </button>
@@ -205,12 +205,12 @@ export function PermanentAIChat({
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs mr-2 mt-1 flex-shrink-0">🧠</div>
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
             )}
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-violet-600 text-white rounded-br-none'
-                : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none shadow-sm'
+                ? 'bg-emerald-600 text-white rounded-br-none shadow-sm'
+                : 'bg-white border border-stone-200/50 text-stone-800 rounded-bl-none shadow-sm'
             }`}>
               {renderFormattedText(msg.content)}
             </div>
@@ -219,11 +219,11 @@ export function PermanentAIChat({
 
         {isSending && (
           <div className="flex justify-start">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs mr-2 mt-1 flex-shrink-0">🧠</div>
-            <div className="bg-white border border-slate-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1 items-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce delay-75" />
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce delay-150" />
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs mr-2 mt-1 flex-shrink-0">💡</div>
+            <div className="bg-white border border-stone-200/50 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1 items-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce delay-75" />
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce delay-150" />
             </div>
           </div>
         )}
@@ -254,19 +254,19 @@ export function PermanentAIChat({
           <button onClick={() => window.location.reload()} className="mt-2 text-xs font-bold text-red-700 underline">Recargar página</button>
         </div>
       ) : (
-      <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-white border-t border-slate-100 flex gap-2 shrink-0">
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-white border-t border-stone-100 flex gap-2 shrink-0">
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder={placeholder}
           disabled={isSending}
-          className="flex-1 bg-slate-50 border border-slate-200 focus:border-violet-400 focus:ring-1 focus:ring-violet-400/20 rounded-xl px-4 py-3 text-sm text-slate-700 placeholder-slate-400 outline-none transition-all"
+          className="flex-1 bg-stone-50 border border-stone-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 rounded-xl px-4 py-3 text-sm text-stone-700 placeholder-stone-400 outline-none transition-all"
         />
         <button
           type="submit"
           disabled={!input.trim() || isSending}
-          className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl disabled:opacity-40 transition-colors flex items-center justify-center shadow-sm"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl disabled:opacity-40 transition-colors flex items-center justify-center shadow-sm"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="22" y1="2" x2="11" y2="13" />

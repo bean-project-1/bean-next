@@ -65,11 +65,13 @@ export async function GET(req: NextRequest) {
     // 3. Call AI
     const prompt = `
       Eres BEAN Insights, un experto en desarrollo personal y planificación de vida. 
-      Basándote en el ADN del usuario y sus metas actuales, genera exactamente 3 posibles "Caminos de Vida" recomendados, cada uno respondiendo a una categoría específica:
+      Analiza detenidamente el ADN COMPLETO del usuario y sus METAS ACTUALES. Tu objetivo es entender profundamente hacia dónde quiere llegar la persona en cada una de sus dimensiones.
+      Basándote en esa visión integral, genera exactamente 3 posibles "Caminos de Vida" recomendados. Cada camino debe contribuir a los objetivos propios de su dimensión y ser ALTAMENTE REALISTA Y LOGRABLE.
       
-      1. Sinergia Cruzada ("synergy"): Combina al menos dos dimensiones o atributos del ADN del usuario (por ejemplo, cruzar una carrera/estudio con un interés o habilidad, como estudiar bioingeniería y trabajar en desarrollo de software para crear una app de signos vitales). Explica esta sinergia de forma inspiradora.
-      2. Siguiente Paso ("next_step"): Sugiere un siguiente paso lógico, especialización o certificación basada en sus metas activas o su profesión/habilidad principal (por ejemplo, si trabaja en desarrollo cloud, sugerir certificar en AWS/Azure; si trabaja en backend, sugerir una tecnología moderna relacionada).
-      3. Enfoque de ADN ("dominant_dna"): Sugiere una meta o camino enfocado en su dimensión de ADN con mayor densidad de atributos o pilar destacado de identidad (por ejemplo, si su ADN tiene fuerte enfoque familiar, sugerir organizar un viaje familiar o rutina compartida; si es en salud, una meta de bienestar integral).
+      Los 3 caminos deben responder a estas categorías específicas:
+      1. Sinergia Cruzada ("synergy"): Combina al menos dos dimensiones o atributos del ADN del usuario (por ejemplo, cruzar una carrera con un interés). Explica esta sinergia mostrando cómo lo acerca a su visión de vida.
+      2. Siguiente Paso ("next_step"): Sugiere un siguiente paso lógico, realista y accionable basado en sus metas activas, para potenciar la dimensión en la que ya está trabajando.
+      3. Enfoque de ADN ("dominant_dna"): Sugiere una meta enfocada en la dimensión de su ADN con mayor peso o potencial no explorado, asegurándote de que la sugerencia sea un paso lograble y concreto.
 
       ADN DEL USUARIO:
       ${dnaSummary}
@@ -78,9 +80,10 @@ export async function GET(req: NextRequest) {
       ${goalsSummary}
       
       INSTRUCCIONES:
-      - Cada camino debe ser concreto, realista y específico.
+      - Ten presente hacia dónde quiere llegar la persona en la dimensión afectada antes de sugerir.
+      - Cada camino debe ser concreto, extremadamente realista y lograble en su contexto actual.
       - "dimensionName": Indica el área principal de vida relacionada (ej: "Profesión", "Salud Física", "Familia y Relaciones", "Espiritualidad").
-      - "description": Una descripción de 2-3 frases explicando detalladamente en qué consiste este camino y por qué se alinea perfectamente con su perfil.
+      - "description": Una descripción de 2-3 frases explicando la meta sugerida, cómo contribuye a los objetivos de esa dimensión, y por qué es un paso realista.
       - "type": Debe ser exactamente "synergy" para la Sinergia Cruzada, "next_step" para el Siguiente Paso, y "dominant_dna" para el Enfoque de ADN.
       - Incluye un % de alineación estimado (entre 65% y 95%).
       - Incluye un emoji representativo.
@@ -185,33 +188,42 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
 
     const pathToBeReplaced = user.suggestedPaths.find(p => p.id === replaceId);
-    const typeToGenerate = pathToBeReplaced?.type ?? 'synergy';
+    const typeToGenerate = (pathToBeReplaced as any)?.type ?? 'synergy';
 
     const dnaSummary = user.attributes
       .map(a => `- ${a.dimension.label} (${a.category}): ${a.name}`)
       .join('\n');
 
+    const goalsSummary = user.goals.length > 0
+      ? user.goals.map(g => `- ${g.title}`).join('\n')
+      : 'Sin metas activas.';
+
     const currentTitles = user.suggestedPaths.map(p => p.title).join(', ');
 
     // 2. Call AI for ONE new path
     const prompt = `
-      Eres BEAN Insights. El usuario quiere REEMPLAZAR una de sus sugerencias de vida.
+      Eres BEAN Insights, experto en desarrollo personal. El usuario quiere REEMPLAZAR una de sus sugerencias de vida.
+      Analiza detenidamente el ADN COMPLETO del usuario y sus METAS ACTUALES, teniendo presente hacia dónde quiere llegar en cada dimensión.
       Genera exactamente 1 NUEVO "Camino de Vida" que sea diferente a estos: ${currentTitles}.
+      Debe ser un paso ALTAMENTE REALISTA, LOGRABLE y que contribuya a los objetivos propios de su dimensión.
       
       Este nuevo camino debe ser estrictamente de tipo: "${typeToGenerate}".
       
       INSTRUCCIONES DE TIPO PARA "${typeToGenerate}":
-      ${typeToGenerate === 'synergy' ? '- Debe ser una Sinergia Cruzada: combina al menos dos dimensiones o atributos del ADN del usuario (por ejemplo, cruzar un estudio/profesión con un interés o habilidad para un proyecto único).' : ''}
-      ${typeToGenerate === 'next_step' ? '- Debe ser un Siguiente Paso lógico: sugiere una especialización, certificación o evolución basada en sus metas actuales o su profesión/habilidad principal.' : ''}
-      ${typeToGenerate === 'dominant_dna' ? '- Debe ser un Enfoque de ADN: sugerencia orientada a la dimensión más densa del ADN o pilar de identidad destacado (ej: familia, salud, etc.).' : ''}
+      ${typeToGenerate === 'synergy' ? '- Debe ser una Sinergia Cruzada: combina al menos dos dimensiones o atributos del ADN del usuario.' : ''}
+      ${typeToGenerate === 'next_step' ? '- Debe ser un Siguiente Paso lógico: sugiere un paso accionable y realista basado en sus metas actuales.' : ''}
+      ${typeToGenerate === 'dominant_dna' ? '- Debe ser un Enfoque de ADN: sugerencia orientada a la dimensión más densa del ADN o pilar de identidad destacado.' : ''}
 
       ADN DEL USUARIO:
       ${dnaSummary}
       
+      METAS ACTUALES:
+      ${goalsSummary}
+      
       INSTRUCCIONES GENERALES:
-      - Debe ser concreto y específico.
-      - "dimensionName": Área del ADN relacionada (ej: Profesión, Salud Física, Familia y Relaciones, etc).
-      - "description": 2-3 frases explicativas de en qué consiste y por qué se alinea.
+      - Asegúrate de que la meta sugerida sea concreta, realista y lograble en su contexto actual.
+      - "dimensionName": Área principal de vida relacionada.
+      - "description": 2-3 frases explicando la meta, cómo contribuye a su visión a largo plazo para esa dimensión y por qué es un paso realista.
       - Incluye % alineación, emoji, tagline, 3 razones, y starterQuestion.
       - "type": Debe ser exactamente "${typeToGenerate}".
       

@@ -30,12 +30,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionId } = body;
+    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionIds } = body;
 
-    let validDimensionId = null; // Use null to unset if empty
-    if (dimensionId) {
-      const dim = await prisma.dimension.findUnique({ where: { name: dimensionId } });
-      if (dim) validDimensionId = dim.id;
+    let validDimensionIds: string[] | undefined = undefined; 
+    
+    if (dimensionIds && Array.isArray(dimensionIds)) {
+      const dims = await prisma.dimension.findMany({ where: { name: { in: dimensionIds } } });
+      validDimensionIds = dims.map(d => d.id);
+    } else if (body.dimensionId) {
+      // Fallback
+      const dim = await prisma.dimension.findUnique({ where: { name: body.dimensionId } });
+      if (dim) validDimensionIds = [dim.id];
+    } else if (dimensionIds === null || body.dimensionId === null) {
+      validDimensionIds = []; // Clear them
     }
 
     const commitment = await prisma.baseCommitment.update({
@@ -48,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         commuteHours,
         startTime,
         endTime,
-        dimensionId: validDimensionId
+        ...(validDimensionIds !== undefined ? { dimensionIds: validDimensionIds } : {})
       }
     });
 

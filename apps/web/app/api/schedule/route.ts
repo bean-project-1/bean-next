@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     // 2. Fetch Base Commitments (Work/Study/Routines)
     const baseCommitments = await prisma.baseCommitment.findMany({
       where: { userId, isActive: true },
-      include: { dimension: true }
+      include: { dimensions: true }
     });
 
     const events: any[] = [];
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
             status: 'commitment',
             goalTitle: 'Base DNA',
             itemType: 'commitment',
-            dimensionName: bc.dimension?.label || 'General'
+            dimensionName: bc.dimensions?.map(d => d.label).join(', ') || 'General'
           });
         }
       });
@@ -116,11 +116,13 @@ export async function GET(req: NextRequest) {
               description: task.description,
               startDate: task.startDate,
               date: task.endDate || task.startDate,
-              type: 'subtask',
+              type: action.type === 'phase' ? action.title : 'subtask', // User wants the phase to which it belongs instead of 'task'/'subtask'
               estimatedHours: task.estimatedHours || 0,
               status: task.isCompleted ? 'completed' : 'pending',
               goalId: goal.id,
               goalTitle: goal.title,
+              parentActionTitle: action.title,
+              parentActionType: action.type,
               dimensions: [],
               attributes: [],
               tasks: [],

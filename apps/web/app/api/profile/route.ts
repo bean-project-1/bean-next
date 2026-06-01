@@ -263,7 +263,7 @@ export async function GET(req: NextRequest) {
           take: 1
         },
         baseCommitments: {
-          include: { dimension: true },
+          include: { dimensions: true },
           where: { isActive: true }
         }
       },

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, subWeeks, addWeeks } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { PostItWall } from './PostItWall';
 
 import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
@@ -43,88 +43,77 @@ function BottomSheet({
   subtitle: string;
   children: React.ReactNode;
 }) {
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const startYRef = useRef<number>(0);
-  const currentYRef = useRef<number>(0);
-  const isDraggingRef = useRef(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const dragControls = useDragControls();
 
-  // Close on backdrop click
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  // Touch drag-to-dismiss
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startYRef.current = e.touches[0].clientY;
-    isDraggingRef.current = true;
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current || !sheetRef.current) return;
-    const delta = e.touches[0].clientY - startYRef.current;
-    currentYRef.current = delta;
-    if (delta > 0) {
-      sheetRef.current.style.transform = `translateY(${delta}px)`;
-      sheetRef.current.style.transition = 'none';
-    }
-  };
-  const handleTouchEnd = () => {
-    if (!sheetRef.current) return;
-    isDraggingRef.current = false;
-    sheetRef.current.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
-    if (currentYRef.current > 120) {
-      onClose();
-    } else {
-      sheetRef.current.style.transform = 'translateY(0)';
-    }
-    currentYRef.current = 0;
-  };
-
-  if (!isOpen) return null;
+  // Reset expansion when closed
+  useEffect(() => {
+    if (!isOpen) setIsExpanded(false);
+  }, [isOpen]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
-      onClick={handleBackdropClick}
-    >
-      <div
-        ref={sheetRef}
-        className="bg-white rounded-t-3xl shadow-2xl flex flex-col"
-        style={{
-          maxHeight: '85dvh',
-          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.32,0.72,0,1)',
-        }}
-        onClick={e => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-slate-200" />
-        </div>
-
-        {/* Sheet header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-base font-black text-slate-900 tracking-tight">{title}</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{subtitle}</p>
-          </div>
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-end justify-center overflow-hidden">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold text-lg"
-          >
-            ×
-          </button>
-        </div>
+          />
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          {children}
+          {/* Draggable Sheet */}
+          <motion.div
+            drag="y"
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.1}
+            onDragEnd={(e, info) => {
+              if (info.offset.y > 100 && !isExpanded) onClose();
+              else if (info.offset.y > 150 && isExpanded) setIsExpanded(false);
+              else if (info.offset.y < -50 && !isExpanded) setIsExpanded(true);
+            }}
+            initial={{ y: '100%' }}
+            animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className={`relative w-full bg-white flex flex-col shadow-2xl transition-all duration-300 overflow-hidden ${
+              isExpanded ? 'rounded-none' : 'rounded-t-[32px]'
+            }`}
+          >
+            {/* Drag Handle Indicator */}
+            <div
+              className="w-full flex justify-center pt-3 pb-3 bg-white shrink-0 cursor-grab active:cursor-grabbing touch-none border-b border-stone-100"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
+              <div className="w-12 h-1.5 bg-stone-200 rounded-full pointer-events-none" />
+            </div>
+
+            {/* Sheet Header */}
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between shrink-0">
+              <div>
+                <h2 className="text-base font-black text-stone-900 tracking-tight">{title}</h2>
+                <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">{subtitle}</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 font-bold text-lg transition-colors active:scale-95"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 bg-stone-50/50 space-y-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              {children}
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }
 

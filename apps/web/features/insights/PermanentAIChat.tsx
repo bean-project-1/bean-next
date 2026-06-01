@@ -52,10 +52,15 @@ export function PermanentAIChat({
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [branchCreated, setBranchCreated] = useState(false);
   const [didAutoSend, setDidAutoSend] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, []);
 
   // Load session and history on mount
@@ -174,7 +179,7 @@ export function PermanentAIChat({
   return (
     <div className="flex flex-col h-full bg-white min-h-0">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-6 space-y-4 min-h-0 bg-stone-50/30">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-16 gap-4">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/10">
@@ -250,7 +255,6 @@ export function PermanentAIChat({
           </div>
         )}
 
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}

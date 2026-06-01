@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { isSameDay, addDays } from 'date-fns';
+import confetti from 'canvas-confetti';
 import { TaskDetailModal } from '@/features/schedule/TaskDetailModal';
 import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
 
@@ -34,6 +35,10 @@ export function DailyWarmup() {
   
   // Selected task to show in Bottom Sheet
   const [selectedTask, setSelectedTask] = useState<WarmupEvent | null>(null);
+
+  // Undo functionality
+  const [recentlyCompleted, setRecentlyCompleted] = useState<WarmupEvent | null>(null);
+  const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track seen cards to detect a full loop
   const [seenIds, setSeenIds] = useState<string[]>([]);
@@ -111,9 +116,43 @@ export function DailyWarmup() {
     setDeck(filtered.reverse());
     setCurrentDate(date);
     setSeenIds([]); // Reset seen cards when building a new deck
+    setRecentlyCompleted(null);
+  };
+
+  const commitTaskCompletion = (event: WarmupEvent) => {
+    if (event.itemType !== 'habit') {
+      let endpoint = '';
+      if (event.itemType === 'daily') endpoint = `/api/schedule/daily-tasks/${event.id}`;
+      else if (event.itemType === 'task') endpoint = `/api/profile/goals/tasks/${event.id}`;
+      else if (event.itemType === 'action') endpoint = `/api/profile/goals/actions/${event.id}`;
+      
+      if (endpoint) {
+        fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isCompleted: true })
+        }).then(() => {
+          window.dispatchEvent(new Event('refresh-schedule'));
+        });
+      }
+    }
+  };
+
+  const handleUndo = () => {
+    if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current);
+    if (recentlyCompleted) {
+      // Put the task back at the end of the deck (which is the top of the stack)
+      setDeck(prev => [...prev, recentlyCompleted]);
+      setSeenIds(prev => prev.filter(id => id !== recentlyCompleted.id));
+      setRecentlyCompleted(null);
+    }
   };
 
   const closeWarmup = () => {
+    if (recentlyCompleted) {
+      commitTaskCompletion(recentlyCompleted);
+      if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current);
+    }
     sessionStorage.setItem('warmup_done_today', 'true');
     setIsVisible(false);
   };
@@ -199,26 +238,28 @@ export function DailyWarmup() {
                     }}
                     onSwipeRight={() => {
                       setSeenIds(prev => [...prev, event.id]);
-                      // Mark as done / Dismiss
                       setDeck(prev => prev.slice(0, -1));
+
+                      // Trigger confetti
+                      confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#10b981', '#34d399', '#fcd34d']
+                      });
                       
-                      // Tell backend it's done (unless it's a habit, which we just dismiss locally for now)
-                      if (event.itemType !== 'habit') {
-                        let endpoint = '';
-                        if (event.itemType === 'daily') endpoint = `/api/schedule/daily-tasks/${event.id}`;
-                        else if (event.itemType === 'task') endpoint = `/api/profile/goals/tasks/${event.id}`;
-                        else if (event.itemType === 'action') endpoint = `/api/profile/goals/actions/${event.id}`;
-                        
-                        if (endpoint) {
-                          fetch(endpoint, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ isCompleted: true })
-                          }).then(() => {
-                            window.dispatchEvent(new Event('refresh-schedule'));
-                          });
-                        }
+                      // If there is already a pending completion, commit it now
+                      if (recentlyCompleted) {
+                        commitTaskCompletion(recentlyCompleted);
+                        if (completionTimeoutRef.current) clearTimeout(completionTimeoutRef.current);
                       }
+
+                      // Set new pending completion
+                      setRecentlyCompleted(event);
+                      completionTimeoutRef.current = setTimeout(() => {
+                        commitTaskCompletion(event);
+                        setRecentlyCompleted(null);
+                      }, 4000);
                     }}
                     onClickCenter={() => setSelectedTask(event)}
                   />
@@ -261,8 +302,8 @@ export function DailyWarmup() {
             Desliza para organizar
           </p>
           <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 font-black text-xl">👈</div>
-            <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 font-black text-xl">👉</div>
+            <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 font-black text-xl shadow-lg">👈</div>
+            <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 font-black text-xl shadow-lg">👉</div>
           </div>
           <div className="flex justify-between w-full max-w-xs mt-4 px-4 text-[10px] font-bold text-stone-600 uppercase tracking-widest">
             <span>Luego</span>
@@ -271,7 +312,33 @@ export function DailyWarmup() {
         </div>
       )}
 
-      {/* Modals for "Hacer Ahora" */}
+      {/* Undo Snackbar */}
+      <AnimatePresence>
+        {recentlyCompleted && (
+          <div className="absolute top-24 inset-x-0 z-[150] flex justify-center pointer-events-none px-4">
+            <motion.div 
+              initial={{ y: -100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -100, opacity: 0 }}
+              className="pointer-events-auto w-full max-w-sm"
+            >
+              <div className="bg-stone-800 text-white p-4 sm:px-5 sm:py-3 rounded-2xl shadow-2xl border border-stone-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
+              <div className="flex-1 min-w-0 flex flex-col justify-center text-center sm:text-left">
+                <p className="text-[10px] sm:text-xs font-black text-emerald-400 uppercase tracking-widest mb-1 sm:mb-0.5">✅ Completado</p>
+                <p className="text-sm font-medium truncate text-stone-200">{recentlyCompleted.title}</p>
+              </div>
+              <button 
+                onClick={handleUndo}
+                className="shrink-0 bg-stone-700 hover:bg-stone-600 text-white text-xs font-bold py-3 sm:px-4 sm:py-2 rounded-xl transition-colors uppercase tracking-wider active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>↩️</span> Deshacer
+              </button>
+            </div>
+          </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {selectedTask && (
         selectedTask.itemType === 'daily' || selectedTask.itemType === 'task' ? (
           <TaskDetailModal

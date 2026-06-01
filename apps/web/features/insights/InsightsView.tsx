@@ -209,7 +209,6 @@ function PathDetailPanel({
       <motion.div
         drag="y"
         dragControls={dragControls}
-        dragListener={false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={(e, info) => {
@@ -222,8 +221,8 @@ function PathDetailPanel({
         initial={{ y: '100%' }}
         animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row transition-all duration-300 md:!h-[80vh] md:!rounded-[32px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
+        transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row md:!h-[80vh] md:!rounded-[32px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
       >
         
         {/* Mobile Drag Handle Indicator */}
@@ -256,78 +255,88 @@ function PathDetailPanel({
           </button>
         </div>
 
-        {/* Left Side (Summary): Hidden on mobile if 'coach' tab is active */}
-        <div className={`w-full md:w-[380px] bg-white border-b md:border-b-0 md:border-r border-stone-200/50 p-6 md:p-8 flex-1 flex-col justify-between overflow-y-auto ${activeTab === 'summary' ? 'flex' : 'hidden md:flex'}`}>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider flex items-center gap-1.5 ${g.badge}`}>
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                {g.label}
-              </span>
+        {/* Left Side (Details) */}
+        <div 
+          className={`flex-1 overflow-y-auto bg-white border-r border-stone-200/50 relative min-h-0 ${activeTab === 'summary' ? 'block' : 'hidden md:block'}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onScroll={(e) => {
+            if (!isExpanded && e.currentTarget.scrollTop > 5) {
+              setIsExpanded(true);
+            }
+          }}
+        >
+          <div className="p-6 md:p-8 flex flex-col justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider flex items-center gap-1.5 ${g.badge}`}>
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {g.label}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4 mb-6">
+                <div className={`w-16 h-16 rounded-[20px] bg-gradient-to-br ${g.from} ${g.to} flex items-center justify-center text-4xl shadow-xl text-white shrink-0 rotate-2`}>
+                  {path.emoji}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-stone-800 leading-tight">{path.title}</h2>
+                  <p className="text-xs font-bold text-stone-400 mt-1">{path.tagline}</p>
+                </div>
+              </div>
+
+              {path.description && (
+                <div className="mb-8 bg-stone-50 rounded-2xl p-5 border border-stone-100 shadow-sm">
+                  <p className="text-sm text-stone-600 leading-relaxed font-bold">
+                    "{path.description}"
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4 mb-8">
+                <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4" /> Análisis de Compatibilidad
+                </h4>
+                <div className="space-y-3">
+                  {path.reasons.map((r, i) => (
+                    <div key={i} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-stone-100 shadow-sm">
+                      <CheckCircle2 className={`w-5 h-5 ${g.text} shrink-0`} />
+                      <span className="text-xs text-stone-700 leading-relaxed font-bold">{r}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8 p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Afinidad ADN</span>
+                  <span className={`text-sm font-black ${g.text}`}>{path.alignment} XP</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-stone-200 overflow-hidden shadow-inner">
+                  <div 
+                    className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to}`} 
+                    style={{ width: `${path.alignment}%` }} 
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 mb-6">
-              <div className={`w-16 h-16 rounded-[20px] bg-gradient-to-br ${g.from} ${g.to} flex items-center justify-center text-4xl shadow-xl text-white shrink-0 rotate-2`}>
-                {path.emoji}
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-stone-800 leading-tight">{path.title}</h2>
-                <p className="text-xs font-bold text-stone-400 mt-1">{path.tagline}</p>
-              </div>
+            <div className="pt-4 border-t border-stone-100 flex flex-col gap-3">
+              <button
+                onClick={() => onReplace(path)}
+                className="w-full py-4 border-2 border-stone-200 bg-white hover:bg-stone-50 text-stone-600 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+              >
+                <RefreshCw className="w-4 h-4 text-stone-400" />
+                Pedir otra Misión
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('coach')}
+                className={`md:hidden w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md ${activeTab === 'coach' ? 'hidden' : 'flex'}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Hablar con el Coach
+              </button>
             </div>
-
-            {path.description && (
-              <div className="mb-8 bg-stone-50 rounded-2xl p-5 border border-stone-100 shadow-sm">
-                <p className="text-sm text-stone-600 leading-relaxed font-bold">
-                  "{path.description}"
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-4 mb-8">
-              <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4" /> Análisis de Compatibilidad
-              </h4>
-              <div className="space-y-3">
-                {path.reasons.map((r, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-white p-3 rounded-xl border border-stone-100 shadow-sm">
-                    <CheckCircle2 className={`w-5 h-5 ${g.text} shrink-0`} />
-                    <span className="text-xs text-stone-700 leading-relaxed font-bold">{r}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-8 p-4 bg-stone-50 rounded-2xl border border-stone-100">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Afinidad ADN</span>
-                <span className={`text-sm font-black ${g.text}`}>{path.alignment} XP</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-stone-200 overflow-hidden shadow-inner">
-                <div 
-                  className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to}`} 
-                  style={{ width: `${path.alignment}%` }} 
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-stone-100 flex flex-col gap-3">
-            <button
-              onClick={() => onReplace(path)}
-              className="w-full py-4 border-2 border-stone-200 bg-white hover:bg-stone-50 text-stone-600 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
-            >
-              <RefreshCw className="w-4 h-4 text-stone-400" />
-              Pedir otra Misión
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('coach')}
-              className={`md:hidden w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md ${activeTab === 'coach' ? 'hidden' : 'flex'}`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              Hablar con el Coach
-            </button>
           </div>
         </div>
 
@@ -347,7 +356,10 @@ function PathDetailPanel({
             </button>
           </div>
 
-          <div className="flex-1 overflow-hidden relative min-h-0">
+          <div 
+            className="flex-1 overflow-hidden relative min-h-0"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <div className="absolute inset-0">
               <PermanentAIChat
                 context={chatContext}

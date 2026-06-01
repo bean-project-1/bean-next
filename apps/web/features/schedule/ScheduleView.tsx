@@ -68,7 +68,6 @@ function BottomSheet({
           <motion.div
             drag="y"
             dragControls={dragControls}
-            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.1}
             onDragEnd={(e, info) => {
@@ -79,8 +78,8 @@ function BottomSheet({
             initial={{ y: '100%' }}
             animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className={`relative w-full bg-white flex flex-col shadow-2xl transition-all duration-300 overflow-hidden ${
+            transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+            className={`relative w-full bg-white flex flex-col shadow-2xl overflow-hidden ${
               isExpanded ? 'rounded-none' : 'rounded-t-[32px]'
             }`}
           >
@@ -107,7 +106,15 @@ function BottomSheet({
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 bg-stone-50/50 space-y-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div 
+              className="flex-1 overflow-y-auto px-6 py-5 bg-stone-50/50 space-y-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+              onPointerDown={(e) => e.stopPropagation()}
+              onScroll={(e) => {
+                if (!isExpanded && e.currentTarget.scrollTop > 5) {
+                  setIsExpanded(true);
+                }
+              }}
+            >
               {children}
             </div>
           </motion.div>

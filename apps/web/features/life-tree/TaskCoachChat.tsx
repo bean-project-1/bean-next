@@ -55,8 +55,15 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
     }
   }, [messages, taskId]);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages]);
 
   const send = async (text: string) => {
@@ -84,7 +91,7 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
   };
 
   return (
-    <div className={`w-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-inner overflow-hidden ${fullHeight ? 'flex-1 h-full border-none rounded-none' : 'h-[450px] my-4'}`}>
+    <div className={`w-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-inner overflow-hidden ${fullHeight ? 'flex-1 h-full min-h-0 border-none rounded-none' : 'h-[450px] my-4'}`}>
       {/* Header */}
       <div className="shrink-0 px-5 py-3 border-b border-slate-100 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-lg shadow-sm shrink-0">
@@ -108,7 +115,7 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/60">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/60">
         {messages.length === 0 && (
           <div className="flex flex-col items-center text-center pt-6 pb-2 gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center text-3xl">
@@ -160,13 +167,12 @@ export function TaskCoachChat({ taskId, taskTitle, taskDescription, onCloseMobil
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <form
         onSubmit={e => { e.preventDefault(); send(input); }}
-        className="shrink-0 p-3 bg-white border-t border-slate-100 flex gap-2"
+        className="shrink-0 p-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white border-t border-slate-100 flex gap-2"
       >
         <input
           ref={inputRef}

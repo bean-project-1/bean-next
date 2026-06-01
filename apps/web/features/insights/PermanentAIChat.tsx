@@ -172,7 +172,7 @@ export function PermanentAIChat({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white min-h-0">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
         {messages.length === 0 && (
@@ -255,12 +255,12 @@ export function PermanentAIChat({
 
       {/* Input Area */}
       {loadError ? (
-        <div className="p-4 bg-red-50 border-t border-red-100 text-center">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-red-50 border-t border-red-100 text-center shrink-0">
           <p className="text-xs text-red-600 font-medium">{loadError}</p>
           <button onClick={() => window.location.reload()} className="mt-2 text-xs font-bold text-red-700 underline">Recargar página</button>
         </div>
       ) : (
-      <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-white border-t border-stone-100 flex gap-2 shrink-0">
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white border-t border-stone-100 flex gap-2 shrink-0">
         <input
           type="text"
           value={input}

@@ -275,8 +275,8 @@ export function PostItWall() {
                 initial={{ y: '100%' }}
                 animate={{ y: 0, height: 'auto' }}
                 exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="relative w-full max-w-lg bg-white flex flex-col shadow-2xl transition-all duration-300 overflow-hidden rounded-t-[32px] sm:rounded-2xl sm:mb-10"
+                transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+                className="relative w-full max-w-lg bg-white flex flex-col shadow-2xl overflow-hidden rounded-t-[32px] sm:rounded-2xl sm:mb-10"
               >
                 <div
                   className="w-full flex justify-center pt-3 pb-3 bg-white shrink-0 cursor-grab active:cursor-grabbing touch-none border-b border-stone-100 sm:hidden"
@@ -373,7 +373,6 @@ export function PostItWall() {
               <motion.div
                 drag="y"
                 dragControls={trayDragControls}
-                dragListener={false}
                 dragConstraints={{ top: 0, bottom: 0 }}
                 dragElastic={0.1}
                 onDragEnd={(e, info) => {
@@ -384,8 +383,8 @@ export function PostItWall() {
                 initial={{ y: '100%' }}
                 animate={{ y: 0, height: isTrayExpanded ? '100dvh' : '80dvh' }}
                 exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className={`relative w-full bg-[#fffcf8] flex flex-col shadow-2xl transition-all duration-300 overflow-hidden ${isTrayExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
+                transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+                className={`relative w-full bg-[#fffcf8] flex flex-col shadow-2xl overflow-hidden ${isTrayExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
               >
                 <div
                   className="w-full flex justify-center pt-3 pb-3 bg-white shrink-0 cursor-grab active:cursor-grabbing touch-none border-b border-stone-100"
@@ -399,7 +398,15 @@ export function PostItWall() {
                   <button onClick={() => setIsMobileTrayOpen(false)} className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 font-bold transition-colors">✕</button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 bg-[linear-gradient(transparent_27px,#f1f5f9_28px)] bg-[length:100%_28px] pb-32">
+                <div 
+                  className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 bg-[linear-gradient(transparent_27px,#f1f5f9_28px)] bg-[length:100%_28px] pb-32"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onScroll={(e) => {
+                    if (!isTrayExpanded && e.currentTarget.scrollTop > 5) {
+                      setIsTrayExpanded(true);
+                    }
+                  }}
+                >
                   {postIts.length === 0 ? (
                     <div className="text-center mt-10">
                       <span className="text-4xl opacity-50 mb-2 block">📝</span>

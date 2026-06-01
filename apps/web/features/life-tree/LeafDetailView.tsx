@@ -64,7 +64,6 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
       <motion.div
         drag="y"
         dragControls={dragControls}
-        dragListener={false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={(e, info) => {
@@ -75,8 +74,8 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
         initial={{ y: '100%' }}
         animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row transition-all duration-300 md:!h-[80vh] md:!rounded-[40px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
+        transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row md:!h-[80vh] md:!rounded-[40px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
       >
         
         {/* Mobile Drag Handle Indicator */}
@@ -111,8 +110,16 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
         </div>
 
         {/* Left Side (Details) */}
-        <div className={`flex-1 md:flex-1 bg-white border-b md:border-b-0 md:border-r border-stone-200/50 flex-col overflow-hidden ${activeTab === 'details' ? 'flex' : 'hidden md:flex'}`}>
-          <div className="flex-1 overflow-y-auto px-5 md:px-10 pt-5 md:pt-10 pb-6">
+        <div 
+          className={`flex-1 overflow-y-auto relative min-h-0 ${activeTab === 'details' ? 'block' : 'hidden md:block'} md:flex md:flex-col border-r border-stone-200/50`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onScroll={(e) => {
+            if (!isExpanded && e.currentTarget.scrollTop > 5) {
+              setIsExpanded(true);
+            }
+          }}
+        >
+          <div className="flex-1 px-5 md:px-10 pt-5 md:pt-10 pb-6">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -281,7 +288,10 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
             </div>
           </div>
           
-          <div className="flex-1 overflow-hidden relative min-h-0">
+          <div 
+            className="flex-1 overflow-hidden relative min-h-0"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <div className="absolute inset-0 flex flex-col">
               {chatOpenTaskId ? (() => {
                 const openTask = action.tasks?.find(t => t.id === chatOpenTaskId);
@@ -295,20 +305,12 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
                   />
                 );
               })() : (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-stone-400 bg-stone-50/50">
-                  <div className="w-16 h-16 rounded-[20px] bg-stone-100 flex items-center justify-center text-3xl mb-4 shadow-inner">
-                    🤖
-                  </div>
-                  <p className="text-sm font-bold text-stone-500 mb-2">Modo Coach Inactivo</p>
-                  <p className="text-xs font-medium max-w-[200px] mx-auto leading-relaxed">Vuelve a la pestaña de <strong className="text-stone-600">Detalles</strong> y selecciona una tarea específica para iniciar una sesión de guía paso a paso.</p>
-                  
-                  <button 
-                    onClick={() => setActiveTab('details')}
-                    className="md:hidden mt-6 px-5 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-black uppercase tracking-wider text-stone-600 shadow-sm"
-                  >
-                    Volver a Detalles
-                  </button>
-                </div>
+                <TaskCoachChat 
+                  taskId={action.id}
+                  taskTitle={action.title} 
+                  taskDescription={action.description || 'Sin descripción'} 
+                  fullHeight
+                />
               )}
             </div>
           </div>

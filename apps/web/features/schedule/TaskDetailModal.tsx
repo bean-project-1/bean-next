@@ -64,7 +64,6 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
       <motion.div
         drag="y"
         dragControls={dragControls}
-        dragListener={false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={(e, info) => {
@@ -77,8 +76,8 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
         initial={{ y: '100%' }}
         animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row transition-all duration-300 md:!h-[80vh] md:!rounded-[40px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
+        transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
+        className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row md:!h-[80vh] md:!rounded-[40px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
       >
         
         {/* Mobile Drag Handle Indicator */}
@@ -113,9 +112,17 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
         </div>
 
         {/* Left Side (Details): Hidden on mobile if 'coach' tab is active */}
-        <div className={`flex-1 md:flex-1 bg-white border-b md:border-b-0 md:border-r border-stone-200/50 flex-col overflow-hidden ${activeTab === 'details' ? 'flex' : 'hidden md:flex'}`}>
+        <div 
+          className={`flex-1 md:flex-1 bg-white border-b md:border-b-0 md:border-r border-stone-200/50 flex-col overflow-y-auto relative min-h-0 ${activeTab === 'details' ? 'flex' : 'hidden md:flex'}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onScroll={(e) => {
+            if (!isExpanded && e.currentTarget.scrollTop > 5) {
+              setIsExpanded(true);
+            }
+          }}
+        >
           {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto px-5 md:px-10 pt-5 md:pt-10 pb-6">
+          <div className="px-5 md:px-10 pt-5 md:pt-10 pb-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1 mr-4">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -298,7 +305,10 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
             </div>
           </div>
           
-          <div className="flex-1 overflow-hidden relative min-h-0">
+          <div 
+            className="flex-1 overflow-hidden relative min-h-0"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <div className="absolute inset-0">
               <TaskCoachChat 
                 taskId={task.id}

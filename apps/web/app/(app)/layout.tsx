@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Calendar, Dna, Lightbulb, User } from 'lucide-react';
+import { DailyWarmup } from '@/features/schedule/DailyWarmup';
 
 const NAV = [
   { href: '/home', icon: LayoutDashboard, label: 'Árbol' },
@@ -62,6 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       <FloatingDock />
+      <DailyWarmup />
     </div>
   );
 }

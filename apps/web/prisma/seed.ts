@@ -91,7 +91,7 @@ async function seedUser(email: string, name: string, attributes: any[], goals: a
         hoursPerDay: bc.hoursPerDay,
         startTime: bc.startTime,
         endTime: bc.endTime,
-        dimensionId: bc.dimension ? dimensionMap[bc.dimension] : null
+        dimensionIds: bc.dimension ? (dimensionMap[bc.dimension] ? [dimensionMap[bc.dimension]] : []) : [],
       }
     });
   }

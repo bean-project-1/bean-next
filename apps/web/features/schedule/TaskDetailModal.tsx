@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { ScheduledEvent } from './ScheduleView';
 import { TaskCoachChat } from '../life-tree/TaskCoachChat';
 
@@ -24,6 +26,15 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
     if (onUpdate && editTitle.trim()) {
       onUpdate(task.id, { title: editTitle.trim(), description: editDescription.trim() });
       setIsEditing(false);
+    }
+  };
+
+  const formatDateSafely = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      return format(new Date(dateString), "d 'de' MMMM, yyyy", { locale: es });
+    } catch (e) {
+      return '';
     }
   };
 
@@ -51,7 +62,7 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
                       {task.estimatedHours}h est.
                     </span>
                   )}
-                  {isManuallyCreated && !isEditing && (
+                  {!isEditing && (
                     <button onClick={() => setIsEditing(true)} className="text-[10px] font-bold text-violet-500 hover:text-violet-700 uppercase tracking-widest flex items-center gap-1">
                       ✎ Editar
                     </button>
@@ -79,21 +90,104 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate }:
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 bg-slate-50/30 flex flex-col">
+            
+            {/* Metadata Grid */}
+            <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {task.goalTitle && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                    Meta / Proyecto
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight">{task.goalTitle}</span>
+                </div>
+              )}
+              {task.type && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Fase
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight capitalize">{task.type}</span>
+                </div>
+              )}
+              {task.itemType && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                    Tipo
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight capitalize">{task.itemType}</span>
+                </div>
+              )}
+              {task.startDate && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Inicio
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight capitalize">{formatDateSafely(task.startDate)}</span>
+                </div>
+              )}
+              {task.date && task.date !== task.startDate && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Fecha de Acción
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight capitalize">{formatDateSafely(task.date)}</span>
+                </div>
+              )}
+              {(task.startTime || task.endTime) && (
+                <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Horario
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 leading-tight">
+                    {task.startTime || '??'} - {task.endTime || '??'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Tags (Dimensions & Attributes) */}
+            {(task.dimensions?.length || task.attributes?.length) ? (
+              <div className="mb-8 flex flex-wrap gap-2">
+                {task.dimensions?.map(dim => (
+                  <span key={dim} className="px-2 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                    ✦ {dim}
+                  </span>
+                ))}
+                {task.attributes?.map(attr => (
+                  <span key={attr} className="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-700 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                    ✧ {attr}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
             {isEditing ? (
               <div className="mb-6">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+                  Descripción
+                </h4>
                 <textarea
                   value={editDescription}
                   onChange={e => setEditDescription(e.target.value)}
-                  className="w-full text-sm text-slate-600 font-medium bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-violet-400 resize-none"
-                  placeholder="Añade una descripción..."
-                  rows={4}
+                  className="w-full text-sm text-slate-600 font-medium bg-white border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-violet-400 resize-none shadow-sm"
+                  placeholder="Añade una descripción de los pasos o notas relevantes..."
+                  rows={5}
                 />
               </div>
             ) : task.description ? (
-              <div className="mb-6">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+              <div className="mb-6 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+                  Descripción
+                </h4>
+                <p className="text-sm text-slate-600 leading-relaxed font-medium whitespace-pre-wrap">
                   {task.description}
                 </p>
               </div>

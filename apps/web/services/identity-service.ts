@@ -73,9 +73,9 @@ export class IdentityService {
     const dimensions = await prisma.dimension.findMany();
     const identity: any = {};
 
-    for (const dim of dimensions) {
+    await Promise.all(dimensions.map(async (dim) => {
       identity[dim.name] = await this.getUnifiedDimension(userId, dim.name);
-    }
+    }));
 
     return identity;
   }

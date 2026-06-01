@@ -11,7 +11,6 @@ interface Message {
 interface BranchData {
   goal: string;
   dimensionName: string;
-  activities: { title: string; description: string }[];
 }
 
 interface PermanentAIChatProps {
@@ -134,18 +133,25 @@ export function PermanentAIChat({
     if (!pendingBranch) return;
     setCreatingBranch(true);
     try {
-      const res = await fetch('/api/ai/create-branch', {
+      const res = await fetch('/api/ai/goal-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingBranch)
+        body: JSON.stringify({
+          finalGoalInput: pendingBranch.goal,
+          chatHistory: messages
+        })
       });
       const data = await res.json();
       if (data.success) {
         setBranchCreated(true);
         setPendingBranch(null);
-        onBranchCreated?.(data.goalId);
-        const confirmMsg: Message = { role: 'assistant', content: `🌳 ¡Perfecto! He creado la meta **"${pendingBranch.goal}"** en tu Árbol de Vida con ${pendingBranch.activities.length} actividades. ¡Ve a tu árbol para verla!` };
+        onBranchCreated?.(data.goal.id);
+        const confirmMsg: Message = { role: 'assistant', content: `🌳 ¡Perfecto! He creado la meta **"${pendingBranch.goal}"** en tu Árbol de Vida utilizando el motor de planificación jerárquico. ¡Ve a tu árbol para verla!` };
         setMessages(prev => [...prev, confirmMsg]);
+      } else {
+        console.error('Failed to create branch:', data.error);
+        const errorMsg: Message = { role: 'assistant', content: `❌ Hubo un error al crear la meta: ${data.error}` };
+        setMessages(prev => [...prev, errorMsg]);
       }
     } catch (e) {
       console.error('Failed to create branch:', e);
@@ -233,13 +239,13 @@ export function PermanentAIChat({
           <div className="mx-auto max-w-sm bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-4 text-center animate-in slide-in-from-bottom-4 duration-300">
             <div className="text-2xl mb-2">🌳</div>
             <p className="text-sm font-bold text-emerald-800 mb-1">{pendingBranch.goal}</p>
-            <p className="text-xs text-emerald-600 mb-3">{pendingBranch.activities.length} actividades listas para crear en tu árbol</p>
+            <p className="text-xs text-emerald-600 mb-3">La meta se construirá dividida en fases e hitos.</p>
             <button
               onClick={handleCreateBranch}
               disabled={creatingBranch}
               className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-60 active:scale-95"
             >
-              {creatingBranch ? 'Creando rama...' : '🚀 Agregar al Árbol de Vida'}
+              {creatingBranch ? 'Generando plan jerárquico...' : '🚀 Agregar al Árbol de Vida'}
             </button>
           </div>
         )}

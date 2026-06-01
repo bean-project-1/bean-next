@@ -27,7 +27,10 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
   const [endTime, setEndTime] = useState(commitment.endTime || '17:00');
   const [commuteHours, setCommuteHours] = useState(commitment.commuteHours || 0);
   const [selectedDays, setSelectedDays] = useState<number[]>(commitment.daysOfWeek || [1, 2, 3, 4, 5]);
-  const [selectedDim, setSelectedDim] = useState(commitment.dimension?.name || '');
+  const [selectedDims, setSelectedDims] = useState<string[]>(
+    commitment.dimensions?.map((d: any) => d.name) || 
+    (commitment.dimension?.name ? [commitment.dimension.name] : [])
+  );
   
   const [saving, setSaving] = useState(false);
 
@@ -59,7 +62,7 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
       endTime,
       commuteHours,
       daysOfWeek: selectedDays,
-      dimensionId: selectedDim || null
+      dimensionIds: selectedDims.length > 0 ? selectedDims : null
     };
 
     try {
@@ -149,17 +152,33 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Dimensión Vinculada</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Dimensiones Vinculadas</label>
                 <select 
-                  value={selectedDim}
-                  onChange={e => setSelectedDim(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                  value=""
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && !selectedDims.includes(val)) {
+                      setSelectedDims([...selectedDims, val]);
+                    }
+                  }}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all mb-2"
                 >
-                  <option value="">Seleccionar dimensión...</option>
-                  {ALL_DIMENSIONS.map(d => (
+                  <option value="">Añadir dimensión...</option>
+                  {ALL_DIMENSIONS.filter(d => !selectedDims.includes(d.key)).map(d => (
                     <option key={d.key} value={d.key}>{d.label}</option>
                   ))}
                 </select>
+                <div className="flex flex-wrap gap-2">
+                  {selectedDims.map(dimKey => {
+                    const dimInfo = ALL_DIMENSIONS.find(d => d.key === dimKey);
+                    return (
+                      <span key={dimKey} className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+                        {dimInfo?.label || dimKey}
+                        <button onClick={() => setSelectedDims(selectedDims.filter(d => d !== dimKey))} className="hover:text-red-500 ml-1">✕</button>
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

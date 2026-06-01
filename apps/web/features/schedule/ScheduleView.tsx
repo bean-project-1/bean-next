@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, subWeeks, addWeeks } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PostItWall } from './PostItWall';
@@ -403,6 +403,7 @@ export function ScheduleView() {
   const [selectedTask, setSelectedTask] = useState<ScheduledEvent | null>(null);
 
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topTriggerRef = useRef<HTMLDivElement>(null);
@@ -505,14 +506,19 @@ export function ScheduleView() {
     ]);
     setActiveVisibleMonth(target);
     setIsMonthPickerOpen(false);
+    
+    // We use auto (instant) scroll instead of smooth, 
+    // because smooth scrolling while IntersectionObserver is active 
+    // can trigger the top-trigger and shift the DOM downwards,
+    // causing the scroll destination to land on the wrong month.
     setTimeout(() => {
       if (scrollToDay) {
         const dayId = `day-${format(scrollToDay, 'yyyy-MM-dd')}`;
         const el = document.getElementById(dayId);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
       } else {
         const el = document.getElementById(`month-${target.getTime()}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
     }, 100);
   };
@@ -686,6 +692,61 @@ export function ScheduleView() {
     onRefresh: fetchEvents,
   };
 
+  const renderControls = (className: string) => (
+    <div className={`flex items-center gap-2 sm:gap-3 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-stone-200/80 shadow-lg ${className}`}>
+      {/* View Toggle */}
+      <div className="flex bg-stone-100/50 rounded-xl p-1 border border-stone-200/50">
+        <button onClick={() => setViewMode('month')} className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'month' ? 'bg-white shadow-sm text-emerald-600' : 'text-stone-400 hover:text-stone-600'}`}>Mes</button>
+        <button onClick={() => setViewMode('week')} className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'week' ? 'bg-white shadow-sm text-emerald-600' : 'text-stone-400 hover:text-stone-600'}`}>Sem</button>
+      </div>
+
+      <div className="w-px h-6 bg-stone-200/80"></div>
+
+      <button
+        onClick={jumpToToday}
+        className="px-3 sm:px-4 py-2 flex items-center justify-center rounded-xl hover:bg-emerald-50 hover:text-emerald-700 transition-all text-stone-600 font-bold text-xs uppercase tracking-widest active:scale-95"
+      >
+        Hoy
+      </button>
+      <div className="w-px h-6 bg-stone-200/80"></div>
+      <button
+        onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
+        className="px-3 sm:px-4 py-2 flex items-center gap-2 rounded-xl hover:bg-white hover:shadow-sm transition-all text-stone-800 active:scale-95 relative"
+      >
+        <span className="text-xs sm:text-sm font-black uppercase tracking-widest">
+          {format(activeVisibleMonth, 'MMMM yyyy', { locale: es })}
+        </span>
+        <span className="text-[10px]">▼</span>
+      </button>
+
+      {/* Month Picker Popover */}
+      {isMonthPickerOpen && (
+        <div className="absolute top-full mt-3 right-0 w-64 bg-white/95 backdrop-blur-2xl border border-stone-200/80 rounded-3xl shadow-2xl p-4 z-50 animate-in zoom-in-95 duration-200">
+          <div className="grid grid-cols-3 gap-2">
+            {Array.from({ length: 12 }).map((_, i) => {
+              const m = new Date(activeVisibleMonth.getFullYear(), i, 1);
+              return (
+                <button
+                  key={i}
+                  onClick={() => jumpToMonth(m)}
+                  className={`p-2 rounded-xl text-xs font-bold uppercase tracking-tighter transition-all
+                    ${i === activeVisibleMonth.getMonth() ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-stone-100 text-stone-600'}`}
+                >
+                  {format(m, 'MMM', { locale: es })}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-100">
+            <button onClick={() => jumpToMonth(subMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">← {activeVisibleMonth.getFullYear() - 1}</button>
+            <span className="text-sm font-black text-stone-800">{activeVisibleMonth.getFullYear()}</span>
+            <button onClick={() => jumpToMonth(addMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">{activeVisibleMonth.getFullYear() + 1} →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div 
       className="flex flex-col h-[100dvh] relative overflow-hidden"
@@ -695,61 +756,9 @@ export function ScheduleView() {
       }}
     >
 
-      {/* ── Header & Quick Nav ───────────────────────────────────────────── */}
-      <header className="px-4 sm:px-6 py-4 sm:py-6 border-b border-stone-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 bg-white/40 backdrop-blur-md z-20">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
-            📅 Mi Calendario
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-500 mt-0.5 font-medium">Gestiona tu tiempo y carga de trabajo</p>
-        </div>
+      {/* ── Floating Nav (Mobile Only) ───────────────────────────────────────────── */}
+      {renderControls("absolute top-4 right-4 sm:top-8 sm:right-8 z-[60] lg:hidden")}
 
-        {/* Month Dropdown Trigger & Today Button */}
-        <div className="flex items-center gap-2 sm:gap-3 bg-stone-50/80 backdrop-blur-sm p-1.5 rounded-2xl border border-stone-200/50 shadow-sm relative">
-          <button
-            onClick={jumpToToday}
-            className="px-3 sm:px-4 py-2 flex items-center justify-center rounded-xl hover:bg-emerald-50 hover:text-emerald-700 transition-all text-stone-600 font-bold text-xs uppercase tracking-widest active:scale-95"
-          >
-            Hoy
-          </button>
-          <div className="w-px h-6 bg-stone-200"></div>
-          <button
-            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
-            className="px-3 sm:px-4 py-2 flex items-center gap-2 rounded-xl hover:bg-white hover:shadow-sm transition-all text-stone-700 active:scale-95"
-          >
-            <span className="text-xs sm:text-sm font-black uppercase tracking-widest">
-              {format(activeVisibleMonth, 'MMMM yyyy', { locale: es })}
-            </span>
-            <span className="text-[10px]">▼</span>
-          </button>
-
-          {/* Month Picker Popover */}
-          {isMonthPickerOpen && (
-            <div className="absolute top-full mt-2 right-0 w-64 bg-white/90 backdrop-blur-2xl border border-stone-200/50 rounded-3xl shadow-2xl p-4 z-50 animate-in zoom-in-95 duration-200">
-              <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: 12 }).map((_, i) => {
-                  const m = new Date(activeVisibleMonth.getFullYear(), i, 1);
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => jumpToMonth(m)}
-                      className={`p-2 rounded-xl text-xs font-bold uppercase tracking-tighter transition-all
-                        ${i === activeVisibleMonth.getMonth() ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-stone-100 text-stone-600'}`}
-                    >
-                      {format(m, 'MMM', { locale: es })}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-100">
-                <button onClick={() => jumpToMonth(subMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">← {activeVisibleMonth.getFullYear() - 1}</button>
-                <span className="text-sm font-black text-stone-800">{activeVisibleMonth.getFullYear()}</span>
-                <button onClick={() => jumpToMonth(addMonths(activeVisibleMonth, 12))} className="p-2 text-stone-400 hover:text-stone-700 font-bold">{activeVisibleMonth.getFullYear() + 1} →</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -786,13 +795,134 @@ export function ScheduleView() {
           {/* Scrollable Container */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative rounded-b-2xl sm:rounded-b-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" style={{ overflowAnchor: 'auto' }}>
             
-            <div id="top-trigger" ref={topTriggerRef} className="h-4 w-full" />
-            
-            {loadedMonths.map(month => {
-              const monthStart = startOfMonth(month);
-              const startDate = startOfWeek(monthStart);
-              const endDate = endOfWeek(endOfMonth(monthStart));
-              const days = eachDayOfInterval({ start: startDate, end: endDate });
+            {viewMode === 'week' ? (
+              <div className="flex flex-col h-full bg-white/40 backdrop-blur-md min-h-[500px]">
+                {/* Week Navigation Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200/50 bg-white/60 sticky top-0 z-[5]">
+                  <button onClick={() => setSelectedDay(subWeeks(selectedDay, 1))} className="p-2 font-black text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Semana Actual</span>
+                    <span className="text-sm font-black text-stone-700 uppercase tracking-tighter">
+                      {format(startOfWeek(selectedDay, { weekStartsOn: 1 }), 'd MMM', { locale: es })} - {format(endOfWeek(selectedDay, { weekStartsOn: 1 }), 'd MMM', { locale: es })}
+                    </span>
+                  </div>
+                  <button onClick={() => setSelectedDay(addWeeks(selectedDay, 1))} className="p-2 font-black text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 border-l border-r border-stone-200/50 flex-1">
+                  {eachDayOfInterval({ start: startOfWeek(selectedDay, { weekStartsOn: 1 }), end: endOfWeek(selectedDay, { weekStartsOn: 1 }) }).map((day, i) => {
+                    const dayEvents = getEventsForDay(day);
+                    const isSelected = isSameDay(day, selectedDay);
+                    const today = isToday(day);
+                    const hasPostIt = dayEvents.some(e => e.itemType === 'post-it');
+
+                    return (
+                      <div
+                        id={`day-${format(day, 'yyyy-MM-dd')}`}
+                        data-date={day.getTime()}
+                        key={i}
+                        onClick={() => {
+                          setSelectedDay(day);
+                          setIsBottomSheetOpen(true);
+                        }}
+                        className={`
+                          min-h-[300px] p-2 sm:p-4
+                          border-r border-stone-200/50 transition-all cursor-pointer group relative
+                          bg-transparent
+                          ${isSelected ? 'ring-2 ring-inset ring-emerald-500 bg-emerald-50/40' : 'hover:bg-white/90'}
+                          active:bg-emerald-50/50
+                        `}
+                      >
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                          <span className={`
+                            text-xs sm:text-sm font-black
+                            w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg sm:rounded-xl
+                            transition-colors
+                            ${today ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                              : isSelected ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-stone-100 text-stone-500'}
+                          `}>
+                            {format(day, 'd')}
+                          </span>
+                          {hasPostIt && (
+                            <span className="text-[14px] sm:text-[16px] drop-shadow-md z-10 animate-in fade-in zoom-in duration-300" title="Contiene nota anclada">
+                              📌
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2">
+                          {(() => {
+                            const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
+                            
+                            return (
+                              <>
+                                {regularEvents.map(e => {
+                                  const isPostIt = e.itemType === 'post-it';
+                                  const isLongRange = e.startDate &&
+                                    (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
+                                  
+                                  if (isPostIt) {
+                                    const colorClass = e.originalPostIt?.color === 'emerald' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
+                                      e.originalPostIt?.color === 'rose' ? 'bg-rose-100 text-rose-900 border-rose-300' :
+                                      e.originalPostIt?.color === 'blue' ? 'bg-blue-100 text-blue-900 border-blue-300' :
+                                      e.originalPostIt?.color === 'violet' ? 'bg-violet-100 text-violet-900 border-violet-300' :
+                                      'bg-yellow-100 text-yellow-900 border-yellow-300';
+                                      
+                                    return (
+                                      <div
+                                        key={e.id}
+                                        onClick={(ev) => {
+                                          ev.stopPropagation();
+                                          window.dispatchEvent(new CustomEvent('open-postit-modal', { detail: e.originalPostIt }));
+                                        }}
+                                        className={`text-[10px] sm:text-[11px] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg truncate font-bold shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform border ${colorClass} rotate-[-1deg]`}
+                                      >
+                                        📌 {e.title}
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div
+                                      key={e.id}
+                                      onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        handleOpenActivity(e);
+                                      }}
+                                      className={`text-[10px] sm:text-[11px] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80 transition-opacity
+                                        ${e.status === 'completed'
+                                          ? 'bg-stone-100 text-stone-400 border-stone-300'
+                                          : isLongRange
+                                            ? 'bg-violet-50 text-violet-700 border-violet-400 opacity-60'
+                                            : 'bg-white text-stone-700 border-emerald-500'}`}
+                                    >
+                                      {e.title}
+                                    </div>
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div id="top-trigger" ref={topTriggerRef} className="h-4 w-full" />
+                
+                {loadedMonths.map(month => {
+                  const monthStart = startOfMonth(month);
+                  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+                  const endDate = endOfWeek(endOfMonth(monthStart), { weekStartsOn: 1 });
+                  const days = eachDayOfInterval({ start: startDate, end: endDate });
 
               return (
                 <div key={month.getTime()} id={`month-${month.getTime()}`} data-month={month.getTime()} className="month-block relative">
@@ -806,6 +936,17 @@ export function ScheduleView() {
 
                   <div className="grid grid-cols-7 border-l border-r border-stone-200/50 bg-white/40 backdrop-blur-md">
                     {days.map((day, i) => {
+                      const isCurrentMonth = isSameMonth(day, monthStart);
+
+                      if (!isCurrentMonth) {
+                        return (
+                          <div
+                            key={i}
+                            className="min-h-[60px] sm:min-h-[85px] lg:min-h-[95px] border-b border-r border-stone-200/50 bg-stone-50/30"
+                          />
+                        );
+                      }
+
                       const dayEvents = getEventsForDay(day);
                       const validEventsForHours = dayEvents.filter(e => {
                         if (e.itemType === 'commitment' || e.itemType === 'habit') return true;
@@ -814,7 +955,6 @@ export function ScheduleView() {
                       });
                       const dayHours = validEventsForHours.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
 
-                      const isCurrentMonth = isSameMonth(day, monthStart);
                       const isSelected = isSameDay(day, selectedDay);
                       const today = isToday(day);
                       const hasPostIt = dayEvents.some(e => e.itemType === 'post-it');
@@ -952,13 +1092,18 @@ export function ScheduleView() {
             })}
 
             <div id="bottom-trigger" ref={bottomTriggerRef} className="h-4 w-full" />
+              </>
+            )}
           </div>
         </div>
         </div>
         </div>
 
         {/* ── Desktop Sidebar Agenda (hidden on mobile) ─────────────────── */}
-        <div className="hidden lg:flex w-[380px] shrink-0 flex-col pt-12 pb-32 pr-12 relative z-10">
+        <div className="hidden lg:flex w-[380px] shrink-0 flex-col pt-8 pb-32 pr-12 relative z-10 gap-4">
+          {/* Top Options Menu */}
+          {renderControls("self-end z-[60]")}
+
           <div className="flex-1 flex flex-col relative min-h-0 rotate-[1deg]">
             {/* Top Clip */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-8 bg-stone-300 rounded-sm shadow-md border border-stone-400 rotate-[-2deg] z-20">

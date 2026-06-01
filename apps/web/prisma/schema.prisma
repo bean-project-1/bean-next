@@ -104,8 +104,8 @@ model BaseCommitment {
   hoursPerDay  Float   @default(8)
   commuteHours Float? // e.g., 1.5
 
-  dimensionId String?    @map("dimension_id") @db.ObjectId
-  dimension   Dimension? @relation(fields: [dimensionId], references: [id])
+  dimensionIds String[]    @map("dimension_ids") @db.ObjectId
+  dimensions   Dimension[] @relation(fields: [dimensionIds], references: [id])
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -160,7 +160,8 @@ model Dimension {
 
   attributes      UserAttribute[]
   dimensionInputs DimensionInput[]
-  baseCommitments BaseCommitment[]
+  baseCommitmentIds String[]         @map("base_commitment_ids") @db.ObjectId
+  baseCommitments   BaseCommitment[] @relation(fields: [baseCommitmentIds], references: [id])
   lifeEvents      LifeEvent[]
 
   @@map("dimensions")

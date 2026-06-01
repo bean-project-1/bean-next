@@ -307,7 +307,7 @@ export function LeafDetailView({ action, onClose, onDelete, onToggle, onToggleTa
               })() : (
                 <TaskCoachChat 
                   taskId={action.id}
-                  taskTitle={action.title} 
+                  taskTitle={action.name} 
                   taskDescription={action.description || 'Sin descripción'} 
                   fullHeight
                 />

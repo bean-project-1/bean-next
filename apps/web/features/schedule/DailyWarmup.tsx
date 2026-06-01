@@ -315,13 +315,14 @@ export function DailyWarmup() {
       {/* Undo Snackbar */}
       <AnimatePresence>
         {recentlyCompleted && (
-          <motion.div 
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            className="absolute top-24 left-1/2 -translate-x-1/2 z-[150] pointer-events-auto w-[90vw] max-w-sm"
-          >
-            <div className="bg-stone-800 text-white p-4 sm:px-5 sm:py-3 rounded-2xl shadow-2xl border border-stone-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
+          <div className="absolute top-24 inset-x-0 z-[150] flex justify-center pointer-events-none px-4">
+            <motion.div 
+              initial={{ y: -100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -100, opacity: 0 }}
+              className="pointer-events-auto w-full max-w-sm"
+            >
+              <div className="bg-stone-800 text-white p-4 sm:px-5 sm:py-3 rounded-2xl shadow-2xl border border-stone-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full">
               <div className="flex-1 min-w-0 flex flex-col justify-center text-center sm:text-left">
                 <p className="text-[10px] sm:text-xs font-black text-emerald-400 uppercase tracking-widest mb-1 sm:mb-0.5">✅ Completado</p>
                 <p className="text-sm font-medium truncate text-stone-200">{recentlyCompleted.title}</p>
@@ -334,10 +335,10 @@ export function DailyWarmup() {
               </button>
             </div>
           </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* Modals for "Hacer Ahora" */}
       {selectedTask && (
         selectedTask.itemType === 'daily' || selectedTask.itemType === 'task' ? (
           <TaskDetailModal

@@ -275,16 +275,17 @@ export function DailyWarmup() {
       {selectedTask && (
         selectedTask.itemType === 'daily' || selectedTask.itemType === 'task' ? (
           <TaskDetailModal
-            isOpen={true}
-            onClose={() => setSelectedTask(null)}
             task={selectedTask as any}
-            onUpdated={() => {}}
+            onClose={() => setSelectedTask(null)}
+            onDelete={() => {}}
+            onToggle={() => {}}
           />
         ) : (
           <LeafDetailView
-            isOpen={true}
+            action={selectedTask as any}
             onClose={() => setSelectedTask(null)}
-            nodeId={selectedTask.id}
+            onDelete={() => {}}
+            onToggle={() => {}}
           />
         )
       )}

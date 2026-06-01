@@ -210,13 +210,27 @@ export function PostItWall() {
         </button>
       </div>
 
-      {/* Right Mobile Button & Desktop Button: New Note */}
-      <div className="fixed bottom-28 right-4 xl:absolute xl:bottom-8 xl:left-[140px] xl:-translate-x-1/2 xl:right-auto xl:top-auto z-40 pointer-events-auto">
+      {/* Right Mobile Button: Daily Warmup (Enfoque) */}
+      <div className="fixed bottom-28 right-4 z-40 pointer-events-auto xl:hidden">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            console.log('Dispatching open-daily-warmup');
+            window.dispatchEvent(new CustomEvent('open-daily-warmup'));
+          }}
+          className="flex items-center justify-center gap-2 bg-emerald-500 border border-emerald-400 shadow-xl text-white text-xs font-bold w-14 h-14 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full hover:bg-emerald-400 hover:scale-105 transition-all active:scale-95"
+        >
+          <span className="text-2xl sm:text-lg leading-none">🔥</span> <span className="hidden sm:inline">Enfoque</span>
+        </button>
+      </div>
+
+      {/* Desktop Button: New Note */}
+      <div className="hidden xl:absolute xl:bottom-8 xl:left-[140px] xl:-translate-x-1/2 xl:flex z-40 pointer-events-auto">
         <button
           onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 bg-white/90 backdrop-blur-md border border-stone-200 shadow-xl xl:shadow-sm text-stone-600 text-xs font-bold w-14 h-14 sm:w-auto sm:h-auto sm:px-4 sm:py-3 xl:px-4 xl:py-2 rounded-full xl:rounded-xl hover:bg-white hover:scale-105 transition-all active:scale-95"
+          className="flex items-center justify-center gap-2 bg-white/90 backdrop-blur-md border border-stone-200 shadow-sm text-stone-600 text-xs font-bold px-4 py-2 rounded-xl hover:bg-white hover:scale-105 transition-all active:scale-95"
         >
-          <span className="text-2xl sm:text-lg leading-none text-emerald-500">+</span> <span className="hidden sm:inline xl:inline">Nueva Nota</span>
+          <span className="text-lg leading-none text-emerald-500">+</span> <span>Nueva Nota</span>
         </button>
       </div>
 

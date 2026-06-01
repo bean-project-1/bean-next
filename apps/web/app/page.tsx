@@ -4,6 +4,7 @@
 // =======================================================
 import Link from 'next/link';
 import { Compass, Briefcase, Heart } from 'lucide-react';
+import { auth } from '@/auth';
 
 const dimensions = [
   { icon: Compass, label: 'Identidad', desc: 'Valores, intereses y motivaciones profundas.' },
@@ -17,7 +18,10 @@ const stats = [
   { value: '360°', label: 'Visión de Vida' },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth();
+  const ctaLink = session ? '/home' : '/onboarding';
+
   return (
     <main className="mesh-gradient flex min-h-screen flex-col bg-transparent selection:bg-emerald-500/20">
       {/* ---- Navigation ---- */}
@@ -44,10 +48,10 @@ export default function HomePage() {
               Iniciar Sesión
             </Link>
             <Link
-              href="/onboarding"
+              href={ctaLink}
               className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-bold text-white transition-all hover:scale-105 hover:bg-stone-800 active:scale-95 shadow-[0_4px_20px_rgb(0,0,0,0.15)]"
             >
-              Comenzar
+              {session ? 'Ir a mi BEAN' : 'Comenzar'}
             </Link>
           </div>
         </div>
@@ -81,10 +85,10 @@ export default function HomePage() {
           {/* CTA Group */}
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
-              href="/onboarding"
+              href={ctaLink}
               className="group relative flex items-center gap-2 overflow-hidden rounded-full bg-emerald-600 px-8 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 hover:shadow-[0_8px_30px_rgba(16,185,129,0.3)]"
             >
-              Crear mi perfil
+              {session ? 'Ir a mi BEAN' : 'Crear mi perfil'}
               <span className="transition-transform group-hover:translate-x-1.5">→</span>
             </Link>
             <Link

@@ -34,7 +34,7 @@ interface CVData {
   certifications: string[];
 }
 
-export function CareerDashboard() {
+export function CareerDashboard({ isSubComponent = false }: { isSubComponent?: boolean }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'simulator' | 'optimize'>('profile');
   
   // Resumes Inventory List
@@ -521,48 +521,101 @@ ${tailoredCV.certifications?.join(', ')}
   };
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-stone-50 pb-32">
+    <div className={isSubComponent ? "w-full pb-16" : "min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-stone-50 pb-32"}>
       {/* Header */}
-      <div className="max-w-5xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <Link href="/dna" className="inline-flex items-center gap-2 text-stone-400 hover:text-stone-700 transition-colors mb-3 text-xs font-bold uppercase tracking-wider">
-            <ArrowLeft className="w-4 h-4" /> Volver a Mi ADN
-          </Link>
-          <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight flex items-center gap-3">
-            <span>💼</span> Brújula de Carrera <span className="text-indigo-600 font-light italic">Compass</span>
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Gestiona tu inventario de CVs, simula vacantes ideales y optimiza tu perfil para postularte.
-          </p>
-        </div>
+      {!isSubComponent && (
+        <div className="max-w-5xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <Link href="/dna" className="inline-flex items-center gap-2 text-stone-400 hover:text-stone-700 transition-colors mb-3 text-xs font-bold uppercase tracking-wider">
+              <ArrowLeft className="w-4 h-4" /> Volver a Mi ADN
+            </Link>
+            <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight flex items-center gap-3">
+              <span>💼</span> Brújula de Carrera <span className="text-indigo-600 font-light italic">Compass</span>
+            </h1>
+            <p className="text-sm text-stone-500 mt-1">
+              Gestiona tu inventario de CVs, simula vacantes ideales y optimiza tu perfil para postularte.
+            </p>
+          </div>
 
-        {/* Tab Buttons */}
-        <div className="flex bg-stone-100 p-1.5 rounded-2xl border border-stone-200/50 shadow-sm self-stretch md:self-auto">
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'profile' ? 'bg-white text-indigo-600 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
-          >
-            <FileText className="w-4 h-4" /> Inventario de CVs
-          </button>
-          <button 
-            onClick={() => {
-              setActiveTab('simulator');
-              if (jobs.length === 0) handleSimulateJobs();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'simulator' ? 'bg-white text-indigo-600 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
-          >
-            <Cpu className="w-4 h-4" /> Simulador IA
-          </button>
-          <button 
-            onClick={() => setActiveTab('optimize')}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'optimize' ? 'bg-white text-indigo-600 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
-          >
-            <Sparkles className="w-4 h-4" /> Optimizar CV
-          </button>
+          {/* Tab Buttons */}
+          <div className="flex bg-stone-100 p-1.5 rounded-2xl border border-stone-200/50 shadow-sm self-stretch md:self-auto">
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'profile' ? 'bg-white text-indigo-650 shadow-sm' : 'text-stone-500 hover:text-stone-850'}`}
+            >
+              <FileText className="w-4 h-4" /> Inventario de CVs
+            </button>
+            <button 
+              onClick={() => {
+                setActiveTab('simulator');
+                if (jobs.length === 0) handleSimulateJobs();
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'simulator' ? 'bg-white text-indigo-650 shadow-sm' : 'text-stone-500 hover:text-stone-850'}`}
+            >
+              <Cpu className="w-4 h-4" /> Simulador IA
+            </button>
+            <button 
+              onClick={() => setActiveTab('optimize')}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'optimize' ? 'bg-white text-indigo-650 shadow-sm' : 'text-stone-500 hover:text-stone-850'}`}
+            >
+              <Sparkles className="w-4 h-4" /> Optimizar CV
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-5xl mx-auto">
+      {/* Main Container: uses a sidebar layout when in sub-component mode */}
+      <div className={isSubComponent ? "w-full flex flex-col md:flex-row gap-8 items-start animate-fade-in" : "max-w-5xl mx-auto"}>
+        {/* Sidebar sub-navigation for sub-component mode */}
+        {isSubComponent && (
+          <div className="w-full md:w-60 flex-shrink-0 flex flex-row md:flex-col gap-1.5 bg-white p-3 rounded-[2rem] border border-stone-150/70 shadow-sm overflow-x-auto md:overflow-x-visible">
+            <div className="px-3 pb-2 border-b border-stone-100 hidden md:block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Brújula</span>
+            </div>
+            
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-200 justify-start whitespace-nowrap ${
+                activeTab === 'profile' 
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100/50' 
+                  : 'text-stone-500 hover:text-stone-850 hover:bg-stone-50'
+              }`}
+            >
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              <span>Inventario CVs</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                setActiveTab('simulator');
+                if (jobs.length === 0) handleSimulateJobs();
+              }}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-200 justify-start whitespace-nowrap ${
+                activeTab === 'simulator' 
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100/50' 
+                  : 'text-stone-500 hover:text-stone-855 hover:bg-stone-50'
+              }`}
+            >
+              <Cpu className="w-4 h-4 flex-shrink-0" />
+              <span>Simulador IA</span>
+            </button>
+            
+            <button 
+              onClick={() => setActiveTab('optimize')}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-200 justify-start whitespace-nowrap ${
+                activeTab === 'optimize' 
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100/50' 
+                  : 'text-stone-500 hover:text-stone-855 hover:bg-stone-50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <span>Optimizar CV</span>
+            </button>
+          </div>
+        )}
+
+        {/* Content Pane */}
+        <div className="flex-1 w-full min-w-0">
         <AnimatePresence mode="wait">
           {/* TAB 1: RESUME GALLERY & EDITOR */}
           {activeTab === 'profile' && (
@@ -1385,6 +1438,7 @@ ${tailoredCV.certifications?.join(', ')}
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );

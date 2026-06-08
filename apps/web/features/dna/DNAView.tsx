@@ -6,6 +6,8 @@ import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
 import { CommitmentModal } from './CommitmentModal';
+import { CareerDashboard } from '../career/CareerDashboard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = [
   { cat: 'identity',   label: 'Mi Esencia (Quién Soy)' },
@@ -135,6 +137,7 @@ export function DNAView() {
     dbDimensions, loading: profileLoading, error: profileError
   } = useProfile();
 
+  const [activeTab, setActiveTab] = useState<'essence' | 'career' | 'rhythms'>('essence');
   const [identity, setIdentity] = useState<any>(null);
   const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
@@ -240,336 +243,357 @@ export function DNAView() {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-[#FBF9F6] pb-24 sm:pb-8">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-          Mi Mapa del Ser <span className="text-indigo-600 font-light italic">ADN Vital</span>
-        </h1>
-        <p className="mt-1 text-sm text-stone-500 font-medium">
-          El reflejo vivo de quién eres, lo que tienes y cómo vives. Explora y mantén tu balance.
-        </p>
+      {/* Selector de pestañas "Canto Rodado" Centrado y Alargado */}
+      <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-3xl mx-auto mb-10">
+        <button 
+          onClick={() => setActiveTab('essence')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'essence' 
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-850'
+          }`}
+        >
+          <span className="hidden sm:inline">Mi Esencia (ADN)</span>
+          <span className="sm:hidden">Esencia</span>
+          🧬
+        </button>
+        <button 
+          onClick={() => setActiveTab('career')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'career' 
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Brújula de Carrera</span>
+          <span className="sm:hidden">Brújula</span>
+          💼
+        </button>
+        <button 
+          onClick={() => setActiveTab('rhythms')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'rhythms' 
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Mis Ritmos Diarios</span>
+          <span className="sm:hidden">Ritmos</span>
+          ⏱️
+        </button>
       </div>
 
-      <div className="mb-6 sm:mb-8 rounded-[2rem] border border-stone-100 bg-white px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm shadow-stone-100/30">
-        <div className="flex-1 w-full">
-          <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-            <span>Autoconocimiento General</span>
-            <span className="text-emerald-600 font-black">{pct}%</span>
-          </div>
-          <div className="h-2.5 rounded-full bg-stone-100 overflow-hidden">
-            <div className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-sm"
-              style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-        <div className="flex-shrink-0 text-right self-end sm:self-center">
-          <p className="text-3xl font-black text-stone-800 leading-none">{filledCount}<span className="text-base font-normal text-stone-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">Áreas Exploradas</p>
-        </div>
-      </div>
+      <AnimatePresence mode="wait">
+        {activeTab === 'essence' && (
+          <motion.div
+            key="essence"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-6"
+          >
 
-      {/* 💼 Career Compass Banner */}
-      <div className="mb-8 p-6 rounded-3xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white shadow-xl shadow-indigo-500/10 flex flex-col md:flex-row items-center justify-between gap-6 hover:scale-[1.01] transition-all duration-300 border border-indigo-400/20">
-        <div className="space-y-1 text-center md:text-left">
-          <div className="flex items-center justify-center md:justify-start gap-2">
-            <span className="text-2xl">💼</span>
-            <h2 className="text-lg font-bold tracking-tight">Brújula de Carrera & Optimización de CV</h2>
-            <span className="bg-white/20 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Nuevo</span>
-          </div>
-          <p className="text-xs text-indigo-100 max-w-xl">
-            Sube tu hoja de vida, descubre ofertas ideales alineadas a tu ADN, obtén análisis de brechas e inyecta planes de acción a tu árbol de vida.
-          </p>
-        </div>
-        <Link href="/dna/career" className="px-5 py-3 rounded-2xl bg-white text-indigo-700 font-bold text-xs shadow-md hover:bg-slate-50 hover:shadow-lg hover:shadow-indigo-500/15 transition-all duration-300 whitespace-nowrap active:scale-95">
-          Abrir Brújula de Carrera →
-        </Link>
-      </div>
+            <div className="flex flex-col lg:flex-row gap-12">
+              <div className="flex-shrink-0 flex flex-col items-center">
+                <div className="sticky top-8">
+                  <div className="relative rounded-[2rem] border border-stone-100 bg-white p-8 shadow-2xl shadow-stone-200/40 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/10 via-transparent to-transparent pointer-events-none" />
+                    <DNADiagram attributesCount={attributesCount} />
 
-      <div className="flex flex-col lg:flex-row gap-12">
-        <div className="flex-shrink-0 flex flex-col items-center">
-          <div className="sticky top-8">
-            <div className="relative rounded-[2rem] border border-stone-100 bg-white p-8 shadow-2xl shadow-stone-200/40 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/10 via-transparent to-transparent pointer-events-none" />
-              <DNADiagram attributesCount={attributesCount} />
+                    <div className="mt-8 space-y-2.5">
+                      {CATEGORIES.map(({ cat, label }) => {
+                        const colors: Record<string, string> = {
+                          identity: 'bg-violet-500',
+                          capital: 'bg-blue-500',
+                          experience: 'bg-emerald-500',
+                        };
+                        const cColor = colors[cat] ?? 'bg-stone-500';
+                        const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
+                        const catCount = dims.reduce((s: number, d: any) => s + (attributesCount[d.key] ?? 0), 0);
+                        
+                        return (
+                          <div key={cat} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`h-2 w-2 rounded-full ${cColor}`} />
+                              <span className="text-[9px] font-black text-stone-400 uppercase tracking-wider">{label.split(' ')[0]}</span>
+                            </div>
+                            <span className={`text-xs font-bold text-stone-800`}>{catCount} destellos ✨</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              <div className="mt-8 space-y-2.5">
-                {CATEGORIES.map(({ cat, label }) => {
-                  const colors: Record<string, string> = {
-                    identity: 'bg-violet-500',
-                    capital: 'bg-blue-500',
-                    experience: 'bg-emerald-500',
-                  };
-                  const cColor = colors[cat] ?? 'bg-stone-500';
-                  const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
-                  const catCount = dims.reduce((s: number, d: any) => s + (attributesCount[d.key] ?? 0), 0);
-                  
-                  return (
-                    <div key={cat} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-2 w-2 rounded-full ${cColor}`} />
-                        <span className="text-[9px] font-black text-stone-400 uppercase tracking-wider">{label.split(' ')[0]}</span>
+                  {/* 🏆 Logros y Medallas */}
+                  <div className="mt-6 p-6 rounded-[2rem] border border-stone-100 bg-white shadow-md shadow-stone-100/50 space-y-4 w-full max-w-[266px]">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 border-b border-stone-50 pb-2">
+                      🏆 Logros del Ser
+                    </h4>
+                    
+                    <div className="space-y-3">
+                      {/* Badge 1: Primer Destello */}
+                      <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                        filledCount > 0 
+                          ? 'bg-amber-50/40 border-amber-100 text-amber-900 shadow-sm shadow-amber-500/5' 
+                          : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                      }`}>
+                        <span className="text-xl">🌟</span>
+                        <div>
+                          <p className="text-xs font-black">Primer Destello</p>
+                          <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                            {filledCount > 0 ? '¡Desbloqueado!' : 'Agrega tu primer atributo'}
+                          </p>
+                        </div>
                       </div>
-                      <span className={`text-xs font-bold text-stone-800`}>{catCount} destellos ✨</span>
+
+                      {/* Badge 2: Brújula Calibrada */}
+                      {(() => {
+                        const hasTailored = resumes.some(r => r.targetJob);
+                        return (
+                          <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                            hasTailored 
+                              ? 'bg-indigo-50/40 border-indigo-100 text-indigo-900 shadow-sm shadow-indigo-500/5' 
+                              : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                          }`}>
+                            <span className="text-xl">🎯</span>
+                            <div>
+                              <p className="text-xs font-black">Brújula Calibrada</p>
+                              <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                                {hasTailored ? '¡Desbloqueado!' : 'Optimiza un CV'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Badge 3: Vida en Ritmo */}
+                      {(() => {
+                        const hasRhythms = commitments.length >= 3;
+                        return (
+                          <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                            hasRhythms 
+                              ? 'bg-emerald-50/40 border-emerald-100 text-emerald-900 shadow-sm shadow-emerald-500/5' 
+                              : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                          }`}>
+                            <span className="text-xl">🔄</span>
+                            <div>
+                              <p className="text-xs font-black">Vida en Ritmo</p>
+                              <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                                {hasRhythms ? '¡Desbloqueado!' : 'Registra 3 ritmos'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Badge 4: Mente en Paz */}
+                      {(() => {
+                        const hasWellbeing = ['mental_wellbeing', 'relationships', 'physical_health'].some(k => (attributesCount[k] || 0) > 0);
+                        return (
+                          <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                            hasWellbeing 
+                              ? 'bg-violet-50/40 border-violet-100 text-violet-900 shadow-sm shadow-violet-500/5' 
+                              : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                          }`}>
+                            <span className="text-xl">🧘</span>
+                            <div>
+                              <p className="text-xs font-black">Mente en Paz</p>
+                              <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                                {hasWellbeing ? '¡Desbloqueado!' : 'Registra salud/bienestar'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-8">
+                {CATEGORIES.map(({ cat, label }) => {
+                  const colors: Record<string, { bg: string, text: string, border: string }> = {
+                    identity: { bg: 'bg-violet-500', text: 'text-violet-600', border: 'border-violet-100' },
+                    capital: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-100' },
+                    experience: { bg: 'bg-green-500', text: 'text-green-600', border: 'border-green-100' },
+                  };
+                  const c = colors[cat] ?? { bg: 'bg-gray-500', text: 'text-gray-600', border: 'border-gray-100' };
+                  const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
+                  return (
+                    <div key={cat}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <h2 className={`text-xs font-bold uppercase tracking-widest opacity-30`}>{label}</h2>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {dims.map((dim: any) => {
+                          const dimData = identity?.[dim.key]?.identity;
+                          const hasData = (attributesCount[dim.key] || 0) > 0;
+
+                          return (
+                            <div key={dim.key} 
+                              onClick={() => setSelectedDimKey(dim.key)}
+                              className={`group relative rounded-[2rem] border p-5 transition-all duration-300 cursor-pointer shadow-sm ${
+                                hasData 
+                                  ? `${c.border} bg-white border-stone-150/70 hover:shadow-md hover:scale-[1.02] hover:-translate-y-0.5` 
+                                  : 'border-dashed border-stone-200/50 bg-stone-50/40 opacity-60 hover:opacity-100 hover:border-indigo-300'
+                              }`}>
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2.5 overflow-hidden">
+                                  <span className="text-lg flex-shrink-0">{dim.emoji}</span>
+                                  <span className={`text-xs font-black truncate ${hasData ? 'text-stone-850' : 'text-stone-400'}`}>
+                                    {dim.label}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Summary Narrative */}
+                              {hasData ? (
+                                <div className="space-y-1">
+                                  {dimData?.current?.[0] && (
+                                    <p className="text-[10px] font-bold text-stone-700 truncate">
+                                      💼 Actual: {dimData.current[0].title}
+                                    </p>
+                                  )}
+                                  {dimData?.history?.[0] && (
+                                    <p className="text-[10px] text-stone-400 truncate italic">
+                                      🎓 Previo: {dimData.history[0].title}
+                                    </p>
+                                  )}
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {dimData?.assets?.slice(0, 2).map((asset: any, idx: number) => (
+                                      <span key={idx} className="bg-stone-50 border border-stone-100/50 text-stone-500 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider">
+                                        {asset.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-[9px] font-bold text-stone-300 uppercase tracking-widest mt-2 flex items-center gap-1">
+                                  <span>🌱</span> Lienzo en blanco
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
+          </motion.div>
+        )}
 
-            {/* 🏆 Logros y Medallas */}
-            <div className="mt-6 p-6 rounded-[2rem] border border-stone-100 bg-white shadow-md shadow-stone-100/50 space-y-4 w-full max-w-[266px]">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 border-b border-stone-50 pb-2">
-                🏆 Logros del Ser
-              </h4>
-              
-              <div className="space-y-3">
-                {/* Badge 1: Primer Destello */}
-                <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
-                  filledCount > 0 
-                    ? 'bg-amber-50/40 border-amber-100 text-amber-900 shadow-sm shadow-amber-500/5' 
-                    : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
-                }`}>
-                  <span className="text-xl">🌟</span>
-                  <div>
-                    <p className="text-xs font-black">Primer Destello</p>
-                    <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
-                      {filledCount > 0 ? '¡Desbloqueado!' : 'Agrega tu primer atributo'}
-                    </p>
-                  </div>
-                </div>
+        {activeTab === 'career' && (
+          <motion.div
+            key="career"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+          >
+            <CareerDashboard isSubComponent={true} />
+          </motion.div>
+        )}
 
-                {/* Badge 2: Brújula Calibrada */}
-                {(() => {
-                  const hasTailored = resumes.some(r => r.targetJob);
-                  return (
-                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
-                      hasTailored 
-                        ? 'bg-indigo-50/40 border-indigo-100 text-indigo-900 shadow-sm shadow-indigo-500/5' 
-                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
-                    }`}>
-                      <span className="text-xl">🎯</span>
-                      <div>
-                        <p className="text-xs font-black">Brújula Calibrada</p>
-                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
-                          {hasTailored ? '¡Desbloqueado!' : 'Optimiza un CV'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Badge 3: Vida en Ritmo */}
-                {(() => {
-                  const hasRhythms = commitments.length >= 3;
-                  return (
-                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
-                      hasRhythms 
-                        ? 'bg-emerald-50/40 border-emerald-100 text-emerald-900 shadow-sm shadow-emerald-500/5' 
-                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
-                    }`}>
-                      <span className="text-xl">🔄</span>
-                      <div>
-                        <p className="text-xs font-black">Vida en Ritmo</p>
-                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
-                          {hasRhythms ? '¡Desbloqueado!' : 'Registra 3 ritmos'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Badge 4: Mente en Paz */}
-                {(() => {
-                  const hasWellbeing = ['mental_wellbeing', 'relationships', 'physical_health'].some(k => (attributesCount[k] || 0) > 0);
-                  return (
-                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
-                      hasWellbeing 
-                        ? 'bg-violet-50/40 border-violet-100 text-violet-900 shadow-sm shadow-violet-500/5' 
-                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
-                    }`}>
-                      <span className="text-xl">🧘</span>
-                      <div>
-                        <p className="text-xs font-black">Mente en Paz</p>
-                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
-                          {hasWellbeing ? '¡Desbloqueado!' : 'Registra salud/bienestar'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-8">
-          {CATEGORIES.map(({ cat, label }) => {
-            const colors: Record<string, { bg: string, text: string, border: string }> = {
-              identity: { bg: 'bg-violet-500', text: 'text-violet-600', border: 'border-violet-100' },
-              capital: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-100' },
-              experience: { bg: 'bg-green-500', text: 'text-green-600', border: 'border-green-100' },
-            };
-            const c = colors[cat] ?? { bg: 'bg-gray-500', text: 'text-gray-600', border: 'border-gray-100' };
-            const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
-            return (
-              <div key={cat}>
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className={`text-xs font-bold uppercase tracking-widest opacity-30`}>{label}</h2>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {dims.map((dim: any) => {
-                    const dimData = identity?.[dim.key]?.identity;
-                    const hasData = (attributesCount[dim.key] || 0) > 0;
-
-                    return (
-                      <div key={dim.key} 
-                        onClick={() => setSelectedDimKey(dim.key)}
-                        className={`group relative rounded-[2rem] border p-5 transition-all duration-300 cursor-pointer shadow-sm ${
-                          hasData 
-                            ? `${c.border} bg-white border-stone-150/70 hover:shadow-md hover:scale-[1.02] hover:-translate-y-0.5` 
-                            : 'border-dashed border-stone-200/50 bg-stone-50/40 opacity-60 hover:opacity-100 hover:border-indigo-300'
-                        }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2.5 overflow-hidden">
-                            <span className="text-lg flex-shrink-0">{dim.emoji}</span>
-                            <span className={`text-xs font-black truncate ${hasData ? 'text-stone-850' : 'text-stone-400'}`}>
-                              {dim.label}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Summary Narrative */}
-                        {hasData ? (
-                          <div className="space-y-1">
-                            {dimData?.current?.[0] && (
-                              <p className="text-[10px] font-bold text-stone-700 truncate">
-                                💼 Actual: {dimData.current[0].title}
-                              </p>
-                            )}
-                            {dimData?.history?.[0] && (
-                              <p className="text-[10px] text-stone-400 truncate italic">
-                                🎓 Previo: {dimData.history[0].title}
-                              </p>
-                            )}
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {dimData?.assets?.slice(0, 2).map((asset: any, idx: number) => (
-                                <span key={idx} className="bg-stone-50 border border-stone-100/50 text-stone-500 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider">
-                                  {asset.name}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-[9px] font-bold text-stone-300 uppercase tracking-widest mt-2 flex items-center gap-1">
-                            <span>🌱</span> Lienzo en blanco
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Global Base Commitments Section */}
-      <div className="mt-16 pt-12 border-t border-stone-200/60">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-stone-900 tracking-tight">
-              Mis Ritmos Diarios <span className="text-emerald-600 font-light italic">Constancia</span>
-            </h2>
-            <p className="text-xs text-stone-500 mt-1">
-              Las rutinas, compromisos y hábitos que marcan el pulso de tu día. Mantén tu racha diaria activa.
-            </p>
-          </div>
-        </div>
-        
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {['work', 'study', 'routine'].map(type => {
-            const typeCommitments = commitments.filter(c => c.type === type);
-            const icons: any = { work: '💼', study: '📚', routine: '🔄' };
-            const labels: any = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
+        {activeTab === 'rhythms' && (
+          <motion.div
+            key="rhythms"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-6"
+          >
             
-            return (
-              <div key={type} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                  <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2">
-                    <span className="text-xs">{icons[type]}</span> {labels[type]}
-                  </h3>
-                  <span className="text-[10px] font-black text-stone-300 bg-stone-100 px-2 py-0.5 rounded-full">{typeCommitments.length}</span>
-                </div>
-                <div className="space-y-3">
-                  {loadingCommitments ? (
-                    [1, 2].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-50 animate-pulse" />)
-                  ) : (
-                    <>
-                      {typeCommitments.map((c, idx) => (
-                        <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-[2rem] border border-stone-100 bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[145px]">
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">{c.dimensions?.[0]?.label || c.dimension?.label || 'General'}</span>
-                              
-                              <div className="flex items-center gap-1.5">
-                                {c.streakCount > 0 && (
-                                  <span className="flex items-center gap-0.5 text-[10px] font-extrabold text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
-                                    🔥 {c.streakCount}
-                                  </span>
-                                )}
-                                <span className="text-[9px] font-bold text-stone-300 group-hover:text-indigo-400 transition-colors">Editar</span>
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {['work', 'study', 'routine'].map(type => {
+                const typeCommitments = commitments.filter(c => c.type === type);
+                const icons: any = { work: '💼', study: '📚', routine: '🔄' };
+                const labels: any = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
+                
+                return (
+                  <div key={type} className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                      <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2">
+                        <span className="text-xs">{icons[type]}</span> {labels[type]}
+                      </h3>
+                      <span className="text-[10px] font-black text-stone-300 bg-stone-100 px-2 py-0.5 rounded-full">{typeCommitments.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {loadingCommitments ? (
+                        [1, 2].map(i => <div key={i} className="h-20 rounded-2xl bg-gray-50 animate-pulse" />)
+                      ) : (
+                        <>
+                          {typeCommitments.map((c, idx) => (
+                            <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-[2rem] border border-stone-100 bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[145px]">
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">{c.dimensions?.[0]?.label || c.dimension?.label || 'General'}</span>
+                                  
+                                  <div className="flex items-center gap-1.5">
+                                    {c.streakCount > 0 && (
+                                      <span className="flex items-center gap-0.5 text-[10px] font-extrabold text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                                        🔥 {c.streakCount}
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] font-bold text-stone-300 group-hover:text-indigo-400 transition-colors">Editar</span>
+                                  </div>
+                                </div>
+                                
+                                <h4 className="text-sm font-black text-stone-850 group-hover:text-indigo-600 transition-colors leading-tight">{c.title}</h4>
+                              </div>
+
+                              <div className="mt-4 pt-3 border-t border-stone-50 flex items-center justify-between gap-2">
+                                <div className="text-[10px] font-medium text-stone-400 space-y-0.5">
+                                  <p>⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`}</p>
+                                  {c.commuteHours > 0 && <p className="text-emerald-500 font-bold">🚗 +{c.commuteHours}h traslado</p>}
+                                </div>
+
+                                {/* Daily check-in button */}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (isCompletedToday(c)) return;
+                                    await handleCompleteCommitment(c.id);
+                                  }}
+                                  className={`p-2 rounded-full border transition-all ${
+                                    isCompletedToday(c)
+                                      ? 'bg-emerald-500 border-emerald-500 text-white cursor-default'
+                                      : 'border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 text-stone-400 hover:text-emerald-600'
+                                  }`}
+                                  title={isCompletedToday(c) ? "¡Completado hoy!" : "Marcar como completado hoy"}
+                                >
+                                  {isCompletedToday(c) ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  )}
+                                </button>
                               </div>
                             </div>
-                            
-                            <h4 className="text-sm font-black text-stone-850 group-hover:text-indigo-600 transition-colors leading-tight">{c.title}</h4>
-                          </div>
-
-                          <div className="mt-4 pt-3 border-t border-stone-50 flex items-center justify-between gap-2">
-                            <div className="text-[10px] font-medium text-stone-400 space-y-0.5">
-                              <p>⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`}</p>
-                              {c.commuteHours > 0 && <p className="text-emerald-500 font-bold">🚗 +{c.commuteHours}h traslado</p>}
-                            </div>
-
-                            {/* Daily check-in button */}
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (isCompletedToday(c)) return;
-                                await handleCompleteCommitment(c.id);
-                              }}
-                              className={`p-2 rounded-full border transition-all ${
-                                isCompletedToday(c)
-                                  ? 'bg-emerald-500 border-emerald-500 text-white cursor-default'
-                                  : 'border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 text-stone-400 hover:text-emerald-600'
-                              }`}
-                              title={isCompletedToday(c) ? "¡Completado hoy!" : "Marcar como completado hoy"}
-                            >
-                              {isCompletedToday(c) ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      <button 
-                        onClick={() => setEditingCommitment({ type })}
-                        className="w-full p-5 rounded-[2rem] border-2 border-dashed border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider min-h-[145px]"
-                      >
-                        + Añadir {labels[type]}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                          ))}
+                          <button 
+                            onClick={() => setEditingCommitment({ type })}
+                            className="w-full p-5 rounded-[2rem] border-2 border-dashed border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider min-h-[145px]"
+                          >
+                            + Añadir {labels[type]}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
       {/* Dimension Detail Modal */}

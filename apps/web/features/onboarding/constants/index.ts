@@ -131,27 +131,27 @@ export const METHODS: { id: Method; emoji: string; title: string; subtitle: stri
 
 export const ALL_DIMENSIONS = [
   // Identity
-  { key: 'values',               label: 'Core Values',           cat: 'identity',    emoji: '⭐' },
-  { key: 'personality',          label: 'Personality',           cat: 'identity',    emoji: '🌀' },
-  { key: 'interests',            label: 'Interests',             cat: 'identity',    emoji: '❤️' },
-  { key: 'purpose',              label: 'Purpose',               cat: 'identity',    emoji: '🧭' },
-  { key: 'motivations',          label: 'Motivations',           cat: 'identity',    emoji: '🔥' },
+  { key: 'values',               label: 'Valores',               cat: 'identity',    emoji: '⭐' },
+  { key: 'personality',          label: 'Personalidad',          cat: 'identity',    emoji: '🌀' },
+  { key: 'interests',            label: 'Intereses',             cat: 'identity',    emoji: '❤️' },
+  { key: 'purpose',              label: 'Propósito',             cat: 'identity',    emoji: '🧭' },
+  { key: 'motivations',          label: 'Motivaciones',          cat: 'identity',    emoji: '🔥' },
   // Capital
-  { key: 'knowledge',            label: 'Knowledge',             cat: 'capital',     emoji: '📚' },
-  { key: 'skills',               label: 'Skills',                cat: 'capital',     emoji: '🧠' },
-  { key: 'career',               label: 'Career',                cat: 'capital',     emoji: '💼' },
-  { key: 'income',               label: 'Income',                cat: 'capital',     emoji: '💰' },
-  { key: 'social_capital',       label: 'Social Capital',        cat: 'capital',     emoji: '🤝' },
-  { key: 'physical_health',      label: 'Physical Health',       cat: 'capital',     emoji: '跑' },
-  { key: 'resilience',           label: 'Resilience',            cat: 'capital',     emoji: '🛡️' },
+  { key: 'knowledge',            label: 'Conocimientos',         cat: 'capital',     emoji: '📚' },
+  { key: 'skills',               label: 'Habilidades',           cat: 'capital',     emoji: '🧠' },
+  { key: 'career',               label: 'Carrera Profesional',   cat: 'capital',     emoji: '💼' },
+  { key: 'income',               label: 'Ingresos',              cat: 'capital',     emoji: '💰' },
+  { key: 'social_capital',       label: 'Contactos y Redes',     cat: 'capital',     emoji: '🤝' },
+  { key: 'physical_health',      label: 'Salud Física',          cat: 'capital',     emoji: '💪' },
+  { key: 'resilience',           label: 'Resiliencia',            cat: 'capital',     emoji: '🛡️' },
   // Experience
-  { key: 'work_satisfaction',    label: 'Work Satisfaction',     cat: 'experience',  emoji: '😊' },
-  { key: 'relationships',        label: 'Relationships',         cat: 'experience',  emoji: '💞' },
-  { key: 'mental_wellbeing',     label: 'Mental Wellbeing',      cat: 'experience',  emoji: '🧘' },
-  { key: 'free_time',            label: 'Free Time',             cat: 'experience',  emoji: '🕐' },
-  { key: 'personal_growth',      label: 'Personal Growth',       cat: 'experience',  emoji: '🌱' },
-  { key: 'impact',               label: 'Impact',                cat: 'experience',  emoji: '🌍' },
-  { key: 'financial_security',   label: 'Financial Security',    cat: 'experience',  emoji: '🏦' },
+  { key: 'work_satisfaction',    label: 'Satisfacción Laboral',  cat: 'experience',  emoji: '😊' },
+  { key: 'relationships',        label: 'Relaciones',            cat: 'experience',  emoji: '💞' },
+  { key: 'mental_wellbeing',     label: 'Bienestar Mental',      cat: 'experience',  emoji: '🧘' },
+  { key: 'free_time',            label: 'Tiempo Libre',          cat: 'experience',  emoji: '🕐' },
+  { key: 'personal_growth',      label: 'Crecimiento Personal',  cat: 'experience',  emoji: '🌱' },
+  { key: 'impact',               label: 'Impacto Social',        cat: 'experience',  emoji: '🌍' },
+  { key: 'financial_security',   label: 'Seguridad Financiera',  cat: 'experience',  emoji: '🏦' },
 ] as const;
 
 export type DimKey = typeof ALL_DIMENSIONS[number]['key'];

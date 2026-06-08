@@ -35,6 +35,7 @@ model User {
   baseCommitments BaseCommitment[]
   postIts         PostIt[]
   dailyTasks      DailyTask[]
+  resumes         UserResume[]
 
   @@map("users")
 }
@@ -106,6 +107,10 @@ model BaseCommitment {
 
   dimensionIds String[]    @map("dimension_ids") @db.ObjectId
   dimensions   Dimension[] @relation(fields: [dimensionIds], references: [id])
+
+  // Gamification & Streaks
+  streakCount     Int       @default(0) @map("streak_count")
+  lastCompletedAt DateTime? @map("last_completed_at")
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -442,4 +447,25 @@ model DailyTask {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("daily_tasks")
+}
+
+//
+// ───────────────── USER RESUME ─────────────────
+//
+model UserResume {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @map("user_id") @db.ObjectId
+  title         String   @default("Mi Hoja de Vida")
+  isBase        Boolean  @default(false) @map("is_base")
+  targetJob     String?  @map("target_job")
+  targetCompany String?  @map("target_company")
+  summary       String?
+  parsedData    Json?    @map("parsed_data")
+  rawText       String?  @map("raw_text")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_resumes")
 }

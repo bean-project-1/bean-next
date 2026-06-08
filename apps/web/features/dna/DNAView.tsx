@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
 import { CommitmentModal } from './CommitmentModal';
 
 const CATEGORIES = [
-  { cat: 'identity',   label: 'Identity'         },
-  { cat: 'capital',    label: 'Human Capital'    },
-  { cat: 'experience', label: 'Life Experience'  },
+  { cat: 'identity',   label: 'Mi Esencia (Quién Soy)' },
+  { cat: 'capital',    label: 'Mis Recursos (Qué Sé y Hago)' },
+  { cat: 'experience', label: 'Mi Estilo de Vida (Cómo Vivo)' },
 ] as const;
 
 const DIMENSION_RECOMMENDATIONS: Record<string, { description: string, question: string, attributes: string[], intents: string[] }> = {
@@ -152,6 +153,7 @@ export function DNAView() {
 
   const [savingCommitmentId, setSavingCommitmentId] = useState<string | null>(null);
   const [showLinkCommitmentMenu, setShowLinkCommitmentMenu] = useState(false);
+  const [resumes, setResumes] = useState<any[]>([]);
 
   const fetchCommitments = useCallback(() => {
     setLoadingCommitments(true);
@@ -173,7 +175,40 @@ export function DNAView() {
       .finally(() => setLoadingIdentity(false));
 
     fetchCommitments();
+
+    // Fetch resumes
+    fetch('/api/career/resume')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) setResumes(json.resumes || []);
+      })
+      .catch(err => console.error('Error fetching resumes in DNAView:', err));
   }, [fetchCommitments]);
+
+  const isCompletedToday = (c: any) => {
+    if (!c.lastCompletedAt) return false;
+    const lastDate = new Date(c.lastCompletedAt);
+    const today = new Date();
+    return lastDate.getDate() === today.getDate() &&
+           lastDate.getMonth() === today.getMonth() &&
+           lastDate.getFullYear() === today.getFullYear();
+  };
+
+  const handleCompleteCommitment = async (commitmentId: string) => {
+    try {
+      const res = await fetch(`/api/profile/commitments/${commitmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'complete' })
+      });
+      const json = await res.json();
+      if (json.success) {
+        fetchCommitments();
+      }
+    } catch (err) {
+      console.error('Error completing commitment:', err);
+    }
+  };
 
   const attributesCount = ALL_DIMENSIONS.reduce((acc, dim) => {
     const dimData = identity?.[dim.key]?.identity;
@@ -204,46 +239,65 @@ export function DNAView() {
   }
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-white pb-24 sm:pb-8">
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-[#FBF9F6] pb-24 sm:pb-8">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight">Identidad <span className="font-semibold text-gray-900 italic">ADN Vital</span></h1>
-        <p className="mt-1 text-sm text-gray-400 font-medium">
-          La colección de tus experiencias, activos y compromisos que definen quién eres.
+        <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+          Mi Mapa del Ser <span className="text-indigo-600 font-light italic">ADN Vital</span>
+        </h1>
+        <p className="mt-1 text-sm text-stone-500 font-medium">
+          El reflejo vivo de quién eres, lo que tienes y cómo vives. Explora y mantén tu balance.
         </p>
       </div>
 
-      <div className="mb-6 sm:mb-8 rounded-2xl border border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 shadow-sm">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            <span>Exploración de Identidad</span>
-            <span className="text-green-600 font-bold">{pct}%</span>
+      <div className="mb-6 sm:mb-8 rounded-[2rem] border border-stone-100 bg-white px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm shadow-stone-100/30">
+        <div className="flex-1 w-full">
+          <div className="flex items-center justify-between mb-3 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+            <span>Autoconocimiento General</span>
+            <span className="text-emerald-600 font-black">{pct}%</span>
           </div>
-          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-            <div className="h-full rounded-full bg-green-500 transition-all duration-700 shadow-sm shadow-green-200"
+          <div className="h-2.5 rounded-full bg-stone-100 overflow-hidden">
+            <div className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-sm"
               style={{ width: `${pct}%` }} />
           </div>
         </div>
-        <div className="flex-shrink-0 text-right">
-          <p className="text-3xl font-light text-gray-900 leading-none">{filledCount}<span className="text-base font-normal text-gray-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Áreas de Vida</p>
+        <div className="flex-shrink-0 text-right self-end sm:self-center">
+          <p className="text-3xl font-black text-stone-800 leading-none">{filledCount}<span className="text-base font-normal text-stone-300 ml-1">/ {ALL_DIMENSIONS.length}</span></p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">Áreas Exploradas</p>
         </div>
+      </div>
+
+      {/* 💼 Career Compass Banner */}
+      <div className="mb-8 p-6 rounded-3xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white shadow-xl shadow-indigo-500/10 flex flex-col md:flex-row items-center justify-between gap-6 hover:scale-[1.01] transition-all duration-300 border border-indigo-400/20">
+        <div className="space-y-1 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-2">
+            <span className="text-2xl">💼</span>
+            <h2 className="text-lg font-bold tracking-tight">Brújula de Carrera & Optimización de CV</h2>
+            <span className="bg-white/20 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Nuevo</span>
+          </div>
+          <p className="text-xs text-indigo-100 max-w-xl">
+            Sube tu hoja de vida, descubre ofertas ideales alineadas a tu ADN, obtén análisis de brechas e inyecta planes de acción a tu árbol de vida.
+          </p>
+        </div>
+        <Link href="/dna/career" className="px-5 py-3 rounded-2xl bg-white text-indigo-700 font-bold text-xs shadow-md hover:bg-slate-50 hover:shadow-lg hover:shadow-indigo-500/15 transition-all duration-300 whitespace-nowrap active:scale-95">
+          Abrir Brújula de Carrera →
+        </Link>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-12">
         <div className="flex-shrink-0 flex flex-col items-center">
           <div className="sticky top-8">
-            <div className="relative rounded-3xl border border-gray-100 bg-white p-8 shadow-2xl shadow-gray-200/50 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-green-50/20 via-transparent to-transparent pointer-events-none" />
+            <div className="relative rounded-[2rem] border border-stone-100 bg-white p-8 shadow-2xl shadow-stone-200/40 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/10 via-transparent to-transparent pointer-events-none" />
               <DNADiagram attributesCount={attributesCount} />
 
-              <div className="mt-8 space-y-2">
+              <div className="mt-8 space-y-2.5">
                 {CATEGORIES.map(({ cat, label }) => {
                   const colors: Record<string, string> = {
                     identity: 'bg-violet-500',
                     capital: 'bg-blue-500',
-                    experience: 'bg-green-500',
+                    experience: 'bg-emerald-500',
                   };
-                  const cColor = colors[cat] ?? 'bg-gray-500';
+                  const cColor = colors[cat] ?? 'bg-stone-500';
                   const dims = ALL_DIMENSIONS.filter((d: any) => d.cat === cat);
                   const catCount = dims.reduce((s: number, d: any) => s + (attributesCount[d.key] ?? 0), 0);
                   
@@ -251,12 +305,96 @@ export function DNAView() {
                     <div key={cat} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className={`h-2 w-2 rounded-full ${cColor}`} />
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+                        <span className="text-[9px] font-black text-stone-400 uppercase tracking-wider">{label.split(' ')[0]}</span>
                       </div>
-                      <span className={`text-xs font-bold text-gray-900`}>{catCount} hitos</span>
+                      <span className={`text-xs font-bold text-stone-800`}>{catCount} destellos ✨</span>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* 🏆 Logros y Medallas */}
+            <div className="mt-6 p-6 rounded-[2rem] border border-stone-100 bg-white shadow-md shadow-stone-100/50 space-y-4 w-full max-w-[266px]">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 border-b border-stone-50 pb-2">
+                🏆 Logros del Ser
+              </h4>
+              
+              <div className="space-y-3">
+                {/* Badge 1: Primer Destello */}
+                <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                  filledCount > 0 
+                    ? 'bg-amber-50/40 border-amber-100 text-amber-900 shadow-sm shadow-amber-500/5' 
+                    : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                }`}>
+                  <span className="text-xl">🌟</span>
+                  <div>
+                    <p className="text-xs font-black">Primer Destello</p>
+                    <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                      {filledCount > 0 ? '¡Desbloqueado!' : 'Agrega tu primer atributo'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Badge 2: Brújula Calibrada */}
+                {(() => {
+                  const hasTailored = resumes.some(r => r.targetJob);
+                  return (
+                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                      hasTailored 
+                        ? 'bg-indigo-50/40 border-indigo-100 text-indigo-900 shadow-sm shadow-indigo-500/5' 
+                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                    }`}>
+                      <span className="text-xl">🎯</span>
+                      <div>
+                        <p className="text-xs font-black">Brújula Calibrada</p>
+                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                          {hasTailored ? '¡Desbloqueado!' : 'Optimiza un CV'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Badge 3: Vida en Ritmo */}
+                {(() => {
+                  const hasRhythms = commitments.length >= 3;
+                  return (
+                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                      hasRhythms 
+                        ? 'bg-emerald-50/40 border-emerald-100 text-emerald-900 shadow-sm shadow-emerald-500/5' 
+                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                    }`}>
+                      <span className="text-xl">🔄</span>
+                      <div>
+                        <p className="text-xs font-black">Vida en Ritmo</p>
+                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                          {hasRhythms ? '¡Desbloqueado!' : 'Registra 3 ritmos'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Badge 4: Mente en Paz */}
+                {(() => {
+                  const hasWellbeing = ['mental_wellbeing', 'relationships', 'physical_health'].some(k => (attributesCount[k] || 0) > 0);
+                  return (
+                    <div className={`flex items-center gap-3 p-2.5 rounded-2xl border transition-all ${
+                      hasWellbeing 
+                        ? 'bg-violet-50/40 border-violet-100 text-violet-900 shadow-sm shadow-violet-500/5' 
+                        : 'bg-stone-50/50 border-stone-100 text-stone-300 opacity-50'
+                    }`}>
+                      <span className="text-xl">🧘</span>
+                      <div>
+                        <p className="text-xs font-black">Mente en Paz</p>
+                        <p className="text-[8px] text-stone-400 font-bold uppercase tracking-tight">
+                          {hasWellbeing ? '¡Desbloqueado!' : 'Registra salud/bienestar'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -284,13 +422,15 @@ export function DNAView() {
                     return (
                       <div key={dim.key} 
                         onClick={() => setSelectedDimKey(dim.key)}
-                        className={`group relative rounded-2xl border p-4 transition-all cursor-pointer hover:shadow-md ${
-                          hasData ? `${c.border} bg-white shadow-sm` : 'border-gray-50 bg-gray-50/50 opacity-40'
+                        className={`group relative rounded-[2rem] border p-5 transition-all duration-300 cursor-pointer shadow-sm ${
+                          hasData 
+                            ? `${c.border} bg-white border-stone-150/70 hover:shadow-md hover:scale-[1.02] hover:-translate-y-0.5` 
+                            : 'border-dashed border-stone-200/50 bg-stone-50/40 opacity-60 hover:opacity-100 hover:border-indigo-300'
                         }`}>
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="text-base flex-shrink-0">{dim.emoji}</span>
-                            <span className={`text-xs font-bold truncate ${hasData ? 'text-gray-900' : 'text-gray-400'}`}>
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <span className="text-lg flex-shrink-0">{dim.emoji}</span>
+                            <span className={`text-xs font-black truncate ${hasData ? 'text-stone-850' : 'text-stone-400'}`}>
                               {dim.label}
                             </span>
                           </div>
@@ -300,26 +440,26 @@ export function DNAView() {
                         {hasData ? (
                           <div className="space-y-1">
                             {dimData?.current?.[0] && (
-                              <p className="text-[10px] font-medium text-slate-800 truncate">
+                              <p className="text-[10px] font-bold text-stone-700 truncate">
                                 💼 Actual: {dimData.current[0].title}
                               </p>
                             )}
                             {dimData?.history?.[0] && (
-                              <p className="text-[10px] text-slate-400 truncate italic">
+                              <p className="text-[10px] text-stone-400 truncate italic">
                                 🎓 Previo: {dimData.history[0].title}
                               </p>
                             )}
                             <div className="flex flex-wrap gap-1 mt-2">
                               {dimData?.assets?.slice(0, 2).map((asset: any, idx: number) => (
-                                <span key={idx} className="bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
+                                <span key={idx} className="bg-stone-50 border border-stone-100/50 text-stone-500 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider">
                                   {asset.name}
                                 </span>
                               ))}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-2">
-                            Territorio inexplorado
+                          <div className="text-[9px] font-bold text-stone-300 uppercase tracking-widest mt-2 flex items-center gap-1">
+                            <span>🌱</span> Lienzo en blanco
                           </div>
                         )}
                       </div>
@@ -333,13 +473,15 @@ export function DNAView() {
       </div>
 
       {/* Global Base Commitments Section */}
-      <div className="mt-16 pt-12 border-t border-gray-100">
+      <div className="mt-16 pt-12 border-t border-stone-200/60">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
-            <h2 className="text-2xl font-light text-gray-900 tracking-tight">
-              Compromisos <span className="font-semibold text-gray-900 italic">Base</span>
+            <h2 className="text-2xl font-black text-stone-900 tracking-tight">
+              Mis Ritmos Diarios <span className="text-emerald-600 font-light italic">Constancia</span>
             </h2>
-            <p className="text-sm text-gray-400 mt-1 font-medium">Tus actividades recurrentes y carga de vida fija.</p>
+            <p className="text-xs text-stone-500 mt-1">
+              Las rutinas, compromisos y hábitos que marcan el pulso de tu día. Mantén tu racha diaria activa.
+            </p>
           </div>
         </div>
         
@@ -347,15 +489,15 @@ export function DNAView() {
           {['work', 'study', 'routine'].map(type => {
             const typeCommitments = commitments.filter(c => c.type === type);
             const icons: any = { work: '💼', study: '📚', routine: '🔄' };
-            const labels: any = { work: 'Trabajo', study: 'Estudio', routine: 'Rutinas' };
+            const labels: any = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
             
             return (
               <div key={type} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2">
                     <span className="text-xs">{icons[type]}</span> {labels[type]}
                   </h3>
-                  <span className="text-[10px] font-black text-gray-300 bg-gray-50 px-2 py-0.5 rounded-full">{typeCommitments.length}</span>
+                  <span className="text-[10px] font-black text-stone-300 bg-stone-100 px-2 py-0.5 rounded-full">{typeCommitments.length}</span>
                 </div>
                 <div className="space-y-3">
                   {loadingCommitments ? (
@@ -363,23 +505,60 @@ export function DNAView() {
                   ) : (
                     <>
                       {typeCommitments.map((c, idx) => (
-                        <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-violet-200 transition-all">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[8px] font-black text-violet-500 bg-violet-50 px-2 py-0.5 rounded-lg uppercase tracking-widest">{c.dimension?.label || 'General'}</span>
-                            <span className="text-[9px] font-bold text-gray-300 group-hover:text-violet-400 transition-colors">Editar</span>
+                        <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-[2rem] border border-stone-100 bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[145px]">
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">{c.dimensions?.[0]?.label || c.dimension?.label || 'General'}</span>
+                              
+                              <div className="flex items-center gap-1.5">
+                                {c.streakCount > 0 && (
+                                  <span className="flex items-center gap-0.5 text-[10px] font-extrabold text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                                    🔥 {c.streakCount}
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-bold text-stone-300 group-hover:text-indigo-400 transition-colors">Editar</span>
+                              </div>
+                            </div>
+                            
+                            <h4 className="text-sm font-black text-stone-850 group-hover:text-indigo-600 transition-colors leading-tight">{c.title}</h4>
                           </div>
-                          <h4 className="text-sm font-black text-gray-800 group-hover:text-violet-600 transition-colors">{c.title}</h4>
-                          <div className="mt-4 flex items-center justify-between text-[10px] font-bold border-t border-gray-50 pt-3">
-                            <span className="text-gray-400 uppercase tracking-tighter">
-                              ⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`} {c.commuteHours > 0 && <span className="text-emerald-500">(+{c.commuteHours}h traslado)</span>}
-                            </span>
-                            <span className="text-gray-400 uppercase tracking-tighter">📅 {c.daysOfWeek.length} días</span>
+
+                          <div className="mt-4 pt-3 border-t border-stone-50 flex items-center justify-between gap-2">
+                            <div className="text-[10px] font-medium text-stone-400 space-y-0.5">
+                              <p>⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`}</p>
+                              {c.commuteHours > 0 && <p className="text-emerald-500 font-bold">🚗 +{c.commuteHours}h traslado</p>}
+                            </div>
+
+                            {/* Daily check-in button */}
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (isCompletedToday(c)) return;
+                                await handleCompleteCommitment(c.id);
+                              }}
+                              className={`p-2 rounded-full border transition-all ${
+                                isCompletedToday(c)
+                                  ? 'bg-emerald-500 border-emerald-500 text-white cursor-default'
+                                  : 'border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 text-stone-400 hover:text-emerald-600'
+                              }`}
+                              title={isCompletedToday(c) ? "¡Completado hoy!" : "Marcar como completado hoy"}
+                            >
+                              {isCompletedToday(c) ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                            </button>
                           </div>
                         </div>
                       ))}
                       <button 
                         onClick={() => setEditingCommitment({ type })}
-                        className="w-full p-4 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest"
+                        className="w-full p-5 rounded-[2rem] border-2 border-dashed border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider min-h-[145px]"
                       >
                         + Añadir {labels[type]}
                       </button>
@@ -440,7 +619,7 @@ export function DNAView() {
                       {/* Current & Intent */}
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div>
-                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compromiso Actual</h3>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Mi Ritmo de Vida Actual</h3>
                           
                           {dimData?.current?.length > 0 ? (
                             <div className="space-y-3">
@@ -455,7 +634,7 @@ export function DNAView() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-slate-400 italic w-full mb-1">Sin actividad recurrente.</p>
+                            <p className="text-xs text-slate-400 italic w-full mb-1">Sin ritmo diario asociado.</p>
                           )}
 
                           <div className="flex items-center gap-2 mt-3">
@@ -520,7 +699,7 @@ export function DNAView() {
                           )}
                         </div>
                         <div>
-                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Intención Futura</h3>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Mis Sueños y Metas</h3>
                           
                           {dimData?.intent?.length > 0 ? (
                             <div className="space-y-3 mb-2">
@@ -535,7 +714,7 @@ export function DNAView() {
                             </div>
                           ) : (
                             !addingIntentForDim && (
-                              <p className="text-xs text-slate-400 italic w-full mb-1">Sin intenciones activas.</p>
+                              <p className="text-xs text-slate-400 italic w-full mb-1">Sin metas activas en esta área.</p>
                             )
                           )}
 
@@ -624,7 +803,7 @@ export function DNAView() {
 
                       {/* Assets / Skills */}
                       <div>
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Activos & Atributos</h3>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Mis Destellos y Superpoderes</h3>
                         <div className="flex flex-wrap gap-2">
                           {dimData?.assets?.length > 0 ? (
                             dimData.assets.map((a: any, idx: number) => (
@@ -635,7 +814,7 @@ export function DNAView() {
                               </div>
                             ))
                           ) : (
-                            <p className="text-xs text-slate-400 italic w-full mb-1">No hay atributos definidos.</p>
+                            <p className="text-xs text-slate-400 italic w-full mb-1">Aún no has declarado superpoderes aquí.</p>
                           )}
                           
                           {addingAttributeForDim === selectedDimKey ? (

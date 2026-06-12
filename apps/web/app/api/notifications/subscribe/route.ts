@@ -47,3 +47,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Usually we would receive the endpoint from the client to delete a specific subscription
+    // But since this is a global toggle for the user's device, 
+    // we can delete all subscriptions for this user, or just return success and handle it client-side.
+    // For simplicity, we delete all PushSubscriptions for this user so they don't receive anything.
+    await prisma.pushSubscription.deleteMany({
+      where: { userId: session.user.id }
+    });
+
+    return NextResponse.json({ success: true, message: 'Unsubscribed successfully' });
+  } catch (error) {
+    console.error('Error unsubscribing:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

@@ -97,11 +97,45 @@ export function usePushNotifications() {
     }
   };
 
+  const unsubscribe = async () => {
+    setIsLoading(true);
+    setIsSubscribed(false); // Optimistic UI update
+    
+    try {
+      // 1. Try to unsubscribe from browser if supported
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration && registration.pushManager) {
+            const subscription = await registration.pushManager.getSubscription();
+            if (subscription) {
+              await subscription.unsubscribe();
+            }
+          }
+        } catch (swError) {
+          console.warn('[PushNotifications] Non-fatal error during browser unsubscribe:', swError);
+        }
+      }
+
+      // 2. Always delete from DB regardless of browser state
+      await fetch('/api/notifications/subscribe', {
+        method: 'DELETE',
+      });
+      
+    } catch (error) {
+      console.error('[PushNotifications] Critical error in unsubscribe process:', error);
+      setIsSubscribed(true); // Revert ONLY if the DB fetch totally crashes
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isSupported,
     permission,
     isSubscribed,
     isLoading,
     subscribe,
+    unsubscribe,
   };
 }

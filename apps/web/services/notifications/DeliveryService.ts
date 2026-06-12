@@ -33,9 +33,7 @@ export async function sendWebPush(subscription: PushSubscription, payload: Nudge
   const pushPayload = JSON.stringify({
     title: payload.title,
     body: payload.body,
-    url: payload.url || '/',
-    icon: '/icon.png', // Make sure this icon exists in public/
-    badge: '/badge.png' // Make sure this badge exists in public/
+    url: payload.url || '/'
   });
 
   try {

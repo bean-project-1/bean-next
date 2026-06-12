@@ -2,11 +2,16 @@
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 
 export function NotificationSettings() {
-  const { isSupported, permission, isSubscribed, isLoading, subscribe } = usePushNotifications();
-  const [isUnsubscribing, setIsUnsubscribing] = useState(false);
+  const {
+    isSupported,
+    permission,
+    isSubscribed,
+    isLoading,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications();
 
   if (!isSupported) {
     return (
@@ -21,29 +26,6 @@ export function NotificationSettings() {
       </div>
     );
   }
-
-  const handleUnsubscribe = async () => {
-    setIsUnsubscribing(true);
-    try {
-      // In a real app, you would also tell the service worker to unsubscribe
-      // const registration = await navigator.serviceWorker.ready;
-      // const subscription = await registration.pushManager.getSubscription();
-      // if (subscription) {
-      //   await subscription.unsubscribe();
-      // }
-      
-      await fetch('/api/notifications/subscribe', {
-        method: 'DELETE',
-      });
-      window.location.reload(); // Quick way to sync state
-    } catch (error) {
-      console.error('Error unsubscribing:', error);
-    } finally {
-      setIsUnsubscribing(false);
-    }
-  };
-
-  const isWorking = isLoading || isUnsubscribing;
 
   return (
     <div className="p-4 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -67,16 +49,16 @@ export function NotificationSettings() {
       <div className="shrink-0">
         {isSubscribed ? (
           <button
-            onClick={handleUnsubscribe}
-            disabled={isWorking}
+            onClick={unsubscribe}
+            disabled={isLoading}
             className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center"
           >
-            {isUnsubscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Desactivar'}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Desactivar'}
           </button>
         ) : (
           <button
             onClick={subscribe}
-            disabled={isWorking || permission === 'denied'}
+            disabled={isLoading || permission === 'denied'}
             className="w-full sm:w-auto px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm shadow-md shadow-violet-500/20 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Activar'}

@@ -2,7 +2,7 @@
 
 ## Cloud Targets
 
-- **Production**: Azure App Service (Web) + Azure Database for PostgreSQL
+- **Production**: Azure App Service (Web) + MongoDB Atlas / Azure Cosmos DB (MongoDB API)
 - **Alt CDN/Serverless**: Vercel (zero-config Next.js deployment)
 
 ## Deployment Options

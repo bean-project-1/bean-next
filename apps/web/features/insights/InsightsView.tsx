@@ -18,6 +18,7 @@ import {
   Gamepad2
 } from 'lucide-react';
 import { PermanentAIChat } from './PermanentAIChat';
+import { CareerDashboard } from '../career/CareerDashboard';
 
 interface LifePath {
   id?: string;
@@ -385,6 +386,7 @@ function PathDetailPanel({
 // ─────────────────────────────────────────────────────────
 export function InsightsView() {
   const [paths, setPaths] = useState<LifePath[]>([]);
+  const [activeTab, setActiveTab] = useState<'paths' | 'career'>('paths');
   const [pathsLoading, setPathsLoading] = useState(true);
   const [pathsError, setPathsError] = useState(false);
   const [attributes, setAttributes] = useState<UserAttribute[]>([]);
@@ -469,7 +471,43 @@ export function InsightsView() {
 
   return (
     <div className="min-h-screen bg-transparent pb-32 sm:pb-32 mesh-gradient p-4 sm:p-8 animate-fade-in">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-xl mx-auto mb-10 relative z-10">
+        <button 
+          onClick={() => setActiveTab('paths')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'paths' 
+              ? 'bg-white text-emerald-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-850'
+          }`}
+        >
+          <span className="hidden sm:inline">Explorador de Caminos</span>
+          <span className="sm:hidden">Caminos</span>
+          🗺️
+        </button>
+        <button 
+          onClick={() => setActiveTab('career')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'career' 
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Brújula de Carrera</span>
+          <span className="sm:hidden">Brújula</span>
+          💼
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === 'paths' && (
+          <motion.div
+            key="paths"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-6xl mx-auto space-y-8"
+          >
         
         <div className="glass rounded-[32px] p-6 sm:p-8 border border-black/5 relative overflow-hidden shadow-lg">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -608,7 +646,22 @@ export function InsightsView() {
           </div>
         </div>
 
-      </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'career' && (
+          <motion.div
+            key="career"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-6xl mx-auto"
+          >
+            <CareerDashboard isSubComponent={true} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedPath && (

@@ -10,13 +10,21 @@ export class IdentityService {
       where: { name: dimensionName },
       include: {
         attributes: { where: { userId } },
-        baseCommitments: { where: { userId, isActive: true } },
         lifeEvents: { where: { userId }, orderBy: { date: 'desc' } },
         // We'll need to fetch goals separately since they link to User, not directly back to Dimension in a clean way sometimes
       }
     });
 
     if (!dimension) return null;
+
+    // Fetch commitments for this user and this dimension
+    const baseCommitments = await prisma.baseCommitment.findMany({
+      where: {
+        userId,
+        isActive: true,
+        dimensionIds: { has: dimension.id }
+      }
+    });
 
     // Fetch goals for this dimension
     const goals = await prisma.goal.findMany({
@@ -39,7 +47,7 @@ export class IdentityService {
           level: (a.metadata as any)?.level || 'learned'
         })),
         // Current: What I'm doing now
-        current: dimension.baseCommitments.map(c => ({
+        current: baseCommitments.map(c => ({
           title: c.title,
           type: c.type,
           hoursPerDay: c.hoursPerDay,

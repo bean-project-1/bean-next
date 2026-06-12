@@ -6,7 +6,6 @@ import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
 import { CommitmentModal } from './CommitmentModal';
-import { CareerDashboard } from '../career/CareerDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = [
@@ -137,7 +136,7 @@ export function DNAView() {
     dbDimensions, loading: profileLoading, error: profileError
   } = useProfile();
 
-  const [activeTab, setActiveTab] = useState<'essence' | 'career' | 'rhythms'>('essence');
+  const [activeTab, setActiveTab] = useState<'essence' | 'rhythms'>('essence');
   const [identity, setIdentity] = useState<any>(null);
   const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
@@ -256,18 +255,6 @@ export function DNAView() {
           <span className="hidden sm:inline">Mi Esencia (ADN)</span>
           <span className="sm:hidden">Esencia</span>
           🧬
-        </button>
-        <button 
-          onClick={() => setActiveTab('career')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeTab === 'career' 
-              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
-              : 'text-stone-500 hover:text-stone-855'
-          }`}
-        >
-          <span className="hidden sm:inline">Brújula de Carrera</span>
-          <span className="sm:hidden">Brújula</span>
-          💼
         </button>
         <button 
           onClick={() => setActiveTab('rhythms')}
@@ -485,18 +472,6 @@ export function DNAView() {
           </motion.div>
         )}
 
-        {activeTab === 'career' && (
-          <motion.div
-            key="career"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.25 }}
-          >
-            <CareerDashboard isSubComponent={true} />
-          </motion.div>
-        )}
-
         {activeTab === 'rhythms' && (
           <motion.div
             key="rhythms"
@@ -530,7 +505,19 @@ export function DNAView() {
                             <div key={idx} onClick={() => setEditingCommitment(c)} className="cursor-pointer group p-5 rounded-[2rem] border border-stone-100 bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[145px]">
                               <div>
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">{c.dimensions?.[0]?.label || c.dimension?.label || 'General'}</span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {c.dimensions && c.dimensions.length > 0 ? (
+                                      c.dimensions.map((d: any, dIdx: number) => (
+                                        <span key={dIdx} className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                          {d.label}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                        {c.dimension?.label || 'General'}
+                                      </span>
+                                    )}
+                                  </div>
                                   
                                   <div className="flex items-center gap-1.5">
                                     {c.streakCount > 0 && (

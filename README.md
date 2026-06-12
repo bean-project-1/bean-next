@@ -26,10 +26,10 @@ bean/
 
 | Layer      | Technology                          |
 |------------|-------------------------------------|
-| Frontend   | Next.js 14, React 18, TypeScript, TailwindCSS |
-| Backend    | Next.js API Routes (v1), FastAPI (planned) |
-| Database   | PostgreSQL + Prisma ORM             |
-| AI         | OpenAI GPT-4 Turbo                  |
+| Frontend   | Next.js 16, React 19, TypeScript, TailwindCSS |
+| Backend    | Next.js API Routes, FastAPI (planned) |
+| Database   | MongoDB + Prisma ORM                |
+| AI         | OpenAI / DeepSeek (LLM Services)    |
 | DevOps     | Docker, Turborepo, GitHub Actions   |
 | Deployment | Vercel / Azure App Service          |
 

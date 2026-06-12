@@ -11,33 +11,68 @@ datasource db {
 // ───────────────── USERS ─────────────────
 //
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  name          String?
-  email         String    @unique
-  emailVerified DateTime? @map("email_verified")
-  passwordHash  String?   @map("password_hash")
-  image         String?
-  avatarUrl          String?   @map("avatar_url")
-  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                String?
+  email               String    @unique
+  emailVerified       DateTime? @map("email_verified")
+  passwordHash        String?   @map("password_hash")
+  image               String?
+  avatarUrl           String?   @map("avatar_url")
+  onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  accounts        Account[]
-  sessions        Session[]
-  attributes      UserAttribute[]
-  dimensionInputs DimensionInput[]
-  lifeStates      LifeState[]
-  lifeEvents      LifeEvent[]
-  goals           Goal[]
-  chatSessions    ChatSession[]
-  suggestedPaths  SuggestedPath[]
-  baseCommitments BaseCommitment[]
-  postIts         PostIt[]
-  dailyTasks      DailyTask[]
-  resumes         UserResume[]
+  timezone                String? @default("America/Bogota")
+  notificationPreferences Json?   @map("notification_preferences")
+
+  accounts          Account[]
+  sessions          Session[]
+  attributes        UserAttribute[]
+  dimensionInputs   DimensionInput[]
+  lifeStates        LifeState[]
+  lifeEvents        LifeEvent[]
+  goals             Goal[]
+  chatSessions      ChatSession[]
+  suggestedPaths    SuggestedPath[]
+  baseCommitments   BaseCommitment[]
+  postIts           PostIt[]
+  dailyTasks        DailyTask[]
+  resumes           UserResume[]
+  pushSubscriptions PushSubscription[]
+  notificationLogs  NotificationLog[]
 
   @@map("users")
+}
+
+//
+// ───────────────── NOTIFICATIONS ─────────────────
+//
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model NotificationLog {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @map("user_id") @db.ObjectId
+  type    String // e.g. "daily_tasks", "streak", "custom"
+  channel String // "web_push" | "email"
+  title   String
+  body    String
+  sentAt  DateTime @default(now()) @map("sent_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_logs")
 }
 
 model Account {
@@ -163,11 +198,11 @@ model Dimension {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  attributes      UserAttribute[]
-  dimensionInputs DimensionInput[]
+  attributes        UserAttribute[]
+  dimensionInputs   DimensionInput[]
   baseCommitmentIds String[]         @map("base_commitment_ids") @db.ObjectId
   baseCommitments   BaseCommitment[] @relation(fields: [baseCommitmentIds], references: [id])
-  lifeEvents      LifeEvent[]
+  lifeEvents        LifeEvent[]
 
   @@map("dimensions")
 }
@@ -410,15 +445,15 @@ model ChatMessage {
 // ───────────────── POST-ITS (TABLERO) ─────────────────
 //
 model PostIt {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @map("user_id") @db.ObjectId
-  content   String
-  color     String   @default("yellow")
-  x         Float    @default(0) // Para arrastrar
-  y         Float    @default(0) // Para arrastrar
-  rotation  Float    @default(0) // Rotación orgánica
-  zIndex    Int      @default(0)
-  isPinned  Boolean  @default(false) @map("is_pinned")
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String    @map("user_id") @db.ObjectId
+  content      String
+  color        String    @default("yellow")
+  x            Float     @default(0) // Para arrastrar
+  y            Float     @default(0) // Para arrastrar
+  rotation     Float     @default(0) // Rotación orgánica
+  zIndex       Int       @default(0)
+  isPinned     Boolean   @default(false) @map("is_pinned")
   anchoredDate DateTime? @map("anchored_date")
 
   createdAt DateTime @default(now()) @map("created_at")

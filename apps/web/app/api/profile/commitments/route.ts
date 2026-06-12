@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
         commuteHours,
         startTime,
         endTime,
-        dimensionIds: validDimensionIds
+        dimensionIds: validDimensionIds,
+        dimensions: {
+          connect: validDimensionIds.map(id => ({ id }))
+        }
       }
     });
 

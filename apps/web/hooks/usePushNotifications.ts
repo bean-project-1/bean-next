@@ -29,13 +29,20 @@ export function usePushNotifications() {
       setIsSupported(true);
       setPermission(Notification.permission);
       
-      // Check existing subscription
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.pushManager.getSubscription().then((subscription) => {
+      // Register Service Worker and then check subscription
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          return registration.pushManager.getSubscription();
+        })
+        .then((subscription) => {
           setIsSubscribed(subscription !== null);
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        })
+        .finally(() => {
           setIsLoading(false);
         });
-      });
     } else {
       setIsLoading(false);
     }

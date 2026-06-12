@@ -1,15 +1,6 @@
 import webpush from 'web-push';
 import type { PushSubscription } from '@prisma/client';
 
-// Configure Web Push with VAPID keys from environment
-// You'll need to generate these using `npx web-push generate-vapid-keys` 
-// and add them to your .env file.
-webpush.setVapidDetails(
-  'mailto:your-email@example.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
-
 interface NudgePayload {
   title: string;
   body: string;
@@ -17,6 +8,20 @@ interface NudgePayload {
 }
 
 export async function sendWebPush(subscription: PushSubscription, payload: NudgePayload) {
+  // Configure Web Push with VAPID keys here to avoid top-level evaluation errors during Next.js build
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  
+  if (publicKey && privateKey) {
+    webpush.setVapidDetails(
+      'mailto:hello@bean.com',
+      publicKey,
+      privateKey
+    );
+  } else {
+    console.warn('[DeliveryService] VAPID keys are not configured. Cannot send push notification.');
+    return;
+  }
   const pushSubscription = {
     endpoint: subscription.endpoint,
     keys: {

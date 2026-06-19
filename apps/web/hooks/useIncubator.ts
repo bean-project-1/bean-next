@@ -114,65 +114,103 @@ export function useIncubator() {
   const getSeed = (id: string) => seeds.find(s => s.id === id);
 
   const addMessage = useCallback((seedId: string, role: 'user' | 'assistant' | 'system', content: string) => {
-    const seed = getSeed(seedId);
-    if (!seed) return;
-
-    const newMessages = [...seed.messages, {
+    const newMessage = {
       id: Math.random().toString(36).substring(2, 9),
       role,
       content,
       timestamp: Date.now()
-    }];
+    };
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, messages: newMessages } : s), { revalidate: false });
-    updateSeedDb(seedId, { messages: newMessages });
-  }, [seeds, getSeed, mutate]);
+    mutate((currentSeeds = []) => {
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
+
+      const newMessages = [...seed.messages, newMessage];
+      updateSeedDb(seedId, { messages: newMessages });
+
+      return currentSeeds.map(s => s.id === seedId ? { ...s, messages: newMessages } : s);
+    }, { revalidate: false });
+  }, [mutate]);
 
   const addCloud = useCallback((seedId: string, text: string) => {
-    const seed = getSeed(seedId);
-    if (!seed) return;
-
-    const newClouds = [...(seed.clouds || []), { 
+    const newCloud = { 
       id: Math.random().toString(36).substring(2, 9), 
       text,
       x: Math.random() * 100 - 50,
       y: Math.random() * 100 - 50
-    }];
+    };
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), { revalidate: false });
-    updateSeedDb(seedId, { clouds: newClouds });
-  }, [seeds, getSeed, mutate]);
+    mutate((currentSeeds = []) => {
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
+
+      const newClouds = [...(seed.clouds || []), newCloud];
+      updateSeedDb(seedId, { clouds: newClouds });
+
+      return currentSeeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s);
+    }, { revalidate: false });
+  }, [mutate]);
 
   const removeCloud = useCallback((seedId: string, cloudId: string) => {
-    const seed = getSeed(seedId);
-    if (!seed) return;
+    mutate((currentSeeds = []) => {
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
 
-    const newClouds = (seed.clouds || []).filter(c => c.id !== cloudId);
-    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), { revalidate: false });
-    updateSeedDb(seedId, { clouds: newClouds });
-  }, [seeds, getSeed, mutate]);
+      const newClouds = (seed.clouds || []).filter(c => c.id !== cloudId);
+      updateSeedDb(seedId, { clouds: newClouds });
+
+      return currentSeeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s);
+    }, { revalidate: false });
+  }, [mutate]);
 
   const updateScores = useCallback((seedId: string, updates: Partial<SeedScores>) => {
-    const seed = getSeed(seedId);
-    if (!seed) return;
+    mutate((currentSeeds = []) => {
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
 
-    const newScores = {
-      sun: Math.min(100, Math.max(0, updates.sun ?? seed.scores.sun)),
-      earth: Math.min(100, Math.max(0, updates.earth ?? seed.scores.earth)),
-      water: Math.min(100, Math.max(0, updates.water ?? seed.scores.water)),
-    };
-    
-    const isReady = newScores.sun >= 80 && newScores.earth >= 80 && newScores.water >= 80;
-    const status = isReady ? 'ready' : 'incubating';
+      const newScores = {
+        sun: Math.min(100, Math.max(0, updates.sun ?? seed.scores.sun)),
+        earth: Math.min(100, Math.max(0, updates.earth ?? seed.scores.earth)),
+        water: Math.min(100, Math.max(0, updates.water ?? seed.scores.water)),
+      };
+      
+      const isReady = newScores.sun >= 80 && newScores.earth >= 80 && newScores.water >= 80;
+      const status = isReady ? 'ready' : 'incubating';
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, scores: newScores, status } : s), { revalidate: false });
-    updateSeedDb(seedId, { scores: newScores, status });
-  }, [seeds, getSeed, mutate]);
+      updateSeedDb(seedId, { scores: newScores, status });
+
+      return currentSeeds.map(s => s.id === seedId ? { ...s, scores: newScores, status } : s);
+    }, { revalidate: false });
+  }, [mutate]);
 
   const updateProposal = useCallback((seedId: string, proposal: string) => {
-    mutate(seeds.map(s => s.id === seedId ? { ...s, proposal } : s), { revalidate: false });
-    updateSeedDb(seedId, { proposal });
-  }, [seeds, mutate]);
+    mutate((currentSeeds = []) => {
+      updateSeedDb(seedId, { proposal });
+      return currentSeeds.map(s => s.id === seedId ? { ...s, proposal } : s);
+    }, { revalidate: false });
+  }, [mutate]);
+
+  const restartChat = useCallback((seedId: string) => {
+    mutate((currentSeeds = []) => {
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
+
+      const hasProposal = Boolean(seed.proposal);
+      const greeting = hasProposal 
+        ? `¡Chat reiniciado! He revisado la propuesta actual de tu idea. ¿En qué aspecto específico quieres que trabajemos ahora para seguir mejorándola?`
+        : `¡Chat reiniciado! Empecemos de nuevo. Cuéntame, ¿Qué problema principal intentas resolver con esta idea?`;
+
+      const newMessages = [{
+        id: Math.random().toString(36).substring(2, 9),
+        role: 'system' as const,
+        content: greeting,
+        timestamp: Date.now()
+      }];
+
+      updateSeedDb(seedId, { messages: newMessages });
+      return currentSeeds.map(s => s.id === seedId ? { ...s, messages: newMessages } : s);
+    }, { revalidate: false });
+  }, [mutate]);
 
   const deleteSeed = useCallback(async (seedId: string) => {
     mutate(seeds.filter(s => s.id !== seedId), { revalidate: false });
@@ -190,6 +228,7 @@ export function useIncubator() {
     removeCloud,
     updateScores,
     updateProposal,
-    deleteSeed
+    deleteSeed,
+    restartChat
   };
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Sparkles, Sprout, FileText, X, Download } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Sprout, FileText, X, Download, RefreshCcw } from 'lucide-react';
 import { useIncubator } from '../../hooks/useIncubator';
 import { useLifeTree } from '../../hooks/useLifeTree';
 import { SeedPot } from './SeedPot';
@@ -14,7 +14,7 @@ interface SeedbedChatProps {
 }
 
 export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
-  const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateProposal } = useIncubator();
+  const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateProposal, restartChat } = useIncubator();
   const { addGoal } = useLifeTree();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -101,13 +101,12 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
   return (
     <div className="flex flex-col lg:flex-row h-full bg-white relative overflow-hidden">
       {/* Top Mobile/Header Bar */}
-      <header className="absolute top-0 inset-x-0 flex items-center px-2 sm:px-4 py-3 bg-white border-b border-stone-100 z-50 lg:hidden">
-        <button onClick={onBack} className="p-2 text-stone-400 hover:text-stone-700 transition-colors rounded-full hover:bg-stone-50 shrink-0">
+      <header className="absolute top-0 inset-x-0 flex items-center justify-center px-2 sm:px-4 py-3 bg-white border-b border-stone-100 z-50 lg:hidden h-16">
+        <button onClick={onBack} className="absolute left-2 sm:left-4 p-2 text-stone-400 hover:text-stone-700 transition-colors rounded-full hover:bg-stone-50 z-10">
           <ArrowLeft className="w-5 h-5" />
         </button>
         
-        <div className="flex-1 flex justify-center">
-          <div className="flex bg-stone-100 p-1 rounded-full border border-stone-200">
+        <div className="flex bg-stone-100 p-1 rounded-full border border-stone-200">
             <button 
               onClick={() => setMobileView('chat')}
               className={`px-3 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'chat' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'}`}
@@ -127,7 +126,6 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
               Doc
             </button>
           </div>
-        </div>
       </header>
 
       {/* Left Area: Visual SeedPot */}
@@ -200,13 +198,26 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-stone-100 pb-safe z-20">
-          <div className="max-w-2xl mx-auto relative group">
-            {/* Optional drop zone styling hint */}
-            <div className="absolute -top-12 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                Arrastra nubes aquí para discutir
-              </span>
-            </div>
+          <div className="max-w-2xl mx-auto flex items-end gap-2">
+            <button 
+              onClick={() => {
+                if (window.confirm('¿Estás seguro de que quieres reiniciar el chat? La propuesta actual se mantendrá como contexto para la nueva conversación.')) {
+                  restartChat(seed.id);
+                }
+              }}
+              className="p-3 mb-1 bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded-full transition-colors shrink-0"
+              title="Reiniciar chat usando la propuesta como contexto"
+            >
+              <RefreshCcw className="w-5 h-5" />
+            </button>
+            
+            <div className="relative group w-full">
+              {/* Optional drop zone styling hint */}
+              <div className="absolute -top-12 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                  Arrastra nubes aquí para discutir
+                </span>
+              </div>
             
             <textarea
               value={input}
@@ -228,6 +239,7 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
             >
               <Send className="w-4 h-4 ml-0.5" />
             </button>
+            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showProposal, setShowProposal] = useState(false);
+  const [mobileView, setMobileView] = useState<'chat' | 'pot'>('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const seed = getSeed(seedId);
@@ -100,17 +101,39 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
   return (
     <div className="flex flex-col lg:flex-row h-full bg-white relative overflow-hidden">
       {/* Top Mobile/Header Bar */}
-      <header className="absolute top-0 inset-x-0 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-100 z-50 lg:hidden">
-        <div className="flex items-start gap-4">
-          <button onClick={onBack} className="p-2 -ml-2 mt-0.5 text-stone-400 hover:text-stone-700 transition-colors rounded-full hover:bg-stone-50">
+      <header className="absolute top-0 inset-x-0 flex items-center justify-between px-4 py-3 bg-white border-b border-stone-100 z-50 lg:hidden">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="p-2 text-stone-400 hover:text-stone-700 transition-colors rounded-full hover:bg-stone-50">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-lg font-bold text-stone-800 line-clamp-2 leading-tight pr-4">{seed.title}</h2>
+          
+          <div className="flex bg-stone-100 p-1 rounded-full border border-stone-200">
+            <button 
+              onClick={() => setMobileView('chat')}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'chat' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'}`}
+            >
+              Chat
+            </button>
+            <button 
+              onClick={() => setMobileView('pot')}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'pot' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500'}`}
+            >
+              Matera
+            </button>
+          </div>
         </div>
+        
+        <button 
+          onClick={() => setShowProposal(true)}
+          className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm border border-emerald-100"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Propuesta
+        </button>
       </header>
 
       {/* Left Area: Visual SeedPot */}
-      <div className="w-full h-[45%] min-h-[300px] lg:min-h-0 lg:h-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-stone-200 relative mt-16 lg:mt-0 overflow-hidden">
+      <div className={`w-full lg:w-1/2 h-full border-b lg:border-b-0 lg:border-r border-stone-200 relative pt-16 lg:pt-0 overflow-hidden ${mobileView === 'chat' ? 'hidden lg:block' : 'block'}`}>
         <div className="absolute top-6 left-6 z-50 hidden lg:flex items-start gap-4 pointer-events-none">
           <button onClick={onBack} className="p-2 mt-0.5 text-stone-400 hover:text-stone-700 transition-colors rounded-full bg-white shadow-sm border border-stone-100 hover:bg-stone-50 pointer-events-auto shrink-0">
             <ArrowLeft className="w-5 h-5" />
@@ -127,8 +150,8 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
       </div>
 
       {/* Right Area: Chat */}
-      <div className="w-full flex-1 lg:w-1/2 flex flex-col bg-white relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white via-white to-transparent z-10 pointer-events-none flex justify-end px-6 pt-6">
+      <div className={`w-full flex-1 lg:w-1/2 flex-col bg-white relative overflow-hidden ${mobileView === 'pot' ? 'hidden lg:flex' : 'flex'}`}>
+        <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white via-white to-transparent z-10 pointer-events-none hidden lg:flex justify-end px-6 pt-6">
           <button 
             onClick={() => setShowProposal(true)}
             className="pointer-events-auto flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full font-bold text-sm shadow-sm border border-emerald-100 hover:bg-emerald-100 hover:scale-105 transition-all"

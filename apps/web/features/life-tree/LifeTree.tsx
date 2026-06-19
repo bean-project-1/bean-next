@@ -35,10 +35,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
-  // The tree is now naturally centered since there is no sidebar.
-  // We adjust the initial viewBox to 600x600 to make the tree much larger.
-  // By shifting y to -20 (camera center y=280), we center the tree perfectly on the screen.
-  const [viewBox, setViewBox] = useState({ x: 100, y: -20, w: 600, h: 600 });
+  // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
+  const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -238,10 +236,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
     gsap.to(viewBox, {
-      x: 100,
-      y: -20,
-      w: 600,
-      h: 600,
+      x: -100,
+      y: -100,
+      w: 1000,
+      h: 1000,
       duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
@@ -492,8 +490,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             const words = branch.goal.split(' ');
             const lines: string[] = [];
             let currentLine = '';
+            
+            // Use narrower text blocks on mobile so they don't hit the screen edges
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+            const maxChars = isMobile ? 12 : 20;
+
             words.forEach(word => {
-              if ((currentLine + word).length > 20) {
+              if ((currentLine + word).length > maxChars) {
                 if (currentLine) lines.push(currentLine.trim());
                 currentLine = word + ' ';
               } else {
@@ -552,9 +555,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
       {(() => {
         const isDefaultView = 
-          Math.abs(viewBox.w - 600) < 1 && 
-          Math.abs(viewBox.x - 100) < 1 && 
-          Math.abs(viewBox.y - (-20)) < 1 && 
+          Math.abs(viewBox.w - 1000) < 1 && 
+          Math.abs(viewBox.x - (-100)) < 1 && 
+          Math.abs(viewBox.y - (-100)) < 1 && 
           Math.abs(rotation) < 1;
           
         return (zoomedBranchId || !isDefaultView) ? (
@@ -564,7 +567,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+            className="absolute top-24 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-8 sm:top-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-6 py-3.5 sm:px-5 sm:py-3 rounded-full text-[11px] sm:text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4 whitespace-nowrap"
           >
             ← Ver Árbol Completo
           </button>

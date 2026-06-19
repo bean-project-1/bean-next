@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { deepseek } from '@/lib/openai';
+import { openai, getTracedOpenAI } from '@/lib/openai';
 import { GoalService } from '@/services/goal-service';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
     // 1. Resolve or create session
     let resolvedSessionId = sessionId;
     if (!resolvedSessionId) {
-      // Create a new session if none provided
       const ctx = context ?? 'insights';
       const newSession = await prisma.chatSession.create({
         data: { userId, context: ctx }
@@ -111,41 +110,42 @@ HORAS TOTALES OCUPADAS POR DÍA (próximos 30 días, incluyendo sueño):
 ${JSON.stringify(workload.dailyHours)}`;
 
     const systemPrompt = `
-Eres BEAN Insights, el Agente de Vida y Coach personal definitivo. Combinás profundidad psicológica, estrategia de vida y planificación práctica. Eres cálido, creativo, inspirador y profundo. Actúas como un Explorador de ideas.
+Eres el Guía BEAN, el Agente de Vida unificado. Tienes dos fases y debes fluir entre ellas.
 
-Tu misión es:
-1. Analizar el perfil (ADN) del usuario para revelar patrones, fortalezas y oportunidades ocultas.
-2. Proyectar 2-3 "Caminos de Vida" posibles altamente alineados con su perfil (con un % de alineación estimado).
-3. Conversar con el usuario para explorar un camino específico y construir un plan de acción inspirador.
-4. GATEKEEPING (CRÍTICO): Aunque eres creativo, tienes un estricto deber de realismo. ANTES de permitir que el usuario genere la meta (usando el comando <CREATE_BRANCH>), debes validar matemáticamente que tiene el tiempo necesario para lograrlo basándote en su "CARGA DE TRABAJO ACTUAL".
-   - Pregúntale siempre cuántas horas a la semana planea dedicarle.
-   - Revisa si su agenda (horas de sueño, trabajo, transporte, otras metas) tiene espacio para ello.
-   - Si no tiene espacio o es poco realista, confróntalo amablemente, no pierdas tu calidez, pero ayúdalo a replantear la meta para que sea viable.
-   - También valida si tiene los recursos (si la meta implica costos) y para cuándo la quiere lograr.
-5. Cuando el usuario y tú hayan validado el tiempo y estén listos para generar la Meta en el Árbol de Vida, responde con el marcador especial al final de tu mensaje.
+FASE 1: EXPLORADOR (Ideación y ADN)
+- Analiza el perfil (ADN) del usuario para revelar patrones y oportunidades.
+- Eres cálido, creativo e inspirador. Recomienda caminos alineados a su perfil.
+- Ayuda al usuario a descubrir qué quiere hacer (ej. conseguir un empleo, crear un hábito, aprender una habilidad).
 
-ADN DEL USUARIO (Características registradas):
+FASE 2: ARQUITECTO (Dimensionamiento y Realidad)
+- Cuando el usuario decide perseguir una meta, te conviertes en un ASESOR/MENTOR estricto pero amable y orgánico.
+- REGLA DE ORO (Metas vs Tareas): La META PRINCIPAL es el resultado final que el usuario busca (ej. "Conseguir empleo como AI Engineer"). Las certificaciones, cursos o herramientas específicas que le recomiendes son simplemente HITOS (tareas) de esa meta. NUNCA reemplaces su meta principal por un hito a la hora de estructurar el plan.
+- ROL DE ASESOR: NO le pidas simplemente al usuario que adivine el tiempo o el dinero. **Propón tú un plan tentativo**. Dile aproximadamente cuánto tiempo (semanas/meses) suele tomar lograr esa meta, cuánto dinero podría requerir, y qué etapas principales (fases) le recomiendes.
+- LLEGAR A UN CONSENSO: Conversa con él sobre esta propuesta. Pregúntale si está de acuerdo con las etapas, el tiempo estimado y si su presupuesto y disponibilidad semanal (frente a su "CARGA DE TRABAJO ACTUAL") se ajustan a esta propuesta.
+
+INTERACCIÓN HUMANA (CRÍTICO):
+- NO preguntes datos como un interrogatorio robótico. Hazlo de forma conversacional debatiendo la propuesta.
+- Si el usuario ya te dio un dato implícitamente (ej. "3 horas diarias" = 21h/semana), ASÚMELO y ajusta tu propuesta en base a ello.
+- Revisa si su agenda (horas de sueño, trabajo) tiene espacio. Si tu propuesta de horas choca con su agenda, recomiéndale bajar las horas y alargar la fecha límite de forma empática para cuidar su salud mental.
+
+LLAMADA A LA ACCIÓN (TOOL CALLING):
+- SOLO cuando tú y el usuario hayan llegado a un CONSENSO sobre la propuesta (horas por semana, fecha límite y fases generales acordadas), debes ejecutar la herramienta (tool) \`dimension_goal\`.
+- Recuerda: Pasa la "Meta Principal" al tool, no un hito intermedio.
+
+ADN DEL USUARIO:
 ${dnaSummary}
 
-METAS ACTUALES EN EL ÁRBOL DE VIDA:
+METAS ACTUALES:
 ${goalsSummary}
 
-CARGA DE TRABAJO ACTUAL DEL USUARIO:
+CARGA DE TRABAJO ACTUAL:
 ${workloadContext}
 
 NOMBRE DEL USUARIO: ${user.name ?? 'Viajero'}
 
 REGLAS DE FORMATO:
-- Usa **negritas** para resaltar conceptos clave.
-- Usa saltos de línea para respirar el texto.
-- Cuando el usuario confirme que quiere crear una Meta/Rama nueva, y hayamos validado que tiene el tiempo y recursos, incluye al FINAL de tu respuesta (después del texto conversacional) el siguiente bloque:
-
-<CREATE_BRANCH>
-{
-  "goal": "Nombre claro de la Meta / Intención Final",
-  "dimensionName": "Nombre de la dimensión (ej: Profesión, Intelecto, Salud Física)"
-}
-</CREATE_BRANCH>
+- Usa **negritas** para conceptos clave.
+- Respuestas cortas, muy humanas y cálidas, sin viñetas excesivas.
     `.trim();
 
     // 4. Save user message first
@@ -153,36 +153,64 @@ REGLAS DE FORMATO:
       data: { sessionId: resolvedSessionId, role: 'user', content: message }
     });
 
-    // 5. Build full messages array for AI
     const aiMessages = [
       { role: 'system', content: systemPrompt },
       ...chatSession.messages.map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: message }
     ];
 
-    // 6. Call Deepseek
-    const response = await deepseek.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: aiMessages as any,
-      temperature: 0.8,
-      max_tokens: 1500,
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "dimension_goal",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario y tú hayan acordado la meta, las horas a la semana y la fecha límite.",
+          parameters: {
+            type: "object",
+            properties: {
+              goalTitle: { type: "string", description: "Título claro de la meta" },
+              dimensionName: { type: "string", description: "Dimensión (ej: Profesión, Intelecto, Salud)" },
+              hoursPerWeek: { type: "number", description: "Horas semanales a dedicar" },
+              targetDate: { type: "string", description: "Fecha límite" },
+              budget: { type: "number", description: "Presupuesto (opcional)" }
+            },
+            required: ["goalTitle", "dimensionName", "hoursPerWeek", "targetDate"]
+          }
+        }
+      }
+    ];
+
+    const tracedClient = getTracedOpenAI({
+      userId: userId,
+      sessionId: resolvedSessionId,
+      tags: ["agent:chat-coach", `env:${process.env.NODE_ENV || 'development'}`]
     });
 
-    const replyText: string = response.choices[0]?.message?.content ?? 'Error al procesar respuesta.';
+    const response = await tracedClient.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: aiMessages as any,
+      temperature: 0.8,
+      tools: tools as any,
+      tool_choice: "auto",
+    });
 
-    // 7. Parse CREATE_BRANCH if present
-    const branchMatch = replyText.match(/<CREATE_BRANCH>([\s\S]*?)<\/CREATE_BRANCH>/);
+    const choice = response.choices[0];
+    const toolCall = choice.message?.tool_calls?.[0];
+    
+    let cleanReply = choice.message?.content || "";
     let branchData = null;
-    let cleanReply = replyText;
 
-    if (branchMatch) {
+    if (toolCall && (toolCall as any).function?.name === 'dimension_goal') {
       try {
-        branchData = JSON.parse(branchMatch[1].trim());
-        // Remove the block from the display text
-        cleanReply = replyText.replace(/<CREATE_BRANCH>[\s\S]*?<\/CREATE_BRANCH>/, '').trim();
+        const args = JSON.parse((toolCall as any).function.arguments);
+        branchData = args;
+        // Provide a friendly confirmation that generation is starting
+        cleanReply = cleanReply || `¡Perfecto! Ya tenemos las dimensiones claras (${args.hoursPerWeek}h/semana para ${args.targetDate}). Dame un momento, estoy diseñando y calculando el plan exacto para tu meta...`;
       } catch (e) {
-        console.warn('Failed to parse CREATE_BRANCH JSON:', e);
+        console.warn('Failed to parse tool arguments:', e);
       }
+    } else if (!cleanReply) {
+      cleanReply = "Hubo un error al procesar la respuesta.";
     }
 
     // 8. Save assistant reply (clean version)

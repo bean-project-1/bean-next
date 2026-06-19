@@ -50,11 +50,39 @@ export const Branch = ({
 
     branch.leaves.forEach(l => {
       if (l.type === 'phase') return;
+      
       const targetPhase = p.find(ph => ph.id === l.parentId);
+      
       if (l.parentId && targetPhase) {
-        targetPhase.activities.push(l);
+        if (l.tasks && l.tasks.length > 0) {
+          l.tasks.forEach((subtask: any) => {
+            targetPhase.activities.push({
+              ...l,
+              id: `${l.id}-sub-${subtask.id}`,
+              originalId: l.id,
+              name: subtask.title || subtask.name,
+              completed: subtask.isCompleted || subtask.completed,
+              tasks: []
+            });
+          });
+        } else {
+          targetPhase.activities.push(l);
+        }
       } else {
-        o.push(l);
+        if (l.tasks && l.tasks.length > 0) {
+          l.tasks.forEach((subtask: any) => {
+            o.push({
+              ...l,
+              id: `${l.id}-sub-${subtask.id}`,
+              originalId: l.id,
+              name: subtask.title || subtask.name,
+              completed: subtask.isCompleted || subtask.completed,
+              tasks: []
+            });
+          });
+        } else {
+          o.push(l);
+        }
       }
     });
     return { phases: p, orphans: o };
@@ -141,6 +169,9 @@ export const Branch = ({
           duration: 2,
           delay: 0.8 + index * 0.15,
           ease: 'power2.inOut',
+          onComplete: () => {
+            gsap.set(svgPath, { clearProps: 'strokeDasharray,strokeDashoffset' });
+          }
         }
       );
     });
@@ -153,7 +184,7 @@ export const Branch = ({
         { opacity: 0.5, scale: 1, duration: 0.8, delay: 2.8, ease: "back.out(1.2)" }
       );
     });
-  }, [index]);
+  }, [index, branch.leaves.length]);
 
   return (
     <g 

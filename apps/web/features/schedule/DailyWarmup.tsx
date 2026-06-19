@@ -434,7 +434,7 @@ function SwipeableCard({ event, isTop, index, total, onSwipeLeft, onSwipeRight, 
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase mb-4
             ${event.itemType === 'habit' ? 'bg-violet-100 text-violet-700' : event.itemType === 'daily' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}
           `}>
-            {event.itemType === 'habit' ? 'Hábito' : event.itemType === 'daily' ? 'Tarea Rápida' : event.type || 'Tarea'}
+            {event.itemType === 'habit' ? 'Compromiso Base' : event.itemType === 'daily' ? 'Tarea Rápida' : event.type || 'Tarea'}
           </span>
           <h2 className="text-2xl font-black text-stone-800 leading-tight mb-2 tracking-tighter">
             {event.title}

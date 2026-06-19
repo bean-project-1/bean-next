@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { deepseek } from '@/lib/openai';
+import { deepseek, getTracedDeepseek } from '@/lib/openai';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +107,11 @@ export async function GET(req: NextRequest) {
       ]
     `.trim();
 
-    const aiRes = await deepseek.chat.completions.create({
+    const tracedDeepseek = getTracedDeepseek({
+      userId: userId,
+      tags: ["agent:insights-paths", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+    const aiRes = await tracedDeepseek.chat.completions.create({
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.9,
@@ -230,7 +234,11 @@ export async function POST(req: NextRequest) {
       Responde SOLO con el objeto JSON para este camino único (no array, solo el objeto).
     `.trim();
 
-    const aiRes = await deepseek.chat.completions.create({
+    const tracedDeepseek = getTracedDeepseek({
+      userId: userId,
+      tags: ["agent:insights-paths", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+    const aiRes = await tracedDeepseek.chat.completions.create({
       model: 'deepseek-chat',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.9,

@@ -1,13 +1,19 @@
-import { openai } from '@/lib/openai';
+import { getTracedOpenAI } from '@/lib/openai';
 
 interface NudgeInput {
   userName: string;
   taskName: string;
+  userId: string;
 }
 
-export async function generateNudge({ userName, taskName }: NudgeInput) {
+export async function generateNudge({ userName, taskName, userId }: NudgeInput) {
   try {
-    const response = await openai.chat.completions.create({
+    const tracedOpenai = getTracedOpenAI({
+      userId: userId,
+      tags: ["agent:notifications", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+
+    const response = await tracedOpenai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {

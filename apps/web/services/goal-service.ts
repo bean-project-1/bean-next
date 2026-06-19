@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { openai, deepseek } from '@/lib/openai';
+import { openai, deepseek, getTracedOpenAI, getTracedDeepseek } from '@/lib/openai';
 
 // Removed static GOAL_TYPE_WEIGHTS in favor of dynamic analysis
 
@@ -9,13 +9,16 @@ const DEFAULT_WEIGHTS = {
 };
 
 export class GoalService {
-  public getClient() {
+  public getClient(config?: any) {
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+    if (config) {
+      return hasOpenAI ? getTracedOpenAI(config) : getTracedDeepseek(config);
+    }
     return hasOpenAI ? openai : deepseek;
   }
 
 
-  async parseGoalWithAI(text: string) {
+  async parseGoalWithAI(text: string, userId?: string) {
     const prompt = `
       Analyze the following user goal intention: "${text}"
       
@@ -36,7 +39,10 @@ export class GoalService {
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
     const model = hasOpenAI ? "gpt-4o-mini" : "deepseek-chat";
-    const client = this.getClient();
+    const client = this.getClient({
+      userId: userId,
+      tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
+    });
 
     try {
       const response = await client.chat.completions.create({
@@ -199,10 +205,9 @@ export class GoalService {
       ${financialContext}
       - REALISTIC SCALE: This goal has a complexity level of [${parsedGoal.complexityLevel || 'medium'}] and is estimated to take ${parsedGoal.estimatedDurationMonths || 6} months. DO NOT compress a multi-year goal into a few weeks. Spread the phases realistically over the estimated duration.
       - DOMAIN EXPERTISE REQUIRED: ${parsedGoal.domainExpertiseNeeded || 'General knowledge'}. You MUST apply deep domain realism. For example, if the goal is climbing Everest, you must include financial planning, acclimatization, technical ice training, and previous expedition tests (e.g. Aconcagua). If it's becoming a Senior Developer, include deep architectural study, system design, and real-world project deployments.
-      - TASK DISTRIBUTION (FRAGMENTATION): Break down complex tasks into sub-tasks (max 4 hours each). HOWEVER, to prevent excessively long responses: DO NOT exceed 5 Phases and DO NOT exceed 25 tasks in total across the entire plan.
       - LONG-TERM REPETITION: For activities that repeat over months (e.g., "Gym 3 times a week", "Read 30 mins daily"), DO NOT create individual tasks. You MUST create them as "habits" in the "habits" array. Only use "tasks" for unique, non-repeating milestones.
+      - TASK DISTRIBUTION & SUB-TASKS (CRITICAL): Tasks can take longer than 1 hour IF they represent a larger block (e.g., "Complete Machine Learning Course"). HOWEVER, if a task is generic or takes > 1 hour, you MUST include a "subTasks" array inside it. Each subTask must be HIGHLY specific, actionable, and take MAX 1.5 HOURS (e.g., "Module 1: Linear Regression Video", "Setup Python Env").
       - INSTITUTIONAL PATHS: Include formal steps (Apply, Enroll) for careers.
-      - TASK DURATION LIMIT: NO SINGLE TASK SHOULD EVER EXCEED 4 HOURS. 
       - REASONABLE SPREAD: Distribute tasks logically across the timeline.
       
       GOAL CONTEXT:
@@ -227,13 +232,20 @@ export class GoalService {
             },
             "tasks": [
               {
-                "name": "Actionable Task",
+                "name": "Task Name (e.g. Enroll and complete course)",
                 "description": "Specific instructions",
                 "startDate": "ISO-8601 (Optional, for multi-day tasks)",
                 "targetDate": "ISO-8601",
-                "estimatedHours": "Number (Max 4.0 per task)",
+                "estimatedHours": "Number (Total hours for the task)",
                 "dimensions": ["skills", etc],
-                "attributes": ["focus", etc]
+                "attributes": ["focus", etc],
+                "subTasks": [
+                  {
+                    "name": "Granular step (e.g. Modulo 1: Intro)",
+                    "description": "Details",
+                    "estimatedHours": "Number (Max 1.5)"
+                  }
+                ]
               }
             ]
           }
@@ -252,7 +264,10 @@ export class GoalService {
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
     const model = hasOpenAI ? "gpt-4o-mini" : "deepseek-chat";
-    const client = this.getClient();
+    const client = this.getClient({
+      userId: userId,
+      tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
+    });
 
     try {
       const response = await client.chat.completions.create({
@@ -298,9 +313,14 @@ export class GoalService {
             description: task.description || task.desc || '',
             startDate: task.startDate || null,
             targetDate: task.targetDate || null,
-            estimatedHours: Math.min(10, parseFloat(task.estimatedHours) || 1.0), // Cap at 10 just for safety
+            estimatedHours: Math.min(100, parseFloat(task.estimatedHours) || 1.0),
             dimensions: Array.isArray(task.dimensions) ? task.dimensions : [],
-            attributes: Array.isArray(task.attributes) ? task.attributes : []
+            attributes: Array.isArray(task.attributes) ? task.attributes : [],
+            subTasks: Array.isArray(task.subTasks) ? task.subTasks.map((st: any) => ({
+              name: st.name || st.title || 'Sub-tarea',
+              description: st.description || st.desc || '',
+              estimatedHours: Math.min(4, parseFloat(st.estimatedHours) || 1.0)
+            })) : []
           };
         })
       }));
@@ -327,5 +347,67 @@ export class GoalService {
         habits: []
       };
     }
+  }
+
+  /**
+   * Shifting logic for Goal Tree (Dynamic Branch Recalculation).
+   * Shifts the start and target dates of a GoalAction by a specific number of days,
+   * and cascades this shift to all actions that depend on it.
+   */
+  async shiftActionAndDependencies(actionId: string, daysToShift: number) {
+    if (daysToShift === 0) return { success: true, processedCount: 0 };
+
+    const queue: string[] = [actionId];
+    const processed = new Set<string>();
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (processed.has(currentId)) continue;
+      processed.add(currentId);
+
+      const action = await prisma.goalAction.findUnique({
+        where: { id: currentId }
+      });
+
+      if (!action) continue;
+
+      const dataToUpdate: any = {};
+      if (action.startDate) {
+        const newStart = new Date(action.startDate);
+        newStart.setDate(newStart.getDate() + daysToShift);
+        dataToUpdate.startDate = newStart;
+      }
+      
+      if (action.targetDate) {
+        const newTarget = new Date(action.targetDate);
+        newTarget.setDate(newTarget.getDate() + daysToShift);
+        dataToUpdate.targetDate = newTarget;
+      }
+
+      if (Object.keys(dataToUpdate).length > 0) {
+        await prisma.goalAction.update({
+          where: { id: currentId },
+          data: dataToUpdate
+        });
+      }
+
+      // Find dependent actions (children in the DAG)
+      const dependents = await prisma.goalAction.findMany({
+        where: {
+          dependsOn: {
+            has: currentId
+          }
+        },
+        select: { id: true }
+      });
+
+      for (const dep of dependents) {
+        if (!processed.has(dep.id)) {
+          queue.push(dep.id);
+        }
+      }
+    }
+    
+    return { success: true, processedCount: processed.size };
   }
 }

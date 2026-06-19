@@ -8,8 +8,10 @@ import { LeafDetailView } from '../../../features/life-tree/LeafDetailView';
 import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
 import { TreeData } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
+import { SeedbedDashboard } from '../../../features/idea-incubator/SeedbedDashboard';
 
 export default function HomePage() {
+  const [viewMode, setViewMode] = useState<'tree' | 'incubator'>('tree');
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -111,20 +113,47 @@ export default function HomePage() {
   if (!treeData) return null;
 
   return (
-    <div className="flex h-screen bg-transparent">
+    <div className="flex h-screen bg-transparent flex-col relative">
+      {/* View Toggle */}
+      <div className="fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[100]">
+        <div className="flex bg-white/90 backdrop-blur-md p-1 rounded-full shadow-lg border border-slate-200">
+          <button
+            onClick={() => setViewMode('tree')}
+            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
+              viewMode === 'tree' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            El Árbol
+          </button>
+          <button
+            onClick={() => setViewMode('incubator')}
+            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 ${
+              viewMode === 'incubator' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Semillero</span>
+            <span className={`text-[9px] leading-none px-1.5 py-0.5 rounded-full uppercase tracking-widest ${viewMode === 'incubator' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'}`}>Beta</span>
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <main className="flex-1 relative">
-          <LifeTree 
-            data={treeData}
-            onLeafClick={handleLeafClick}
-            onScoreClick={() => setIsDnaOpen(true)}
-            onRefresh={refresh}
-            activePhaseId={selectedPhaseId}
-            activeLeafId={selectedAction?.id}
-            onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
-            onPhaseClick={handlePhaseClick}
-            onDeleteBranch={(b) => handleDeleteGoal(b.id)}
-          />
+          {viewMode === 'tree' ? (
+            <LifeTree 
+              data={treeData}
+              onLeafClick={handleLeafClick}
+              onScoreClick={() => setIsDnaOpen(true)}
+              onRefresh={refresh}
+              activePhaseId={selectedPhaseId}
+              activeLeafId={selectedAction?.id}
+              onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
+              onPhaseClick={handlePhaseClick}
+              onDeleteBranch={(b) => handleDeleteGoal(b.id)}
+            />
+          ) : (
+            <SeedbedDashboard />
+          )}
         </main>
       </div>
 

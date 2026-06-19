@@ -45,7 +45,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, 
         onMouseLeave={() => onHover(null)}
         onClick={(e) => {
           e.stopPropagation();
-          onClick(leaf.id, leaf.name);
+          onClick(leaf.originalId || leaf.id, leaf.name);
         }}
       >
         {leaf.type === 'milestone' ? (

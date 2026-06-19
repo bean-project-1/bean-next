@@ -53,6 +53,7 @@ export async function runNotificationEngine() {
     const nudge = await generateNudge({
       userName: user.name || 'Beaner',
       taskName: targetTaskName,
+      userId: user.id,
     });
 
     // 4. Deliver Notification

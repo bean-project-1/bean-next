@@ -79,8 +79,9 @@ Se usa una base de datos NoSQL (tipo MongoDB) con:
 * users
 * user_dna
 * user_attributes
+* base_commitments // Tareas diarias recurrentes (dormir, tareas de metas) unificadas
 * goals
-* actions
+* actions // Eventos puntuales o una vez, las recurrentes viven en base_commitments
 * events
 * dna_history
 
@@ -93,9 +94,9 @@ Se usa una base de datos NoSQL (tipo MongoDB) con:
 El árbol representa la vida del usuario:
 
 * 🌱 raíces → identidad + capital
-* 🌿 tronco → estabilidad / energía / consistencia
+* 🌿 tronco → estabilidad / energía / consistencia (alimentado por los Compromisos Base)
 * 🌳 ramas → objetivos (goals)
-* 🍃 hojas → acciones
+* 🍃 hojas → acciones (tareas específicas o hitos)
 * 🌈 color → balance
 * 📏 tamaño → growth
 
@@ -157,6 +158,16 @@ transformOrigin: "left center"
 * Atributos = evidencia
 * El árbol NO es decoración → es el producto
 * Todo debe ser dinámico y conectado al ADN
+
+---
+
+# 🛡️ COMPROMISOS BASE (NUEVO PARADIGMA)
+
+En BEAN no existen los "hábitos" como tareas aisladas o castigadoras. En su lugar, usamos **Compromisos Base**.
+
+* **Unificación Jerárquica:** Las tareas repetitivas necesarias para alcanzar una meta (ej. "leer 20 mins para la tesis") viven al mismo nivel que las tareas fundamentales de mantenimiento de vida (ej. "dormir 8 horas"). Ambas son Compromisos Base.
+* **Agrupación por Energía:** En la interfaz, los Compromisos Base no se organizan por hora del día, sino por **Estado de Energía** (Alta energía vs. Baja energía), dándole al usuario la flexibilidad compasiva de elegir qué hacer según cómo se siente.
+* **Impacto Visual:** Cumplir con los Compromisos Base fortalece el **tronco**, asegurando que haya suficiente energía para que nazcan y crezcan las ramas (metas).
 
 ---
 

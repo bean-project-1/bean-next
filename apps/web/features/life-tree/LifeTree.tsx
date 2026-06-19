@@ -6,7 +6,6 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
-import { LifeTreeCoach } from './LifeTreeCoach';
 
 interface LifeTreeProps {
   data: TreeData;
@@ -42,6 +41,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const [viewBox, setViewBox] = useState({ x: 100, y: -20, w: 600, h: 600 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -303,6 +303,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
     if (!isPanning) return;
     
     const dx = (e.clientX - panStart.current.x) * (viewBox.w / (svgRef.current?.clientWidth || 800));
@@ -340,26 +341,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
-      {/* Interaction Hints - Only visible when NOT zoomed */}
-      {!zoomedBranchId && hoveredLeafName && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <p className="text-slate-600 font-bold tracking-tight text-center">
-            {hoveredLeafName}
-          </p>
-        </div>
-      )}
-
-
-
-      {(zoomedBranchId || viewBox.w !== 700) && (
-        <button 
-          onClick={resetZoom}
-          className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-50 animate-in fade-in slide-in-from-top-4"
-        >
-          ← Ver Árbol Completo
-        </button>
-      )}
-
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
@@ -507,6 +488,20 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
             if (labelOpacity <= 0) return null;
 
+            // Split long names into lines
+            const words = branch.goal.split(' ');
+            const lines: string[] = [];
+            let currentLine = '';
+            words.forEach(word => {
+              if ((currentLine + word).length > 20) {
+                if (currentLine) lines.push(currentLine.trim());
+                currentLine = word + ' ';
+              } else {
+                currentLine += word + ' ';
+              }
+            });
+            if (currentLine) lines.push(currentLine.trim());
+
             return (
               <g 
                 key={`label-${branch.id}`} 
@@ -514,25 +509,23 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 style={{ opacity: labelOpacity }}
                 transform={`rotate(${-rotation}, ${endX}, ${endY})`}
               >
-                <rect 
-                  x={endX + (endX > 400 ? 5 : -105)} 
-                  y={endY - 25} 
-                  width="100" 
-                  height="20" 
-                  rx="4" 
-                  fill="white" 
-                  fillOpacity="0.8" 
-                  className="shadow-sm"
-                />
                 <text 
-                  x={endX + (endX > 400 ? 55 : -55)} 
-                  y={endY - 10} 
-                  textAnchor="middle" 
+                  x={endX + (endX > 400 ? 15 : -15)} 
+                  y={endY - (lines.length - 1) * 6} 
+                  textAnchor={endX > 400 ? "start" : "end"} 
                   dominantBaseline="middle"
-                  className="text-[10px] font-black fill-slate-500 uppercase tracking-tighter"
-                  fontSize="10"
+                  className="text-[11px] font-black fill-slate-600 uppercase tracking-tight"
+                  style={{ textShadow: '0px 2px 4px rgba(255,255,255,0.9), 0px -2px 4px rgba(255,255,255,0.9), 2px 0px 4px rgba(255,255,255,0.9), -2px 0px 4px rgba(255,255,255,0.9), 0px 0px 8px rgba(255,255,255,1)' }}
                 >
-                  {branch.goal.length > 15 ? branch.goal.substring(0, 15) + '...' : branch.goal}
+                  {lines.map((line, lIdx) => (
+                    <tspan 
+                      key={lIdx} 
+                      x={endX + (endX > 400 ? 15 : -15)} 
+                      dy={lIdx === 0 ? 0 : 12}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               </g>
             );
@@ -541,13 +534,42 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
       </svg>
 
-      {/* Integrated Coach */}
-      {!zoomedBranchId && (
-        <LifeTreeCoach 
-          onPlanGenerated={() => onRefresh?.()} 
-          onPlantingStateChange={setIsPlanting}
-        />
+      {/* Interaction Hints - Floating Cursor Tooltip */}
+      {hoveredLeafName && (
+        <div 
+          className="fixed pointer-events-none bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 z-[9999] animate-in fade-in zoom-in duration-200"
+          style={{ 
+            left: mousePos.x + 20, 
+            top: mousePos.y + 20,
+            maxWidth: '280px'
+          }}
+        >
+          <p className="text-slate-700 font-bold tracking-tight text-xs leading-snug">
+            {hoveredLeafName}
+          </p>
+        </div>
       )}
+
+      {(() => {
+        const isDefaultView = 
+          Math.abs(viewBox.w - 600) < 1 && 
+          Math.abs(viewBox.x - 100) < 1 && 
+          Math.abs(viewBox.y - (-20)) < 1 && 
+          Math.abs(rotation) < 1;
+          
+        return (zoomedBranchId || !isDefaultView) ? (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              resetZoom();
+            }}
+            className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+          >
+            ← Ver Árbol Completo
+          </button>
+        ) : null;
+      })()}
 
     </div>
   );

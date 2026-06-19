@@ -35,6 +35,8 @@ export const viewport: Viewport = {
   colorScheme: 'light',
 };
 
+import { GlobalChatProvider } from '@/features/chat/GlobalChatProvider';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -46,7 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute bottom-0 right-1/3 h-[400px] w-[400px] rounded-full bg-orange-50/50 blur-[120px]" />
         </div>
 
-        <div className="relative z-10">{children}</div>
+        <GlobalChatProvider>
+          <div className="relative z-10">{children}</div>
+        </GlobalChatProvider>
       </body>
     </html>
   );

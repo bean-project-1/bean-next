@@ -143,6 +143,19 @@ model BaseCommitment {
   dimensionIds String[]    @map("dimension_ids") @db.ObjectId
   dimensions   Dimension[] @relation(fields: [dimensionIds], references: [id])
 
+  goalId       String?     @map("goal_id") @db.ObjectId
+  goal         Goal?       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  description    String?
+  attributes     String[]  @default([])
+  frequency      Json?     // { type: daily/weekly, value: number }
+  estimatedHours Float?    @map("estimated_hours")
+
+  startDate      DateTime? @map("start_date")
+  endDate        DateTime? @map("end_date")
+
+
+
   // Gamification & Streaks
   streakCount     Int       @default(0) @map("streak_count")
   lastCompletedAt DateTime? @map("last_completed_at")
@@ -337,6 +350,7 @@ model Goal {
 
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   actions GoalAction[]
+  baseCommitments BaseCommitment[]
 
   @@map("goals")
 }
@@ -352,7 +366,7 @@ model GoalAction {
   description String?
 
   // 🔥 clave
-  type String // phase | task | habit | milestone
+  type String // phase | task | milestone (habit moved to BaseCommitment)
 
   parentId   String?      @map("parent_id") @db.ObjectId
   parent     GoalAction?  @relation("SubActions", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -365,7 +379,7 @@ model GoalAction {
   dimensions String[]
   attributes String[]
 
-  // 🔁 hábitos
+  // 🔁 (Deprecado, usar BaseCommitment)
   frequency   Json? // { type: daily/weekly, value: number }
   streak      Int? // opcional
   consistency Float? // %

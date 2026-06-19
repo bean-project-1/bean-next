@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, PanInfo } from 'framer-motion';
+import { motion, PanInfo, AnimatePresence } from 'framer-motion';
 import { Seed, IdeaCloud } from '../../hooks/useIncubator';
 import { Plus } from 'lucide-react';
 
@@ -67,37 +67,60 @@ export function SeedPot({ seed, onDropCloudToChat, onAddCloud, onPlant }: SeedPo
         </motion.div>
       ))}
 
-      {/* Add Cloud Button / Input */}
+      {/* Add Cloud Button (Always visible when not adding) */}
       <div className="absolute bottom-6 left-6 z-20">
-        {isAddingCloud ? (
-          <form onSubmit={handleAddCloudSubmit} className="bg-white p-3 rounded-2xl shadow-lg border border-stone-200 flex flex-col gap-2 w-48">
-            <textarea
-              autoFocus
-              value={newCloudText}
-              onChange={(e) => setNewCloudText(e.target.value)}
-              placeholder="Nueva idea..."
-              className="w-full bg-stone-50 border border-stone-100 rounded-xl p-2 text-sm outline-none resize-none"
-              rows={2}
-            />
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setIsAddingCloud(false)} className="text-xs text-stone-500 font-bold px-2">Cancelar</button>
-              <button type="submit" disabled={!newCloudText.trim()} className="text-xs bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg">Añadir</button>
-            </div>
-          </form>
-        ) : (
-          <button
-            onClick={() => setIsAddingCloud(true)}
-            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-stone-200 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:bg-white transition-all text-sm font-bold text-stone-600"
-          >
-            <Plus className="w-4 h-4" />
-            Añadir Nube
-          </button>
-        )}
+        <button
+          onClick={() => setIsAddingCloud(true)}
+          className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-stone-200 px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:bg-white transition-all text-sm font-bold text-stone-600"
+        >
+          <Plus className="w-4 h-4" />
+          Añadir Nube
+        </button>
       </div>
+
+      {/* Add Cloud Bottom Sheet */}
+      <AnimatePresence>
+        {isAddingCloud && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-stone-900/40 lg:bg-white/60 backdrop-blur-sm z-[100] flex flex-col justify-end lg:justify-center lg:p-6"
+            onClick={() => setIsAddingCloud(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-t-[2rem] lg:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:shadow-2xl border-t lg:border border-stone-200 w-full lg:max-w-md mx-auto p-6 pt-8 pb-10 lg:pb-6 relative flex flex-col"
+            >
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-stone-200 rounded-full lg:hidden" />
+              
+              <h3 className="text-xl font-bold text-stone-800 mb-4">Nueva Nube de Idea</h3>
+              
+              <form onSubmit={handleAddCloudSubmit} className="flex flex-col gap-4">
+                <textarea
+                  autoFocus
+                  value={newCloudText}
+                  onChange={(e) => setNewCloudText(e.target.value)}
+                  placeholder="Escribe un concepto, característica o pregunta..."
+                  className="w-full bg-stone-50 border border-stone-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 rounded-2xl p-4 text-[15px] outline-none resize-none min-h-[120px]"
+                />
+                <div className="flex justify-end gap-3 mt-2">
+                  <button type="button" onClick={() => setIsAddingCloud(false)} className="px-5 py-2.5 text-stone-500 font-bold hover:bg-stone-100 rounded-full transition-colors">Cancelar</button>
+                  <button type="submit" disabled={!newCloudText.trim()} className="px-6 py-2.5 bg-stone-900 text-white font-bold rounded-full disabled:opacity-50 disabled:bg-stone-300 transition-colors">Añadir</button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* The Pot and Plant Visualization */}
       <div 
-        className="relative z-0 mt-20 flex flex-col items-center cursor-pointer group"
+        className="relative z-0 mt-0 lg:mt-16 flex flex-col items-center cursor-pointer group"
         onClick={() => setShowInfo(!showInfo)}
       >
         <div className="absolute -top-16 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full whitespace-nowrap z-50 pointer-events-none">
@@ -191,82 +214,97 @@ export function SeedPot({ seed, onDropCloudToChat, onAddCloud, onPlant }: SeedPo
         </div>
       </div>
 
-      {/* Info Modal/Overlay */}
-      {showInfo && (
-        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-6">
+      {/* Info Modal/Bottom Sheet */}
+      <AnimatePresence>
+        {showInfo && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-3xl shadow-2xl border border-stone-200 max-w-sm w-full p-6 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-stone-900/40 lg:bg-white/60 backdrop-blur-sm z-[100] flex flex-col justify-end lg:justify-center lg:p-6"
+            onClick={() => setShowInfo(false)}
           >
-            <button 
-              onClick={() => setShowInfo(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-full w-8 h-8 flex items-center justify-center"
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-t-[2rem] lg:rounded-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:shadow-2xl border-t lg:border border-stone-200 w-full lg:max-w-sm mx-auto p-6 pt-8 pb-10 lg:pb-6 relative flex flex-col"
             >
-              ✕
-            </button>
-            <h3 className="text-xl font-bold text-stone-800 mb-6 flex items-center gap-2">
-              <span className="text-2xl">🌱</span> Estado de tu Idea
-            </h3>
-            
-            <div className="flex flex-col gap-5">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg">☀️</div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-bold text-stone-800 text-sm">Deseable (Sol)</h4>
-                      <span className="text-amber-600 font-bold">{seed.scores.sun}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
-                      <div className="h-full bg-amber-400 rounded-full" style={{ width: `${seed.scores.sun}%` }} />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
-                  ¿La gente realmente quiere o necesita esto? Representa la claridad del problema y el público objetivo.
-                </p>
-              </div>
+              {/* Mobile handle indicator */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-stone-200 rounded-full lg:hidden" />
 
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">🌍</div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-bold text-stone-800 text-sm">Factible (Tierra)</h4>
-                      <span className="text-emerald-600 font-bold">{seed.scores.earth}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${seed.scores.earth}%` }} />
+              <button 
+                onClick={() => setShowInfo(false)}
+                className="absolute top-5 right-5 text-stone-400 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-full w-8 h-8 flex items-center justify-center hidden lg:flex"
+              >
+                ✕
+              </button>
+              
+              <h3 className="text-xl font-bold text-stone-800 mb-6 flex items-center gap-2">
+                <span className="text-2xl">🌱</span> Estado de tu Idea
+              </h3>
+              
+              <div className="flex flex-col gap-5">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg">☀️</div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-stone-800 text-sm">Deseable (Sol)</h4>
+                        <span className="text-amber-600 font-bold">{seed.scores.sun}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-amber-400 rounded-full transition-all duration-1000" style={{ width: `${seed.scores.sun}%` }} />
+                      </div>
                     </div>
                   </div>
+                  <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
+                    ¿La gente realmente quiere o necesita esto? Representa la claridad del problema y el público objetivo.
+                  </p>
                 </div>
-                <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
-                  ¿Tenemos la tecnología o capacidad para hacerlo? Representa la claridad técnica y de ejecución.
-                </p>
-              </div>
 
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg">💧</div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-bold text-stone-800 text-sm">Viable (Agua)</h4>
-                      <span className="text-blue-600 font-bold">{seed.scores.water}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${seed.scores.water}%` }} />
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">🌍</div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-stone-800 text-sm">Factible (Tierra)</h4>
+                        <span className="text-emerald-600 font-bold">{seed.scores.earth}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${seed.scores.earth}%` }} />
+                      </div>
                     </div>
                   </div>
+                  <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
+                    ¿Tenemos la tecnología o capacidad para hacerlo? Representa la claridad técnica y de ejecución.
+                  </p>
                 </div>
-                <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
-                  ¿Es sostenible a largo plazo? Representa el modelo de negocio, recursos, tiempo y rentabilidad.
-                </p>
+
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg">💧</div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-stone-800 text-sm">Viable (Agua)</h4>
+                        <span className="text-blue-600 font-bold">{seed.scores.water}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-blue-500 rounded-full transition-all duration-1000" style={{ width: `${seed.scores.water}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[13px] text-stone-500 pl-11 leading-relaxed">
+                    ¿Es sostenible a largo plazo? Representa el modelo de negocio, recursos, tiempo y rentabilidad.
+                  </p>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -41,6 +41,7 @@ model User {
   resumes           UserResume[]
   pushSubscriptions PushSubscription[]
   notificationLogs  NotificationLog[]
+  incubatorSeeds    IncubatorSeed[]
 
   @@map("users")
 }
@@ -517,4 +518,26 @@ model UserResume {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_resumes")
+}
+
+//
+// ───────────────── INCUBATOR (SEMILLERO) ─────────────────
+//
+model IncubatorSeed {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @map("user_id") @db.ObjectId
+  title       String
+  description String
+  status      String   @default("new")
+  scores      Json     // { sun, earth, water }
+  messages    Json[]   // [{ id, role, content, timestamp }]
+  clouds      Json[]   // [{ id, text, x, y }]
+  proposal    String?  
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("incubator_seeds")
 }

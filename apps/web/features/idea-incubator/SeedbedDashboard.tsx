@@ -26,10 +26,10 @@ export function SeedbedDashboard() {
     );
   }
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newIdea.trim()) return;
-    const id = createSeed(newIdea.trim());
+    const id = await createSeed(newIdea.trim());
     setNewIdea('');
     setIsCreating(false);
     setActiveSeedId(id);

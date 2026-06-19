@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
+import { NotificationSettings } from './NotificationSettings';
 
 interface User { id: string; name?: string; email: string; createdAt: string; }
 
@@ -133,11 +134,19 @@ export function ProfileView() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <a href="/onboarding"
-          className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm hover:border-violet-300 hover:shadow-md hover:shadow-violet-100 transition-all group">
-          <div className="flex items-center gap-4">
-             <span className="text-2xl group-hover:scale-110 transition-transform">✏️</span>
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Configuración</h3>
+          <NotificationSettings />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Cuenta</h3>
+          <div className="space-y-3">
+            <a href="/onboarding"
+              className="flex items-center justify-between p-4 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm hover:border-violet-300 hover:shadow-md hover:shadow-violet-100 transition-all group">
+              <div className="flex items-center gap-4">
+                 <span className="text-2xl group-hover:scale-110 transition-transform">✏️</span>
              <div className="text-left">
                <p className="font-bold text-slate-900 text-base">Repetir onboarding</p>
                <p className="text-xs text-slate-500 font-medium mt-0.5">Volver a configurar mis metas</p>
@@ -156,7 +165,9 @@ export function ProfileView() {
              </div>
           </div>
           <span className="text-red-300 group-hover:text-red-500 transition-colors font-bold text-lg">→</span>
-        </button>
+          </button>
+          </div>
+        </div>
       </div>
     </div>
   );

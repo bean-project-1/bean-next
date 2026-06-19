@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { Langfuse } from 'langfuse';
+import { Langfuse, observeOpenAI } from 'langfuse';
+import { auth } from '@/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
     const { text, attributes } = await req.json();
 
     if (!text || typeof text !== 'string') {
@@ -12,9 +15,12 @@ export async function POST(req: NextRequest) {
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
 
-    const openai = new OpenAI({
+    const openai = observeOpenAI(new OpenAI({
       apiKey: hasOpenAI ? process.env.OPENAI_API_KEY : process.env.DEEPSEEK_API_KEY,
       baseURL: process.env.OPENAI_BASE_URL || (!hasOpenAI && process.env.DEEPSEEK_API_KEY ? 'https://api.deepseek.com/v1' : undefined)
+    }), {
+      userId: userId || "anonymous",
+      tags: ["agent:onboarding", `env:${process.env.NODE_ENV || 'development'}`]
     });
 
     const langfuse = new Langfuse();
@@ -52,7 +58,7 @@ Identify 1 to 3 main overarching goals the user wants to achieve based on their 
     const completion = await openai.chat.completions.create({
       model: model,
       messages: [{ role: "system", content: prompt }],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const rawContent = completion.choices[0]?.message.content || '{"goals": []}';

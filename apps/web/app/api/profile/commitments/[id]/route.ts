@@ -44,7 +44,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } else if (dimensionIds === null || body.dimensionId === null) {
       validDimensionIds = []; // Clear them
     }
-
     const commitment = await prisma.baseCommitment.update({
       where: { id, userId },
       data: {
@@ -55,7 +54,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         commuteHours,
         startTime,
         endTime,
-        ...(validDimensionIds !== undefined ? { dimensionIds: validDimensionIds } : {})
+        ...(validDimensionIds !== undefined ? {
+          dimensionIds: validDimensionIds,
+          dimensions: {
+            set: validDimensionIds.map(id => ({ id }))
+          }
+        } : {})
       }
     });
 

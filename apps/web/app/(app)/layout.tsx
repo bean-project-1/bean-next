@@ -52,12 +52,12 @@ function FloatingDock() {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const isSchedule = path === '/schedule' || path.startsWith('/schedule/');
+  const isFullscreenApp = path === '/schedule' || path.startsWith('/schedule/') || path === '/home';
 
   return (
-    <div className="flex min-h-screen bg-transparent">
+    <div className={`flex bg-transparent ${isFullscreenApp ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
       {/* Content area */}
-      <main className={`flex-1 w-full min-h-screen relative overflow-x-hidden ${isSchedule ? '' : 'pb-32 sm:pb-32'}`}>
+      <main className={`flex-1 w-full relative overflow-x-hidden ${isFullscreenApp ? 'h-[100dvh] overflow-hidden' : 'min-h-screen pb-32 sm:pb-32'}`}>
         <div className="w-full h-full">
           {children}
         </div>

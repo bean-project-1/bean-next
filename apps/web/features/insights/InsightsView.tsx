@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Gamepad2
 } from 'lucide-react';
-import { PermanentAIChat } from './PermanentAIChat';
+import { useGlobalChat } from '@/features/chat/GlobalChatProvider';
+import { CareerDashboard } from '../career/CareerDashboard';
 
 interface LifePath {
   id?: string;
@@ -182,7 +183,7 @@ function PathDetailPanel({
   onBranchCreated: () => void;
   onReplace: (path: LifePath) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'coach'>('summary');
+  const { openChat } = useGlobalChat();
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const dragControls = useDragControls();
@@ -192,7 +193,7 @@ function PathDetailPanel({
   const g = getTheme(path.type);
   const Icon = g.icon;
   const chatContext = `path_${path.title.toLowerCase().replace(/\s+/g, '_').slice(0, 30)}`;
-  const starterMsg = `Quiero iniciar la misión: "${path.title}". ${path.starterQuestion}`;
+  const starterMsg = `Quiero iniciar la misión: "${path.title}". ${path.starterQuestion} Además, por favor ten en cuenta mi disponibilidad y presupuesto para planificarla.`;
 
   const content = (
     <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
@@ -233,23 +234,9 @@ function PathDetailPanel({
           <div className="w-12 h-1.5 bg-stone-200 rounded-full pointer-events-none" />
         </div>
 
-        {/* Mobile Header with Tabs & Close */}
-        <div className="flex md:hidden bg-white border-b border-stone-200 p-2 shrink-0 items-center gap-2">
-          <div className="flex bg-stone-100 p-1 rounded-2xl flex-1">
-            <button 
-              onClick={() => setActiveTab('summary')}
-              className={`flex-1 py-2 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all ${activeTab === 'summary' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400'}`}
-            >
-              Misión
-            </button>
-            <button 
-              onClick={() => setActiveTab('coach')}
-              className={`flex-1 py-2 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'coach' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-400'}`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              Coach
-            </button>
-          </div>
+        {/* Mobile Header with Drag Handle & Close */}
+        <div className="flex md:hidden bg-white border-b border-stone-200 p-2 shrink-0 items-center justify-between">
+          <div className="text-[11px] font-black uppercase tracking-wider text-stone-800 ml-2">Detalles de la Misión</div>
           <button onClick={onClose} className="p-2.5 rounded-2xl bg-stone-100 text-stone-500 shrink-0 active:scale-95">
             <X className="w-5 h-5" />
           </button>
@@ -257,7 +244,7 @@ function PathDetailPanel({
 
         {/* Left Side (Details) */}
         <div 
-          className={`flex-1 overflow-y-auto bg-white border-r border-stone-200/50 relative min-h-0 ${activeTab === 'summary' ? 'block' : 'hidden md:block'}`}
+          className={`flex-1 overflow-y-auto bg-white border-r border-stone-200/50 relative min-h-0 block`}
           onPointerDown={(e) => e.stopPropagation()}
           onScroll={(e) => {
             if (!isExpanded && e.currentTarget.scrollTop > 5) {
@@ -330,47 +317,16 @@ function PathDetailPanel({
               </button>
               
               <button
-                onClick={() => setActiveTab('coach')}
-                className={`md:hidden w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md ${activeTab === 'coach' ? 'hidden' : 'flex'}`}
+                onClick={() => { openChat(starterMsg); onClose(); }}
+                className={`w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md`}
               >
                 <MessageSquare className="w-4 h-4" />
-                Hablar con el Coach
+                Diseñar Misión con el Coach
               </button>
             </div>
           </div>
         </div>
 
-        {/* Right Side (Chat): Hidden on mobile if 'summary' tab is active */}
-        <div className={`flex-1 flex flex-col bg-white relative min-h-0 ${activeTab === 'coach' ? 'flex' : 'hidden md:flex'}`}>
-          
-          <div className="hidden md:flex shrink-0 px-5 py-4 border-b border-stone-150 items-center justify-between bg-stone-50/50">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-emerald-600 animate-pulse" />
-              <span className="text-xs font-black text-stone-800 tracking-wider uppercase">Coach Conversacional</span>
-            </div>
-            <button 
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div 
-            className="flex-1 overflow-hidden relative min-h-0"
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="absolute inset-0">
-              <PermanentAIChat
-                context={chatContext}
-                placeholder={`Pregunta sobre "${path.title}"...`}
-                emptyStateMessage={`¡Preparando la misión "${path.title}"! 🌱 ¿Empezamos?`}
-                initialMessage={starterMsg}
-                onBranchCreated={onBranchCreated}
-              />
-            </div>
-          </div>
-        </div>
 
       </motion.div>
     </div>
@@ -384,7 +340,9 @@ function PathDetailPanel({
 // InsightsView (Main)
 // ─────────────────────────────────────────────────────────
 export function InsightsView() {
+  const { openChat } = useGlobalChat();
   const [paths, setPaths] = useState<LifePath[]>([]);
+  const [activeTab, setActiveTab] = useState<'paths' | 'career'>('paths');
   const [pathsLoading, setPathsLoading] = useState(true);
   const [pathsError, setPathsError] = useState(false);
   const [attributes, setAttributes] = useState<UserAttribute[]>([]);
@@ -469,7 +427,43 @@ export function InsightsView() {
 
   return (
     <div className="min-h-screen bg-transparent pb-32 sm:pb-32 mesh-gradient p-4 sm:p-8 animate-fade-in">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-xl mx-auto mb-10 relative z-10">
+        <button 
+          onClick={() => setActiveTab('paths')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'paths' 
+              ? 'bg-white text-emerald-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-850'
+          }`}
+        >
+          <span className="hidden sm:inline">Explorador de Caminos</span>
+          <span className="sm:hidden">Caminos</span>
+          🗺️
+        </button>
+        <button 
+          onClick={() => setActiveTab('career')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'career' 
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Brújula de Carrera</span>
+          <span className="sm:hidden">Brújula</span>
+          💼
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === 'paths' && (
+          <motion.div
+            key="paths"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-6xl mx-auto space-y-8"
+          >
         
         <div className="glass rounded-[32px] p-6 sm:p-8 border border-black/5 relative overflow-hidden shadow-lg">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -581,34 +575,29 @@ export function InsightsView() {
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="px-2">
-            <h2 className="text-sm font-black text-stone-700 uppercase tracking-widest">Maestro del Gremio (Coach)</h2>
-            <p className="text-xs text-stone-500 font-bold mt-1">Planifica tus próximos movimientos con asistencia especializada.</p>
+          <div className="px-2 pb-16 text-center">
+            <h2 className="text-sm font-black text-stone-700 uppercase tracking-widest mb-3">¿Listo para un desafío mayor?</h2>
+            <button onClick={() => openChat()} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition-colors">
+              <MessageSquare className="w-4 h-4" /> Abre el chat global
+            </button>
           </div>
 
-          {branchCreated && (
-            <div className="flex items-center justify-between gap-4 bg-emerald-50 border-2 border-emerald-200 rounded-2xl px-5 py-4 text-xs text-emerald-800 font-black animate-in slide-in-from-top-2 duration-300 shadow-sm">
-              <span className="flex items-center gap-2">
-                🏆 ¡Misión añadida a tu Árbol exitosamente!
-              </span>
-              <a href="/home" className="underline hover:text-emerald-900 flex items-center gap-1 shrink-0 uppercase tracking-wider text-[10px] font-black bg-emerald-100 px-3 py-1.5 rounded-lg">
-                Ver árbol <ChevronRight className="w-3 h-3" />
-              </a>
-            </div>
-          )}
+          </motion.div>
+        )}
 
-          <div className="glass rounded-[32px] overflow-hidden border border-black/5 shadow-lg" style={{ height: '450px' }}>
-            <PermanentAIChat
-              context="insights"
-              placeholder="Pregunta sobre cómo subir de nivel..."
-              emptyStateMessage="Soy tu Mentor de Gremio BEAN ⚔️"
-              onBranchCreated={() => setBranchCreated(true)}
-            />
-          </div>
-        </div>
-
-      </div>
+        {activeTab === 'career' && (
+          <motion.div
+            key="career"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-6xl mx-auto"
+          >
+            <CareerDashboard isSubComponent={true} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedPath && (

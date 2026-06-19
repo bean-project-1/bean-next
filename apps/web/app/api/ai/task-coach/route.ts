@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { deepseek } from '@/lib/openai';
+import { getTracedDeepseek } from '@/lib/openai';
+import { auth } from '@/auth';
+
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
     const body = await req.json();
     const { taskTitle, taskDescription, messages } = body;
 
@@ -22,7 +26,12 @@ REGLAS:
 
     const openAiMessages = [systemPrompt, ...messages];
 
-    const response = await deepseek.chat.completions.create({
+    const tracedDeepseek = getTracedDeepseek({
+      userId: userId,
+      tags: ["agent:task-coach", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+
+    const response = await tracedDeepseek.chat.completions.create({
       model: 'deepseek-chat',
       messages: openAiMessages as any,
       temperature: 0.7,

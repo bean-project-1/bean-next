@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const userId = session?.user?.id;
     const body = await req.json();
-    const { finalGoalInput, chatHistory, userEmail } = body;
+    const { finalGoalInput, chatHistory, userEmail, branchData } = body;
 
     // 1. Resolve User
     let user = null;
@@ -37,8 +37,18 @@ export async function POST(req: NextRequest) {
     let goalText = finalGoalInput;
     const rawChat = chatHistory ? chatHistory.map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join('\n') : '';
     
-    // If the input is the placeholder from the frontend or too generic, distill from chat
-    if (!goalText || goalText.includes('Resumen de lo que quiero') || goalText.length < 10) {
+    if (branchData) {
+      console.log('[GoalGenerate] Using explicit branchData constraints from Agent:', branchData);
+      goalText = `Meta: ${branchData.goalTitle || finalGoalInput}
+Dimensión: ${branchData.dimensionName || 'General'}
+RESTRICCIONES MATEMÁTICAS A RESPETAR ESTRICTAMENTE:
+- Horas semanales disponibles: ${branchData.hoursPerWeek}
+- Fecha objetivo: ${branchData.targetDate}
+- Presupuesto mensual: ${branchData.budget || 0}
+
+[CONVERSACIÓN DE CONTEXTO]:
+${rawChat}`;
+    } else if (!goalText || goalText.includes('Resumen de lo que quiero') || goalText.length < 10) {
       console.log('[GoalGenerate] Distilling goal from chat history...');
       const distillationPrompt = `
         Based on the following conversation between a user and a life coach, summarize the user's OVERARCHING goal and vision.
@@ -53,7 +63,11 @@ export async function POST(req: NextRequest) {
       `;
       
       const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-      const distillationRes = await goalService.getClient().chat.completions.create({
+      const client = goalService.getClient({
+        userId: user.id,
+        tags: ["agent:goal-generate", `env:${process.env.NODE_ENV || 'development'}`]
+      });
+      const distillationRes = await client.chat.completions.create({
         model: hasOpenAI ? "gpt-4o-mini" : "deepseek-chat",
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
       });
@@ -120,19 +134,32 @@ export async function POST(req: NextRequest) {
         });
 
         if (phaseData.tasks && phaseData.tasks.length > 0) {
-          const tasksData = phaseData.tasks.map((t: any) => ({
-            goalId: goal.id,
-            parentId: phase.id,
-            title: t.name,
-            description: t.description || null,
-            type: 'task',
-            startDate: t.startDate ? new Date(t.startDate) : null,
-            targetDate: t.targetDate ? new Date(t.targetDate) : null,
-            estimatedHours: t.estimatedHours || 0,
-            dimensions: t.dimensions || [],
-            attributes: t.attributes || []
-          }));
-          await tx.goalAction.createMany({ data: tasksData });
+          for (const t of phaseData.tasks) {
+            const createdTask = await tx.goalAction.create({
+              data: {
+                goalId: goal.id,
+                parentId: phase.id,
+                title: t.name,
+                description: t.description || null,
+                type: 'task',
+                startDate: t.startDate ? new Date(t.startDate) : null,
+                targetDate: t.targetDate ? new Date(t.targetDate) : null,
+                estimatedHours: t.estimatedHours || 0,
+                dimensions: t.dimensions || [],
+                attributes: t.attributes || []
+              }
+            });
+
+            if (t.subTasks && t.subTasks.length > 0) {
+              const subTasksData = t.subTasks.map((st: any) => ({
+                goalActionId: createdTask.id,
+                title: st.name,
+                description: st.description || null,
+                estimatedHours: st.estimatedHours || 0
+              }));
+              await tx.task.createMany({ data: subTasksData });
+            }
+          }
         }
 
         if (phaseData.milestone) {
@@ -158,19 +185,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Habits
+      // Habits -> Base Commitments
       if (plan.habits && plan.habits.length > 0) {
         const habitsData = plan.habits.map((habitData: any) => ({
+          userId: user.id,
           goalId: goal.id,
           title: habitData.title,
           description: habitData.description || null,
-          type: 'habit',
+          type: 'goal_routine',
           frequency: habitData.frequency || null,
           estimatedHours: habitData.estimatedHours || 0,
-          dimensions: habitData.dimensions || [],
-          attributes: habitData.attributes || []
+          attributes: habitData.attributes || [],
+          daysOfWeek: [], // To be set later
+          startDate: new Date(),
+          endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
         }));
-        await tx.goalAction.createMany({ data: habitsData });
+        await tx.baseCommitment.createMany({ data: habitsData });
       }
 
       return goal;

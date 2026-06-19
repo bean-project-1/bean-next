@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { openai } from '@/lib/openai';
+import { getTracedOpenAI } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,7 +65,12 @@ ${submission}
 
     const model = evaluationType === 'image' ? 'gpt-4o-mini' : 'gpt-4o-mini';
 
-    const response = await openai.chat.completions.create({
+    const tracedOpenai = getTracedOpenAI({
+      userId: userId,
+      tags: ["agent:verify-milestone", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+
+    const response = await tracedOpenai.chat.completions.create({
       model,
       messages: [
         { role: 'system', content: systemPrompt },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { openai, deepseek } from '@/lib/openai';
+import { getTracedOpenAI, getTracedDeepseek } from '@/lib/openai';
 import { langfuse } from '@/lib/langfuse';
 
 export const dynamic = 'force-dynamic';
@@ -9,13 +9,13 @@ export const dynamic = 'force-dynamic';
  * Configure AI Client based on available keys.
  * Priority: GPT (if key) > DeepSeek (if key)
  */
-function getAIClient() {
+function getAIClient(config: any) {
   const gptKey = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
   if (gptKey) {
     return {
-      client: openai,
+      client: getTracedOpenAI(config),
       model: "gpt-4o-mini",
       provider: 'openai'
     };
@@ -23,7 +23,7 @@ function getAIClient() {
 
   if (deepseekKey) {
     return {
-      client: deepseek,
+      client: getTracedDeepseek(config),
       model: "deepseek-chat",
       provider: 'deepseek'
     };
@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Text too short' }, { status: 400 });
     }
 
-    const ai = getAIClient();
+    const ai = getAIClient({
+      userId: userId || "anonymous",
+      tags: ["agent:onboarding", `env:${process.env.NODE_ENV || 'development'}`]
+    });
     if (!ai) {
       trace.update({ output: { error: 'No AI provider configured' } });
       return NextResponse.json({ 

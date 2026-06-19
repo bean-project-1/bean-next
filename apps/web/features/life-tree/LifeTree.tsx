@@ -6,7 +6,6 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
-import { LifeTreeCoach } from './LifeTreeCoach';
 
 interface LifeTreeProps {
   data: TreeData;
@@ -36,12 +35,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
-  // The tree is now naturally centered since there is no sidebar.
-  // We adjust the initial viewBox to 600x600 to make the tree much larger.
-  // By shifting y to -20 (camera center y=280), we center the tree perfectly on the screen.
-  const [viewBox, setViewBox] = useState({ x: 100, y: -20, w: 600, h: 600 });
+  // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
+  const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -238,10 +236,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
     gsap.to(viewBox, {
-      x: 100,
-      y: -20,
-      w: 600,
-      h: 600,
+      x: -100,
+      y: -100,
+      w: 1000,
+      h: 1000,
       duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
@@ -303,6 +301,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
     if (!isPanning) return;
     
     const dx = (e.clientX - panStart.current.x) * (viewBox.w / (svgRef.current?.clientWidth || 800));
@@ -332,34 +331,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   const lifeState = getQualitativeState(data.growthScore);
 
-  // Calculate dynamic opacity based on current zoom level
-  const zoomThreshold = 400; // Fully opaque when zoomed in this much
-  const zoomRange = 800 - zoomThreshold;
-  // Fade all the way to 0 (completely invisible) when fully zoomed
-  const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
+  // Note: We use CSS transitions based on zoomedBranchId instead of dynamicOpacity
+  // so manual mouse wheel scrolling doesn't accidentally fade out the tree.
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
-      {/* Interaction Hints - Only visible when NOT zoomed */}
-      {!zoomedBranchId && hoveredLeafName && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <p className="text-slate-600 font-bold tracking-tight text-center">
-            {hoveredLeafName}
-          </p>
-        </div>
-      )}
-
-
-
-      {(zoomedBranchId || viewBox.w !== 700) && (
-        <button 
-          onClick={resetZoom}
-          className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-50 animate-in fade-in slide-in-from-top-4"
-        >
-          ← Ver Árbol Completo
-        </button>
-      )}
-
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
@@ -408,7 +384,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: dynamicOpacity }}>
+          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: zoomedBranchId ? 0 : 1 }}>
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
@@ -461,8 +437,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
-            // Fade out other branches smoothly as you zoom out
-            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? dynamicOpacity : 1;
+            // Fade out other branches smoothly when focused on one
+            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
 
             return (
               <Branch
@@ -507,6 +483,25 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
             if (labelOpacity <= 0) return null;
 
+            // Split long names into lines
+            const words = branch.goal.split(' ');
+            const lines: string[] = [];
+            let currentLine = '';
+            
+            // Use narrower text blocks on mobile so they don't hit the screen edges
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+            const maxChars = isMobile ? 12 : 20;
+
+            words.forEach(word => {
+              if ((currentLine + word).length > maxChars) {
+                if (currentLine) lines.push(currentLine.trim());
+                currentLine = word + ' ';
+              } else {
+                currentLine += word + ' ';
+              }
+            });
+            if (currentLine) lines.push(currentLine.trim());
+
             return (
               <g 
                 key={`label-${branch.id}`} 
@@ -514,25 +509,23 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 style={{ opacity: labelOpacity }}
                 transform={`rotate(${-rotation}, ${endX}, ${endY})`}
               >
-                <rect 
-                  x={endX + (endX > 400 ? 5 : -105)} 
-                  y={endY - 25} 
-                  width="100" 
-                  height="20" 
-                  rx="4" 
-                  fill="white" 
-                  fillOpacity="0.8" 
-                  className="shadow-sm"
-                />
                 <text 
-                  x={endX + (endX > 400 ? 55 : -55)} 
-                  y={endY - 10} 
-                  textAnchor="middle" 
+                  x={endX + (endX > 400 ? 15 : -15)} 
+                  y={endY - (lines.length - 1) * 6} 
+                  textAnchor={endX > 400 ? "start" : "end"} 
                   dominantBaseline="middle"
-                  className="text-[10px] font-black fill-slate-500 uppercase tracking-tighter"
-                  fontSize="10"
+                  className="text-[11px] font-black fill-slate-600 uppercase tracking-tight"
+                  style={{ textShadow: '0px 2px 4px rgba(255,255,255,0.9), 0px -2px 4px rgba(255,255,255,0.9), 2px 0px 4px rgba(255,255,255,0.9), -2px 0px 4px rgba(255,255,255,0.9), 0px 0px 8px rgba(255,255,255,1)' }}
                 >
-                  {branch.goal.length > 15 ? branch.goal.substring(0, 15) + '...' : branch.goal}
+                  {lines.map((line, lIdx) => (
+                    <tspan 
+                      key={lIdx} 
+                      x={endX + (endX > 400 ? 15 : -15)} 
+                      dy={lIdx === 0 ? 0 : 12}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               </g>
             );
@@ -541,13 +534,44 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
       </svg>
 
-      {/* Integrated Coach */}
-      {!zoomedBranchId && (
-        <LifeTreeCoach 
-          onPlanGenerated={() => onRefresh?.()} 
-          onPlantingStateChange={setIsPlanting}
-        />
+      {/* Interaction Hints - Floating Cursor Tooltip */}
+      {hoveredLeafName && (
+        <div 
+          className="fixed pointer-events-none bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 z-[9999] animate-in fade-in zoom-in duration-200"
+          style={{ 
+            left: mousePos.x + 20, 
+            top: mousePos.y + 20,
+            maxWidth: '280px'
+          }}
+        >
+          <p className="text-slate-700 font-bold tracking-tight text-xs leading-snug">
+            {hoveredLeafName}
+          </p>
+        </div>
       )}
+
+      {(() => {
+        const isDefaultView = 
+          Math.abs(viewBox.w - 1000) < 1 && 
+          Math.abs(viewBox.x - (-100)) < 1 && 
+          Math.abs(viewBox.y - (-100)) < 1 && 
+          Math.abs(rotation) < 1;
+          
+        return (zoomedBranchId || !isDefaultView) ? (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              resetZoom();
+            }}
+            className="absolute top-24 left-4 sm:top-8 sm:left-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        ) : null;
+      })()}
 
     </div>
   );

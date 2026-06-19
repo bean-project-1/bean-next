@@ -2,6 +2,7 @@ export type LeafType = 'phase' | 'task' | 'habit' | 'milestone';
 
 export type Leaf = {
   id: string;
+  originalId?: string; // ID of the parent task if this leaf is a subtask
   name: string; // matches GoalAction.title
   type: LeafType;
   completed: boolean;

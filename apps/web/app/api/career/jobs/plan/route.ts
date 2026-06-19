@@ -91,18 +91,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 3. Create Habits
+      // 3. Create Habits as Base Commitments
       if (plan.habits && Array.isArray(plan.habits)) {
         const habitsToCreate = plan.habits.map((h: any) => ({
+          userId,
           goalId: goal.id,
           title: h.title,
           description: h.description || null,
-          type: 'habit',
+          type: 'goal_routine',
           frequency: h.frequency || { type: 'weekly', value: 1 },
-          estimatedHours: h.estimatedHours || 1.0
+          estimatedHours: h.estimatedHours || 1.0,
+          daysOfWeek: [], // Default empty, populated later
+          startDate: new Date(),
+          endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
         }));
 
-        await tx.goalAction.createMany({
+        await tx.baseCommitment.createMany({
           data: habitsToCreate
         });
       }

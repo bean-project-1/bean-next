@@ -99,19 +99,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Create Habits (directly under Goal)
+      // Create Habits (directly under Goal) as BaseCommitments
       if (plan.habits) {
         for (const habitData of plan.habits) {
-          await tx.goalAction.create({
+          await tx.baseCommitment.create({
             data: {
+              userId,
               goalId: goal.id,
               title: habitData.title,
               description: habitData.description || null,
-              type: 'habit',
+              type: 'goal_routine',
               frequency: habitData.frequency || null,
               estimatedHours: habitData.estimatedHours || 0,
-              dimensions: Array.isArray(habitData.dimensions) ? habitData.dimensions : [],
-              attributes: Array.isArray(habitData.attributes) ? habitData.attributes : []
+              attributes: Array.isArray(habitData.attributes) ? habitData.attributes : [],
+              daysOfWeek: [], // Can be populated later by UI or AI
+              startDate: new Date(),
+              endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
             }
           });
         }

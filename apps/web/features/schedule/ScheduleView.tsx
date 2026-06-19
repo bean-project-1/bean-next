@@ -354,7 +354,10 @@ function AgendaContent({
 
       {/* Habits */}
       <div>
-        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Hábitos Sugeridos</h2>
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3 flex items-center justify-between">
+            Compromisos Base
+            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px]">{events.filter(e => e.itemType === 'habit').length}</span>
+          </h3>
         <div className="space-y-2">
           {events.filter(e => e.itemType === 'habit').map(habit => (
             <div

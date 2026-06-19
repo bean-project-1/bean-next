@@ -29,10 +29,10 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 2. Fetch Base Commitments (Work/Study/Routines)
+    // 2. Fetch Base Commitments (Work/Study/Routines/Goal Routines)
     const baseCommitments = await prisma.baseCommitment.findMany({
       where: { userId, isActive: true },
-      include: { dimensions: true }
+      include: { dimensions: true, goal: { select: { title: true } } }
     });
 
     const events: any[] = [];
@@ -47,20 +47,33 @@ export async function GET(req: NextRequest) {
       const dateKey = d.toISOString().split('T')[0];
 
       baseCommitments.forEach(bc => {
-        if (bc.daysOfWeek.includes(dayOfWeek)) {
+        // Evaluate start and end dates
+        const dateObj = new Date(dateKey);
+        const startObj = bc.startDate ? new Date(bc.startDate) : null;
+        const endObj = bc.endDate ? new Date(bc.endDate) : null;
+        
+        // Strip time from start and end for accurate day-level comparison
+        if (startObj) startObj.setHours(0, 0, 0, 0);
+        if (endObj) endObj.setHours(23, 59, 59, 999);
+
+        const isAfterStart = !startObj || dateObj >= startObj;
+        const isBeforeEnd = !endObj || dateObj <= endObj;
+
+        if (bc.daysOfWeek.includes(dayOfWeek) && isAfterStart && isBeforeEnd) {
           events.push({
             id: `${bc.id}-${dateKey}`,
             title: bc.title,
-            description: `Compromiso recurrente (${bc.type})`,
+            description: bc.description || `Compromiso recurrente (${bc.type})`,
             date: d.toISOString(),
             startTime: bc.startTime,
             endTime: bc.endTime,
             type: bc.type,
             estimatedHours: bc.hoursPerDay + ((bc as any).commuteHours || 0),
             status: 'commitment',
-            goalTitle: 'Base DNA',
-            itemType: 'commitment',
-            dimensionName: bc.dimensions?.map(d => d.label).join(', ') || 'General'
+            goalId: bc.goalId,
+            goalTitle: bc.goal?.title || 'Base DNA',
+            itemType: bc.type === 'goal_routine' ? 'habit' : 'commitment', // 'habit' helps legacy frontend UI color it right
+            dimensionName: bc.dimensions?.map((dim: any) => dim.label).join(', ') || 'General'
           });
         }
       });
@@ -88,24 +101,7 @@ export async function GET(req: NextRequest) {
           });
         }
 
-        // Handle Habits (Daily/Weekly)
-        if (action.type === 'habit' && action.frequency) {
-          events.push({
-            id: action.id,
-            title: action.title,
-            description: action.description,
-            type: 'habit',
-            frequency: action.frequency,
-            estimatedHours: action.estimatedHours || 0,
-            status: 'habit',
-            goalId: goal.id,
-            goalTitle: goal.title,
-            dimensions: action.dimensions || [],
-            attributes: action.attributes || [],
-            tasks: action.tasks || [],
-            itemType: 'habit'
-          });
-        }
+
 
         // Handle Sub-tasks directly if they have dates
         action.tasks.forEach(task => {

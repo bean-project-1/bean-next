@@ -26,10 +26,17 @@ bean/
 
 | Layer      | Technology                          |
 |------------|-------------------------------------|
+<<<<<<< HEAD
 | Frontend   | Next.js 14, React 18, TypeScript, TailwindCSS |
 | Backend    | Next.js API Routes (v1), Node.js (AI Engine) |
 | Database   | MongoDB + Prisma ORM (Replica Set)  |
 | AI         | OpenAI GPT-4 Turbo                  |
+=======
+| Frontend   | Next.js 16, React 19, TypeScript, TailwindCSS |
+| Backend    | Next.js API Routes, FastAPI (planned) |
+| Database   | MongoDB + Prisma ORM                |
+| AI         | OpenAI / DeepSeek (LLM Services)    |
+>>>>>>> 9767df01f89c48518d7d2394ab2241c579247695
 | DevOps     | Docker, Turborepo, GitHub Actions   |
 | Deployment | Vercel / Azure App Service          |
 

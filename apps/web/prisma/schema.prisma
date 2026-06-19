@@ -11,33 +11,69 @@ datasource db {
 // ───────────────── USERS ─────────────────
 //
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  name          String?
-  email         String    @unique
-  emailVerified DateTime? @map("email_verified")
-  passwordHash  String?   @map("password_hash")
-  image         String?
-  avatarUrl          String?   @map("avatar_url")
-  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                String?
+  email               String    @unique
+  emailVerified       DateTime? @map("email_verified")
+  passwordHash        String?   @map("password_hash")
+  image               String?
+  avatarUrl           String?   @map("avatar_url")
+  onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  accounts        Account[]
-  sessions        Session[]
-  attributes      UserAttribute[]
-  dimensionInputs DimensionInput[]
-  lifeStates      LifeState[]
-  lifeEvents      LifeEvent[]
-  goals           Goal[]
-  chatSessions    ChatSession[]
-  suggestedPaths  SuggestedPath[]
-  baseCommitments BaseCommitment[]
-  postIts         PostIt[]
-  dailyTasks      DailyTask[]
-  resumes         UserResume[]
+  timezone                String? @default("America/Bogota")
+  notificationPreferences Json?   @map("notification_preferences")
+
+  accounts          Account[]
+  sessions          Session[]
+  attributes        UserAttribute[]
+  dimensionInputs   DimensionInput[]
+  lifeStates        LifeState[]
+  lifeEvents        LifeEvent[]
+  goals             Goal[]
+  chatSessions      ChatSession[]
+  suggestedPaths    SuggestedPath[]
+  baseCommitments   BaseCommitment[]
+  postIts           PostIt[]
+  dailyTasks        DailyTask[]
+  resumes           UserResume[]
+  pushSubscriptions PushSubscription[]
+  notificationLogs  NotificationLog[]
+  incubatorSeeds    IncubatorSeed[]
 
   @@map("users")
+}
+
+//
+// ───────────────── NOTIFICATIONS ─────────────────
+//
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @map("user_id") @db.ObjectId
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model NotificationLog {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @map("user_id") @db.ObjectId
+  type    String // e.g. "daily_tasks", "streak", "custom"
+  channel String // "web_push" | "email"
+  title   String
+  body    String
+  sentAt  DateTime @default(now()) @map("sent_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_logs")
 }
 
 model Account {
@@ -108,6 +144,19 @@ model BaseCommitment {
   dimensionIds String[]    @map("dimension_ids") @db.ObjectId
   dimensions   Dimension[] @relation(fields: [dimensionIds], references: [id])
 
+  goalId       String?     @map("goal_id") @db.ObjectId
+  goal         Goal?       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  description    String?
+  attributes     String[]  @default([])
+  frequency      Json?     // { type: daily/weekly, value: number }
+  estimatedHours Float?    @map("estimated_hours")
+
+  startDate      DateTime? @map("start_date")
+  endDate        DateTime? @map("end_date")
+
+
+
   // Gamification & Streaks
   streakCount     Int       @default(0) @map("streak_count")
   lastCompletedAt DateTime? @map("last_completed_at")
@@ -163,11 +212,11 @@ model Dimension {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  attributes      UserAttribute[]
-  dimensionInputs DimensionInput[]
+  attributes        UserAttribute[]
+  dimensionInputs   DimensionInput[]
   baseCommitmentIds String[]         @map("base_commitment_ids") @db.ObjectId
   baseCommitments   BaseCommitment[] @relation(fields: [baseCommitmentIds], references: [id])
-  lifeEvents      LifeEvent[]
+  lifeEvents        LifeEvent[]
 
   @@map("dimensions")
 }
@@ -302,6 +351,7 @@ model Goal {
 
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   actions GoalAction[]
+  baseCommitments BaseCommitment[]
 
   @@map("goals")
 }
@@ -317,7 +367,7 @@ model GoalAction {
   description String?
 
   // 🔥 clave
-  type String // phase | task | habit | milestone
+  type String // phase | task | milestone (habit moved to BaseCommitment)
 
   parentId   String?      @map("parent_id") @db.ObjectId
   parent     GoalAction?  @relation("SubActions", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -330,7 +380,7 @@ model GoalAction {
   dimensions String[]
   attributes String[]
 
-  // 🔁 hábitos
+  // 🔁 (Deprecado, usar BaseCommitment)
   frequency   Json? // { type: daily/weekly, value: number }
   streak      Int? // opcional
   consistency Float? // %
@@ -410,15 +460,15 @@ model ChatMessage {
 // ───────────────── POST-ITS (TABLERO) ─────────────────
 //
 model PostIt {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @map("user_id") @db.ObjectId
-  content   String
-  color     String   @default("yellow")
-  x         Float    @default(0) // Para arrastrar
-  y         Float    @default(0) // Para arrastrar
-  rotation  Float    @default(0) // Rotación orgánica
-  zIndex    Int      @default(0)
-  isPinned  Boolean  @default(false) @map("is_pinned")
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String    @map("user_id") @db.ObjectId
+  content      String
+  color        String    @default("yellow")
+  x            Float     @default(0) // Para arrastrar
+  y            Float     @default(0) // Para arrastrar
+  rotation     Float     @default(0) // Rotación orgánica
+  zIndex       Int       @default(0)
+  isPinned     Boolean   @default(false) @map("is_pinned")
   anchoredDate DateTime? @map("anchored_date")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -468,4 +518,26 @@ model UserResume {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_resumes")
+}
+
+//
+// ───────────────── INCUBATOR (SEMILLERO) ─────────────────
+//
+model IncubatorSeed {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @map("user_id") @db.ObjectId
+  title       String
+  description String
+  status      String   @default("new")
+  scores      Json     // { sun, earth, water }
+  messages    Json[]   // [{ id, role, content, timestamp }]
+  clouds      Json[]   // [{ id, text, x, y }]
+  proposal    String?  
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("incubator_seeds")
 }

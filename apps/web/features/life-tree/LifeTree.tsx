@@ -331,11 +331,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   const lifeState = getQualitativeState(data.growthScore);
 
-  // Calculate dynamic opacity based on current zoom level
-  const zoomThreshold = 400; // Fully opaque when zoomed in this much
-  const zoomRange = 800 - zoomThreshold;
-  // Fade all the way to 0 (completely invisible) when fully zoomed
-  const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
+  // Note: We use CSS transitions based on zoomedBranchId instead of dynamicOpacity
+  // so manual mouse wheel scrolling doesn't accidentally fade out the tree.
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
@@ -387,7 +384,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: dynamicOpacity }}>
+          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: zoomedBranchId ? 0 : 1 }}>
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
@@ -440,8 +437,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
-            // Fade out other branches smoothly as you zoom out
-            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? dynamicOpacity : 1;
+            // Fade out other branches smoothly when focused on one
+            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
 
             return (
               <Branch
@@ -567,9 +564,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-24 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-8 sm:top-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-6 py-3.5 sm:px-5 sm:py-3 rounded-full text-[11px] sm:text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4 whitespace-nowrap"
+            className="absolute top-24 left-4 sm:top-8 sm:left-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
           >
-            ← Ver Árbol Completo
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
           </button>
         ) : null;
       })()}

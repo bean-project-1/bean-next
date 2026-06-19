@@ -17,6 +17,13 @@ export interface SeedScores {
   water: number; // Viability (Viable)
 }
 
+export interface IdeaCloud {
+  id: string;
+  text: string;
+  x?: number;
+  y?: number;
+}
+
 export interface Seed {
   id: string;
   title: string;
@@ -25,6 +32,8 @@ export interface Seed {
   scores: SeedScores;
   createdAt: number;
   messages: SeedMessage[];
+  clouds: IdeaCloud[];
+  proposal?: string;
 }
 
 export function useIncubator() {
@@ -33,7 +42,7 @@ export function useIncubator() {
 
   // Load from local storage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('bean_seeds_v2'); // changed key to reset state
+    const stored = localStorage.getItem('bean_seeds_v3'); // updated key for new data model
     if (stored) {
       try {
         setSeeds(JSON.parse(stored));
@@ -47,7 +56,7 @@ export function useIncubator() {
   // Save to local storage on change
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('bean_seeds_v2', JSON.stringify(seeds));
+      localStorage.setItem('bean_seeds_v3', JSON.stringify(seeds));
     }
   }, [seeds, loading]);
 
@@ -63,6 +72,8 @@ export function useIncubator() {
         water: 0
       },
       createdAt: Date.now(),
+      clouds: [],
+      proposal: '',
       messages: [
         {
           id: 'msg_0',
@@ -95,6 +106,36 @@ export function useIncubator() {
     }));
   };
 
+  const addCloud = (seedId: string, text: string) => {
+    setSeeds(prev => prev.map(seed => {
+      if (seed.id === seedId) {
+        return {
+          ...seed,
+          clouds: [...(seed.clouds || []), { 
+            id: Math.random().toString(36).substring(2, 9), 
+            text,
+            // Random offset for visual spread
+            x: Math.random() * 100 - 50,
+            y: Math.random() * 100 - 50
+          }]
+        };
+      }
+      return seed;
+    }));
+  };
+
+  const removeCloud = (seedId: string, cloudId: string) => {
+    setSeeds(prev => prev.map(seed => {
+      if (seed.id === seedId) {
+        return {
+          ...seed,
+          clouds: (seed.clouds || []).filter(c => c.id !== cloudId)
+        };
+      }
+      return seed;
+    }));
+  };
+
   const updateScores = (seedId: string, updates: Partial<SeedScores>) => {
     setSeeds(prev => prev.map(seed => {
       if (seed.id === seedId) {
@@ -116,6 +157,15 @@ export function useIncubator() {
     }));
   };
 
+  const updateProposal = (seedId: string, proposal: string) => {
+    setSeeds(prev => prev.map(seed => {
+      if (seed.id === seedId) {
+        return { ...seed, proposal };
+      }
+      return seed;
+    }));
+  };
+
   const deleteSeed = (seedId: string) => {
     setSeeds(prev => prev.filter(s => s.id !== seedId));
   };
@@ -126,7 +176,10 @@ export function useIncubator() {
     createSeed,
     getSeed,
     addMessage,
+    addCloud,
+    removeCloud,
     updateScores,
+    updateProposal,
     deleteSeed
   };
 }

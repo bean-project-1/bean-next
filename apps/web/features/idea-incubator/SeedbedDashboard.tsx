@@ -14,8 +14,8 @@ export function SeedbedDashboard() {
 
   if (activeSeedId) {
     return (
-      <div className="w-full h-full px-4 pt-24 sm:pt-28 pb-6 sm:px-8">
-        <div className="w-full h-full bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="absolute inset-0 flex items-center justify-center p-3 pt-24 pb-32 sm:p-8 sm:pt-24 sm:pb-28">
+        <div className="w-full h-full max-w-7xl bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col">
           <SeedbedChat 
             seedId={activeSeedId} 
             onBack={() => setActiveSeedId(null)} 
@@ -36,8 +36,8 @@ export function SeedbedDashboard() {
   };
 
   return (
-    <div className="w-full h-full px-4 pt-24 sm:pt-28 pb-6 sm:px-8">
-      <div className="w-full h-full bg-[#FAFAFA] rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col">
+    <div className="absolute inset-0 flex items-center justify-center p-3 pt-24 pb-32 sm:p-8 sm:pt-24 sm:pb-28">
+      <div className="w-full h-full max-w-7xl bg-[#FAFAFA] rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-6 pt-8 sm:pt-12">
           <div className="max-w-3xl mx-auto">
             <header className="mb-10 text-center">
@@ -107,8 +107,27 @@ export function SeedbedDashboard() {
                   onClick={() => setActiveSeedId(seed.id)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
-                      <Sprout className="w-6 h-6" />
+                    <div className="relative w-14 h-14 shrink-0 flex items-end justify-center pb-2 bg-gradient-to-b from-stone-50 to-stone-100 rounded-xl border border-stone-100 overflow-hidden">
+                      {/* Mini Pot SVG */}
+                      <svg viewBox="0 0 160 120" className="w-10 h-8 absolute bottom-1" xmlns="http://www.w3.org/2000/svg">
+                        <ellipse cx="80" cy="15" rx="70" ry="10" fill="#B45309" />
+                        <ellipse cx="80" cy="15" rx="60" ry="8" fill="#451A03" />
+                        <path d="M10,15 L30,110 Q80,130 130,110 L150,15 Z" fill="#D97706" />
+                        <path d="M5,15 Q80,35 155,15 L150,25 Q80,45 10,25 Z" fill="#F59E0B" />
+                      </svg>
+                      
+                      {/* Mini Plant */}
+                      <div className="absolute bottom-6 flex flex-col items-center">
+                        {seed.scores.sun + seed.scores.earth + seed.scores.water > 50 && (
+                          <div className="w-4 h-3 bg-emerald-400 rounded-full mb-[-2px] shadow-sm" />
+                        )}
+                        <div className="w-1 h-4 bg-emerald-600 rounded-full" />
+                      </div>
+
+                      {/* Ready Sparkles */}
+                      {seed.status === 'ready' && (
+                        <div className="absolute top-1 right-1">✨</div>
+                      )}
                     </div>
                     <div>
                       <h4 className="font-bold text-stone-800 text-[17px] mb-1 group-hover:text-emerald-700 transition-colors line-clamp-1">{seed.title}</h4>

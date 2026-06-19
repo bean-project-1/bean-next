@@ -141,6 +141,26 @@ export function useLifeTree() {
     }
   };
 
+  const addGoal = async (data: { title: string; description?: string; purpose?: string; dimensions?: string[] }) => {
+    try {
+      const res = await fetch(`/api/profile/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        await fetchTree();
+        return { success: true };
+      } else {
+        const err = await res.json();
+        return { success: false, error: err.error };
+      }
+    } catch (err) {
+      console.error('Failed to add goal:', err);
+      return { success: false, error: 'Error de red' };
+    }
+  };
+
   useEffect(() => {
     fetchTree();
   }, [fetchTree]);
@@ -154,6 +174,7 @@ export function useLifeTree() {
     updateAction,
     addAction,
     updateGoal,
+    addGoal,
     updateTask,
     refresh: fetchTree
   };

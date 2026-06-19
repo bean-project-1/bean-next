@@ -17,7 +17,7 @@ bean/
 │   ├── ui/                   # Reusable design-system components
 │   └── config/               # Shared ESLint / TS configs
 ├── services/
-│   └── ai-engine/            # AI analysis service (Python FastAPI — future)
+│   └── ai-engine/            # AI analysis service (Node.js/TypeScript — OpenAI analyzer)
 ├── infra/                    # Infrastructure-as-Code (Bicep / Terraform)
 └── docs/                     # Architecture Decision Records
 ```
@@ -27,8 +27,8 @@ bean/
 | Layer      | Technology                          |
 |------------|-------------------------------------|
 | Frontend   | Next.js 14, React 18, TypeScript, TailwindCSS |
-| Backend    | Next.js API Routes (v1), FastAPI (planned) |
-| Database   | PostgreSQL + Prisma ORM             |
+| Backend    | Next.js API Routes (v1), Node.js (AI Engine) |
+| Database   | MongoDB + Prisma ORM (Replica Set)  |
 | AI         | OpenAI GPT-4 Turbo                  |
 | DevOps     | Docker, Turborepo, GitHub Actions   |
 | Deployment | Vercel / Azure App Service          |
@@ -138,6 +138,22 @@ Tienes **2 opciones principales** para inspeccionar qué se está guardando:
 4. **El puerto 3000 está en uso**
    - **Por qué pasa:** Tienes otro proyecto ocupándolo.
    - **Solución:** Next.js usará el 3001 automáticamente. Entra a `http://localhost:3001`.
+
+5. **`You are using Node.js X.X.X. For Next.js, Node.js version ">=20.9.0" is required.`**
+   - **Por qué pasa:** Estás intentando arrancar el proyecto con una versión antigua de Node.js (por ejemplo, v18.20.8) que no cumple con el requerimiento de Next.js (>=20.9.0).
+   - **Solución:** Cambia la versión activa de Node.js a una compatible. Si tienes **NVM para Windows** instalado, abre una terminal y ejecuta:
+     ```powershell
+     # Listar las versiones instaladas
+     nvm list
+     
+     # Activar una versión compatible (por ejemplo, la 20.11.1 o la 22.22.3)
+     nvm use 20.11.1
+     ```
+     Si no tienes una versión compatible instalada, instálala primero y luego actívala:
+     ```powershell
+     nvm install 20.11.1
+     nvm use 20.11.1
+     ```
 
 ---
 

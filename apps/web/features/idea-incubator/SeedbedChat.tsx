@@ -148,7 +148,7 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
       </div>
 
       {/* Right Area: Chat */}
-      <div className={`w-full flex-1 lg:w-1/2 flex-col bg-white relative overflow-hidden ${(mobileView === 'pot' || mobileView === 'proposal') ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`w-full flex-1 min-h-0 lg:w-1/2 flex-col bg-white relative overflow-hidden ${(mobileView === 'pot' || mobileView === 'proposal') ? 'hidden lg:flex' : 'flex'}`}>
         <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white via-white to-transparent z-10 pointer-events-none hidden lg:flex justify-end px-6 pt-6">
           <button 
             onClick={() => setShowProposal(true)}

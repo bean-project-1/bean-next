@@ -99,7 +99,7 @@ export function useIncubator() {
         timestamp: Date.now()
       }]
     };
-    mutate([tempSeed, ...seeds], false);
+    mutate([tempSeed, ...seeds], { revalidate: false });
 
     const res = await fetch('/api/incubator/seeds', {
       method: 'POST',
@@ -124,7 +124,7 @@ export function useIncubator() {
       timestamp: Date.now()
     }];
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, messages: newMessages } : s), false);
+    mutate(seeds.map(s => s.id === seedId ? { ...s, messages: newMessages } : s), { revalidate: false });
     updateSeedDb(seedId, { messages: newMessages });
   }, [seeds, getSeed, mutate]);
 
@@ -139,7 +139,7 @@ export function useIncubator() {
       y: Math.random() * 100 - 50
     }];
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), false);
+    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), { revalidate: false });
     updateSeedDb(seedId, { clouds: newClouds });
   }, [seeds, getSeed, mutate]);
 
@@ -148,7 +148,7 @@ export function useIncubator() {
     if (!seed) return;
 
     const newClouds = (seed.clouds || []).filter(c => c.id !== cloudId);
-    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), false);
+    mutate(seeds.map(s => s.id === seedId ? { ...s, clouds: newClouds } : s), { revalidate: false });
     updateSeedDb(seedId, { clouds: newClouds });
   }, [seeds, getSeed, mutate]);
 
@@ -165,17 +165,17 @@ export function useIncubator() {
     const isReady = newScores.sun >= 80 && newScores.earth >= 80 && newScores.water >= 80;
     const status = isReady ? 'ready' : 'incubating';
 
-    mutate(seeds.map(s => s.id === seedId ? { ...s, scores: newScores, status } : s), false);
+    mutate(seeds.map(s => s.id === seedId ? { ...s, scores: newScores, status } : s), { revalidate: false });
     updateSeedDb(seedId, { scores: newScores, status });
   }, [seeds, getSeed, mutate]);
 
   const updateProposal = useCallback((seedId: string, proposal: string) => {
-    mutate(seeds.map(s => s.id === seedId ? { ...s, proposal } : s), false);
+    mutate(seeds.map(s => s.id === seedId ? { ...s, proposal } : s), { revalidate: false });
     updateSeedDb(seedId, { proposal });
   }, [seeds, mutate]);
 
   const deleteSeed = useCallback(async (seedId: string) => {
-    mutate(seeds.filter(s => s.id !== seedId), false);
+    mutate(seeds.filter(s => s.id !== seedId), { revalidate: false });
     await fetch(`/api/incubator/seeds/${seedId}`, { method: 'DELETE' });
     mutate();
   }, [seeds, mutate]);

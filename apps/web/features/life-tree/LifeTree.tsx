@@ -35,10 +35,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
-  // The tree is now naturally centered since there is no sidebar.
-  // We adjust the initial viewBox to 600x600 to make the tree much larger.
-  // By shifting y to -20 (camera center y=280), we center the tree perfectly on the screen.
-  const [viewBox, setViewBox] = useState({ x: 100, y: -20, w: 600, h: 600 });
+  // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
+  const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -238,10 +236,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
     gsap.to(viewBox, {
-      x: 100,
-      y: -20,
-      w: 600,
-      h: 600,
+      x: -100,
+      y: -100,
+      w: 1000,
+      h: 1000,
       duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
@@ -333,11 +331,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   const lifeState = getQualitativeState(data.growthScore);
 
-  // Calculate dynamic opacity based on current zoom level
-  const zoomThreshold = 400; // Fully opaque when zoomed in this much
-  const zoomRange = 800 - zoomThreshold;
-  // Fade all the way to 0 (completely invisible) when fully zoomed
-  const dynamicOpacity = 0.0 + 1.0 * Math.max(0, Math.min(1, (viewBox.w - zoomThreshold) / zoomRange));
+  // Note: We use CSS transitions based on zoomedBranchId instead of dynamicOpacity
+  // so manual mouse wheel scrolling doesn't accidentally fade out the tree.
 
   return (
     <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
@@ -389,7 +384,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: dynamicOpacity }}>
+          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: zoomedBranchId ? 0 : 1 }}>
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
@@ -442,8 +437,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
-            // Fade out other branches smoothly as you zoom out
-            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? dynamicOpacity : 1;
+            // Fade out other branches smoothly when focused on one
+            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
 
             return (
               <Branch
@@ -492,8 +487,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             const words = branch.goal.split(' ');
             const lines: string[] = [];
             let currentLine = '';
+            
+            // Use narrower text blocks on mobile so they don't hit the screen edges
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+            const maxChars = isMobile ? 12 : 20;
+
             words.forEach(word => {
-              if ((currentLine + word).length > 20) {
+              if ((currentLine + word).length > maxChars) {
                 if (currentLine) lines.push(currentLine.trim());
                 currentLine = word + ' ';
               } else {
@@ -552,9 +552,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
       {(() => {
         const isDefaultView = 
-          Math.abs(viewBox.w - 600) < 1 && 
-          Math.abs(viewBox.x - 100) < 1 && 
-          Math.abs(viewBox.y - (-20)) < 1 && 
+          Math.abs(viewBox.w - 1000) < 1 && 
+          Math.abs(viewBox.x - (-100)) < 1 && 
+          Math.abs(viewBox.y - (-100)) < 1 && 
           Math.abs(rotation) < 1;
           
         return (zoomedBranchId || !isDefaultView) ? (
@@ -564,9 +564,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-6 left-6 sm:top-8 sm:left-8 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+            className="absolute top-24 left-4 sm:top-8 sm:left-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
           >
-            ← Ver Árbol Completo
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
           </button>
         ) : null;
       })()}

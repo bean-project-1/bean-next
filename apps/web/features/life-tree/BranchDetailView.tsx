@@ -766,7 +766,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   };
 
   return (
-    <div className={`fixed inset-x-0 bottom-0 w-full z-50 block sm:flex sm:items-center sm:p-6 pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[calc(92dvh-72px)] sm:h-auto' : 'h-[calc(65vh-72px)] sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full'}`}>
+    <div className={`fixed inset-x-0 bottom-0 w-full z-[9999] block sm:flex sm:items-center sm:p-6 sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[100dvh]' : 'h-[calc(65vh-72px)]'}`}>
       <motion.div 
         drag={isDesktop}
         dragControls={dragControls}
@@ -775,7 +775,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
         initial={isDesktop ? { x: 50, opacity: 0 } : { y: 50, opacity: 0 }}
         animate={{ x: 0, y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full h-full flex-1 sm:flex-none sm:w-[450px] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t sm:border border-slate-100 m-0"
+        className={`w-full h-full flex-1 sm:flex-none sm:w-[450px] bg-white sm:rounded-[32px] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t sm:border border-slate-100 m-0 ${isFullScreen ? 'rounded-none' : 'rounded-t-[32px]'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Mobile Drag Handle */}
@@ -794,6 +794,8 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           onPointerDown={(e) => {
             if (isDesktop) dragControls.start(e);
           }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">

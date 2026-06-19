@@ -93,7 +93,7 @@ INSTRUCCIONES CLAVE (CRÍTICO):
     const choice = response.choices[0];
     const toolCall = choice.message?.tool_calls?.[0];
     
-    if (toolCall && toolCall.function.name === 'update_seed_scores') {
+    if (toolCall && toolCall.type === 'function' && toolCall.function.name === 'update_seed_scores') {
       try {
         const args = JSON.parse(toolCall.function.arguments);
         return NextResponse.json({ 

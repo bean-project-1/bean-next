@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Sparkles, Sprout, FileText, X, Download } from 'lucide-react';
 import { useIncubator } from '../../hooks/useIncubator';
+import { useLifeTree } from '../../hooks/useLifeTree';
 import { SeedPot } from './SeedPot';
 
 interface SeedbedChatProps {
@@ -14,6 +15,7 @@ interface SeedbedChatProps {
 
 export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
   const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateProposal } = useIncubator();
+  const { addGoal } = useLifeTree();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showProposal, setShowProposal] = useState(false);

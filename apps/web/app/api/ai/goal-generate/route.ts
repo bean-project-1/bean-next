@@ -102,8 +102,11 @@ ${rawChat}`;
     const result = await prisma.$transaction(async (tx) => {
       
       // Inject raw chat history into constraints for future reference
-      const finalConstraints = parsedGoal.constraints || {};
+      const finalConstraints = (parsedGoal.constraints || {}) as any;
       finalConstraints.rawChatHistory = chatHistory;
+      if (plan.analysis) {
+        finalConstraints.analysis = plan.analysis;
+      }
 
       // Create Goal
       const goal = await tx.goal.create({
@@ -185,22 +188,79 @@ ${rawChat}`;
         }
       }
 
+      // Helper function for fallback days
+      const getFallbackDaysOfWeek = (days: any[], freq: any) => {
+        if (Array.isArray(days) && days.length > 0) return days.map(Number);
+        if (!freq) return [1, 2, 3, 4, 5];
+        if (freq.type === 'daily') return [1, 2, 3, 4, 5, 6, 0];
+        const val = freq.value || 1;
+        if (val >= 7) return [1, 2, 3, 4, 5, 6, 0];
+        if (val === 6) return [1, 2, 3, 4, 5, 6];
+        if (val === 5) return [1, 2, 3, 4, 5];
+        if (val === 4) return [1, 2, 4, 5];
+        if (val === 3) return [1, 3, 5];
+        if (val === 2) return [2, 4];
+        return [1];
+      };
+
       // Habits -> Base Commitments
       if (plan.habits && plan.habits.length > 0) {
-        const habitsData = plan.habits.map((habitData: any) => ({
-          userId: user.id,
-          goalId: goal.id,
-          title: habitData.title,
-          description: habitData.description || null,
-          type: 'goal_routine',
-          frequency: habitData.frequency || null,
-          estimatedHours: habitData.estimatedHours || 0,
-          attributes: habitData.attributes || [],
-          daysOfWeek: [], // To be set later
-          startDate: new Date(),
-          endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
-        }));
-        await tx.baseCommitment.createMany({ data: habitsData });
+        for (const habitData of plan.habits) {
+          let resolvedDims: string[] = [];
+          if (habitData.dimensions && Array.isArray(habitData.dimensions)) {
+            const dims = await tx.dimension.findMany({ where: { name: { in: habitData.dimensions } } });
+            resolvedDims = dims.map(d => d.id);
+          }
+
+          await tx.baseCommitment.create({
+            data: {
+              userId: user.id,
+              goalId: goal.id,
+              title: habitData.title,
+              description: habitData.description || null,
+              type: habitData.type || 'routine',
+              frequency: habitData.frequency || null,
+              estimatedHours: habitData.estimatedHours || 0,
+              attributes: habitData.attributes || [],
+              daysOfWeek: getFallbackDaysOfWeek(habitData.daysOfWeek, habitData.frequency),
+              startDate: habitData.startDate ? new Date(habitData.startDate) : new Date(),
+              endDate: habitData.endDate ? new Date(habitData.endDate) : (plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null),
+              dimensionIds: resolvedDims,
+              dimensions: {
+                connect: resolvedDims.map(id => ({ id }))
+              }
+            }
+          });
+        }
+      }
+
+      // Continuous Projects -> Base Commitments
+      if (plan.continuousProjects && plan.continuousProjects.length > 0) {
+        for (const cpData of plan.continuousProjects) {
+          let resolvedDims: string[] = [];
+          if (cpData.dimensions && Array.isArray(cpData.dimensions)) {
+            const dims = await tx.dimension.findMany({ where: { name: { in: cpData.dimensions } } });
+            resolvedDims = dims.map(d => d.id);
+          }
+
+          await tx.baseCommitment.create({
+            data: {
+              userId: user.id,
+              goalId: goal.id,
+              title: cpData.title,
+              description: cpData.description || null,
+              type: cpData.type || 'routine',
+              estimatedHours: cpData.estimatedHours || 1.0,
+              daysOfWeek: getFallbackDaysOfWeek(cpData.daysOfWeek, { type: 'weekly', value: cpData.daysOfWeek?.length || 3 }),
+              startDate: cpData.startDate ? new Date(cpData.startDate) : new Date(),
+              endDate: cpData.endDate ? new Date(cpData.endDate) : (plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null),
+              dimensionIds: resolvedDims,
+              dimensions: {
+                connect: resolvedDims.map(id => ({ id }))
+              }
+            }
+          });
+        }
       }
 
       return goal;

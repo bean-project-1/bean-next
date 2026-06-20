@@ -22,7 +22,7 @@ export interface ScheduledEvent {
   status: string;
   goalTitle?: string;
   estimatedHours: number;
-  itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily' | 'post-it';
+  itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily' | 'post-it' | 'project';
   dimensions?: string[];
   attributes?: string[];
   tasks?: any[];
@@ -199,6 +199,103 @@ function AgendaContent({
     }
   };
 
+  const recurrentEvents = events.filter(e => {
+    if (e.itemType !== 'commitment' && e.itemType !== 'habit' && e.itemType !== 'project') return false;
+    const d = new Date(e.date);
+    if (e.startDate) {
+      const s = new Date(e.startDate);
+      return selectedDay >= s && selectedDay <= d;
+    }
+    return isSameDay(d, selectedDay);
+  });
+
+  const workEvents = recurrentEvents.filter(e => e.type === 'work');
+  const studyEvents = recurrentEvents.filter(e => e.type === 'study');
+  const routineEvents = recurrentEvents.filter(e => e.type === 'routine');
+
+  const renderRecurrentEvent = (event: ScheduledEvent) => {
+    const isHabit = event.itemType === 'habit';
+    const isProject = event.itemType === 'project';
+    const hasGoal = !!event.goalTitle && event.goalTitle !== 'Base DNA';
+    
+    const styles: Record<string, { bg: string, border: string, text: string, badge: string, iconBg: string, icon: string }> = {
+      work: {
+        bg: 'bg-indigo-50/40 hover:bg-indigo-50/80',
+        border: 'border-indigo-100/60',
+        text: 'text-indigo-900',
+        badge: 'bg-indigo-100/70 text-indigo-700 border-indigo-200/40',
+        iconBg: 'bg-indigo-100 text-indigo-600',
+        icon: '💼'
+      },
+      study: {
+        bg: 'bg-amber-50/40 hover:bg-amber-50/80',
+        border: 'border-amber-100/60',
+        text: 'text-amber-900',
+        badge: 'bg-amber-100/70 text-amber-700 border-amber-200/40',
+        iconBg: 'bg-amber-100 text-amber-600',
+        icon: '🎓'
+      },
+      routine: {
+        bg: 'bg-emerald-50/40 hover:bg-emerald-50/80',
+        border: 'border-emerald-100/60',
+        text: 'text-emerald-900',
+        badge: 'bg-emerald-100/70 text-emerald-700 border-emerald-200/40',
+        iconBg: 'bg-emerald-100 text-emerald-600',
+        icon: isHabit ? '✨' : '🔄'
+      }
+    };
+
+    const style = styles[event.type] || styles.routine;
+
+    return (
+      <div
+        key={event.id}
+        onClick={() => handleClick(event)}
+        className={`group p-4 rounded-2xl border ${style.bg} ${style.border} cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-start gap-3 shadow-sm hover:shadow-md`}
+      >
+        <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center text-sm shrink-0 shadow-sm font-bold`}>
+          {style.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                isHabit ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                isProject ? 'bg-violet-50 text-violet-600 border-violet-100' :
+                'bg-slate-50 text-slate-500 border-slate-200'
+              }`}>
+                {isHabit ? 'Hábito' : isProject ? 'Proyecto' : 'Fijo'}
+              </span>
+              {hasGoal && (
+                <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]" title={event.goalTitle}>
+                  🎯 {event.goalTitle}
+                </span>
+              )}
+            </div>
+            <span className="text-[8px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase shrink-0">
+              Detalle
+            </span>
+          </div>
+          
+          <h3 className={`text-xs font-black leading-tight ${style.text} truncate`}>
+            {event.title}
+          </h3>
+          {event.description && (
+            <p className="text-[10px] text-slate-500/85 line-clamp-2 mt-1 leading-normal font-bold">
+              {event.description}
+            </p>
+          )}
+          
+          <p className="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1 font-semibold">
+            <span>⏱️</span>
+            {event.startTime && event.endTime ? `${event.startTime} - ${event.endTime}` : ''}
+            {event.estimatedHours > 0 && ` (${event.estimatedHours}h)`}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Anchored Notes */}
@@ -306,82 +403,35 @@ function AgendaContent({
         </div>
       </div>
 
-      {/* Continuous Projects */}
-      {continuousProjects.length > 0 && (
+      {/* Trabajo */}
+      {workEvents.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-violet-400 uppercase tracking-widest mb-4">Proyectos Continuos</h2>
+          <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-4">💼 Trabajo</h2>
           <div className="space-y-3">
-            {continuousProjects.map(proj => (
-              <div
-                key={proj.id}
-                onClick={() => handleClick(proj)}
-                className="bg-violet-50/50 p-4 rounded-2xl border border-violet-100/50 cursor-pointer hover:bg-violet-50 transition-colors active:scale-[0.98]"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[8px] font-black text-violet-600 uppercase tracking-widest">En curso</span>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase">{proj.goalTitle}</span>
-                </div>
-                <h3 className="text-xs font-black text-slate-800">{proj.title}</h3>
-                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">
-                  Hasta {format(new Date(proj.date), 'MMM yyyy', { locale: es })}
-                </p>
-              </div>
-            ))}
+            {workEvents.map(renderRecurrentEvent)}
           </div>
         </div>
       )}
 
-      {/* Base Commitments */}
-      {commitments.length > 0 && (
+      {/* Estudio */}
+      {studyEvents.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compromisos Base</h2>
+          <h2 className="text-[10px] font-black text-amber-650 uppercase tracking-widest mb-4">🎓 Estudio</h2>
           <div className="space-y-3">
-            {commitments.map(bc => (
-              <div key={bc.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 border-dashed">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Fijo</span>
-                  <span className="text-[9px] font-bold text-slate-300 uppercase">{bc.type}</span>
-                </div>
-                <h3 className="text-xs font-black text-slate-600">{bc.title}</h3>
-                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">
-                  {bc.startTime && bc.endTime ? `${bc.startTime} - ${bc.endTime} (${bc.estimatedHours}h)` : `${bc.estimatedHours}h`}
-                </p>
-              </div>
-            ))}
+            {studyEvents.map(renderRecurrentEvent)}
           </div>
         </div>
       )}
 
-      {/* Habits */}
-      <div>
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3 flex items-center justify-between">
-            Compromisos Base
-            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px]">{events.filter(e => e.itemType === 'habit').length}</span>
-          </h3>
-        <div className="space-y-2">
-          {events.filter(e => e.itemType === 'habit').map(habit => (
-            <div
-              key={habit.id}
-              onClick={() => handleClick(habit)}
-              className="flex items-center gap-3 bg-white/50 p-3 rounded-xl border border-slate-100/50 cursor-pointer hover:bg-white transition-colors active:scale-[0.98]"
-            >
-              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-sm shrink-0">✨</div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-[11px] font-bold text-slate-700 truncate">{habit.title}</p>
-                <p className="text-[9px] text-slate-400 uppercase tracking-tighter">{habit.goalTitle}</p>
-              </div>
-              {habit.estimatedHours > 0 && (
-                <span className="shrink-0 text-[9px] font-black px-2 py-0.5 rounded-lg bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-0.5">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {habit.estimatedHours < 1
-                    ? `${Math.round(habit.estimatedHours * 60)} min`
-                    : `${habit.estimatedHours}h`}
-                </span>
-              )}
-            </div>
-          ))}
+      {/* Rutinas */}
+      {routineEvents.length > 0 && (
+        <div>
+          <h2 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">🔄 Rutinas</h2>
+          <div className="space-y-3">
+            {routineEvents.map(renderRecurrentEvent)}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -549,6 +599,7 @@ export function ScheduleView() {
   const anchoredNotes = selectedDayEvents.filter(e => e.itemType === 'post-it');
 
   const continuousProjects = selectedDayEvents.filter(e => {
+    if (e.itemType === 'project') return true;
     if (e.itemType === 'commitment' || e.itemType === 'habit') return false;
     if (!e.startDate) return false;
     return (new Date(e.date).getTime() - new Date(e.startDate).getTime()) > 14 * 24 * 60 * 60 * 1000;
@@ -560,7 +611,8 @@ export function ScheduleView() {
   const totalDailyHours =
     dailyTasks.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0) +
     commitments.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0) +
-    habits.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
+    habits.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0) +
+    continuousProjects.reduce((acc, curr) => acc + (curr.estimatedHours || 0), 0);
 
   const handleOpenActivity = (event: ScheduledEvent) => {
     if (event.itemType === 'commitment') return;

@@ -1,35 +1,66 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, Suspense, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { GlobalAIChat } from './GlobalAIChat';
 import { MessageSquare } from 'lucide-react';
 
 interface GlobalChatContextType {
   isOpen: boolean;
-  openChat: (initialMessage?: string) => void;
+  openChat: (initialMessage?: string, context?: string) => void;
   closeChat: () => void;
 }
 
 const GlobalChatContext = createContext<GlobalChatContextType | undefined>(undefined);
 
+function URLChatTrigger({ openChat }: { openChat: (initialMessage?: string, context?: string) => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const context = searchParams.get('context');
+    if (context === 'weekly_review') {
+      openChat(undefined, 'weekly_review');
+      
+      // Clean up the URL parameter
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('context');
+      const query = params.toString() ? `?${params.toString()}` : '';
+      router.replace(`${pathname}${query}`);
+    }
+  }, [searchParams, openChat, router, pathname]);
+
+  return null;
+}
+
 export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [initialMsg, setInitialMsg] = useState<string | undefined>(undefined);
+  const [chatContext, setChatContext] = useState<string>('global');
 
-  const openChat = (msg?: string) => {
+  const openChat = (msg?: string, context?: string) => {
     setInitialMsg(msg);
+    setChatContext(context || 'global');
     setIsOpen(true);
   };
 
   const closeChat = () => {
     setIsOpen(false);
-    setTimeout(() => setInitialMsg(undefined), 300); // Clear message after animation
+    setTimeout(() => {
+      setInitialMsg(undefined);
+      setChatContext('global');
+    }, 300); // Clear message and reset context after animation
   };
 
   return (
     <GlobalChatContext.Provider value={{ isOpen, openChat, closeChat }}>
       {children}
       
+      <Suspense fallback={null}>
+        <URLChatTrigger openChat={openChat} />
+      </Suspense>
+
       {/* Floating Action Button (FAB) */}
       {!isOpen && (
         <button
@@ -40,7 +71,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
         </button>
       )}
 
-      <GlobalAIChat isOpen={isOpen} onClose={closeChat} initialMessage={initialMsg} />
+      <GlobalAIChat isOpen={isOpen} onClose={closeChat} initialMessage={initialMsg} context={chatContext} />
     </GlobalChatContext.Provider>
   );
 }
@@ -50,3 +81,4 @@ export function useGlobalChat() {
   if (!context) throw new Error('useGlobalChat must be used within GlobalChatProvider');
   return context;
 }
+

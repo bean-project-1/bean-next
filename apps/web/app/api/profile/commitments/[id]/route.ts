@@ -30,7 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionIds } = body;
+    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionIds, startDate, endDate, goalId, energyLevel, description } = body;
 
     let validDimensionIds: string[] | undefined = undefined; 
     
@@ -49,11 +49,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       data: {
         title,
         type,
-        daysOfWeek,
-        hoursPerDay,
-        commuteHours,
-        startTime,
-        endTime,
+        daysOfWeek: Array.isArray(daysOfWeek) ? daysOfWeek.map(Number) : [],
+        hoursPerDay: parseFloat(hoursPerDay) || 0,
+        commuteHours: parseFloat(commuteHours) || 0,
+        startTime: startTime || null,
+        endTime: endTime || null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        goalId: goalId || null,
+        energyLevel: energyLevel || 'medium',
+        description: description || null,
         ...(validDimensionIds !== undefined ? {
           dimensionIds: validDimensionIds,
           dimensions: {

@@ -32,7 +32,29 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
     (commitment.dimension?.name ? [commitment.dimension.name] : [])
   );
   
+  const [startDate, setStartDate] = useState(
+    commitment.startDate ? new Date(commitment.startDate).toISOString().split('T')[0] : ''
+  );
+  const [endDate, setEndDate] = useState(
+    commitment.endDate ? new Date(commitment.endDate).toISOString().split('T')[0] : ''
+  );
+  const [goalId, setGoalId] = useState(commitment.goalId || '');
+  const [energyLevel, setEnergyLevel] = useState(commitment.energyLevel || 'medium');
+  const [description, setDescription] = useState(commitment.description || '');
+  const [goals, setGoals] = useState<{ id: string; goal: string }[]>([]);
+  
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/life-tree')
+      .then(r => r.json())
+      .then(data => {
+        if (data && Array.isArray(data.branches)) {
+          setGoals(data.branches.map((b: any) => ({ id: b.id, goal: b.goal })));
+        }
+      })
+      .catch(e => console.error('Error fetching goals in CommitmentModal:', e));
+  }, []);
 
   useEffect(() => {
     if (startTime && endTime) {
@@ -58,11 +80,16 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
       title,
       type,
       hoursPerDay: hours,
-      startTime,
-      endTime,
+      startTime: startTime || null,
+      endTime: endTime || null,
       commuteHours,
       daysOfWeek: selectedDays,
-      dimensionIds: selectedDims.length > 0 ? selectedDims : null
+      dimensionIds: selectedDims.length > 0 ? selectedDims : null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      goalId: goalId || null,
+      energyLevel,
+      description
     };
 
     try {
@@ -135,7 +162,17 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
                   placeholder="Ej: Trabajo 9-5, Universidad..."
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Descripción</label>
+                <textarea 
+                  placeholder="Detalles u observaciones..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700 resize-none"
                 />
               </div>
               <div>
@@ -143,12 +180,36 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
                 <select 
                   value={type}
                   onChange={e => setType(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
                 >
                   <option value="work">💼 Trabajo / Profesional</option>
                   <option value="study">🎓 Estudio / Académico</option>
                   <option value="routine">🔄 Rutina / Estilo de Vida</option>
-                  <option value="other">📅 Otro</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Nivel de Energía</label>
+                <select 
+                  value={energyLevel}
+                  onChange={e => setEnergyLevel(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
+                >
+                  <option value="high">🔥 Alta Energía</option>
+                  <option value="medium">⚡ Energía Media</option>
+                  <option value="low">💤 Baja Energía</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Meta Relacionada</label>
+                <select 
+                  value={goalId}
+                  onChange={e => setGoalId(e.target.value)}
+                  className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
+                >
+                  <option value="">Ninguna</option>
+                  {goals.map(g => (
+                    <option key={g.id} value={g.id}>{g.goal}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -190,7 +251,7 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
                     type="time" 
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
                   />
                 </div>
                 <div>
@@ -199,7 +260,27 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
                     type="time" 
                     value={endTime}
                     onChange={e => setEndTime(e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all"
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Fecha Inicio</label>
+                  <input 
+                    type="date" 
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Fecha Fin</label>
+                  <input 
+                    type="date" 
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-200 transition-all text-slate-700"
                   />
                 </div>
               </div>

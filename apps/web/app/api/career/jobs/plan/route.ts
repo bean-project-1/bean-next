@@ -93,22 +93,46 @@ export async function POST(req: NextRequest) {
 
       // 3. Create Habits as Base Commitments
       if (plan.habits && Array.isArray(plan.habits)) {
-        const habitsToCreate = plan.habits.map((h: any) => ({
-          userId,
-          goalId: goal.id,
-          title: h.title,
-          description: h.description || null,
-          type: 'goal_routine',
-          frequency: h.frequency || { type: 'weekly', value: 1 },
-          estimatedHours: h.estimatedHours || 1.0,
-          daysOfWeek: [], // Default empty, populated later
-          startDate: new Date(),
-          endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
-        }));
+        const getFallbackDaysOfWeek = (days: any[], freq: any) => {
+          if (Array.isArray(days) && days.length > 0) return days.map(Number);
+          if (!freq) return [1, 2, 3, 4, 5];
+          if (freq.type === 'daily') return [1, 2, 3, 4, 5, 6, 0];
+          const val = freq.value || 1;
+          if (val >= 7) return [1, 2, 3, 4, 5, 6, 0];
+          if (val === 6) return [1, 2, 3, 4, 5, 6];
+          if (val === 5) return [1, 2, 3, 4, 5];
+          if (val === 4) return [1, 2, 4, 5];
+          if (val === 3) return [1, 3, 5];
+          if (val === 2) return [2, 4];
+          return [1];
+        };
 
-        await tx.baseCommitment.createMany({
-          data: habitsToCreate
-        });
+        for (const h of plan.habits) {
+          let resolvedDims: string[] = [];
+          if (h.dimensions && Array.isArray(h.dimensions)) {
+            const dims = await tx.dimension.findMany({ where: { name: { in: h.dimensions } } });
+            resolvedDims = dims.map(d => d.id);
+          }
+
+          await tx.baseCommitment.create({
+            data: {
+              userId,
+              goalId: goal.id,
+              title: h.title,
+              description: h.description || null,
+              type: 'routine',
+              frequency: h.frequency || { type: 'weekly', value: 1 },
+              estimatedHours: h.estimatedHours || 1.0,
+              daysOfWeek: getFallbackDaysOfWeek(h.daysOfWeek, h.frequency),
+              startDate: new Date(),
+              endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null,
+              dimensionIds: resolvedDims,
+              dimensions: {
+                connect: resolvedDims.map(id => ({ id }))
+              }
+            }
+          });
+        }
       }
 
       return goal;

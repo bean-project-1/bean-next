@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { NotificationSettings } from './NotificationSettings';
 
-interface User { id: string; name?: string; email: string; createdAt: string; }
+interface User { id: string; name?: string; email: string; createdAt: string; notificationPreferences?: any; }
 
 export function ProfileView() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +12,7 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [weeklyReviewEnabled, setWeeklyReviewEnabled] = useState(true);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -20,6 +21,8 @@ export function ProfileView() {
         if (json.success) {
           setUser(json.data.user);
           setEditName(json.data.user.name || '');
+          const prefs = json.data.user.notificationPreferences;
+          setWeeklyReviewEnabled(prefs?.weeklyReview !== false);
         }
       })
       .catch(() => {})
@@ -44,6 +47,28 @@ export function ProfileView() {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleWeeklyReview = async (newValue: boolean) => {
+    setWeeklyReviewEnabled(newValue);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          notificationPreferences: {
+            ...user?.notificationPreferences,
+            weeklyReview: newValue
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -137,7 +162,34 @@ export function ProfileView() {
       <div className="space-y-6">
         <div>
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Configuración</h3>
-          <NotificationSettings />
+          <div className="space-y-4">
+            <NotificationSettings />
+            
+            <div className="p-4 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-xl ${weeklyReviewEnabled ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-500'}`}>
+                  <span className="text-xl">🔄</span>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-900 text-base">Revisión Semanal Proactiva</p>
+                  <p className="text-xs text-slate-500/80 font-medium mt-0.5">
+                    El Guía BEAN te contactará los domingos para auditar tu progreso y ajustar tu plan.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={weeklyReviewEnabled}
+                    onChange={e => handleToggleWeeklyReview(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-violet-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>

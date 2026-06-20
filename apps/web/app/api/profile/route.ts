@@ -298,7 +298,8 @@ export async function GET(req: NextRequest) {
           name: user.name,
           avatarUrl: user.avatarUrl,
           attributes: user.attributes,
-          baseCommitments: user.baseCommitments
+          baseCommitments: user.baseCommitments,
+          notificationPreferences: user.notificationPreferences
         },
         latestState,
         dimensions: allDimensions
@@ -331,17 +332,26 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { name } = await req.json();
-    if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { success: false, error: 'Name is required' },
-        { status: 400 }
-      );
+    const { name, notificationPreferences } = await req.json();
+    const dataToUpdate: any = {};
+    
+    if (name !== undefined) {
+      if (name.trim() === '') {
+        return NextResponse.json(
+          { success: false, error: 'Name is required' },
+          { status: 400 }
+        );
+      }
+      dataToUpdate.name = name;
+    }
+    
+    if (notificationPreferences !== undefined) {
+      dataToUpdate.notificationPreferences = notificationPreferences;
     }
 
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { name },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({ success: true, user });

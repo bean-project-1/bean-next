@@ -162,6 +162,7 @@ model BaseCommitment {
   lastCompletedAt DateTime? @map("last_completed_at")
 
   isActive  Boolean  @default(true)
+  energyLevel String? @default("medium") @map("energy_level")
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

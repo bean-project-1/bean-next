@@ -504,6 +504,24 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   const [selectedLeaf, setSelectedLeaf] = useState<Branch['leaves'][0] | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+  const [commitments, setCommitments] = useState<any[]>([]);
+  const [loadingCommitments, setLoadingCommitments] = useState(false);
+
+  useEffect(() => {
+    if (!branch.id) return;
+    setLoadingCommitments(true);
+    fetch('/api/profile/commitments')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          const associated = json.commitments.filter((c: any) => c.goalId === branch.id);
+          setCommitments(associated);
+        }
+      })
+      .catch(e => console.error('Error fetching commitments in BranchDetailView:', e))
+      .finally(() => setLoadingCommitments(false));
+  }, [branch.id]);
   const renderActionCard = (child: any) => {
     const isExpandedLeaf = expandedLeafId === child.id;
     return (
@@ -901,6 +919,46 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
               <p className="text-sm font-medium text-slate-600 leading-relaxed">
                 {editDesc || 'Sin descripción detallada.'}
               </p>
+            )}
+          </section>
+
+          {/* Ritmos y Rutinas vinculados */}
+          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
+              <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                {commitments.length}
+              </span>
+            </div>
+            {loadingCommitments ? (
+              <div className="h-10 bg-slate-50 animate-pulse rounded-xl" />
+            ) : commitments.length === 0 ? (
+              <p className="text-xs text-slate-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
+            ) : (
+              <div className="space-y-2">
+                {commitments.map((c) => {
+                  const icons: Record<string, string> = { work: '💼', study: '🎓', routine: '🔄' };
+                  const labels: Record<string, string> = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
+                  return (
+                    <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-sm">{icons[c.type] || '🔄'}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{c.title}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
+                            {labels[c.type] || 'Rutina'} • {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h/día`}
+                          </p>
+                        </div>
+                      </div>
+                      {c.streakCount > 0 && (
+                        <span className="shrink-0 text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                          🔥 {c.streakCount}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
 

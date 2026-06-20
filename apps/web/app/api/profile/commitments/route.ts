@@ -10,9 +10,15 @@ export async function GET(req: NextRequest) {
     const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
+    // Migrate legacy types in database
+    await prisma.baseCommitment.updateMany({
+      where: { userId, type: { in: ['goal_routine', 'goal_project'] } },
+      data: { type: 'routine' }
+    });
+
     const commitments = await prisma.baseCommitment.findMany({
       where: { userId },
-      include: { dimensions: true }
+      include: { dimensions: true, goal: true }
     });
 
     return NextResponse.json({ success: true, commitments });
@@ -28,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const body = await req.json();
-    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionIds } = body;
+    const { title, type, daysOfWeek, hoursPerDay, commuteHours, startTime, endTime, dimensionIds, startDate, endDate, goalId, energyLevel, description } = body;
 
     let validDimensionIds: string[] = [];
     if (dimensionIds && Array.isArray(dimensionIds)) {
@@ -45,11 +51,16 @@ export async function POST(req: NextRequest) {
         userId,
         title,
         type,
-        daysOfWeek,
-        hoursPerDay,
-        commuteHours,
-        startTime,
-        endTime,
+        daysOfWeek: Array.isArray(daysOfWeek) ? daysOfWeek.map(Number) : [],
+        hoursPerDay: parseFloat(hoursPerDay) || 0,
+        commuteHours: parseFloat(commuteHours) || 0,
+        startTime: startTime || null,
+        endTime: endTime || null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        goalId: goalId || null,
+        energyLevel: energyLevel || 'medium',
+        description: description || null,
         dimensionIds: validDimensionIds,
         dimensions: {
           connect: validDimensionIds.map(id => ({ id }))

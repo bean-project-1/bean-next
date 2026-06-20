@@ -23,6 +23,7 @@ interface GlobalAIChatProps {
   isOpen: boolean;
   onClose: () => void;
   initialMessage?: string;
+  context?: string;
 }
 
 function renderFormattedText(text: string) {
@@ -39,7 +40,7 @@ function renderFormattedText(text: string) {
   ));
 }
 
-export function GlobalAIChat({ isOpen, onClose, initialMessage }: GlobalAIChatProps) {
+export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'global' }: GlobalAIChatProps) {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,7 +66,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage }: GlobalAIChatPr
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch('/api/ai/chat?context=global');
+      const res = await fetch(`/api/ai/chat?context=${context}`);
       const data = await res.json();
       if (data.success) {
         setSessionId(data.data.id);
@@ -80,7 +81,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage }: GlobalAIChatPr
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [context]);
 
   useEffect(() => {
     if (isOpen) {
@@ -129,7 +130,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage }: GlobalAIChatPr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          context: 'global',
+          context,
           message: userMsg
         })
       });

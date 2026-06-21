@@ -14,8 +14,14 @@ export interface SeedMessage {
 
 export interface SeedScores {
   sun: number;   // Desirability (Deseable)
+  sunFeedback?: string;
+  sunQuestions?: string[];
   earth: number; // Feasibility (Factible)
+  earthFeedback?: string;
+  earthQuestions?: string[];
   water: number; // Viability (Viable)
+  waterFeedback?: string;
+  waterQuestions?: string[];
 }
 
 export interface IdeaCloud {
@@ -23,6 +29,15 @@ export interface IdeaCloud {
   text: string;
   x?: number;
   y?: number;
+}
+
+export interface SeedDocument {
+  executiveSummary: string;
+  problemAnatomy: string;
+  solutionArchitecture: string;
+  technicalViability: string;
+  sustainability: string;
+  riskMatrix: string;
 }
 
 export interface Seed {
@@ -34,10 +49,18 @@ export interface Seed {
   createdAt: number | string | Date;
   messages: SeedMessage[];
   clouds: IdeaCloud[];
-  proposal?: string;
+  proposal?: SeedDocument | null;
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json()).then(data => data.seeds);
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    if (res.status === 401) return []; // Not logged in yet, return empty list instead of throwing
+    throw new Error('Failed to fetch seeds');
+  }
+  const data = await res.json();
+  return Array.isArray(data.seeds) ? data.seeds : [];
+};
 
 export function useIncubator() {
   const { data: seeds = [], error, mutate } = useSWR<Seed[]>('/api/incubator/seeds', fetcher);
@@ -91,7 +114,7 @@ export function useIncubator() {
       scores: { sun: 10, earth: 10, water: 10 },
       createdAt: Date.now(),
       clouds: [],
-      proposal: '',
+      proposal: null,
       messages: [{
         id: 'msg_0',
         role: 'system',
@@ -170,8 +193,14 @@ export function useIncubator() {
 
       const newScores = {
         sun: Math.min(100, Math.max(0, updates.sun ?? seed.scores.sun)),
+        sunFeedback: updates.sunFeedback ?? seed.scores.sunFeedback,
+        sunQuestions: updates.sunQuestions ?? seed.scores.sunQuestions,
         earth: Math.min(100, Math.max(0, updates.earth ?? seed.scores.earth)),
+        earthFeedback: updates.earthFeedback ?? seed.scores.earthFeedback,
+        earthQuestions: updates.earthQuestions ?? seed.scores.earthQuestions,
         water: Math.min(100, Math.max(0, updates.water ?? seed.scores.water)),
+        waterFeedback: updates.waterFeedback ?? seed.scores.waterFeedback,
+        waterQuestions: updates.waterQuestions ?? seed.scores.waterQuestions,
       };
       
       const isReady = newScores.sun >= 80 && newScores.earth >= 80 && newScores.water >= 80;
@@ -183,10 +212,22 @@ export function useIncubator() {
     }, { revalidate: false });
   }, [mutate]);
 
-  const updateProposal = useCallback((seedId: string, proposal: string) => {
+  const updateDocument = useCallback((seedId: string, partialDoc: Partial<SeedDocument>) => {
     mutate((currentSeeds = []) => {
-      updateSeedDb(seedId, { proposal });
-      return currentSeeds.map(s => s.id === seedId ? { ...s, proposal } : s);
+      const seed = currentSeeds.find(s => s.id === seedId);
+      if (!seed) return currentSeeds;
+      
+      const newProposal = {
+        executiveSummary: partialDoc.executiveSummary ?? seed.proposal?.executiveSummary ?? '',
+        problemAnatomy: partialDoc.problemAnatomy ?? seed.proposal?.problemAnatomy ?? '',
+        solutionArchitecture: partialDoc.solutionArchitecture ?? seed.proposal?.solutionArchitecture ?? '',
+        technicalViability: partialDoc.technicalViability ?? seed.proposal?.technicalViability ?? '',
+        sustainability: partialDoc.sustainability ?? seed.proposal?.sustainability ?? '',
+        riskMatrix: partialDoc.riskMatrix ?? seed.proposal?.riskMatrix ?? ''
+      };
+      
+      updateSeedDb(seedId, { proposal: newProposal });
+      return currentSeeds.map(s => s.id === seedId ? { ...s, proposal: newProposal } : s);
     }, { revalidate: false });
   }, [mutate]);
 
@@ -218,6 +259,22 @@ export function useIncubator() {
     mutate();
   }, [seeds, mutate]);
 
+  const evaluateSeed = useCallback(async (seedId: string, currentProposal: SeedDocument) => {
+    try {
+      const res = await fetch('/api/ai/incubator/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal: currentProposal })
+      });
+      const data = await res.json();
+      if (data.success && data.scores) {
+        updateScores(seedId, data.scores);
+      }
+    } catch (error) {
+      console.error('Failed to evaluate seed', error);
+    }
+  }, [updateScores]);
+
   return {
     seeds,
     loading,
@@ -227,8 +284,9 @@ export function useIncubator() {
     addCloud,
     removeCloud,
     updateScores,
-    updateProposal,
+    updateDocument,
     deleteSeed,
-    restartChat
+    restartChat,
+    evaluateSeed
   };
 }

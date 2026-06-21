@@ -11,6 +11,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
     const body = await request.json();
     const { id: seedId } = await context.params;
+    console.log('[DEBUG PUT /seeds/[id]] Received body:', JSON.stringify(body).slice(0, 500));
 
     // Verify ownership
     const existing = await prisma.incubatorSeed.findUnique({ where: { id: seedId } });

@@ -21,21 +21,21 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 2. Fetch latest LifeState for the total growth score
-    const latestState = await (prisma as any).lifeState.findFirst({
-      where: { userId },
-      orderBy: { timestamp: 'desc' }
-    });
+    // 2. Calculate organic growthScore based on goal progress
+    const totalProgress = goals.reduce((acc: number, g: any) => acc + (g.progress || 0), 0);
+    const growthScore = goals.length > 0 ? Math.round(totalProgress / goals.length) : 0;
 
     // 3. Map to TreeData structure (Branches = Goals)
     const treeData = {
-      growthScore: Math.round(latestState?.lifeScore || 0),
+      growthScore,
       branches: goals.map((goal: any) => ({
         id: goal.id,
         goal: goal.title,
         description: goal.description,
         deadline: goal.deadline,
         progress: goal.progress || 0,
+        status: goal.status || 'active',
+        resumeDate: goal.resumeDate || null,
         leaves: (goal.actions || []).map((action: any) => ({
           id: action.id,
           name: action.title,

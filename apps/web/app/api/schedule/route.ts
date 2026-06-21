@@ -29,6 +29,12 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    // Migrate legacy types in database
+    await prisma.baseCommitment.updateMany({
+      where: { userId, type: { in: ['goal_routine', 'goal_project'] } },
+      data: { type: 'routine' }
+    });
+
     // 2. Fetch Base Commitments (Work/Study/Routines/Goal Routines)
     const baseCommitments = await prisma.baseCommitment.findMany({
       where: { userId, isActive: true },
@@ -60,10 +66,24 @@ export async function GET(req: NextRequest) {
         const isBeforeEnd = !endObj || dateObj <= endObj;
 
         if (bc.daysOfWeek.includes(dayOfWeek) && isAfterStart && isBeforeEnd) {
+          let itemType: 'commitment' | 'habit' | 'project' = 'commitment';
+          if (bc.goalId) {
+            const duration = (bc.startDate && bc.endDate) 
+              ? (new Date(bc.endDate).getTime() - new Date(bc.startDate).getTime()) 
+              : 0;
+            if (bc.type === 'routine' && duration <= 14 * 24 * 60 * 60 * 1000) {
+              itemType = 'habit';
+            } else {
+              itemType = 'project';
+            }
+          } else {
+            itemType = 'commitment';
+          }
+
           events.push({
             id: `${bc.id}-${dateKey}`,
             title: bc.title,
-            description: bc.description || `Compromiso recurrente (${bc.type})`,
+            description: bc.description || '',
             date: d.toISOString(),
             startTime: bc.startTime,
             endTime: bc.endTime,
@@ -72,7 +92,7 @@ export async function GET(req: NextRequest) {
             status: 'commitment',
             goalId: bc.goalId,
             goalTitle: bc.goal?.title || 'Base DNA',
-            itemType: bc.type === 'goal_routine' ? 'habit' : 'commitment', // 'habit' helps legacy frontend UI color it right
+            itemType,
             dimensionName: bc.dimensions?.map((dim: any) => dim.label).join(', ') || 'General'
           });
         }

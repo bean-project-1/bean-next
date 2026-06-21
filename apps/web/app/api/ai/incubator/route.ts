@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getTracedOpenAI } from '@/lib/openai';
+import { search } from 'duck-duck-scrape';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,95 +17,169 @@ export async function POST(req: NextRequest) {
     const { title, description, messages, currentScores, currentProposal } = await req.json();
 
     const systemPrompt = `Eres BEAN AI, el "Inversor y Analista Experto" del Semillero de Ideas.
-Tu objetivo es ayudar al usuario a madurar su idea evaluando 3 dimensiones clave (Deseable/Sol, Factible/Tierra, Viable/Agua). A la vez, eres el redactor encargado de construir un Documento de Propuesta estructurado en tiempo real.
+Tu objetivo es ayudar al usuario a madurar su idea debatiendo y llenando un Documento Estructurado de 6 puntos en tiempo real. No calculas puntajes, solo redactas y conversas.
 
 IDEA DEL USUARIO:
 Título: "${title}"
 Descripción inicial: "${description}"
 
-ESTADO ACTUAL DE LA PLANTA (Puntajes de 0 a 100):
-- ☀️ Deseable (Sol): ${currentScores.sun}%
-- 🌍 Factible (Tierra): ${currentScores.earth}%
-- 💧 Viable (Agua): ${currentScores.water}%
-
-DOCUMENTO ACTUAL (Borrador):
-${currentProposal || "(Vacío, debes empezar a escribirlo)"}
+DOCUMENTO ACTUAL (En formato JSON):
+${currentProposal ? JSON.stringify(currentProposal, null, 2) : "(Vacío, debes empezar a llenarlo)"}
 
 INSTRUCCIONES CLAVE (CRÍTICO):
-1. **SÉ BRUTALMENTE HONESTO Y REALISTA.** No seas un porrista ciego. Si la idea tiene limitaciones físicas, científicas o económicas (ej. pisos piezoeléctricos generan muy poca energía y no son rentables), DEBES DECÍRSELO DIRECTAMENTE.
-2. **No seas un simple interrogador.** Si el usuario dice "no sé" o está atascado, propón alternativas reales basadas en lo que existe actualmente en el mercado.
-3. Actúa como un consultor experto o un inversor de "Shark Tank". Si la propuesta no da dinero, si la tecnología es carísima, o si nadie pagaría por ello, señálalo. Reta al usuario a pensar en modelos de negocio viables.
-4. Tu respuesta debe ser concisa, directa y profesional, pero manteniendo un toque de empatía (no seas grosero, solo realista).
-5. Al final, debes usar la función \`update_seed_scores\` para registrar:
-   - La nueva puntuación (Baja o sube según los argumentos del usuario).
-   - Tu respuesta al usuario.
-   - El nuevo "Documento de Propuesta" en formato Markdown. 
-     **CRÍTICO: El documento debe seguir ESTRICTAMENTE esta estructura de 9 puntos (Pitch Deck):**
-     1. **El Gancho**: Una frase clara y atractiva.
-     2. **El Problema**: Dolor real, a quién afecta, por qué falla lo actual.
-     3. **La Solución**: Propuesta de valor, qué es, beneficio principal.
-     4. **Mercado y Público**: Usuario ideal, tamaño.
-     5. **El Producto**: Cómo funciona, MVP.
-     6. **Modelo de Sostenibilidad**: Cómo genera dinero/ahorros.
-     7. **Tracción**: Validación, feedback, prototipos (lo que se haya hecho en la charla).
-     8. **El Equipo**: Por qué ustedes.
-     9. **Call to Action**: ¿Qué recursos necesitas ahora mismo?
-     Toma el borrador actual y llénalo orgánicamente con lo que vayan hablando. Si un punto no se ha hablado, ponlo como "Por definir...".`;
+1. **SÉ BRUTALMENTE HONESTO Y REALISTA.** No seas un porrista ciego. Si la idea tiene limitaciones, DEBES DECÍRSELO.
+2. **BUSCA EN LA WEB.** Si el usuario pregunta por estadísticas, estado del arte, competencia o mercado, TIENES la herramienta \`search_web\`. ÚSALA para darle datos reales. NUNCA inventes estadísticas.
+3. **APORTA SOLUCIONES.** Si encuentras un problema (con o sin búsqueda), PROPÓN INMEDIATAMENTE alternativas viables.
+4. Tu respuesta debe ser concisa, directa y profesional.
+5. Al final, debes usar la función \`update_document_and_reply\` para registrar:
+   - Tu respuesta al usuario en el chat.
+   - Las 6 secciones del Documento de Propuesta. (CRÍTICO AUTO-GUARDADO: Si propones una solución o encuentras un dato clave en la web, REDÁCTALO e incorpóralo INMEDIATAMENTE en la sección pertinente fusionándolo con lo que ya estaba. NO esperes a que el usuario te lo pida. El documento debe evolucionar en CADA respuesta tuya. Para las secciones que no cambien, DEBES copiar el texto exacto que ya tenían).
 
-    const aiMessages = [
+Las 6 secciones son:
+1. executiveSummary: Resumen Ejecutivo y Tesis de Impacto.
+2. problemAnatomy: Anatomía del Problema y Validación (Data-Driven).
+3. solutionArchitecture: Arquitectura de la Solución y Alcance (El MVP).
+4. technicalViability: Viabilidad Técnica y de Datos (El Stack).
+5. sustainability: Modelo de Negocio (Ingresos, Estructura de Costos y Viabilidad Financiera).
+6. riskMatrix: Matriz de Riesgos y "Antídoto" (Pre-mortem).`;
+
+    const aiMessages: any[] = [
       { role: 'system', content: systemPrompt },
       ...messages.map((m: any) => ({ role: m.role, content: m.content }))
     ];
 
     const tracedClient = getTracedOpenAI({
       userId: userId,
-      tags: ["agent:incubator"]
+      tags: ["agent:incubator:writer"]
     });
 
     const tools = [
       {
         type: "function",
         function: {
-          name: "update_seed_scores",
-          description: "Calcula el progreso de la idea y actualiza el documento maestro de propuesta.",
+          name: "search_web",
+          description: "Busca en internet información actualizada, estadísticas, estado del arte o competidores. Úsalo SIEMPRE que necesites validar un mercado o dar datos duros.",
           parameters: {
             type: "object",
             properties: {
-              sun: { type: "number", description: "Puntaje Deseable / Problema / Audiencia (0-100)" },
-              earth: { type: "number", description: "Puntaje Factible / Técnico / Solución (0-100)" },
-              water: { type: "number", description: "Puntaje Viable / Recursos / Negocio (0-100)" },
-              proposal: { type: "string", description: "El documento en Markdown actualizado y estructurado con el resumen de la propuesta hasta ahora." },
-              reply: { type: "string", description: "Lo que le responderás al usuario en el chat." }
+              query: { type: "string", description: "La consulta de búsqueda a realizar en DuckDuckGo." }
             },
-            required: ["sun", "earth", "water", "proposal", "reply"]
-          }
+            required: ["query"],
+            additionalProperties: false
+          },
+          strict: true
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_document_and_reply",
+          description: "Responde al usuario y actualiza el documento estructurado de la idea.",
+          parameters: {
+            type: "object",
+            properties: {
+              executiveSummary: { type: "string", description: "Resumen Ejecutivo y Tesis de Impacto" },
+              problemAnatomy: { type: "string", description: "Anatomía del Problema y Validación" },
+              solutionArchitecture: { type: "string", description: "Arquitectura de la Solución y Alcance MVP" },
+              technicalViability: { type: "string", description: "Viabilidad Técnica y de Datos" },
+              sustainability: { type: "string", description: "Modelo de Negocio (Ingresos, Costos y Viabilidad Financiera)" },
+              riskMatrix: { type: "string", description: "Matriz de Riesgos y Pre-mortem" },
+              reply: { type: "string", description: "Lo que le responderás al usuario en el chat, incluyendo tus consejos concretos." }
+            },
+            required: ["executiveSummary", "problemAnatomy", "solutionArchitecture", "technicalViability", "sustainability", "riskMatrix", "reply"],
+            additionalProperties: false
+          },
+          strict: true
         }
       }
     ];
 
-    const response = await tracedClient.chat.completions.create({
+    // First call: allow AI to either search or reply
+    const response1 = await tracedClient.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: aiMessages as any,
+      messages: aiMessages,
       temperature: 0.8,
       tools: tools as any,
-      tool_choice: { type: "function", function: { name: "update_seed_scores" } },
+      tool_choice: "auto",
     });
 
-    const choice = response.choices[0];
-    const toolCall = choice.message?.tool_calls?.[0];
+    let choice = response1.choices[0];
+    let toolCall = choice.message?.tool_calls?.[0];
+
+    // If AI decides to search
+    if (toolCall && toolCall.type === 'function' && toolCall.function.name === 'search_web') {
+      try {
+        const { query } = JSON.parse(toolCall.function.arguments);
+        console.log(`[Incubator] Searching web for: ${query}`);
+        
+        const searchResults = await search(query);
+        // Take top 5 results to keep context small
+        const snippets = searchResults.results.slice(0, 5).map(r => `Fuente: ${r.url}\nTítulo: ${r.title}\nResumen: ${r.description}`).join("\n\n");
+        
+        // Append AI's tool call and the tool response
+        aiMessages.push(choice.message);
+        aiMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: snippets || "No se encontraron resultados."
+        });
+
+        // Second call: Force document update and reply
+        const response2 = await tracedClient.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: aiMessages,
+          temperature: 0.8,
+          tools: tools as any,
+          tool_choice: { type: "function", function: { name: "update_document_and_reply" } },
+        });
+
+        choice = response2.choices[0];
+        toolCall = choice.message?.tool_calls?.[0];
+      } catch (err) {
+        console.error("Error executing web search", err);
+        // Fallback: force reply without search results if search fails
+        const response2 = await tracedClient.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: aiMessages,
+          temperature: 0.8,
+          tools: tools as any,
+          tool_choice: { type: "function", function: { name: "update_document_and_reply" } },
+        });
+        choice = response2.choices[0];
+        toolCall = choice.message?.tool_calls?.[0];
+      }
+    } else if (!toolCall || (toolCall.type === 'function' && toolCall.function.name !== 'update_document_and_reply')) {
+      // AI replied with text or something else without updating document!
+      // We must force it to use update_document_and_reply.
+      if (choice.message.content) {
+        aiMessages.push(choice.message);
+      }
+      const response2 = await tracedClient.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: aiMessages,
+        temperature: 0.8,
+        tools: tools as any,
+        tool_choice: { type: "function", function: { name: "update_document_and_reply" } },
+      });
+      choice = response2.choices[0];
+      toolCall = choice.message?.tool_calls?.[0];
+    }
     
-    if (toolCall && toolCall.type === 'function' && toolCall.function.name === 'update_seed_scores') {
+    // Process final update_document_and_reply tool call
+    if (toolCall && toolCall.type === 'function' && toolCall.function.name === 'update_document_and_reply') {
       try {
         const args = JSON.parse(toolCall.function.arguments);
         return NextResponse.json({ 
           success: true, 
           reply: args.reply, 
-          proposal: args.proposal,
-          newScores: { 
-            sun: args.sun, 
-            earth: args.earth, 
-            water: args.water 
-          } 
+          proposal: {
+            executiveSummary: args.executiveSummary,
+            problemAnatomy: args.problemAnatomy,
+            solutionArchitecture: args.solutionArchitecture,
+            technicalViability: args.technicalViability,
+            sustainability: args.sustainability,
+            riskMatrix: args.riskMatrix
+          }
         });
       } catch (e) {
         console.error("Error parsing AI tool args", e);

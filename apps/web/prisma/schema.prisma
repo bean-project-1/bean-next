@@ -30,7 +30,6 @@ model User {
   sessions          Session[]
   attributes        UserAttribute[]
   dimensionInputs   DimensionInput[]
-  lifeStates        LifeState[]
   lifeEvents        LifeEvent[]
   goals             Goal[]
   chatSessions      ChatSession[]
@@ -162,6 +161,7 @@ model BaseCommitment {
   lastCompletedAt DateTime? @map("last_completed_at")
 
   isActive  Boolean  @default(true)
+  energyLevel String? @default("medium") @map("energy_level")
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -263,36 +263,7 @@ model DimensionInput {
   @@map("dimension_inputs")
 }
 
-//
-// ───────────────── LIFE STATE ─────────────────
-//
-model LifeState {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @map("user_id") @db.ObjectId
 
-  lifeScore      Float @map("life_score")
-  balanceScore   Float @map("balance_score")
-  alignmentScore Float @map("alignment_score")
-  energyIndex    Float @map("energy_index")
-
-  timestamp   DateTime @default(now())
-  triggeredBy String?  @map("triggered_by")
-
-  insights Json?
-
-  scores DimensionScore[]
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("life_states")
-}
-
-type DimensionScore {
-  dimensionId String @db.ObjectId
-  score       Float
-  trend       String @default("stable")
-  confidence  Float?
-}
 
 //
 // ───────────────── LIFE EVENTS ─────────────────
@@ -345,6 +316,7 @@ model Goal {
 
   progress Float  @default(0)
   status   String @default("active")
+  resumeDate DateTime? @map("resume_date")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -391,6 +363,7 @@ model GoalAction {
   dependsOn      String[] @map("depends_on") // ids de otras actions
 
   impact Json?
+  notes  String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -416,6 +389,7 @@ model Task {
   startDate      DateTime? @map("start_date")
   endDate        DateTime? @map("end_date")
   estimatedHours Float?    @map("estimated_hours")
+  notes          String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -532,7 +506,7 @@ model IncubatorSeed {
   scores      Json     // { sun, earth, water }
   messages    Json[]   // [{ id, role, content, timestamp }]
   clouds      Json[]   // [{ id, text, x, y }]
-  proposal    String?  
+  proposal    Json?  
 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

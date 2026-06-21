@@ -530,12 +530,28 @@ export function DNAView() {
                                 </div>
                                 
                                 <h4 className="text-sm font-black text-stone-850 group-hover:text-indigo-600 transition-colors leading-tight">{c.title}</h4>
+                                {c.goal && (
+                                  <div className="mt-2 inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-amber-100 max-w-full">
+                                    <span className="truncate">🎯 {c.goal.title}</span>
+                                  </div>
+                                )}
+                                {c.description && (
+                                  <p className="text-[10px] text-stone-400 mt-2 font-bold line-clamp-2 leading-relaxed">
+                                    {c.description}
+                                  </p>
+                                )}
                               </div>
 
                               <div className="mt-4 pt-3 border-t border-stone-50 flex items-center justify-between gap-2">
                                 <div className="text-[10px] font-medium text-stone-400 space-y-0.5">
                                   <p>⏱️ {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h / día`}</p>
                                   {c.commuteHours > 0 && <p className="text-emerald-500 font-bold">🚗 +{c.commuteHours}h traslado</p>}
+                                  {c.startDate && (
+                                    <p className="text-indigo-400 font-semibold">
+                                      📅 {new Date(c.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                      {c.endDate ? ` a ${new Date(c.endDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}` : ''}
+                                    </p>
+                                  )}
                                 </div>
 
                                 {/* Daily check-in button */}

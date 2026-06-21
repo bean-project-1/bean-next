@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Branch } from './types';
-import { TaskCoachChat } from './TaskCoachChat';
 import { motion, useDragControls } from 'framer-motion';
+import { useGlobalChat } from '../chat/GlobalChatProvider';
 
 interface Props {
   branch: Branch;
@@ -247,9 +247,11 @@ function getPalette(id: string) {
 
 // ── Leaf Detail Panel ─────────────────────────────
 function LeafPanel({
-  leaf, palette, onClose, onToggle, onDelete, onToggleTask, allLeaves, onToggleSubAction
+  leaf, branch, openChat, palette, onClose, onToggle, onDelete, onToggleTask, allLeaves, onToggleSubAction
 }: {
   leaf: Branch['leaves'][0];
+  branch: Branch;
+  openChat: (msg?: string, ctx?: string, goal?: any) => void;
   palette: ReturnType<typeof getPalette>;
   onClose: () => void;
   onToggle?: () => void;
@@ -259,14 +261,12 @@ function LeafPanel({
   onToggleSubAction?: (id: string, data: { completed: boolean }) => Promise<void>;
 }) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
-  const [chatTaskId, setChatTaskId] = useState<string | null>(null);
   
   // Find sub-actions (tasks/milestones) if this is a phase
   const children = allLeaves ? allLeaves.filter(l => l.parentId === leaf.id) : [];
   const tasks = children.filter(c => c.type === 'task');
+  const sortedTasks = [...tasks].sort((a, b) => Number(a.completed) - Number(b.completed));
   const milestones = children.filter(c => c.type === 'milestone');
-
-  const chatTask = tasks.find((t: any) => t.id === chatTaskId);
 
   return (
     <div
@@ -280,7 +280,7 @@ function LeafPanel({
         onClick={e => e.stopPropagation()}
       >
         {/* ── LEFT: Tasks column ── */}
-        <div className={`flex-1 flex flex-col overflow-hidden ${chatTaskId ? 'hidden lg:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col overflow-hidden flex`}>
           {/* Color bar */}
           <div className="h-1.5 w-full shrink-0" style={{ background: `linear-gradient(90deg,${palette.primary},${palette.mid})` }} />
 
@@ -322,12 +322,11 @@ function LeafPanel({
                 <div className="space-y-2">
                   {tasks.map((task: any, i: number) => {
                     const isExpanded = expandedTask === (task.id ?? i);
-                    const isActive = chatTaskId === task.id;
                     return (
                       <div
                         key={task.id ?? i}
                         className="rounded-2xl border bg-white overflow-hidden transition-all shadow-sm"
-                        style={{ borderColor: isActive ? palette.primary : task.completed ? palette.primary + '44' : '#e8edf2' }}
+                        style={{ borderColor: task.completed ? palette.primary + '44' : '#e8edf2' }}
                       >
                         <div
                           className="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors"
@@ -368,9 +367,9 @@ function LeafPanel({
 
                           {/* Coach Button */}
                           <button
-                            onClick={(e) => { e.stopPropagation(); setChatTaskId(isActive ? null : task.id); }}
-                            className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-100'}`}
-                            title="Preguntar al Coach"
+                            onClick={(e) => { e.stopPropagation(); openChat(`Necesito ayuda con la Tarea: "${task.name}". ¿Me puedes dar contexto o sugerencias de cómo abordarla?`, 'tree', branch); }}
+                            className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-slate-400 hover:bg-emerald-50 hover:text-emerald-600`}
+                            title="Consultar en Mesa de Dibujo"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                           </button>
@@ -480,17 +479,6 @@ function LeafPanel({
           </div>
         </div>
 
-        {/* ── RIGHT: Coach chat column — only shown when a task is selected ── */}
-        {chatTaskId && chatTask && (
-          <div className="flex flex-1 lg:flex-none lg:w-[420px] flex-col border-l border-slate-100">
-            <TaskCoachChat
-              taskId={chatTaskId}
-              taskTitle={chatTask.name}
-              taskDescription={chatTask.description}
-              onCloseMobile={() => setChatTaskId(null)}
-            />
-          </div>
-        )}
       </div>
       <style>{`@keyframes slideUp{from{transform:translateY(40px) scale(0.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}`}</style>
     </div>
@@ -504,6 +492,24 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   const [selectedLeaf, setSelectedLeaf] = useState<Branch['leaves'][0] | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+  const [commitments, setCommitments] = useState<any[]>([]);
+  const [loadingCommitments, setLoadingCommitments] = useState(false);
+
+  useEffect(() => {
+    if (!branch.id) return;
+    setLoadingCommitments(true);
+    fetch('/api/profile/commitments')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          const associated = json.commitments.filter((c: any) => c.goalId === branch.id);
+          setCommitments(associated);
+        }
+      })
+      .catch(e => console.error('Error fetching commitments in BranchDetailView:', e))
+      .finally(() => setLoadingCommitments(false));
+  }, [branch.id]);
   const renderActionCard = (child: any) => {
     const isExpandedLeaf = expandedLeafId === child.id;
     return (
@@ -628,24 +634,11 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                           )}
                           
                           <button
-                            onClick={() => setChatOpenTaskId(chatOpenTaskId === task.id ? null : task.id)}
-                            className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                              chatOpenTaskId === task.id 
-                                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' 
-                                : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
-                            }`}
+                            onClick={() => openChat(`Necesito ayuda con la Tarea: "${task.title}". ¿Me puedes dar contexto o sugerencias de cómo abordarla?`, 'tree', branch)}
+                            className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-emerald-600 bg-emerald-50 hover:bg-emerald-100`}
                           >
-                            🤖 {chatOpenTaskId === task.id ? 'Cerrar Coach' : 'Consultar tarea con el Coach'}
+                            🤖 Consultar tarea en Mesa de Dibujo
                           </button>
-                          
-                          {chatOpenTaskId === task.id && (
-                            <TaskCoachChat 
-                              taskId={task.id}
-                              taskTitle={task.title} 
-                              taskDescription={task.description}
-                              onCloseMobile={() => setChatOpenTaskId(null)}
-                            />
-                          )}
                         </div>
                       )}
                     </div>
@@ -657,24 +650,11 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
             {/* Activity-level Coach Chat */}
             <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center">
               <button
-                onClick={() => setChatOpenTaskId(chatOpenTaskId === child.id ? null : child.id)}
-                className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                  chatOpenTaskId === child.id 
-                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
-                    : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                }`}
+                onClick={() => openChat(`Necesito consejos generales para abordar la Fase completa: "${child.name}".`, 'tree', branch)}
+                className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50 text-indigo-600 hover:bg-indigo-100`}
               >
-                🤖 {chatOpenTaskId === child.id ? 'Ocultar Coach' : 'Consultar actividad con el Coach'}
+                🤖 Consultar fase en Mesa de Dibujo
               </button>
-              
-              {chatOpenTaskId === child.id && (
-                <TaskCoachChat 
-                  taskId={child.id}
-                  taskTitle={child.name} 
-                  taskDescription={(child as any).description}
-                  onCloseMobile={() => setChatOpenTaskId(null)}
-                />
-              )}
             </div>
           </div>
         )}
@@ -693,10 +673,10 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   // Inline Leaf state
   const [expandedLeafId, setExpandedLeafId] = useState<string | null>(activeLeafId || null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [chatOpenTaskId, setChatOpenTaskId] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const dragControls = useDragControls();
+  const { openChat } = useGlobalChat();
 
   useEffect(() => {
     setIsDesktop(window.innerWidth >= 640);
@@ -802,7 +782,12 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
                 Gestión de Meta
               </span>
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">
+              {branch.status === 'paused' && (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                  ⏸ Pausada
+                </span>
+              )}
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums ml-auto">
                 {completed}/{phases.length} Fases
               </span>
             </div>
@@ -837,34 +822,55 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                       dateStr = maxDate.toISOString();
                     }
                   }
-                  return dateStr ? (
-                    <p className="text-xs font-bold text-slate-400 mt-1 flex items-center gap-1">
-                      <span className="text-[10px]">📅</span> Estimado para: {new Date(dateStr).toLocaleDateString()}
-                    </p>
-                  ) : null;
+                  return (
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {dateStr && (
+                        <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                          <span className="text-[10px]">📅</span> Estimado para: {new Date(dateStr).toLocaleDateString()}
+                        </p>
+                      )}
+                      {branch.status === 'paused' && branch.resumeDate && (
+                        <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                          <span className="text-[10px]">⏳</span> Retomar el: {new Date(branch.resumeDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  );
                 })()}
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={async () => {
-                if (confirm('¿Eliminar esta meta completa?')) {
-                  await onDelete?.(branch.id);
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
                   onClose();
-                }
-              }}
-              className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors"
-              title="Eliminar Meta"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-              </svg>
-            </button>
-            <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
+                  openChat(`Quiero hacer algunos cambios a mi meta: ${branch.goal}`, 'refactor_goal', branch);
+                }}
+                className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition-colors"
+                title="Editar Plan en Mesa de Dibujo"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm('¿Eliminar esta meta completa?')) {
+                    await onDelete?.(branch.id);
+                    onClose();
+                  }
+                }}
+                className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors"
+                title="Eliminar Meta"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </button>
+              <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -901,6 +907,46 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
               <p className="text-sm font-medium text-slate-600 leading-relaxed">
                 {editDesc || 'Sin descripción detallada.'}
               </p>
+            )}
+          </section>
+
+          {/* Ritmos y Rutinas vinculados */}
+          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
+              <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                {commitments.length}
+              </span>
+            </div>
+            {loadingCommitments ? (
+              <div className="h-10 bg-slate-50 animate-pulse rounded-xl" />
+            ) : commitments.length === 0 ? (
+              <p className="text-xs text-slate-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
+            ) : (
+              <div className="space-y-2">
+                {commitments.map((c) => {
+                  const icons: Record<string, string> = { work: '💼', study: '🎓', routine: '🔄' };
+                  const labels: Record<string, string> = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
+                  return (
+                    <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-sm">{icons[c.type] || '🔄'}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{c.title}</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
+                            {labels[c.type] || 'Rutina'} • {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h/día`}
+                          </p>
+                        </div>
+                      </div>
+                      {c.streakCount > 0 && (
+                        <span className="shrink-0 text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                          🔥 {c.streakCount}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
 

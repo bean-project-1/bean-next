@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { GoalService } from '@/services/goal-service';
+import { GoalService, GoalAuditError } from '@/services/goal-service';
 import { openai } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
+  let sessionId = null;
   try {
     const session = await auth();
     const userId = session?.user?.id;
     const body = await req.json();
     const { finalGoalInput, chatHistory, userEmail, branchData } = body;
+    sessionId = body.sessionId;
 
     // 1. Resolve User
     let user = null;
@@ -83,7 +85,17 @@ ${rawChat}`;
     const parsedGoal = await goalService.parseGoalWithAI(goalText);
     const userDNA = await goalService.getUserDNA(user.id);
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
-    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id);
+
+    // 3.5 Resource Audit
+    if (!body.draftPlan) {
+      const auditResult = await goalService.auditGoalResources(parsedGoal, user.id);
+      if (!auditResult.isViable && auditResult.renegotiationMessage) {
+        console.log(`[GoalGenerate] Audit failed on final save: ${auditResult.renegotiationMessage}`);
+        // We no longer throw GoalAuditError here to allow the save of the plan
+      }
+    }
+
+    const plan = body.draftPlan || await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id);
 
     // 4. Resolve Dimension
     const primaryDimName = parsedGoal.relevantDimensions?.[0] || 'career';
@@ -102,8 +114,11 @@ ${rawChat}`;
     const result = await prisma.$transaction(async (tx) => {
       
       // Inject raw chat history into constraints for future reference
-      const finalConstraints = parsedGoal.constraints || {};
+      const finalConstraints = (parsedGoal.constraints || {}) as any;
       finalConstraints.rawChatHistory = chatHistory;
+      if (plan.analysis) {
+        finalConstraints.analysis = plan.analysis;
+      }
 
       // Create Goal
       const goal = await tx.goal.create({
@@ -185,22 +200,79 @@ ${rawChat}`;
         }
       }
 
+      // Helper function for fallback days
+      const getFallbackDaysOfWeek = (days: any[], freq: any) => {
+        if (Array.isArray(days) && days.length > 0) return days.map(Number);
+        if (!freq) return [1, 2, 3, 4, 5];
+        if (freq.type === 'daily') return [1, 2, 3, 4, 5, 6, 0];
+        const val = freq.value || 1;
+        if (val >= 7) return [1, 2, 3, 4, 5, 6, 0];
+        if (val === 6) return [1, 2, 3, 4, 5, 6];
+        if (val === 5) return [1, 2, 3, 4, 5];
+        if (val === 4) return [1, 2, 4, 5];
+        if (val === 3) return [1, 3, 5];
+        if (val === 2) return [2, 4];
+        return [1];
+      };
+
       // Habits -> Base Commitments
       if (plan.habits && plan.habits.length > 0) {
-        const habitsData = plan.habits.map((habitData: any) => ({
-          userId: user.id,
-          goalId: goal.id,
-          title: habitData.title,
-          description: habitData.description || null,
-          type: 'goal_routine',
-          frequency: habitData.frequency || null,
-          estimatedHours: habitData.estimatedHours || 0,
-          attributes: habitData.attributes || [],
-          daysOfWeek: [], // To be set later
-          startDate: new Date(),
-          endDate: plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null
-        }));
-        await tx.baseCommitment.createMany({ data: habitsData });
+        for (const habitData of plan.habits) {
+          let resolvedDims: string[] = [];
+          if (habitData.dimensions && Array.isArray(habitData.dimensions)) {
+            const dims = await tx.dimension.findMany({ where: { name: { in: habitData.dimensions } } });
+            resolvedDims = dims.map(d => d.id);
+          }
+
+          await tx.baseCommitment.create({
+            data: {
+              userId: user.id,
+              goalId: goal.id,
+              title: habitData.title,
+              description: habitData.description || null,
+              type: habitData.type || 'routine',
+              frequency: habitData.frequency || null,
+              estimatedHours: habitData.estimatedHours || 0,
+              attributes: habitData.attributes || [],
+              daysOfWeek: getFallbackDaysOfWeek(habitData.daysOfWeek, habitData.frequency),
+              startDate: habitData.startDate ? new Date(habitData.startDate) : new Date(),
+              endDate: habitData.endDate ? new Date(habitData.endDate) : (plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null),
+              dimensionIds: resolvedDims,
+              dimensions: {
+                connect: resolvedDims.map(id => ({ id }))
+              }
+            }
+          });
+        }
+      }
+
+      // Continuous Projects -> Base Commitments
+      if (plan.continuousProjects && plan.continuousProjects.length > 0) {
+        for (const cpData of plan.continuousProjects) {
+          let resolvedDims: string[] = [];
+          if (cpData.dimensions && Array.isArray(cpData.dimensions)) {
+            const dims = await tx.dimension.findMany({ where: { name: { in: cpData.dimensions } } });
+            resolvedDims = dims.map(d => d.id);
+          }
+
+          await tx.baseCommitment.create({
+            data: {
+              userId: user.id,
+              goalId: goal.id,
+              title: cpData.title,
+              description: cpData.description || null,
+              type: cpData.type || 'routine',
+              estimatedHours: cpData.estimatedHours || 1.0,
+              daysOfWeek: getFallbackDaysOfWeek(cpData.daysOfWeek, { type: 'weekly', value: cpData.daysOfWeek?.length || 3 }),
+              startDate: cpData.startDate ? new Date(cpData.startDate) : new Date(),
+              endDate: cpData.endDate ? new Date(cpData.endDate) : (plan.phases?.[plan.phases.length - 1]?.targetDate ? new Date(plan.phases[plan.phases.length - 1].targetDate) : null),
+              dimensionIds: resolvedDims,
+              dimensions: {
+                connect: resolvedDims.map(id => ({ id }))
+              }
+            }
+          });
+        }
       }
 
       return goal;
@@ -212,6 +284,20 @@ ${rawChat}`;
     return NextResponse.json({ success: true, goal: result, plan });
 
   } catch (error: any) {
+    if (error instanceof GoalAuditError) {
+      console.log('[GoalGenerate] Audit Failed, sending renegotiation message:', error.message);
+      if (sessionId) {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: sessionId,
+            role: 'assistant',
+            content: error.message
+          }
+        });
+      }
+      return NextResponse.json({ success: false, auditFailed: true, message: error.message });
+    }
+
     console.error('[POST /api/ai/goal-generate] FATAL:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

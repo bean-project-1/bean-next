@@ -37,7 +37,7 @@ async function clearData() {
   await prisma.goal.deleteMany({});
   await prisma.userAttribute.deleteMany({});
   await prisma.dimensionInput.deleteMany({});
-  await prisma.lifeState.deleteMany({});
+
   await prisma.chatMessage.deleteMany({});
   await prisma.chatSession.deleteMany({});
   await prisma.suggestedPath.deleteMany({});
@@ -163,20 +163,7 @@ async function seedUser(email: string, name: string, attributes: any[], goals: a
     }
   }
 
-  // Life State
-  await prisma.lifeState.create({
-    data: {
-      userId: user.id,
-      lifeScore: 70,
-      balanceScore: 65,
-      alignmentScore: 75,
-      energyIndex: 80,
-      insights: { message: `Hola ${name.split(' ')[0]}, tu ADN está listo para crecer.` },
-      scores: [
-        { dimensionId: dimensionMap['career'] || '', score: 60, trend: 'stable' }
-      ]
-    }
-  });
+
 
   return user;
 }

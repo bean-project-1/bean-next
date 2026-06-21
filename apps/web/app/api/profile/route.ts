@@ -186,19 +186,6 @@ export async function POST(req: NextRequest) {
       await Promise.all(inputOps);
     }
 
-    // 3. Create initial LifeState snapshot (without scores)
-    await prisma.lifeState.create({
-      data: {
-        userId: user.id,
-        lifeScore: 0,
-        balanceScore: 0,
-        alignmentScore: 0,
-        energyIndex: 0,
-        triggeredBy: 'onboarding',
-        scores: []
-      },
-    });
-
     // 4. Register any defined Goals from GoalPhase
     if (data.goals.length > 0) {
       await Promise.all(
@@ -258,10 +245,6 @@ export async function GET(req: NextRequest) {
         attributes: {
           include: { dimension: true }
         },
-        lifeStates: {
-          orderBy: { timestamp: 'desc' },
-          take: 1
-        },
         baseCommitments: {
           include: { dimensions: true },
           where: { isActive: true }
@@ -276,18 +259,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Extract latest state
-    const latestStateRaw = user.lifeStates[0] ?? null;
     const allDimensions = await prisma.dimension.findMany();
-    const dimIdMap = new Map(allDimensions.map(d => [d.id, d]));
-
-    const latestState = latestStateRaw ? {
-      ...latestStateRaw,
-      scores: latestStateRaw.scores.map(s => ({
-        ...s,
-        dimension: dimIdMap.get(s.dimensionId)
-      }))
-    } : null;
 
     return NextResponse.json({
       success: true,
@@ -301,7 +273,6 @@ export async function GET(req: NextRequest) {
           baseCommitments: user.baseCommitments,
           notificationPreferences: user.notificationPreferences
         },
-        latestState,
         dimensions: allDimensions
       },
     });

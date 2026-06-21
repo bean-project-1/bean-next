@@ -147,7 +147,7 @@ export function SeedbedDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm" title="Viable (Recursos/Sostenibilidad)">💧</span>
+                          <span className="text-sm" title="Viable (Negocio/Finanzas)">💧</span>
                           <div className="w-8 h-1 bg-stone-100 rounded-full overflow-hidden">
                             <div className="h-full bg-blue-500 rounded-full" style={{ width: `${seed.scores.water}%` }} />
                           </div>

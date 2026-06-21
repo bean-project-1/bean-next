@@ -76,26 +76,6 @@ async function setupTestUser(persona: TestPersona) {
     await prisma.userAttribute.createMany({ data: attributesData });
   }
 
-  // Seed DNA Scores by creating a LifeState snapshot
-  const scoresArray = Object.entries(persona.dnaScores).map(([dimName, score]) => {
-    const dimId = dimensionMap[dimName];
-    return {
-      dimensionId: dimId || dbDimensions[0].id,
-      score: score,
-      trend: 'stable'
-    };
-  });
-
-  await prisma.lifeState.create({
-    data: {
-      userId: user.id,
-      lifeScore: 50,
-      balanceScore: 50,
-      alignmentScore: 50,
-      energyIndex: 50,
-      scores: scoresArray
-    }
-  });
 
   // Seed Base Commitments (Work/Sleep/Study)
   for (const commit of persona.baseCommitments) {
@@ -181,7 +161,7 @@ MÉTRICAS A EVALUAR:
 2. "empathy_passed": ¿El tono fue cálido, empático, motivador y natural, evitando ser robótico o impaciente?
 3. "constraints_adhered": ¿El bot respetó y se alineó con las limitaciones de tiempo y presupuesto del usuario? (Ej: si Sofía tiene máx 3h/sem y el bot agendó 10h/sem, falla. Si Mateo tiene $0 y el bot agendó gastos, falla).
 4. "smart_criteria_passed": ¿El bot se aseguró de que la meta consensuada sea Específica, Medible, Alcanzable, Relevante y con un plazo temporal claro?
-5. "identity_shift_explored": ¿El bot preguntó de forma conversacional en quién debe convertirse el usuario en su día a día (cambio de identidad) para lograr la meta?
+5. "identity_shift_explored": ¿El bot propuso de forma proactiva en quién debe convertirse el usuario (cambio de identidad o mentalidad) para lograr la meta, en lugar de hacerle la pregunta abierta y difícil a él?
 
 Devuelve únicamente un objeto JSON con la siguiente estructura exacta:
 {

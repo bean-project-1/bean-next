@@ -2,10 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Sparkles, Sprout, FileText, X, Download, RefreshCcw } from 'lucide-react';
-import { useIncubator } from '../../hooks/useIncubator';
+import { ArrowLeft, Send, Sparkles, FileText, Download, RefreshCcw, LayoutDashboard, Sprout } from 'lucide-react';
+import { useIncubator, SeedDocument } from '../../hooks/useIncubator';
 import { useLifeTree } from '../../hooks/useLifeTree';
 import { SeedPot } from './SeedPot';
+import { IdeaDocument } from './IdeaDocument';
 
 interface SeedbedChatProps {
   seedId: string;
@@ -14,12 +15,12 @@ interface SeedbedChatProps {
 }
 
 export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
-  const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateProposal, restartChat } = useIncubator();
+  const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateDocument, restartChat, evaluateSeed } = useIncubator();
   const { addGoal } = useLifeTree();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showProposal, setShowProposal] = useState(false);
-  const [mobileView, setMobileView] = useState<'chat' | 'pot' | 'proposal'>('chat');
+  const [mobileView, setMobileView] = useState<'chat' | 'pot' | 'document'>('chat');
+  const [desktopLeftTab, setDesktopLeftTab] = useState<'pot' | 'document'>('pot');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const seed = getSeed(seedId);
@@ -55,14 +56,14 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
       const data = await res.json();
       
       if (data.success && data.reply) {
-        updateScores(seed.id, data.newScores);
         addMessage(seed.id, 'assistant', data.reply);
         if (data.proposal) {
-          updateProposal(seed.id, data.proposal);
+          updateDocument(seed.id, data.proposal);
+          evaluateSeed(seed.id, data.proposal);
         }
       } else {
         console.error('Error from AI:', data.error);
-        addMessage(seed.id, 'assistant', 'Oops, parece que hubo un error evaluando tu idea. ¿Podrías repetirlo?');
+        addMessage(seed.id, 'assistant', `Oops, parece que hubo un error: ${data.error || 'Desconocido'}. ¿Podrías repetirlo?`);
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -75,27 +76,45 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
   const handlePlant = async () => {
     if (!addGoal) return;
     
-    // Plant in LifeTree
     const res = await addGoal({
       title: seed.title,
       description: seed.description,
       purpose: 'Idea incubada en el Semillero',
-      dimensions: ['personal'] // default
+      dimensions: ['personal']
     });
     
     if (res.success) {
       deleteSeed(seed.id);
-      onPlanted(); // will close chat and potentially switch back to tree view
+      onPlanted();
     } else {
       alert('Error al plantar: ' + res.error);
     }
   };
 
   const handleDropCloudToChat = (cloud: any) => {
-    // Send the cloud text as a message
     handleSend(`Sobre la idea: "${cloud.text}"...`);
-    // Optional: remove cloud after sending
     removeCloud(seed.id, cloud.id);
+  };
+
+  const handleAskAI = (topic: string) => {
+    setDesktopLeftTab('document'); // Switch to document view implicitly
+    setMobileView('chat');
+    handleSend(topic);
+  };
+
+  const handleDownloadDoc = () => {
+    const doc = seed.proposal as SeedDocument | null;
+    if (!doc) return;
+    const content = `# ${seed.title}\n\n## Resumen Ejecutivo\n${doc.executiveSummary || ''}\n\n## Anatomía del Problema\n${doc.problemAnatomy || ''}\n\n## Arquitectura de la Solución\n${doc.solutionArchitecture || ''}\n\n## Viabilidad Técnica\n${doc.technicalViability || ''}\n\n## Modelo de Negocio (Viabilidad Financiera)\n${doc.sustainability || ''}\n\n## Matriz de Riesgos\n${doc.riskMatrix || ''}`;
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BusinessCase-${seed.title.replaceAll(' ', '-').substring(0, 20)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -120,45 +139,77 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
               Matera
             </button>
             <button 
-              onClick={() => setMobileView('proposal')}
-              className={`px-3 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'proposal' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500'}`}
+              onClick={() => setMobileView('document')}
+              className={`px-3 py-1.5 rounded-full text-sm font-bold transition-colors ${mobileView === 'document' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500'}`}
             >
               Doc
             </button>
           </div>
       </header>
 
-      {/* Left Area: Visual SeedPot */}
-      <div className={`w-full lg:w-1/2 h-full border-b lg:border-b-0 lg:border-r border-stone-200 relative pt-16 lg:pt-0 overflow-hidden ${mobileView === 'pot' ? 'block' : 'hidden lg:block'}`}>
+      {/* Left Area (Desktop): Tabs for Pot / Document */}
+      <div className={`w-full lg:w-1/2 h-full flex flex-col border-b lg:border-b-0 lg:border-r border-stone-200 relative pt-16 lg:pt-0 overflow-hidden ${(mobileView === 'pot' || mobileView === 'document') ? 'block' : 'hidden lg:flex'}`}>
+        
         <div className="absolute top-6 left-6 z-50 hidden lg:flex items-start gap-4 pointer-events-none">
           <button onClick={onBack} className="p-2 mt-0.5 text-stone-400 hover:text-stone-700 transition-colors rounded-full bg-white shadow-sm border border-stone-100 hover:bg-stone-50 pointer-events-auto shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-lg font-bold text-stone-800 line-clamp-3 max-w-[250px] xl:max-w-sm leading-tight pr-2 drop-shadow-sm pointer-events-auto">{seed.title}</h2>
+          <div className="pointer-events-auto flex bg-stone-100/80 backdrop-blur p-1 rounded-full border border-stone-200 mt-1">
+            <button 
+              onClick={() => setDesktopLeftTab('pot')}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-2 ${desktopLeftTab === 'pot' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+            >
+              <Sprout className="w-4 h-4" /> Matera
+            </button>
+            <button 
+              onClick={() => setDesktopLeftTab('document')}
+              className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-2 ${desktopLeftTab === 'document' ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+            >
+              <LayoutDashboard className="w-4 h-4" /> Documento
+            </button>
+          </div>
         </div>
 
-        <SeedPot 
-          seed={seed} 
-          onAddCloud={(text) => addCloud(seed.id, text)}
-          onDropCloudToChat={handleDropCloudToChat}
-          onPlant={handlePlant}
-        />
+        {/* Tab Content */}
+        <div className="flex-1 overflow-hidden relative mt-0 lg:mt-20">
+          {(mobileView === 'pot' || (desktopLeftTab === 'pot' && mobileView !== 'document')) && (
+            <SeedPot 
+              seed={seed} 
+              onAddCloud={(text) => addCloud(seed.id, text)}
+              onDropCloudToChat={handleDropCloudToChat}
+              onPlant={handlePlant}
+              onAskAI={handleAskAI}
+            />
+          )}
+          
+          {(mobileView === 'document' || (desktopLeftTab === 'document' && mobileView !== 'pot')) && (
+            <div className="absolute inset-0 flex flex-col bg-[#FAFAFA]">
+               <div className="flex justify-end p-4 lg:hidden">
+                 <button onClick={handleDownloadDoc} className="flex items-center gap-2 text-emerald-700 font-bold text-sm bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100"><Download className="w-4 h-4"/> Descargar</button>
+               </div>
+               <IdeaDocument 
+                 document={seed.proposal as SeedDocument | null} 
+                 onUpdate={(partial) => {
+                   updateDocument(seed.id, partial);
+                   const updatedDoc = { ...(seed.proposal || {}), ...partial } as SeedDocument;
+                   evaluateSeed(seed.id, updatedDoc);
+                 }}
+                 onAskAI={handleAskAI}
+               />
+               <div className="hidden lg:flex justify-end p-6 border-t border-stone-100 bg-white">
+                 <button onClick={handleDownloadDoc} className="flex items-center gap-2 text-white font-bold text-sm bg-stone-900 hover:bg-stone-800 px-6 py-3 rounded-full transition-colors shadow-sm">
+                   <Download className="w-4 h-4"/> Exportar a Markdown
+                 </button>
+               </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right Area: Chat */}
-      <div className={`w-full flex-1 min-h-0 lg:w-1/2 flex-col bg-white relative overflow-hidden ${(mobileView === 'pot' || mobileView === 'proposal') ? 'hidden lg:flex' : 'flex'}`}>
-        <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white via-white to-transparent z-10 pointer-events-none hidden lg:flex justify-end px-6 pt-6">
-          <button 
-            onClick={() => setShowProposal(true)}
-            className="pointer-events-auto flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full font-bold text-sm shadow-sm border border-emerald-100 hover:bg-emerald-100 hover:scale-105 transition-all"
-          >
-            <FileText className="w-4 h-4" />
-            Ver Propuesta
-          </button>
-        </div>
-        
+      <div className={`w-full flex-1 min-h-0 lg:w-1/2 flex-col bg-white relative overflow-hidden ${(mobileView === 'pot' || mobileView === 'document') ? 'hidden lg:flex' : 'flex'}`}>
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 scroll-smooth pt-16">
+        <div className="flex-1 overflow-y-auto p-6 scroll-smooth pt-16 lg:pt-6">
           <div className="max-w-2xl mx-auto flex flex-col gap-6 pt-4">
             {seed.messages.map((msg) => (
               <motion.div
@@ -178,17 +229,27 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
                       <span className="text-[10px] font-bold uppercase tracking-wider">BEAN AI</span>
                     </div>
                   )}
-                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                    {msg.content.split(/(\*\*.*?\*\*)/g).map((part, i) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+                      }
+                      return <span key={i}>{part}</span>;
+                    })}
+                  </p>
                 </div>
               </motion.div>
             ))}
             
             {isTyping && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                <div className="bg-white border border-stone-100 shadow-sm rounded-2xl rounded-bl-sm px-5 py-4 flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <div className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <div className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce" />
+                <div className="bg-white border border-stone-100 shadow-sm rounded-2xl rounded-bl-sm px-5 py-3.5 flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" />
+                  </div>
+                  <span className="text-xs font-bold text-stone-400 animate-pulse">Analizando y buscando en la web...</span>
                 </div>
               </motion.div>
             )}
@@ -212,13 +273,6 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
             </button>
             
             <div className="relative group w-full">
-              {/* Optional drop zone styling hint */}
-              <div className="absolute -top-12 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                  Arrastra nubes aquí para discutir
-                </span>
-              </div>
-            
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -243,144 +297,6 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
           </div>
         </div>
       </div>
-
-      {/* Mobile Proposal Tab Area */}
-      <div className={`w-full h-full flex-col bg-white relative overflow-hidden pt-16 ${mobileView === 'proposal' ? 'flex lg:hidden' : 'hidden'}`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-stone-800">Propuesta</h3>
-          </div>
-          <button 
-            onClick={() => {
-              if (!seed.proposal) return;
-              const blob = new Blob([seed.proposal], { type: 'text/markdown' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `Pitch-${seed.title.replaceAll(' ', '-').substring(0, 20)}.md`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-            }}
-            className="p-2 text-stone-500 hover:text-emerald-700 bg-white border border-stone-200 rounded-full transition-colors shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 bg-white">
-          <div className="prose prose-stone prose-emerald max-w-none prose-sm">
-            {seed.proposal ? (
-              <>
-                {seed.proposal.split('\n').map((line, i) => {
-                  if (line.startsWith('### ')) return <h4 key={i} className="text-base font-bold mt-4 mb-1 text-stone-800">{line.replace('### ', '')}</h4>;
-                  if (line.startsWith('## ')) return <h3 key={i} className="text-lg font-black mt-6 mb-2 text-stone-900 border-b pb-2">{line.replace('## ', '')}</h3>;
-                  if (line.startsWith('# ')) return <h2 key={i} className="text-xl font-black mb-4 text-stone-900">{line.replace('# ', '')}</h2>;
-                  if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} className="ml-4 mb-1 text-stone-600">{line.substring(2)}</li>;
-                  if (line.trim() === '') return <br key={i} />;
-                  return <p key={i} className="mb-2 text-stone-600 leading-relaxed">{line}</p>;
-                })}
-                <button 
-                  onClick={() => {
-                    if (!seed.proposal) return;
-                    const blob = new Blob([seed.proposal], { type: 'text/markdown' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Pitch-${seed.title.replaceAll(' ', '-').substring(0, 20)}.md`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="mt-8 w-full py-4 flex items-center justify-center gap-2 text-[15px] font-bold bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all"
-                >
-                  <Download className="w-5 h-5" />
-                  Descargar Propuesta
-                </button>
-              </>
-            ) : (
-              <p className="text-stone-400 text-center italic mt-10">Aún no hay propuesta. Continúa chateando.</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Proposal Document Modal */}
-        <AnimatePresence>
-          {showProposal && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 lg:p-8"
-            >
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white w-full max-w-3xl h-full max-h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden hidden lg:flex"
-              >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-bold text-stone-800 line-clamp-1">Documento de Propuesta</h3>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button 
-                      onClick={() => {
-                        if (!seed.proposal) return;
-                        const blob = new Blob([seed.proposal], { type: 'text/markdown' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `Pitch-${seed.title.replaceAll(' ', '-').substring(0, 20)}.md`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="px-3 py-1.5 flex items-center gap-2 text-sm font-bold bg-white text-stone-600 hover:text-emerald-700 hover:bg-emerald-50 border border-stone-200 rounded-full transition-colors shadow-sm"
-                      title="Descargar en formato Markdown (.md)"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="hidden sm:inline">Descargar</span>
-                    </button>
-                    <div className="w-px h-5 bg-stone-200 mx-1" />
-                    <button 
-                      onClick={() => setShowProposal(false)}
-                      className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-200 rounded-full transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 lg:p-10 bg-white">
-                  <div className="prose prose-stone prose-emerald max-w-none">
-                    {/* Render plain text with line breaks as fallback for markdown */}
-                    {seed.proposal ? (
-                      seed.proposal.split('\n').map((line, i) => {
-                        if (line.startsWith('### ')) return <h4 key={i} className="text-lg font-bold mt-6 mb-2 text-stone-800">{line.replace('### ', '')}</h4>;
-                        if (line.startsWith('## ')) return <h3 key={i} className="text-xl font-black mt-8 mb-4 text-stone-900 border-b pb-2">{line.replace('## ', '')}</h3>;
-                        if (line.startsWith('# ')) return <h2 key={i} className="text-2xl font-black mb-6 text-stone-900">{line.replace('# ', '')}</h2>;
-                        if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} className="ml-4 mb-1 text-stone-600">{line.substring(2)}</li>;
-                        if (line.trim() === '') return <br key={i} />;
-                        return <p key={i} className="mb-3 text-stone-600 leading-relaxed">{line}</p>;
-                      })
-                    ) : (
-                      <p className="text-stone-400 text-center italic mt-10">El documento está vacío. Conversa con BEAN AI para que empiece a redactarlo.</p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
     </div>
   );
 }

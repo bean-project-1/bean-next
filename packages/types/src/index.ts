@@ -36,14 +36,7 @@ export interface Dimension {
   isActive: boolean;
 }
 
-export interface DimensionScore {
-  dimensionId: string;
-  score: number;           // 0.0 – 10.0
-  trend: ScoreTrend;
-  notes?: string;
-  confidence?: number;
-  dimension?: Dimension;   // Optional metadata for UI
-}
+
 
 // ─── Raw Inputs ───────────────────────────────────────────────────────
 
@@ -71,20 +64,7 @@ export interface UserAttribute {
   dimension?: Dimension;
 }
 
-// ─── Life State (Snapshots for Trajectory) ───────────────────────────
 
-export interface LifeState {
-  id: string;
-  userId: string;
-  lifeScore: number;       // 0–100 composite
-  balanceScore: number;
-  alignmentScore: number;
-  energyIndex: number;
-  timestamp: Date;
-  triggeredBy?: string;
-  insights?: unknown;
-  scores: DimensionScore[];
-}
 
 // ─── Life Events ──────────────────────────────────────────────────────
 

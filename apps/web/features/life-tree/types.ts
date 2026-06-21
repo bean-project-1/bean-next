@@ -31,6 +31,8 @@ export type Branch = {
   description?: string;
   deadline?: string;
   progress: number;
+  status?: string;
+  resumeDate?: string;
   leaves: Leaf[];
 };
 

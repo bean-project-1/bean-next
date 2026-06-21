@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { GoalService } from '@/services/goal-service';
+import { GoalService, GoalAuditError } from '@/services/goal-service';
 import { openai } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
+  let sessionId = null;
   try {
     const session = await auth();
     const userId = session?.user?.id;
     const body = await req.json();
     const { finalGoalInput, chatHistory, userEmail, branchData } = body;
+    sessionId = body.sessionId;
 
     // 1. Resolve User
     let user = null;
@@ -83,7 +85,17 @@ ${rawChat}`;
     const parsedGoal = await goalService.parseGoalWithAI(goalText);
     const userDNA = await goalService.getUserDNA(user.id);
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
-    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id);
+
+    // 3.5 Resource Audit
+    if (!body.draftPlan) {
+      const auditResult = await goalService.auditGoalResources(parsedGoal, user.id);
+      if (!auditResult.isViable && auditResult.renegotiationMessage) {
+        console.log(`[GoalGenerate] Audit failed on final save: ${auditResult.renegotiationMessage}`);
+        // We no longer throw GoalAuditError here to allow the save of the plan
+      }
+    }
+
+    const plan = body.draftPlan || await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id);
 
     // 4. Resolve Dimension
     const primaryDimName = parsedGoal.relevantDimensions?.[0] || 'career';
@@ -272,6 +284,20 @@ ${rawChat}`;
     return NextResponse.json({ success: true, goal: result, plan });
 
   } catch (error: any) {
+    if (error instanceof GoalAuditError) {
+      console.log('[GoalGenerate] Audit Failed, sending renegotiation message:', error.message);
+      if (sessionId) {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: sessionId,
+            role: 'assistant',
+            content: error.message
+          }
+        });
+      }
+      return NextResponse.json({ success: false, auditFailed: true, message: error.message });
+    }
+
     console.error('[POST /api/ai/goal-generate] FATAL:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

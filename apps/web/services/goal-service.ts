@@ -8,6 +8,13 @@ const DEFAULT_WEIGHTS = {
   skills: 0.5
 };
 
+export class GoalAuditError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoalAuditError';
+  }
+}
+
 export class GoalService {
   public getClient(config?: any) {
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
@@ -65,24 +72,18 @@ export class GoalService {
   }
 
   async getUserDNA(userId: string) {
-    const latestState = await prisma.lifeState.findFirst({
+    // We no longer use LifeState scores. Instead we derive a basic presence
+    // score based on the number of attributes the user has registered in each dimension.
+    const attributes = await prisma.userAttribute.findMany({
       where: { userId },
-      orderBy: { timestamp: 'desc' }
+      include: { dimension: true }
     });
 
-    if (!latestState || !latestState.scores || !Array.isArray(latestState.scores)) {
-      return {};
-    }
-
-    const dimensions = await prisma.dimension.findMany();
-    const dimMap: Record<string, string> = {};
-    dimensions.forEach(d => { dimMap[d.id] = d.name; });
-
     const dnaMap: Record<string, number> = {};
-    (latestState.scores as any[]).forEach(s => {
-      const name = dimMap[s.dimensionId];
-      if (name) {
-        dnaMap[name] = s.score;
+    attributes.forEach(attr => {
+      if (attr.dimension?.name) {
+        // Cap the basic presence score to avoid over-inflation
+        dnaMap[attr.dimension.name] = Math.min(80, (dnaMap[attr.dimension.name] || 20) + 10); 
       }
     });
 
@@ -171,7 +172,59 @@ export class GoalService {
     };
   }
 
-  async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string) {
+  async auditGoalResources(parsedGoal: any, userId?: string) {
+    let workloadContext = "Unknown workload";
+    if (userId) {
+      const workload = await this.getUserWorkloadContext(userId);
+      workloadContext = `EXISTING SCHEDULE: ${JSON.stringify(workload.dailyHours)}`;
+    }
+
+    const timePerWeek = parsedGoal.constraints?.timePerWeek || 10;
+    const targetDate = parsedGoal.constraints?.targetDate || "Unknown";
+    const budget = parsedGoal.constraints?.budgetTotal || "Unknown";
+    
+    const prompt = `
+      Actúa como un Auditor de Viabilidad Realista. Evalúa si la siguiente meta es matemática y físicamente posible de lograr dadas las restricciones de recursos.
+      
+      META: "${parsedGoal.title}" - ${parsedGoal.description}
+      COMPLEJIDAD: ${parsedGoal.complexityLevel || 'medium'}
+      
+      RECURSOS DISPONIBLES:
+      - Tiempo asignado: ${timePerWeek} horas por semana.
+      - Fecha límite esperada: ${targetDate}
+      - Presupuesto: ${budget}
+      - Agenda actual ocupada del usuario: ${workloadContext}
+      
+      Si la matemática NO da (ej. requiere 1000 horas pero a ${timePerWeek}h/semana tomaría años y la fecha límite es en 2 meses), debes rechazarlo.
+      
+      Si debes rechazarlo, redacta un "renegotiationMessage" dirigiéndote al usuario en primera persona del plural (como si fueras el equipo del coach). Ofrece opciones conversacionales. Ejemplo: "Analicé nuestra meta con el equipo de planificación y los números no dan para lograrlo en 2 meses con 5 horas a la semana. Toma unas 300 horas en total. ¿Qué te parece si extendemos la fecha a Diciembre, o subimos a 15 horas semanales?"
+      
+      Devuelve ÚNICAMENTE un JSON:
+      {
+        "isViable": boolean,
+        "reason": "Internal logic",
+        "renegotiationMessage": "Mensaje para el usuario (vacío si es viable)"
+      }
+    `;
+
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+    const client = this.getClient({ userId, tags: ["agent:resource-audit"] });
+    
+    const response = await client.chat.completions.create({
+      model: hasOpenAI ? "gpt-4o-mini" : "deepseek-chat",
+      messages: [{ role: "system", content: "You are a strict resource auditor." }, { role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    });
+
+    try {
+      const raw = response.choices[0]?.message?.content || '{}';
+      return JSON.parse(raw);
+    } catch {
+      return { isViable: true, reason: "Parse error", renegotiationMessage: "" };
+    }
+  }
+
+  async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string, previousDraft?: any, revisionInstructions?: string) {
     const { title, description } = parsedGoal;
     const { gap } = dnaAnalysis;
     const now = new Date();
@@ -199,6 +252,18 @@ export class GoalService {
       As a World-Class Practical Execution Expert and Domain Specialist, create a highly realistic and structured action plan.
       
       ${workloadContext}
+
+      ${previousDraft ? `
+      PREVIOUS DRAFT:
+      ${JSON.stringify(previousDraft)}
+      
+      REVISION INSTRUCTIONS FROM USER:
+      ${revisionInstructions}
+      
+      INSTRUCTION: Modify the PREVIOUS DRAFT strictly according to the REVISION INSTRUCTIONS. 
+      CRITICAL RULE FOR PREVIOUS DRAFTS: Any element (phase, task, subtask, habit, project) that has an "id" AND "isCompleted": true MUST BE PRESERVED EXACTLY AS IS. Do not modify, remove, or change its dates. You may add, remove, or modify elements that are NOT completed. For elements you preserve from the previous draft, you MUST include their original "id" and "isCompleted" flags in your JSON output.
+      ` : ''}
+      
       
       CRITICAL PLANNING CONSTRAINTS & REALISM:
       - USER AVAILABILITY: The user has ONLY ${timePerWeek} hours per week for this goal.
@@ -241,6 +306,8 @@ export class GoalService {
         },
         "phases": [
           {
+            "id": "String (Only if preserving an existing phase)",
+            "isCompleted": "Boolean (Only if preserving an existing phase)",
             "title": "Phase Title",
             "description": "Why this phase matters",
             "targetDate": "ISO-8601-Date-String",
@@ -252,6 +319,8 @@ export class GoalService {
             },
             "tasks": [
               {
+                "id": "String (Only if preserving an existing task)",
+                "isCompleted": "Boolean (Only if preserving an existing task)",
                 "name": "Task Name (e.g. Enroll in semester, Submit exam application, Defend thesis proposal)",
                 "description": "Specific instructions",
                 "startDate": "ISO-8601 (Optional, for multi-day tasks)",
@@ -261,6 +330,8 @@ export class GoalService {
                 "attributes": ["focus", etc],
                 "subTasks": [
                   {
+                    "id": "String (Only if preserving an existing subtask)",
+                    "isCompleted": "Boolean (Only if preserving an existing subtask)",
                     "name": "Granular step (e.g. Gather transcripts, Fill registration form)",
                     "description": "Details",
                     "estimatedHours": "Number (Max 1.5)"

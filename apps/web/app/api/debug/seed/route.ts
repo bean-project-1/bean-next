@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     await prisma.user.deleteMany({});
     await prisma.dimension.deleteMany({});
     await prisma.userAttribute.deleteMany({});
-    await prisma.lifeState.deleteMany({ where: { userId: user.id } });
+
 
     // Add 3 Goals
     const goals = [

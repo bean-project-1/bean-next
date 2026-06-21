@@ -30,8 +30,13 @@ export class ChatCoachService {
     return session;
   }
 
-  async generateResponse(userId: string, sessionId: string | null, message: string, context?: string) {
-    if (!message?.trim()) {
+  async generateResponse(
+    userId: string, 
+    sessionId: string | undefined, 
+    message: string, 
+    context: 'insights' | 'tree' | 'global' = 'insights',
+    draftPlan: any = null
+  ) { if (!message?.trim()) {
       throw new Error('Missing message');
     }
 
@@ -78,7 +83,7 @@ export class ChatCoachService {
       ? user.goals.map(g => {
           const total = g.actions.length;
           const done = g.actions.filter(a => a.isCompleted).length;
-          return `- "${g.title}" (${done}/${total} actividades completadas)`;
+          return `- ID: ${g.id} | "${g.title}" (Estado: ${g.status}, ${done}/${total} actividades completadas)`;
         }).join('\n')
       : 'Sin metas activas en el árbol de vida.';
 
@@ -128,11 +133,12 @@ FASE 1: EXPLORADOR (Ideación y ADN)
 
 FASE 2: ARQUITECTO (Dimensionamiento y Realidad)
 - Cuando el usuario decide perseguir una meta, te conviertes en un ASESOR/MENTOR estricto pero amable y orgánico.
-- **FILTRO DE IDENTIDAD (CRÍTICO / OBLIGATORIO):** DEBES plantear la pregunta sobre el cambio de identidad (*"¿En quién te tienes que convertir en tu día a día para lograr esta meta?"*, ej. *"debo ser alguien que escribe 30 min al día"*) en los primeros 2 o 3 turnos de la conversación. Es obligatorio discutir esto antes de cerrar el trato.
+- **FILTRO DE IDENTIDAD (CRÍTICO / OBLIGATORIO):** En lugar de hacerle preguntas abiertas y difíciles al usuario, **PROPÓN TÚ MISMO** el cambio de identidad necesario para lograr esta meta (ej. *"Para lograr esto, necesitas convertirte en alguien que prioriza su salud y aparta 30 min diarios. ¿Te resuena esta identidad?"*). Haz esta propuesta en los primeros 2 o 3 turnos para ver si el usuario está de acuerdo en adoptar esa mentalidad.
 - **FILTRO SMART:** Asegúrate de que la meta consensuada sea Específica, Medible, Alcanzable, Relevante y con un Límite de tiempo. Define el destino con precisión.
 - **REGLA DE ORO (Metas vs Tareas):** La META PRINCIPAL es el resultado final que el usuario busca (ej. "Conseguir empleo como AI Engineer"). Las certificaciones, cursos o herramientas específicas que le recomiendes son simplemente HITOS (tareas) de esa meta. NUNCA reemplaces su meta principal por un hito a la hora de estructurar el plan.
+- **CONFLICTOS DE AGENDA Y RE-PRIORIZACIÓN:** Revisa estrictamente "CARGA DE TRABAJO ACTUAL". Si matemáticamente el usuario NO tiene horas disponibles para una meta nueva, **adviértele frontalmente** que su agenda está llena. Si menciona un evento de vida (ej. perdió su empleo) y tiene otras metas (ver "METAS ACTUALES"), **sugiere proactivamente pausar metas menos urgentes** para liberar tiempo.
 - **ROL DE ASESOR:** NO le pidas simplemente al usuario que adivine el tiempo o el dinero. **Propón tú un plan tentativo**. Dile aproximadamente cuánto tiempo (semanas/meses) suele tomar lograr esa meta, cuánto dinero podría requerir, y qué etapas principales (fases) le recomiendas.
-- **LLEGAR A UN CONSENSO:** Conversa con él sobre esta propuesta. Pregúntale si está de acuerdo con las etapas, el tiempo estimado y si su presupuesto y disponibilidad semanal (frente a su "CARGA DE TRABAJO ACTUAL") se ajustan a esta propuesta.
+- **LLEGAR A UN CONSENSO:** Conversa con él sobre esta propuesta. Pregúntale si está de acuerdo con las etapas, el tiempo estimado y si su presupuesto y disponibilidad semanal se ajustan.
 
 INTERACCIÓN HUMANA Y CIERRE EFICIENTE (CRÍTICO):
 - **CIERRE ASERTIVO (MÁXIMO 5 TURNOS):** La conversación debe ser ágil y resolutiva. Procura llegar al consenso en 4 o 5 turnos. No alargues la plática con reflexiones teóricas o preguntas abiertas interminables. En cuanto las restricciones de tiempo y la identidad estén discutidas, propón el acuerdo final.
@@ -140,8 +146,18 @@ INTERACCIÓN HUMANA Y CIERRE EFICIENTE (CRÍTICO):
 - Revisa si su agenda (horas de sueño, trabajo) tiene espacio. Si tu propuesta de horas choca con su agenda, recomiéndale bajar las horas y alargar la fecha límite de forma empática para cuidar su salud mental.
 
 LLAMADA A LA ACCIÓN (TOOL CALLING):
-- SOLO cuando tú y el usuario hayan llegado a un CONSENSO sobre la propuesta (horas por semana, fecha límite, fases generales e identidad acordadas), debes ejecutar la herramienta (tool) \`dimension_goal\`.
-- Recuerda: Pasa la "Meta Principal" al tool, no un hito intermedio.
+- SOLO cuando tú y el usuario hayan llegado a un CONSENSO sobre la propuesta (horas por semana, fecha límite, fases generales e identidad acordadas), debes ejecutar la herramienta \`dimension_goal\`.
+- Si el usuario acuerda pausar, cancelar o retomar una meta existente para liberar tiempo, debes usar INMEDIATAMENTE la herramienta \`update_goal_status\`.
+- **EDICIÓN VS. COACHING (CRÍTICO):** El usuario te enviará tareas o fases del Borrador. Tienes dos opciones excluyentes:
+  1. Si el usuario pide **cambiar** el plan estructuralmente (ej. "Agrega una tarea", "Quita esto", "Cambia las horas a 5"): USA INMEDIATAMENTE la herramienta \`request_draft_revision\`. No intentes justificar el cambio en texto, solo usa la herramienta.
+  2. Si el usuario llega a una conclusión contigo y te pide explícitamente guardar sus apuntes o notas sobre una tarea, o si le diste una respuesta magistral y el usuario quiere guardarla: USA la herramienta \`add_task_note\` para guardar ese contexto sin reestructurar el plan.
+  3. Si el usuario pide **ayuda, consejo o contexto** sobre una tarea (ej. "¿Cómo empiezo esto?", "Dame tips para hacer X"): Actúa como su Coach. Explícale, guíalo y motívalo en texto. **NO** uses la herramienta de revisión de borrador.
+
+${draftPlan ? `
+BORRADOR ACTUAL DEL PLAN (Mesa de Dibujo):
+${JSON.stringify(draftPlan)}
+-> El usuario está viendo este borrador en su pantalla. Recuerda las reglas de EDICIÓN VS. COACHING mencionadas arriba.
+` : ''}
 
 ADN DEL USUARIO:
 ${dnaSummary}
@@ -189,6 +205,51 @@ REGLAS DE FORMATO:
             required: ["goalTitle", "dimensionName", "hoursPerWeek", "targetDate"]
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_goal_status",
+          description: "Ejecuta esta herramienta SOLO si el usuario acepta pausar, reanudar o cancelar una meta existente.",
+          parameters: {
+            type: "object",
+            properties: {
+              goalId: { type: "string", description: "El ID exacto de la meta a actualizar" },
+              newStatus: { type: "string", enum: ["active", "paused", "cancelled"], description: "El nuevo estado de la meta" },
+              resumeDate: { type: "string", description: "Fecha estimada en la que se retomará (YYYY-MM-DD), opcional." }
+            },
+            required: ["goalId", "newStatus"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "request_draft_revision",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario te pida explícitamente que modifiques estructuralmente una tarea, fase o aspecto del Borrador del Plan que están construyendo (ej: cambiar horas, eliminar o agregar tareas). NO la uses para guardar notas o contexto.",
+          parameters: {
+            type: "object",
+            properties: {
+              instructions: { type: "string", description: "Instrucción detallada de qué cambiar en el borrador (ej: 'Quita la tarea de leer el libro y pon una de ver videos en su lugar')." }
+            },
+            required: ["instructions"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "add_task_note",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario te pida guardar una nota, un tip, un contexto o apuntes específicos sobre una tarea en la Mesa de Dibujo.",
+          parameters: {
+            type: "object",
+            properties: {
+              taskNameOrId: { type: "string", description: "El nombre de la tarea (ej: 'Configurar entorno') o su ID exacto para la cual se guardará la nota." },
+              noteContent: { type: "string", description: "El contenido de la nota, apunte o tip a guardar. Puede ser multilínea y detallado." }
+            },
+            required: ["taskNameOrId", "noteContent"]
+          }
+        }
       }
     ];
 
@@ -210,6 +271,8 @@ REGLAS DE FORMATO:
     
     let cleanReply = choice.message?.content || "";
     let branchData = null;
+    let saveNote = null;
+    let triggerRevision = null;
 
     if (toolCall && (toolCall as any).function?.name === 'dimension_goal') {
       try {
@@ -219,6 +282,39 @@ REGLAS DE FORMATO:
         cleanReply = cleanReply || `¡Perfecto! Ya tenemos las dimensiones claras (${args.hoursPerWeek}h/semana para ${args.targetDate}). Dame un momento, estoy diseñando y calculando el plan exacto para tu meta...`;
       } catch (e) {
         console.warn('Failed to parse tool arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'update_goal_status') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        await prisma.goal.update({
+          where: { id: args.goalId },
+          data: { 
+            status: args.newStatus,
+            resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
+          }
+        });
+        cleanReply = cleanReply || `He actualizado el estado de tu meta a "${args.newStatus}". ¡Avancemos!`;
+      } catch (e) {
+        console.warn('Failed to parse update_goal_status arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'request_draft_revision') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        triggerRevision = args.instructions;
+        cleanReply = cleanReply || `¡Entendido! Dame un momento, estoy ajustando el borrador del plan con tus indicaciones...`;
+      } catch (e) {
+        console.warn('Failed to parse request_draft_revision arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'add_task_note') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        saveNote = {
+          taskNameOrId: args.taskNameOrId,
+          content: args.noteContent
+        };
+        cleanReply = cleanReply || `He guardado la nota en la tarea de tu Mesa de Dibujo. ¡Mírala a la derecha!`;
+      } catch (e) {
+        console.warn('Failed to parse add_task_note arguments:', e);
       }
     } else if (!cleanReply) {
       cleanReply = "Hubo un error al procesar la respuesta.";
@@ -232,7 +328,9 @@ REGLAS DE FORMATO:
     return {
       reply: cleanReply,
       branchData,
-      sessionId: resolvedSessionId
+      sessionId: resolvedSessionId,
+      triggerRevision,
+      saveNote
     };
   }
 }

@@ -7,7 +7,7 @@ import { MessageSquare } from 'lucide-react';
 
 interface GlobalChatContextType {
   isOpen: boolean;
-  openChat: (initialMessage?: string, context?: string) => void;
+  openChat: (initialMessage?: string, context?: string, existingGoalData?: any) => void;
   closeChat: () => void;
 }
 
@@ -38,10 +38,12 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [initialMsg, setInitialMsg] = useState<string | undefined>(undefined);
   const [chatContext, setChatContext] = useState<string>('global');
+  const [existingGoalData, setExistingGoalData] = useState<any>(undefined);
 
-  const openChat = (msg?: string, context?: string) => {
+  const openChat = (msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);
     setChatContext(context || 'global');
+    setExistingGoalData(goalData);
     setIsOpen(true);
   };
 
@@ -50,6 +52,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
     setTimeout(() => {
       setInitialMsg(undefined);
       setChatContext('global');
+      setExistingGoalData(undefined);
     }, 300); // Clear message and reset context after animation
   };
 
@@ -71,7 +74,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
         </button>
       )}
 
-      <GlobalAIChat isOpen={isOpen} onClose={closeChat} initialMessage={initialMsg} context={chatContext} />
+      <GlobalAIChat isOpen={isOpen} onClose={closeChat} initialMessage={initialMsg} context={chatContext} existingGoalData={existingGoalData} />
     </GlobalChatContext.Provider>
   );
 }

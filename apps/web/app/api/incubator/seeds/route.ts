@@ -48,8 +48,7 @@ export async function POST(request: Request) {
           content: `¡Hola! Qué gran idea: "${title}". Para empezar a madurarla, cuéntame: ¿Qué problema principal intentas resolver con esto?`,
           timestamp: Date.now()
         }],
-        clouds: [],
-        proposal: ''
+        clouds: []
       }
     });
 

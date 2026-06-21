@@ -38,18 +38,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { sessionId, message, context } = await req.json();
+    const { sessionId, message, context, draftPlan } = await req.json();
     if (!message?.trim()) {
       return NextResponse.json({ success: false, error: 'Missing message' }, { status: 400 });
     }
 
     const chatCoachService = new ChatCoachService();
-    const result = await chatCoachService.generateResponse(userId, sessionId, message, context);
+    const result = await chatCoachService.generateResponse(userId, sessionId, message, context, draftPlan);
 
     return NextResponse.json({
       success: true,
       reply: result.reply,
       branchData: result.branchData,
+      triggerRevision: result.triggerRevision,
+      saveNote: result.saveNote,
       sessionId: result.sessionId
     });
   } catch (error: any) {

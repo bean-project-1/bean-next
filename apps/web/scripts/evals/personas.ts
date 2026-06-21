@@ -15,7 +15,7 @@ export interface TestPersona {
     savingsPerMonth?: number;
     targetDate?: string; // YYYY-MM
   };
-  dnaScores: Record<string, number>; // Dimension Name -> Score (0-100)
+
   baseCommitments: Array<{
     title: string;
     type: 'work' | 'study' | 'routine';
@@ -42,12 +42,7 @@ export const testPersonas: TestPersona[] = [
       budgetTotal: 100,
       savingsPerMonth: 20
     },
-    dnaScores: {
-      "skills": 40,
-      "knowledge": 30,
-      "resilience": 50,
-      "health": 40
-    },
+
     baseCommitments: [
       {
         title: "Trabajo Full Time (Diseño)",
@@ -91,11 +86,7 @@ export const testPersonas: TestPersona[] = [
       budgetTotal: 0,
       savingsPerMonth: 0
     },
-    dnaScores: {
-      "skills": 20,
-      "knowledge": 40,
-      "capital": 10 // Pobreza financiera
-    },
+
     baseCommitments: [
       {
         title: "Universidad (Clases)",
@@ -131,12 +122,7 @@ export const testPersonas: TestPersona[] = [
     constraints: {
       timePerWeek: 6
     },
-    dnaScores: {
-      "skills": 70,
-      "knowledge": 60,
-      "resilience": 40,
-      "health": 50
-    },
+
     baseCommitments: [
       {
         title: "Trabajo Oficina",
@@ -172,11 +158,7 @@ export const testPersonas: TestPersona[] = [
     constraints: {
       timePerWeek: 5
     },
-    dnaScores: {
-      "health": 25, // Muy bajo
-      "resilience": 35,
-      "skills": 60
-    },
+
     baseCommitments: [
       {
         title: "Trabajo Oficina",
@@ -213,11 +195,7 @@ export const testPersonas: TestPersona[] = [
       timePerWeek: 10,
       targetDate: "2026-09"
     },
-    dnaScores: {
-      "skills": 60,
-      "knowledge": 50,
-      "resilience": 70
-    },
+
     baseCommitments: [
       {
         title: "Trabajo Home Office",

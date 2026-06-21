@@ -35,16 +35,17 @@ export function useProfile() {
       const json = await res.json();
       
       if (json.success && json.data) {
-        const { user, latestState, dimensions } = json.data;
-        setAttributes(user.attributes || []);
+        const { user, dimensions } = json.data;
+        const userAttrs = user.attributes || [];
+        setAttributes(userAttrs);
         setDbDimensions(dimensions || []);
         
-        if (latestState?.scores && dimensions) {
+        // Derive 'scores' as the count of attributes per dimension for UI completeness
+        if (dimensions) {
           const scoreMap: Record<string, number> = {};
-          latestState.scores.forEach((ds: any) => {
-            const dimMetadata = dimensions.find((d: any) => d.id === ds.dimensionId);
-            if (dimMetadata) {
-              scoreMap[dimMetadata.name] = ds.score;
+          userAttrs.forEach((attr: any) => {
+            if (attr.dimension?.name) {
+              scoreMap[attr.dimension.name] = (scoreMap[attr.dimension.name] || 0) + 1;
             }
           });
           setScores(scoreMap);
@@ -60,35 +61,6 @@ export function useProfile() {
       setLoading(false);
     }
   }, []);
-
-  const updateScores = async (newScores: Record<string, number>) => {
-    setSaving(true);
-    setSaved(false);
-    try {
-      const response = await fetch('/api/profile/dimensions', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dimensionScores: Object.entries(newScores).map(([key, score]) => ({ key, score })),
-        }),
-      });
-      const result = await response.json();
-      if (result.success) {
-        setSaved(true);
-        setScores(newScores);
-        return { success: true };
-      } else {
-        const msg = result.error || 'Erro al guardar';
-        setError(msg);
-        return { success: false, error: msg };
-      }
-    } catch (err) {
-      console.error('Save error:', err);
-      return { success: false, error: 'Error de red' };
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const addAttribute = async (dimensionId: string, name: string, category = 'other') => {
     try {
@@ -134,7 +106,6 @@ export function useProfile() {
     error,
     pct,
     filledCount,
-    updateScores,
     addAttribute,
     refresh: fetchProfile
   };

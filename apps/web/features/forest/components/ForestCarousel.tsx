@@ -155,7 +155,14 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                 } ${isOtherZoomed ? 'pointer-events-none' : ''}`}
               >
                 <div 
-                  className="w-full h-full relative"
+                  className={`w-full h-full relative transition-transform duration-300 ${isActive && !isZoomed ? 'cursor-pointer hover:scale-105' : ''}`}
+                  onClick={() => {
+                    if (isActive && !isZoomed) {
+                      setZoomedSpaceId(space.id);
+                    } else if (!isZoomed && !isActive) {
+                      onIndexChange(idx);
+                    }
+                  }}
                 >
                   <TreeContainer 
                     space={space} 
@@ -201,7 +208,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
         )}
       </AnimatePresence>
 
-      {/* Active Tree Info (Always centered, unaffected by 3D transforms) */}
+      {/* Active Tree Info (Clean and minimal) */}
       <AnimatePresence>
         {!zoomedSpaceId && spaces[activeIndex] && (
           <motion.div 
@@ -209,18 +216,11 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-50"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50 pointer-events-none"
           >
-            <h2 className="text-3xl font-black text-slate-800 uppercase tracking-widest text-center" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-widest text-center opacity-80" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
               {spaces[activeIndex].name}
             </h2>
-            <button 
-              onClick={() => setZoomedSpaceId(spaces[activeIndex].id)}
-              className="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 flex items-center gap-2"
-            >
-              <span>Entrar al Árbol</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
           </motion.div>
         )}
       </AnimatePresence>

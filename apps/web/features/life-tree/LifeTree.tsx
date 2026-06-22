@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -39,8 +40,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Reset view when leaving the tree
@@ -502,10 +508,10 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         </div>
       )}
 
-      {(() => {
+      {mounted && (() => {
         if (!isInteractive) return null;
           
-        return (zoomedBranchId || zoomedPhaseId) ? (
+        const content = (zoomedBranchId || zoomedPhaseId) ? (
           <button 
             onClick={(e) => {
               e.stopPropagation();
@@ -519,6 +525,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             </svg>
           </button>
         ) : null;
+        
+        return content ? createPortal(content, document.body) : null;
       })()}
 
     </div>

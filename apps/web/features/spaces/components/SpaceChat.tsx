@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, X, MessageSquare } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 
 interface Message {
@@ -28,7 +29,12 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Poll for new messages every 3 seconds
   const { data: messages, mutate } = useSWR<Message[]>(
@@ -92,7 +98,7 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
     }
   };
 
-  return (
+  const content = (
     <>
       {/* Floating Toggle Button */}
       {!isOpen && (
@@ -196,4 +202,7 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
       </AnimatePresence>
     </>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }

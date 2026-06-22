@@ -6,7 +6,11 @@ import { Plus, Sprout, ChevronRight } from 'lucide-react';
 import { useIncubator } from '../../hooks/useIncubator';
 import { SeedbedChat } from './SeedbedChat';
 
-export function SeedbedDashboard() {
+interface SeedbedDashboardProps {
+  activeSpaceId?: string;
+}
+
+export function SeedbedDashboard({ activeSpaceId = 'personal' }: SeedbedDashboardProps) {
   const { seeds, createSeed, deleteSeed } = useIncubator();
   const [activeSeedId, setActiveSeedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -18,6 +22,7 @@ export function SeedbedDashboard() {
         <div className="w-full h-full max-w-7xl bg-white rounded-[2rem] border border-stone-200 shadow-sm overflow-hidden flex flex-col">
           <SeedbedChat 
             seedId={activeSeedId} 
+            activeSpaceId={activeSpaceId}
             onBack={() => setActiveSeedId(null)} 
             onPlanted={() => setActiveSeedId(null)} 
           />

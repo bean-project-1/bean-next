@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -16,35 +17,62 @@ interface LifeTreeProps {
   onDeleteBranch?: (branch: BranchData) => void;
   onEditBranch?: (branch: BranchData | null) => void;
   onPhaseClick?: (phaseId: string | null) => void;
+  onTrunkClick?: () => void;
   activePhaseId?: string | null;
   activeLeafId?: string | null;
+  isInteractive?: boolean;
+  spaceName?: string;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, activePhaseId, activeLeafId }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, isInteractive = true, spaceName }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
   const [zoomedBranchId, setZoomedBranchId] = useState<string | null>(null);
   const [zoomedPhaseId, setZoomedPhaseId] = useState<string | null>(null);
-  const [isPlanting, setIsPlanting] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const trunkRef = useRef<SVGGElement>(null);
-  const seedRef = useRef<SVGGElement>(null);
-  const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
   // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
   const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
+  
+  const prevBranchCount = useRef<number>(data?.branches?.length || 0);
+  const hasInitialDataRef = useRef<boolean>(!!data?.branches);
 
   useEffect(() => {
-    // No more offset needed.
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted && data?.branches) {
+      if (!hasInitialDataRef.current) {
+        // Initial load of data, skip animation
+        prevBranchCount.current = data.branches.length;
+        hasInitialDataRef.current = true;
+      } else {
+        // Update the previous count after a short delay so animation has time to read it
+        const t = setTimeout(() => {
+          prevBranchCount.current = data.branches.length;
+        }, 500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [data?.branches, mounted]);
+
+  useEffect(() => {
+    // Reset view when leaving the tree
+    if (!isInteractive) {
+      resetZoom();
+    }
+  }, [isInteractive]);
 
   useGSAP(() => {
     const tl = gsap.timeline();
@@ -66,46 +94,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     }
 
 
-    // 4. Seed appear with a soft pop
-    if (seedRef.current) {
-      tl.fromTo(seedRef.current,
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.5, ease: "back.out(1.7)" },
-        0.8
-      );
-
-
-      // 5. Fade in the seed label ("Tu BEAN!")
-      if (seedLabelRef.current) {
-        tl.to(seedLabelRef.current, { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
-      }
-    }
   }, { scope: containerRef });
-
-  // Animation for "Planting" state
-  useGSAP(() => {
-    if (isPlanting && seedRef.current) {
-      gsap.to(seedRef.current, {
-        scale: 1.3,
-        duration: 0.8,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-      });
-      // Add a glow effect
-      gsap.to(seedRef.current.querySelector('path'), {
-        filter: "drop-shadow(0 0 20px #10b981)",
-        duration: 0.8,
-        repeat: -1,
-        yoyo: true,
-      });
-    } else if (seedRef.current) {
-      gsap.killTweensOf(seedRef.current);
-      gsap.to(seedRef.current, { scale: 1, duration: 0.5 });
-      gsap.to(seedRef.current.querySelector('path'), { filter: "none", duration: 0.5 });
-    }
-  }, [isPlanting]);
-
   const handleBranchClick = (branch: BranchData) => {
     onEditBranch?.(branch); // Always trigger the UI to open the panel
     
@@ -261,6 +250,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handleWheel = (e: React.WheelEvent) => {
+    if (!isInteractive) return;
     e.preventDefault();
     const zoomFactor = 1.05; // Smoother manual zoom step
     const factor = e.deltaY > 0 ? zoomFactor : 1 / zoomFactor;
@@ -295,6 +285,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isInteractive) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for pan if using mouse
     setIsPanning(true);
     panStart.current = { x: e.clientX, y: e.clientY };
@@ -335,11 +326,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   // so manual mouse wheel scrolling doesn't accidentally fade out the tree.
 
   return (
-    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
+    <div ref={containerRef} className="absolute inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
-        className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} transition-all duration-300`}
+        className={`w-full h-full ${isInteractive ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-auto'} transition-all duration-300`}
         style={{ touchAction: 'none' }}
         xmlns="http://www.w3.org/2000/svg"
         onWheel={handleWheel}
@@ -384,7 +375,18 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: zoomedBranchId ? 0 : 1 }}>
+          <g 
+            ref={trunkRef} 
+            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer origin-bottom' : (onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none')}`}
+            style={{ opacity: zoomedBranchId ? 0 : 1 }}
+            onClick={(e) => {
+              if (!isInteractive) return; // Let it bubble up to ForestCarousel!
+              if (onTrunkClick) {
+                e.stopPropagation();
+                onTrunkClick();
+              }
+            }}
+          >
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
@@ -394,46 +396,20 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
           </g>
 
-          {/* 4. The Seed (BEAN) */}
-          {!zoomedBranchId && (
-            <g 
-              ref={seedRef} 
-              transform="translate(400, 450)" 
-              className="cursor-pointer group"
-              onClick={() => router.push('/dna')}
-              onMouseEnter={(e) => {
-                gsap.to(e.currentTarget.querySelector('path'), { scale: 1.1, duration: 0.3, ease: 'power2.out' });
-              }}
-              onMouseLeave={(e) => {
-                gsap.to(e.currentTarget.querySelector('path'), { scale: 1, duration: 0.3, ease: 'power2.out' });
-              }}
+
+
+          {/* 7. Tree Name Label (Perfectly aligned below roots) */}
+          {spaceName && (
+            <text 
+              x="400" 
+              y="540" 
+              textAnchor="middle" 
+              className={`text-[42px] font-black uppercase tracking-widest transition-opacity duration-500`}
+              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: isInteractive ? 0 : 1 }}
             >
-              <path 
-                d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
-                fill="url(#seedGrad)"
-                stroke="#059669"
-                strokeWidth="0.5"
-              />
-              <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
-            </g>
+              {spaceName}
+            </text>
           )}
-
-          {/* 6. Interaction Hint / Label - Tu BEAN! */}
-          {!zoomedBranchId && (
-            <g ref={seedLabelRef} className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
-              <text x="485" y="432" className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
-                style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))', textShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
-                Tu BEAN!
-              </text>
-              <path d="M 480,442 C 465,445 445,448 425,449" stroke="#f97316" strokeWidth="2" fill="none" strokeLinecap="round" markerEnd="url(#arrowhead)" opacity="0.8" />
-              <defs>
-                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
-                </marker>
-              </defs>
-            </g>
-          )}
-
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
@@ -459,6 +435,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 activeLeafId={activeLeafId}
                 activePhaseId={activePhaseId}
                 currentRotation={rotation}
+                isInteractive={isInteractive}
+                animate={i >= prevBranchCount.current}
               />
             );
           })}
@@ -535,7 +513,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       </svg>
 
       {/* Interaction Hints - Floating Cursor Tooltip */}
-      {hoveredLeafName && (
+      {mounted && hoveredLeafName && createPortal(
         <div 
           className="fixed pointer-events-none bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 z-[9999] animate-in fade-in zoom-in duration-200"
           style={{ 
@@ -547,30 +525,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           <p className="text-slate-700 font-bold tracking-tight text-xs leading-snug">
             {hoveredLeafName}
           </p>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {(() => {
-        const isDefaultView = 
-          Math.abs(viewBox.w - 1000) < 1 && 
-          Math.abs(viewBox.x - (-100)) < 1 && 
-          Math.abs(viewBox.y - (-100)) < 1 && 
-          Math.abs(rotation) < 1;
+      {mounted && (() => {
+        if (!isInteractive) return null;
           
-        return (zoomedBranchId || !isDefaultView) ? (
+        const content = (zoomedBranchId || zoomedPhaseId) ? (
           <button 
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-24 left-4 sm:top-8 sm:left-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+            className="fixed bottom-24 left-4 sm:bottom-12 sm:left-12 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-bottom-4"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
             </svg>
           </button>
         ) : null;
+        
+        return content ? createPortal(content, document.body) : null;
       })()}
 
     </div>

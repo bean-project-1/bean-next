@@ -13,15 +13,18 @@ interface LeafProps {
   delay: number;
   isSelected?: boolean;
   isActive?: boolean;
+  isInteractive?: boolean;
+  animate?: boolean;
   onHover: (name: string | null) => void;
   onClick: (id: string, name: string) => void;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, onClick }: LeafProps) => {
+export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInteractive = true, animate = false, onHover, onClick }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
   useGSAP(() => {
+    if (!animate) return;
     // Initial appear animation (Growth)
     gsap.fromTo(containerRef.current, 
       { scale: 0, opacity: 0 },
@@ -33,7 +36,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, 
         ease: "back.out(1.7)" 
       }
     );
-  }, [delay]); // Only re-run appear if delay changes
+  }, [delay, animate]); // Only re-run appear if delay changes
 
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
@@ -44,6 +47,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, 
         onMouseEnter={() => onHover(leaf.name)}
         onMouseLeave={() => onHover(null)}
         onClick={(e) => {
+          if (!isInteractive) return;
           e.stopPropagation();
           onClick(leaf.originalId || leaf.id, leaf.name);
         }}

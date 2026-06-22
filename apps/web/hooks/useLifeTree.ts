@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TreeData } from '../features/life-tree/types';
 
-export function useLifeTree() {
+export function useLifeTree(spaceId?: string) {
   const [treeData, setTreeData] = useState<TreeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -9,7 +9,8 @@ export function useLifeTree() {
   const fetchTree = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/life-tree');
+      const url = spaceId ? `/api/life-tree?spaceId=${spaceId}` : '/api/life-tree';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setTreeData(data);
@@ -23,7 +24,7 @@ export function useLifeTree() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [spaceId]);
 
   const deleteGoal = async (id: string) => {
     try {
@@ -141,12 +142,12 @@ export function useLifeTree() {
     }
   };
 
-  const addGoal = async (data: { title: string; description?: string; purpose?: string; dimensions?: string[] }) => {
+  const addGoal = async (data: { title: string; description?: string; purpose?: string; dimensions?: string[], spaceId?: string }) => {
     try {
       const res = await fetch(`/api/profile/goals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, spaceId: data.spaceId || spaceId }),
       });
       if (res.ok) {
         await fetchTree();

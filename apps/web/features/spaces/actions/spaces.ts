@@ -1,0 +1,240 @@
+'use server';
+
+import { auth } from '../../../auth';
+import { prisma } from '../../../lib/prisma';
+import { revalidatePath } from 'next/cache';
+import crypto from 'crypto';
+
+/**
+ * Creates a new space and assigns the current user as the owner.
+ */
+export async function createSpace(name: string, description?: string, theme?: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  const space = await prisma.space.create({
+    data: {
+      name,
+      description,
+      theme,
+      members: {
+        create: {
+          userId: session.user.id,
+          role: 'owner',
+        },
+      },
+    },
+  });
+
+  revalidatePath('/home');
+  return space;
+}
+
+/**
+ * Fetches all spaces the current user is a member of.
+ */
+export async function getSpaces() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  const spaces = await prisma.space.findMany({
+    where: {
+      members: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    },
+    include: {
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return spaces.map(space => {
+    const userMember = space.members.find(m => m.userId === session.user.id);
+    return {
+      ...space,
+      role: userMember?.role || 'member',
+      membersList: space.members.map(m => ({
+        userId: m.userId,
+        name: m.user.name,
+        avatarUrl: m.user.avatarUrl || m.user.image,
+        role: m.role
+      }))
+    };
+  });
+}
+
+/**
+ * Updates a member's role (only if the user is the owner).
+ */
+export async function updateMemberRole(spaceId: string, targetUserId: string, newRole: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership || membership.role !== 'owner') {
+    throw new Error('Solo el creador puede cambiar roles');
+  }
+
+  await prisma.spaceMember.updateMany({
+    where: { spaceId, userId: targetUserId },
+    data: { role: newRole }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
+}
+
+/**
+ * Deletes a space (only if the user is the owner).
+ */
+export async function deleteSpace(spaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership || membership.role !== 'owner') {
+    throw new Error('Solo el creador puede eliminar el árbol');
+  }
+
+  await prisma.space.delete({
+    where: { id: spaceId }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
+}
+
+/**
+ * Leaves a space (only if the user is a member, not the owner).
+ */
+export async function leaveSpace(spaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership) throw new Error('No eres miembro de este árbol');
+  if (membership.role === 'owner') {
+    throw new Error('El creador no puede abandonar el árbol, debe eliminarlo');
+  }
+
+  await prisma.spaceMember.delete({
+    where: { id: membership.id }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
+}
+
+/**
+ * Generates an invitation link for a specific space.
+ */
+export async function generateInviteLink(spaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  // Check if user is a member (ideally an owner, but for now any member can invite)
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id },
+  });
+
+  if (!membership) {
+    throw new Error('Not a member of this space');
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
+
+  await prisma.spaceInvitation.create({
+    data: {
+      spaceId,
+      token,
+      expiresAt,
+    },
+  });
+
+  return token;
+}
+
+/**
+ * Accepts an invitation and adds the user to the space.
+ */
+export async function joinSpace(token: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  const invitation = await prisma.spaceInvitation.findUnique({
+    where: { token },
+  });
+
+  if (!invitation) {
+    throw new Error('Invalid invitation token');
+  }
+
+  if (invitation.expiresAt < new Date()) {
+    throw new Error('Invitation expired');
+  }
+
+  if (invitation.status !== 'pending') {
+    throw new Error('Invitation already used or revoked');
+  }
+
+  // Check if user is already a member
+  const existingMembership = await prisma.spaceMember.findFirst({
+    where: {
+      spaceId: invitation.spaceId,
+      userId: session.user.id,
+    },
+  });
+
+  if (existingMembership) {
+    return { success: true, message: 'Already a member' };
+  }
+
+  await prisma.$transaction([
+    prisma.spaceMember.create({
+      data: {
+        spaceId: invitation.spaceId,
+        userId: session.user.id,
+        role: 'member',
+      },
+    }),
+    prisma.spaceInvitation.update({
+      where: { id: invitation.id },
+      data: { status: 'accepted' },
+    }),
+  ]);
+
+  revalidatePath('/home');
+  return { success: true };
+}

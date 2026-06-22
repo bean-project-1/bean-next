@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, X, MessageSquare, BrainCircuit } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
-import { useGlobalChat } from '../../chat/GlobalChatProvider';
 
 interface Message {
   id: string;
@@ -32,9 +31,6 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
   const [isSending, setIsSending] = useState(false);
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Try to use global chat context (will be available if wrapped in provider)
-  const globalChat = useGlobalChat();
 
   const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
 
@@ -104,6 +100,8 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
     }
   };
 
+  if (isPersonal) return null;
+
   const content = (
     <>
       {/* Floating Toggle Button */}
@@ -146,26 +144,6 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
-              {/* TABS (Solo para el Árbol Personal) */}
-              {isPersonal && (
-                <div className="flex border-t border-slate-100 p-2 gap-2 bg-slate-50/50">
-                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold bg-white text-emerald-700 shadow-sm border border-emerald-100 transition-colors">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Chat Árbol
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setIsOpen(false);
-                      globalChat.openChat();
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                  >
-                    <BrainCircuit className="w-3.5 h-3.5" />
-                    Coach Global
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Messages Area */}

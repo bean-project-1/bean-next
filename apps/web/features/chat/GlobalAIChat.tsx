@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, RefreshCw, MessageSquare, ChevronRight, ChevronDown, Trash2, Bot, BrainCircuit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useUIStore } from '../../../hooks/useUIStore';
+import { useUIStore } from '../../hooks/useUIStore';
 
 interface Message {
   id?: string;
@@ -334,7 +334,6 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   
   const activeSpaceId = useUIStore(state => state.activeSpaceId);
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
-  const isPersonalTree = isSpaceZoomed && (activeSpaceId === 'personal' || activeSpaceId === null);
   
   const toggleCollapse = (id: string) => {
     setCollapsedTasks(prev => ({ ...prev, [id]: !prev[id] }));
@@ -711,23 +710,6 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
               </button>
             </div>
           </div>
-          
-          {/* TABS (Solo si estamos en el árbol personal) */}
-          {isPersonalTree && (
-            <div className="flex border-t border-slate-100 p-2 gap-2 bg-slate-50/50">
-              <button 
-                onClick={() => onClose()}
-                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Chat Árbol
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold bg-white text-emerald-700 shadow-sm border border-emerald-100 transition-colors">
-                <BrainCircuit className="w-3.5 h-3.5" />
-                Coach Global
-              </button>
-            </div>
-          )}
         </div>
 
         {/* CONTAINER FOR CHAT AND DRAFT */}

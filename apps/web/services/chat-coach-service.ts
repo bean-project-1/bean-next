@@ -250,6 +250,21 @@ REGLAS DE FORMATO:
             required: ["taskNameOrId", "noteContent"]
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "create_goal",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario te pida crear directamente una meta o 'rama' en su árbol personal sin pasar por el borrador.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "El título corto de la meta" },
+              description: { type: "string", description: "Descripción de la meta" }
+            },
+            required: ["title", "description"]
+          }
+        }
       }
     ];
 
@@ -315,6 +330,28 @@ REGLAS DE FORMATO:
         cleanReply = cleanReply || `He guardado la nota en la tarea de tu Mesa de Dibujo. ¡Mírala a la derecha!`;
       } catch (e) {
         console.warn('Failed to parse add_task_note arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'create_goal') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        const { title, description } = args;
+        
+        await prisma.goal.create({
+          data: {
+            spaceId: null, // Asumiendo árbol personal desde el coach global
+            userId: userId,
+            title,
+            description,
+            status: 'active'
+          }
+        });
+
+        cleanReply = cleanReply || `¡Listo! Acabo de crear la rama "${title}" en tu árbol personal. Ya puedes verla.`;
+        // Trigger a fake saveNote or branchData so UI refetches? No, UI refetches on new messages sometimes.
+        // For now, returning the cleanReply is enough, user can refresh or we trigger revision.
+        triggerRevision = 'fetch_goals_trigger'; // small hack to tell UI to refresh tree
+      } catch (e) {
+        console.warn('Failed to create goal:', e);
       }
     } else if (!cleanReply) {
       cleanReply = "Hubo un error al procesar la respuesta.";

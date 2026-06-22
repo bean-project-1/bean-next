@@ -50,9 +50,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCreatingSpace || zoomedSpaceId) return;
       if (e.key === 'ArrowLeft') {
-        onIndexChange(Math.max(0, activeIndex - 1));
+        onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1);
       } else if (e.key === 'ArrowRight') {
-        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
+        onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1);
       } else if (e.key === 'Escape' && zoomedSpaceId) {
         setZoomedSpaceId(null);
       } else if (e.key === 'Enter' && !zoomedSpaceId) {
@@ -89,9 +89,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const diff = touchStart - touchEnd;
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
-        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
+        onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1);
       } else {
-        onIndexChange(Math.max(0, activeIndex - 1));
+        onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1);
       }
     }
     setTouchStart(null);
@@ -198,28 +198,24 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       <AnimatePresence>
         {!zoomedSpaceId && spaces.length > 1 && (
           <>
-            {activeIndex > 0 && (
-              <motion.button
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                onClick={() => onIndexChange(activeIndex - 1)}
-                className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-              </motion.button>
-            )}
-            {activeIndex < spaces.length - 1 && (
-              <motion.button
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                onClick={() => onIndexChange(activeIndex + 1)}
-                className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-              </motion.button>
-            )}
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onClick={() => onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1)}
+              className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              onClick={() => onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1)}
+              className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </motion.button>
           </>
         )}
       </AnimatePresence>

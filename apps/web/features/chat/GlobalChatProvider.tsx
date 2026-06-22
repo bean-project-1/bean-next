@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, Suspense, useEff
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { GlobalAIChat } from './GlobalAIChat';
 import { MessageSquare, Bot } from 'lucide-react';
-import { useUIStore } from '../../../hooks/useUIStore';
+import { useUIStore } from '../../hooks/useUIStore';
 
 interface GlobalChatContextType {
   isOpen: boolean;

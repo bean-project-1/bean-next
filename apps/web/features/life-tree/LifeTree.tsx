@@ -20,9 +20,10 @@ interface LifeTreeProps {
   activePhaseId?: string | null;
   activeLeafId?: string | null;
   isInteractive?: boolean;
+  spaceName?: string;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, isInteractive = true }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, isInteractive = true, spaceName }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -443,6 +444,18 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             </g>
           )}
 
+          {/* 7. Tree Name Label (Perfectly aligned below roots) */}
+          {spaceName && (
+            <text 
+              x="400" 
+              y="540" 
+              textAnchor="middle" 
+              className={`text-[42px] font-black uppercase tracking-widest transition-opacity duration-500`}
+              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: isInteractive ? 0 : 1 }}
+            >
+              {spaceName}
+            </text>
+          )}
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {

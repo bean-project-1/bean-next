@@ -33,8 +33,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const trunkRef = useRef<SVGGElement>(null);
-  const seedRef = useRef<SVGGElement>(null);
-  const seedLabelRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
 
   // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
@@ -71,20 +69,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     }
 
 
-    // 4. Seed appear with a soft pop
-    if (seedRef.current) {
-      tl.fromTo(seedRef.current,
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.5, ease: "back.out(1.7)" },
-        0.8
-      );
-
-
-      // 5. Fade in the seed label ("Tu BEAN!")
-      if (seedLabelRef.current) {
-        tl.to(seedLabelRef.current, { opacity: 1, duration: 1.5, ease: "power2.out" }, ">");
-      }
-    }
   }, { scope: containerRef });
   const handleBranchClick = (branch: BranchData) => {
     onEditBranch?.(branch); // Always trigger the UI to open the panel
@@ -387,45 +371,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
           </g>
 
-          {/* 4. The Seed (BEAN) */}
-          {!zoomedBranchId && (
-            <g 
-              ref={seedRef} 
-              transform="translate(400, 450)" 
-              className="cursor-pointer group"
-              onClick={() => router.push('/dna')}
-              onMouseEnter={(e) => {
-                gsap.to(e.currentTarget.querySelector('path'), { scale: 1.1, duration: 0.3, ease: 'power2.out' });
-              }}
-              onMouseLeave={(e) => {
-                gsap.to(e.currentTarget.querySelector('path'), { scale: 1, duration: 0.3, ease: 'power2.out' });
-              }}
-            >
-              <path 
-                d="M-8,0 C-8,-10 8,-10 8,0 C8,10 2,12 -8,10 Z" 
-                fill="url(#seedGrad)"
-                stroke="#059669"
-                strokeWidth="0.5"
-              />
-              <ellipse cx="-2" cy="-3" rx="2" ry="1.5" fill="white" fillOpacity="0.3" />
-            </g>
-          )}
 
-          {/* 6. Interaction Hint / Label - Tu BEAN! */}
-          {!zoomedBranchId && (
-            <g ref={seedLabelRef} className="cursor-default select-none pointer-events-none opacity-0" id="seed-label-group">
-              <text x="485" y="432" className="text-[17px] font-black fill-orange-500 italic tracking-tighter"
-                style={{ filter: 'drop-shadow(0 0 12px rgba(249, 115, 22, 0.4))', textShadow: '0 0 20px rgba(249, 115, 22, 0.2)' }}>
-                Tu BEAN!
-              </text>
-              <path d="M 480,442 C 465,445 445,448 425,449" stroke="#f97316" strokeWidth="2" fill="none" strokeLinecap="round" markerEnd="url(#arrowhead)" opacity="0.8" />
-              <defs>
-                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <polygon points="0 0, 6 3, 0 6" fill="#f97316" />
-                </marker>
-              </defs>
-            </g>
-          )}
 
           {/* 7. Tree Name Label (Perfectly aligned below roots) */}
           {spaceName && (

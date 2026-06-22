@@ -42,6 +42,7 @@ model User {
   notificationLogs  NotificationLog[]
   incubatorSeeds    IncubatorSeed[]
   spaceMembers      SpaceMember[]
+  spaceMessages     SpaceMessage[]
 
   @@map("users")
 }
@@ -544,6 +545,7 @@ model Space {
   goals           Goal[]
   baseCommitments BaseCommitment[]
   incubatorSeeds  IncubatorSeed[]
+  messages        SpaceMessage[]
 
   @@map("spaces")
 }
@@ -574,5 +576,24 @@ model SpaceInvitation {
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
+
   @@map("space_invitations")
 }
+
+model SpaceMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  spaceId   String   @map("space_id") @db.ObjectId
+  userId    String?  @map("user_id") @db.ObjectId  // Nullable because AI can send messages
+  
+  role      String   // "user" | "assistant" | "system"
+  content   String
+  mentions  String[] @default([]) // Array of userIds or "bean" mentioned in the message
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("space_messages")
+}
+

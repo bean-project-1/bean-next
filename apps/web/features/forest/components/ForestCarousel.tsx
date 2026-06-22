@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LifeTree } from '../../life-tree/LifeTree';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 import { InviteBottomSheet } from './InviteBottomSheet';
+import { SpaceChat } from '../../spaces/components/SpaceChat';
 import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
 
 interface Space {
@@ -324,12 +325,21 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks 
   const activeHooks = isZoomed ? onActionHooks : {};
 
   return (
-    <LifeTree 
-      data={treeData} 
-      onTrunkClick={isZoomed ? onTrunkClick : undefined}
-      isInteractive={isZoomed}
-      spaceName={space.name}
-      {...activeHooks}
-    />
+    <>
+      <LifeTree 
+        data={treeData} 
+        onTrunkClick={isZoomed ? onTrunkClick : undefined}
+        isInteractive={isZoomed}
+        spaceName={space.name}
+        {...activeHooks}
+      />
+      {isZoomed && (
+        <SpaceChat 
+          spaceId={space.id} 
+          spaceName={space.name} 
+          onRefreshTree={() => onActionHooks?.onRefresh?.()}
+        />
+      )}
+    </>
   );
 }

@@ -29,7 +29,8 @@ export default function HomePage() {
     }).catch(console.error);
   }, []);
 
-  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree('personal');
+  const activeSpaceId = spaces[activeSpaceIndex]?.id || 'personal';
+  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree(activeSpaceId);
 
   const handleLeafClick = (id: string | null) => {
     if (!id) {

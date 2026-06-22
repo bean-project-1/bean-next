@@ -146,13 +146,13 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                   {/* Click catchers for Forest View */}
                   {!isZoomed && !isActive && (
                     <div 
-                      className="absolute inset-0 z-50 cursor-pointer"
+                      className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-64 z-50 cursor-pointer"
                       onClick={() => onIndexChange(idx)}
                     />
                   )}
                   {!isZoomed && isActive && (
                     <div 
-                      className="absolute inset-0 z-50 cursor-pointer flex items-center justify-center group"
+                      className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-64 md:w-96 z-50 cursor-pointer flex items-center justify-center group"
                       onClick={() => setZoomedSpaceId(space.id)}
                     >
                       <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white backdrop-blur-sm px-6 py-3 rounded-full font-bold tracking-wide transition-opacity duration-300 shadow-xl border border-white/10 mt-32">

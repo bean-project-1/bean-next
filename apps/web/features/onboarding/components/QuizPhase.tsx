@@ -41,12 +41,12 @@ function ChoiceGrid({
           className={`rounded-xl border-2 p-4 text-left transition-all ${
             selected === opt.id
               ? 'border-violet-500 bg-violet-50 shadow-sm'
-              : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'
+              : 'border-stone-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'
           }`}
         >
           {opt.emoji && <span className="mb-1 block text-2xl">{opt.emoji}</span>}
-          <p className="font-bold text-slate-800 text-sm">{opt.label}</p>
-          {opt.desc && <p className="mt-0.5 text-xs text-slate-400">{opt.desc}</p>}
+          <p className="font-bold text-stone-800 text-sm">{opt.label}</p>
+          {opt.desc && <p className="mt-0.5 text-xs text-stone-400">{opt.desc}</p>}
         </button>
       ))}
     </div>
@@ -165,7 +165,7 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
           <div className="mt-3 flex flex-wrap gap-2">
             {PROFESSION_SUGGESTIONS.slice(0, 6).map(s => (
               <button key={s} onClick={() => setForm(f => ({ ...f, profession: s }))}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-500 hover:border-violet-400 hover:text-violet-600 transition-all">
+                className="rounded-full border border-stone-200 px-3 py-1 text-xs text-stone-500 hover:border-violet-400 hover:text-violet-600 transition-all">
                 {s}
               </button>
             ))}
@@ -203,7 +203,7 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
               className={`rounded-xl border-2 p-3 text-sm font-semibold transition-all ${
                 form.exerciseFrequency === opt
                   ? 'border-violet-500 bg-violet-50 text-violet-700'
-                  : 'border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'
+                  : 'border-stone-200 text-stone-500 hover:border-violet-300 hover:text-violet-600'
               }`}>
               {opt}
             </button>
@@ -292,16 +292,16 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
 
       <OnboardingCard>
         <span className="text-3xl block mb-3">{current.emoji}</span>
-        <h1 className="text-2xl font-bold text-slate-900">{current.title}</h1>
-        <p className="mt-1.5 mb-6 text-sm text-slate-500">{current.subtitle}</p>
+        <h1 className="text-2xl font-bold text-stone-900">{current.title}</h1>
+        <p className="mt-1.5 mb-6 text-sm text-stone-500">{current.subtitle}</p>
 
         <div className="min-h-[160px]">
           {current.content}
           
-          <div className="mt-6 border-t border-slate-100 pt-4 animate-in fade-in duration-300">
-            <label className="text-sm font-medium text-slate-500 mb-2 block">¿Quieres detallar tu respuesta? (Opcional)</label>
+          <div className="mt-6 border-t border-stone-100 pt-4 animate-in fade-in duration-300">
+            <label className="text-sm font-medium text-stone-500 mb-2 block">¿Quieres detallar tu respuesta? (Opcional)</label>
             <textarea
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 resize-none"
+              className="w-full rounded-xl border border-stone-200 bg-white p-3 text-sm text-stone-700 outline-none transition-all placeholder:text-stone-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 resize-none"
               rows={2}
               placeholder="Escribe más detalles aquí..."
               value={form.details?.[current.dimKey] || ''}
@@ -315,14 +315,14 @@ export function QuizPhase({ form, setForm, onDone, onBack }: Props) {
           <button
             onClick={isLast ? onDone : () => setStep(s => s + 1)}
             disabled={!current.isValid()}
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-transtone-y-px disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLast ? 'Ver mi ADN de vida ✨' : 'Continuar →'}
           </button>
         </div>
       </OnboardingCard>
 
-      <p className="mt-3 text-center text-xs text-slate-400">
+      <p className="mt-3 text-center text-xs text-stone-400">
         Pregunta {step + 1} de {STEPS.length}
       </p>
     </div>

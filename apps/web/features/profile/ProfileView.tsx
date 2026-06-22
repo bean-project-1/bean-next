@@ -72,6 +72,25 @@ export function ProfileView() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y borrará todo tu bosque, objetivos, y ADN de forma permanente.')) {
+      setSaving(true);
+      try {
+        const res = await fetch('/api/profile', { method: 'DELETE' });
+        if (res.ok) {
+          await signOut({ callbackUrl: '/login' });
+        } else {
+          alert('Error al eliminar la cuenta. Por favor, intenta de nuevo.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Ocurrió un error al eliminar tu cuenta.');
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -208,16 +227,29 @@ export function ProfileView() {
         </a>
 
         <button onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 shadow-sm hover:border-red-200 hover:shadow-md hover:shadow-red-100 transition-all group text-left">
+          className="w-full flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all group text-left">
           <div className="flex items-center gap-4">
              <span className="text-2xl group-hover:scale-110 transition-transform">🚪</span>
              <div className="text-left">
-               <p className="font-bold text-red-700 text-base">Cerrar Sesión</p>
-               <p className="text-xs text-red-500/70 font-medium mt-0.5">Salir de mi cuenta de forma segura</p>
+               <p className="font-bold text-slate-700 text-base">Cerrar Sesión</p>
+               <p className="text-xs text-slate-500/70 font-medium mt-0.5">Salir de tu cuenta de forma segura</p>
+             </div>
+          </div>
+          <span className="text-slate-300 group-hover:text-slate-500 transition-colors font-bold text-lg">→</span>
+        </button>
+
+        <button onClick={handleDeleteAccount}
+          disabled={saving}
+          className="w-full flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100 shadow-sm hover:border-red-200 hover:shadow-md hover:shadow-red-100 transition-all group text-left disabled:opacity-50">
+          <div className="flex items-center gap-4">
+             <span className="text-2xl group-hover:scale-110 transition-transform">⚠️</span>
+             <div className="text-left">
+               <p className="font-bold text-red-700 text-base">Eliminar Cuenta</p>
+               <p className="text-xs text-red-500/70 font-medium mt-0.5">Borrar todo mi bosque y progreso</p>
              </div>
           </div>
           <span className="text-red-300 group-hover:text-red-500 transition-colors font-bold text-lg">→</span>
-          </button>
+        </button>
           </div>
         </div>
       </div>

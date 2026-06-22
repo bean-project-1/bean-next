@@ -19,12 +19,16 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
-  const [spaces, setSpaces] = useState<{ id: string; name: string; role?: string; membersList?: any[] }[]>([{ id: 'personal', name: 'Árbol Personal', role: 'owner', membersList: [] }]);
+  const [spaces, setSpaces] = useState<{ id: string; name: string; role?: string; membersList?: any[] }[]>([]);
   const [activeSpaceIndex, setActiveSpaceIndex] = useState(0);
   
   useEffect(() => {
     getSpaces().then(data => {
-      setSpaces([{ id: 'personal', name: 'Árbol Personal', role: 'owner', membersList: [] }, ...data.map(s => ({ id: s.id, name: s.name, role: s.role, membersList: s.membersList }))]);
+      if (data.length === 0) {
+        setSpaces([{ id: 'personal', name: 'Mi Árbol', role: 'owner', membersList: [] }]);
+      } else {
+        setSpaces(data.map(s => ({ id: s.id, name: s.name, role: s.role, membersList: s.membersList })));
+      }
     }).catch(console.error);
   }, []);
 
@@ -128,7 +132,7 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-transparent flex-col relative">
       {/* View Toggle */}
-      <div className="fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[100]">
+      <div className="fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[100]" id="tour-top-toggle">
         <div className="flex bg-white/90 backdrop-blur-md p-1 rounded-full shadow-lg border border-slate-200">
           <button
             onClick={() => setViewMode('tree')}

@@ -139,7 +139,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       {/* Trees Carousel */}
       <div className="absolute inset-0 flex items-center justify-center transform-style-3d">
         <AnimatePresence>
-          {[-2, -1, 0, 1, 2].map((offset) => {
+          {(spaces.length === 1 ? [0] : [-2, -1, 0, 1, 2]).map((offset) => {
             const virtualIndex = activeIndex + offset;
             const safeIndex = ((virtualIndex % spaces.length) + spaces.length) % spaces.length;
             const space = spaces[safeIndex];
@@ -246,7 +246,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 
       {/* Navigation Indicators */}
       <AnimatePresence>
-        {!zoomedSpaceId && (
+        {!zoomedSpaceId && spaces.length > 1 && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

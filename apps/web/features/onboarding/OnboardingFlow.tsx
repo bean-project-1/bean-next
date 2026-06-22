@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, GoalPhase, GeneratingScreen } from './components';
+import { MethodPhase, QuizPhase, LLMPhase, CVPhase, CoachPhase, ReviewPhase, IdeaPhase, RoutinePhase, GeneratingScreen } from './components';
 import { SKILL_SUGGESTIONS, INTEREST_SUGGESTIONS, PROFESSION_SUGGESTIONS } from './constants';
 import type { Phase, FormData } from './types';
 
@@ -16,8 +16,10 @@ const INITIAL_FORM: FormData = {
   // experiencia
   workSatisfaction: '', relationships: '', lifeSatisfaction: '',
   freeTime: '', personalGrowth: '', impact: '', financialSecurity: '',
-  // metas
-  goals: [],
+  // rutina
+  sleepHours: 8, workSchedule: '',
+  // ideas
+  ideas: [],
   // detalles complementarios
   details: {},
 };
@@ -48,36 +50,17 @@ export function OnboardingFlow() {
     setError('');
     setPhase('generating');
     try {
-      // 1. Create Profile (save all goals EXCEPT the first one as empty goals)
-      const profileGoals = form.goals.length > 1 ? form.goals.slice(1) : [];
+      // Create Profile
       const res = await fetch('/api/profile', {
         method: 'POST',
-        body: JSON.stringify({ ...form, goals: profileGoals }),
+        body: JSON.stringify({ ...form }),
       });
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        setPhase('review');
+        setPhase('ideas');
         setError(json.error ?? 'Algo salió mal. Intenta de nuevo.');
         return;
-      }
-
-      // 2. Generate the full tree plan for the FIRST goal using the AI Agent
-      if (form.goals.length > 0) {
-        const firstGoalText = form.goals[0].title;
-        const generateRes = await fetch('/api/ai/goal-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            finalGoalInput: firstGoalText,
-            chatHistory: [],
-            userEmail: form.email // So the backend finds the newly created user
-          })
-        });
-        
-        if (!generateRes.ok) {
-          console.warn("Failed to generate goal tree during onboarding, but profile was created.");
-        }
       }
 
       setTimeout(() => {
@@ -85,7 +68,7 @@ export function OnboardingFlow() {
       }, 500);
     } catch (e: any) {
       console.error(e);
-      setPhase('review');
+      setPhase('ideas');
       setError('Error de red. Revisa tu conexión.');
     }
   }, [form, router]);
@@ -127,23 +110,35 @@ export function OnboardingFlow() {
     }
   };
 
+  const handleCVDone = (resumeText: string, extractedData?: any) => {
+    setForm(f => ({
+      ...f,
+      resumeText,
+      profession: extractedData?.profession || f.profession,
+      knowledge: extractedData?.knowledge || f.knowledge,
+      skills: extractedData?.skills ? Array.from(new Set([...f.skills, ...extractedData.skills])) : f.skills,
+      interests: extractedData?.interests ? Array.from(new Set([...f.interests, ...extractedData.interests])) : f.interests,
+      values: extractedData?.values ? Array.from(new Set([...f.values, ...extractedData.values])) : f.values,
+      personality: extractedData?.personality || f.personality
+    }));
+    setPhase('review');
+  };
+
   if (phase === 'generating') return <GeneratingScreen name={form.name} />;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center px-6 py-12">
+    <main className="relative flex min-h-screen flex-col items-center justify-center px-6 py-12 bg-[#FBF9F6] text-stone-900">
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-violet-600/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-indigo-600/8 blur-3xl" />
+        <div className="absolute -top-32 left-1/2 h-96 w-96 -transtone-x-1/2 rounded-full bg-emerald-600/5 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-indigo-600/5 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex w-full flex-col items-center">
-        {error && phase === 'review' && (
+        {error && (phase === 'review' || phase === 'ideas' || phase === 'routine') && (
           <div className="mb-4 w-full max-w-lg rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
-
-
 
         {phase === 'method' && (
           <MethodPhase name={form.name} onSelect={m => setPhase(m)} />
@@ -162,7 +157,7 @@ export function OnboardingFlow() {
         )}
 
         {phase === 'cv' && (
-          <CVPhase onDone={() => setPhase('review')} onBack={() => setPhase('method')} />
+          <CVPhase onDone={handleCVDone} onBack={() => setPhase('method')} />
         )}
 
         {phase === 'coach' && (
@@ -177,15 +172,25 @@ export function OnboardingFlow() {
           <ReviewPhase
             form={form}
             onFormChange={(f) => setForm(prev => ({ ...prev, ...f }))}
-            onSubmit={() => setPhase('goals')}
+            onSubmit={() => setPhase('routine')}
           />
         )}
 
-        {phase === 'goals' && (
-          <GoalPhase 
-            goals={form.goals} 
-            onChange={(goals) => setForm(f => ({ ...f, goals }))}
+        {phase === 'routine' && (
+          <RoutinePhase
+            sleepHours={form.sleepHours}
+            workSchedule={form.workSchedule}
+            onChange={(data) => setForm(f => ({ ...f, ...data }))}
+            onSubmit={() => setPhase('ideas')}
             onBack={() => setPhase('review')}
+          />
+        )}
+
+        {phase === 'ideas' && (
+          <IdeaPhase 
+            ideas={form.ideas} 
+            onChange={(ideas) => setForm(f => ({ ...f, ideas }))}
+            onBack={() => setPhase('routine')}
             onSubmit={submit}
             attributes={form.extractedAttributes}
           />

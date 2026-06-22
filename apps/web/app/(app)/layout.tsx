@@ -28,7 +28,7 @@ function FloatingDock() {
           const active = path === n.href || path.startsWith(n.href + '/');
           const Icon = n.icon;
           return (
-            <Link key={n.href} href={n.href} className="relative group outline-none">
+            <Link key={n.href} href={n.href} id={`tour-nav-${n.href.replace('/', '')}`} className="relative group outline-none">
               {active && (
                 <motion.div
                   layoutId="active-dock-nav"
@@ -64,6 +64,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
       <FloatingDock />
       <DailyWarmup />
+      <TourLoader />
     </div>
   );
 }
+
+import { useEffect, useState } from 'react';
+import { AppTour } from '@/components/AppTour';
+
+function TourLoader() {
+  const [hasSeen, setHasSeen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.user) {
+          setHasSeen(data.data.user.hasSeenTour);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  if (hasSeen === null || hasSeen === true) return null;
+  return <AppTour hasSeenTour={hasSeen} />;
+}
+

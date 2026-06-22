@@ -22,14 +22,14 @@ export function GeneratingScreen({ name }: { name: string }) {
       <div className="relative mb-8">
         <div className="absolute inset-0 rounded-full bg-violet-600/20 blur-3xl animate-pulse" />
         <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-2xl shadow-violet-500/40">
-          <span className="text-3xl font-bold text-slate-900">B</span>
+          <span className="text-3xl font-bold text-stone-900">B</span>
         </div>
       </div>
 
-      <h2 className="mb-2 text-2xl font-bold text-slate-900">
+      <h2 className="mb-2 text-2xl font-bold text-stone-900">
         Construyendo tu perfil BEAN{name ? `, ${name.split(' ')[0]}` : ''}…
       </h2>
-      <p className="mb-10 text-sm text-slate-500">
+      <p className="mb-10 text-sm text-stone-500">
         Analizando tu perfil y creando tu plan maestro de metas
       </p>
 
@@ -47,7 +47,7 @@ export function GeneratingScreen({ name }: { name: string }) {
               />
             </div>
             <span className={`text-xs w-16 text-left transition-colors duration-300 ${
-              i <= active ? 'text-violet-300' : 'text-slate-400'
+              i <= active ? 'text-violet-300' : 'text-stone-400'
             }`}>{d}</span>
           </div>
         ))}

@@ -35,12 +35,16 @@ const onboardingSchema = z.object({
   personalGrowth: z.string().default(''),
   impact: z.string().default(''),
   financialSecurity: z.string().default(''),
-  // review + goals
+  // rutina
+  sleepHours: z.number().default(8),
+  workSchedule: z.string().default('none'),
+  // review + ideas
   extractedAttributes: z.array(z.any()).optional(),
   extractedInputs: z.array(z.any()).optional(),
-  goals: z
+  resumeText: z.string().optional(),
+  ideas: z
     .array(z.object({ title: z.string().min(1) }))
-    .max(3)
+    .max(5)
     .default([]),
   details: z.record(z.string(), z.string()).default({}),
 });
@@ -76,7 +80,7 @@ export async function POST(req: NextRequest) {
     let isNewUser = false;
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     const user = existing
-      ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name, onboardingCompleted: true } })
+      ? await prisma.user.update({ where: { email: data.email }, data: { name: data.name, onboardingCompleted: true, hasSeenTour: false } })
       : await (async () => { isNewUser = true; return prisma.user.create({ data: { email: data.email, name: data.name, onboardingCompleted: true } }); })();
 
     // 2. Persist attributes and inputs
@@ -186,25 +190,113 @@ export async function POST(req: NextRequest) {
       await Promise.all(inputOps);
     }
 
-    // 4. Register any defined Goals from GoalPhase
-    if (data.goals.length > 0) {
+    // 3. Find or Create default Space
+    let space = await prisma.space.findFirst({
+      where: {
+        members: {
+          some: { userId: user.id, role: 'owner' }
+        }
+      }
+    });
+
+    if (!space) {
+      space = await prisma.space.create({
+        data: {
+          name: 'Mi Árbol',
+          description: 'Tu espacio principal para crecer',
+          theme: 'green',
+          members: {
+            create: {
+              userId: user.id,
+              role: 'owner'
+            }
+          }
+        }
+      });
+    } else {
+      // Opt: ensure the name is 'Mi Árbol' if they had the old duplicate names
+      if (space.name === 'Mi Bosque Personal' || space.name === 'Mi Arbol Personal' || space.name === 'Mi Árbol Personal') {
+        space = await prisma.space.update({
+          where: { id: space.id },
+          data: { name: 'Mi Árbol' }
+        });
+      }
+    }
+
+    // 4. Create Base Commitments (Routine)
+    const baseCommitments = [];
+    
+    // Sleep
+    const healthDim = dimensions.find(d => d.name === 'physical_health');
+    baseCommitments.push({
+      userId: user.id,
+      title: 'Dormir',
+      type: 'routine',
+      hoursPerDay: data.sleepHours,
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Everyday
+      dimensionIds: healthDim ? [healthDim.id] : [],
+      spaceId: space.id,
+      isActive: true,
+    });
+
+    // Work/Study
+    if (data.workSchedule && data.workSchedule !== 'none') {
+      const careerDim = dimensions.find(d => d.name === 'career');
+      const title = data.workSchedule === 'study' ? 'Estudio Principal' : 'Trabajo Principal';
+      const hours = data.workSchedule === '9-5' ? 8 : (data.workSchedule === 'study' ? 6 : 4);
+      const days = data.workSchedule === '9-5' ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5]; // Mon-Fri
+      
+      baseCommitments.push({
+        userId: user.id,
+        title,
+        type: data.workSchedule === 'study' ? 'study' : 'work',
+        hoursPerDay: hours,
+        daysOfWeek: days,
+        dimensionIds: careerDim ? [careerDim.id] : [],
+        spaceId: space.id,
+        isActive: true,
+      });
+    }
+
+    if (baseCommitments.length > 0) {
+      await prisma.baseCommitment.createMany({
+        data: baseCommitments
+      });
+    }
+
+    // 5. Save UserResume if provided
+    if (data.resumeText) {
+      await prisma.userResume.create({
+        data: {
+          userId: user.id,
+          title: 'Hoja de Vida Base (Onboarding)',
+          isBase: true,
+          rawText: data.resumeText,
+        }
+      });
+    }
+
+    // 6. Register any defined Ideas into the Incubator
+    if (data.ideas.length > 0) {
       await Promise.all(
-        data.goals.map(goal => 
-          prisma.goal.create({
+        data.ideas.map(idea => 
+          prisma.incubatorSeed.create({
             data: {
               userId: user.id,
-              title: goal.title,
-              status: 'active',
-              progress: 0,
+              spaceId: space.id,
+              title: idea.title,
+              description: idea.title,
+              status: 'new',
+              scores: { sun: 0, earth: 0, water: 0 },
+              messages: [],
+              clouds: []
             }
           })
         )
       );
     }
 
-    // Default sleep commitment is now created globally at User registration level
-
-    // 6. Set session cookie
+    // 7. Set session cookie
     const res = NextResponse.json(
       { success: true as const, data: { userId: user.id, isNewUser } },
       { status: 201 }
@@ -269,6 +361,7 @@ export async function GET(req: NextRequest) {
           email: user.email,
           name: user.name,
           avatarUrl: user.avatarUrl,
+          hasSeenTour: user.hasSeenTour,
           attributes: user.attributes,
           baseCommitments: user.baseCommitments,
           notificationPreferences: user.notificationPreferences
@@ -303,7 +396,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { name, notificationPreferences } = await req.json();
+    const { name, notificationPreferences, hasSeenTour } = await req.json();
     const dataToUpdate: any = {};
     
     if (name !== undefined) {
@@ -320,6 +413,10 @@ export async function PUT(req: NextRequest) {
       dataToUpdate.notificationPreferences = notificationPreferences;
     }
 
+    if (hasSeenTour !== undefined) {
+      dataToUpdate.hasSeenTour = hasSeenTour;
+    }
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: dataToUpdate,
@@ -331,3 +428,32 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// ── DELETE — Delete user account and cascade data ──
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // This will cascade delete most relations (goals, attributes, spaces via owner relation if setup correctly)
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[DELETE /api/profile]', msg);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete account', detail: msg },
+      { status: 500 }
+    );
+  }
+}
+

@@ -1,5 +1,5 @@
 export type Method = 'llm' | 'cv' | 'quiz' | 'coach';
-export type Phase = 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'goals' | 'generating';
+export type Phase = 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'ideas' | 'routine' | 'generating';
 
 export interface FormData {
   name: string;
@@ -26,10 +26,15 @@ export interface FormData {
   personalGrowth: string;    // choice
   impact: string;            // choice
   financialSecurity: string; // choice
-  // ── Metas ──────────────────────────────────────────
-  goals: { title: string }[];
+  // ── Rutina Base ────────────────────────────────────
+  sleepHours: number;
+  workSchedule: string;
+  // ── Ideas / Semillero ──────────────────────────────
+  ideas: { title: string }[];
+  // ── Metadatos de Extracción ────────────────────────
   extractedAttributes?: any[];
   extractedInputs?: any[];
+  resumeText?: string;
   details: Record<string, string>;
 }
 

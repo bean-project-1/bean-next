@@ -39,7 +39,7 @@ export function CoachPhase({ name, onDone, onBack }: Props) {
           <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-neutral-950" />
         </div>
         <div>
-          <p className="font-semibold text-slate-900">BEAN Coach</p>
+          <p className="font-semibold text-stone-900">BEAN Coach</p>
           <p className="text-xs text-emerald-400">En línea</p>
         </div>
       </div>
@@ -49,7 +49,7 @@ export function CoachPhase({ name, onDone, onBack }: Props) {
       <OnboardingCard>
         {/* Coach speech bubble */}
         <div className="mb-5 rounded-xl rounded-tl-none bg-white px-5 py-4">
-          <p className="text-sm text-slate-900 leading-relaxed">
+          <p className="text-sm text-stone-900 leading-relaxed">
             {qi === 0 && name ? `${name.split(' ')[0]}, c` : qi === 0 ? 'C' : ''}
             {qi === 0 ? 'uéntame… ' : ''}{current.q}
           </p>
@@ -63,12 +63,12 @@ export function CoachPhase({ name, onDone, onBack }: Props) {
           autoFocus
           rows={4}
           placeholder={current.placeholder}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-neutral-600 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
+          className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 placeholder-neutral-600 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
         />
 
         <div className="mt-4 flex items-center justify-between">
           {qi > 0 ? (
-            <button onClick={() => setQi(q => q - 1)} className="text-sm text-slate-500 hover:text-slate-900 transition-colors">
+            <button onClick={() => setQi(q => q - 1)} className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
               ← Anterior
             </button>
           ) : <div />}
@@ -76,14 +76,14 @@ export function CoachPhase({ name, onDone, onBack }: Props) {
           <button
             onClick={isLast ? () => onDone(answers) : () => setQi(q => q + 1)}
             disabled={currentAnswer.trim().length < 10}
-            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-transtone-y-px disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLast ? 'Ver mi ADN de vida ✨' : 'Siguiente →'}
           </button>
         </div>
       </OnboardingCard>
 
-      <p className="mt-3 text-center text-xs text-slate-400">
+      <p className="mt-3 text-center text-xs text-stone-400">
         Pregunta {qi + 1} de {COACH_QUESTIONS.length}
       </p>
     </div>

@@ -19,6 +19,7 @@ model User {
   image               String?
   avatarUrl           String?   @map("avatar_url")
   onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
+  hasSeenTour         Boolean   @default(false) @map("has_seen_tour")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

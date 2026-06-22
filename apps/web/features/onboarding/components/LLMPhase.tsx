@@ -39,8 +39,8 @@ Consolida todo en un resumen detallado de al menos 300 palabras.`;
       <BackButton onClick={onBack} />
 
       <span className="text-3xl block mb-3">🤖</span>
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Trae tu perfil de IA</h1>
-      <p className="text-sm text-slate-500 mb-6">
+      <h1 className="text-2xl font-bold text-stone-900 mb-1">Trae tu perfil de IA</h1>
+      <p className="text-sm text-stone-500 mb-6">
         Copia el siguiente mensaje, pégalo en tu LLM favorito (ChatGPT, Claude, etc.) donde ya tengas historial tuyo, y pega la respuesta abajo.
       </p>
 
@@ -51,7 +51,7 @@ Consolida todo en un resumen detallado de al menos 300 palabras.`;
         </p>
         <button
           onClick={handleCopy}
-          className="absolute top-4 right-4 p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-violet-600 hover:border-violet-300 transition-all shadow-sm"
+          className="absolute top-4 right-4 p-2 rounded-lg bg-white border border-stone-200 text-stone-500 hover:text-violet-600 hover:border-violet-300 transition-all shadow-sm"
           title="Copiar prompt"
         >
           {copied ? '✅' : '📋'}
@@ -65,14 +65,14 @@ Consolida todo en un resumen detallado de al menos 300 palabras.`;
           autoFocus
           rows={8}
           placeholder="Pega aquí la respuesta que te dio ChatGPT o Claude..."
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-neutral-400 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
+          className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 placeholder-neutral-400 outline-none resize-none transition-all focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/40"
         />
-        <p className="mt-1.5 text-xs text-slate-400">{text.length} caracteres</p>
+        <p className="mt-1.5 text-xs text-stone-400">{text.length} caracteres</p>
 
         <button
           onClick={() => onDone(text)}
           disabled={text.trim().length < 50 || loading}
-          className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-transtone-y-px disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

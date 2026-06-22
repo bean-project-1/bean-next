@@ -50,13 +50,15 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCreatingSpace || zoomedSpaceId) return;
       if (e.key === 'ArrowLeft') {
-        onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1);
+        onIndexChange(activeIndex - 1);
       } else if (e.key === 'ArrowRight') {
-        onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1);
+        onIndexChange(activeIndex + 1);
       } else if (e.key === 'Escape' && zoomedSpaceId) {
         setZoomedSpaceId(null);
       } else if (e.key === 'Enter' && !zoomedSpaceId) {
-        setZoomedSpaceId(spaces[activeIndex]?.id);
+        // Find safe active index
+        const safeIndex = ((activeIndex % spaces.length) + spaces.length) % spaces.length;
+        setZoomedSpaceId(spaces[safeIndex]?.id);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -89,9 +91,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const diff = touchStart - touchEnd;
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
-        onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1);
+        onIndexChange(activeIndex + 1);
       } else {
-        onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1);
+        onIndexChange(activeIndex - 1);
       }
     }
     setTouchStart(null);
@@ -134,8 +136,13 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       {/* Trees Carousel */}
       <div className="absolute inset-0 flex items-center justify-center transform-style-3d">
         <AnimatePresence>
-          {spaces.map((space, idx) => {
-            const offset = idx - activeIndex;
+          {[-2, -1, 0, 1, 2].map((offset) => {
+            const virtualIndex = activeIndex + offset;
+            const safeIndex = ((virtualIndex % spaces.length) + spaces.length) % spaces.length;
+            const space = spaces[safeIndex];
+            
+            if (!space) return null;
+
             const isActive = offset === 0;
             const isZoomed = zoomedSpaceId === space.id;
             const isOtherZoomed = zoomedSpaceId !== null && !isZoomed;
@@ -150,8 +157,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 
             return (
               <motion.div
-                key={space.id}
+                key={`${space.id}-${virtualIndex}`}
                 layout
+                initial={{ opacity: 0, x: offset > 0 ? 500 : -500 }}
                 animate={{
                   x: xOffset,
                   y: yOffset,
@@ -160,6 +168,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                   opacity,
                   filter: `blur(${blur}px)`,
                 }}
+                exit={{ opacity: 0, x: offset > 0 ? 500 : -500 }}
                 transition={{
                   type: 'spring',
                   stiffness: 150,
@@ -176,7 +185,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     if (isActive && !isZoomed) {
                       setZoomedSpaceId(space.id);
                     } else if (!isZoomed && !isActive) {
-                      onIndexChange(idx);
+                      onIndexChange(virtualIndex);
                     }
                   }}
                 >
@@ -202,7 +211,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              onClick={() => onIndexChange(activeIndex === 0 ? spaces.length - 1 : activeIndex - 1)}
+              onClick={() => onIndexChange(activeIndex - 1)}
               className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -211,7 +220,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              onClick={() => onIndexChange(activeIndex === spaces.length - 1 ? 0 : activeIndex + 1)}
+              onClick={() => onIndexChange(activeIndex + 1)}
               className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>

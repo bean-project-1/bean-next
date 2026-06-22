@@ -29,7 +29,8 @@ export default function HomePage() {
     }).catch(console.error);
   }, []);
 
-  const activeSpaceId = spaces[activeSpaceIndex]?.id || 'personal';
+  const safeSpaceIndex = spaces.length > 0 ? ((activeSpaceIndex % spaces.length) + spaces.length) % spaces.length : 0;
+  const activeSpaceId = spaces[safeSpaceIndex]?.id || 'personal';
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree(activeSpaceId);
 
   const handleLeafClick = (id: string | null) => {
@@ -173,7 +174,7 @@ export default function HomePage() {
               }}
             />
           ) : (
-            <SeedbedDashboard activeSpaceId={spaces[activeSpaceIndex]?.id || 'personal'} />
+            <SeedbedDashboard activeSpaceId={activeSpaceId} />
           )}
         </main>
       </div>

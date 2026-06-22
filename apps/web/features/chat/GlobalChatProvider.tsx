@@ -42,6 +42,11 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [existingGoalData, setExistingGoalData] = useState<any>(undefined);
 
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
+  const activeSpaceId = useUIStore(state => state.activeSpaceId);
+  
+  // Hide global chat ONLY if we are zoomed into a shared space
+  const isPersonalTree = activeSpaceId === 'personal' || activeSpaceId === null;
+  const hideGlobalButton = isSpaceZoomed && !isPersonalTree;
 
   const openChat = (msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);
@@ -68,7 +73,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
       </Suspense>
 
       {/* Floating Action Button (FAB) */}
-      {!isOpen && !isSpaceZoomed && (
+      {!isOpen && !hideGlobalButton && (
         <button
           onClick={() => openChat()}
           className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"

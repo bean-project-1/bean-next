@@ -65,7 +65,90 @@ export async function getSpaces() {
     },
   });
 
-  return spaces;
+  return spaces.map(space => {
+    const userMember = space.members.find(m => m.userId === session.user.id);
+    return {
+      ...space,
+      role: userMember?.role || 'member',
+      membersList: space.members.map(m => ({
+        userId: m.userId,
+        name: m.user.name,
+        avatarUrl: m.user.avatarUrl || m.user.image,
+        role: m.role
+      }))
+    };
+  });
+}
+
+/**
+ * Updates a member's role (only if the user is the owner).
+ */
+export async function updateMemberRole(spaceId: string, targetUserId: string, newRole: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership || membership.role !== 'owner') {
+    throw new Error('Solo el creador puede cambiar roles');
+  }
+
+  await prisma.spaceMember.updateMany({
+    where: { spaceId, userId: targetUserId },
+    data: { role: newRole }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
+}
+
+/**
+ * Deletes a space (only if the user is the owner).
+ */
+export async function deleteSpace(spaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership || membership.role !== 'owner') {
+    throw new Error('Solo el creador puede eliminar el árbol');
+  }
+
+  await prisma.space.delete({
+    where: { id: spaceId }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
+}
+
+/**
+ * Leaves a space (only if the user is a member, not the owner).
+ */
+export async function leaveSpace(spaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const membership = await prisma.spaceMember.findFirst({
+    where: { spaceId, userId: session.user.id }
+  });
+
+  if (!membership) throw new Error('No eres miembro de este árbol');
+  if (membership.role === 'owner') {
+    throw new Error('El creador no puede abandonar el árbol, debe eliminarlo');
+  }
+
+  await prisma.spaceMember.delete({
+    where: { id: membership.id }
+  });
+
+  revalidatePath('/home');
+  return { success: true };
 }
 
 /**

@@ -5,14 +5,15 @@ import { getTracedOpenAI } from '../../../../../lib/openai';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: spaceId } = params;
+    const resolvedParams = await params;
+    const { id: spaceId } = resolvedParams;
     
     // For MVP, we fetch all messages for the space
     const messages = await prisma.spaceMessage.findMany({
@@ -29,14 +30,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: spaceId } = params;
+    const resolvedParams = await params;
+    const { id: spaceId } = resolvedParams;
     const { content, mentions } = await req.json();
 
     if (!content.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 });

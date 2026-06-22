@@ -29,24 +29,68 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isAiTyping, setIsAiTyping] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousMessagesLengthRef = useRef<number>(0);
+  const notificationPermissionGranted = useRef<boolean>(false);
 
   const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
 
   useEffect(() => {
     setMounted(true);
+    // Request notification permission on mount
+    if ('Notification' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          notificationPermissionGranted.current = true;
+        }
+      });
+    }
   }, []);
 
-  // Poll for new messages every 3 seconds
+  // Fetch messages all the time so we can get notifications when closed
   const { data: messages, mutate } = useSWR<Message[]>(
-    isOpen ? `/api/spaces/${spaceId}/chat` : null, 
+    `/api/spaces/${spaceId}/chat`, 
     fetcher, 
     { refreshInterval: 3000 }
   );
 
   useEffect(() => {
+    if (messages) {
+      const prevLen = previousMessagesLengthRef.current;
+      const curLen = messages.length;
+      
+      if (prevLen > 0 && curLen > prevLen) {
+        // We have new messages!
+        const newMessages = messages.slice(prevLen);
+        
+        // If chat is closed, increment unread count and trigger system notifications
+        if (!isOpen) {
+          setUnreadCount(prev => prev + newMessages.length);
+          
+          if (notificationPermissionGranted.current) {
+            newMessages.forEach(msg => {
+              // Don't notify for our own messages (optimistic or synced)
+              if (msg.user?.name !== 'Tú' && msg.role !== 'user') {
+                const title = msg.role === 'assistant' ? 'BEAN (Asistente)' : (msg.user?.name || 'Nuevo Mensaje');
+                new Notification(title, {
+                  body: msg.content,
+                  icon: '/favicon.ico'
+                });
+              }
+            });
+          }
+        }
+      }
+      previousMessagesLengthRef.current = curLen;
+    }
+  }, [messages, isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
+      setUnreadCount(0);
       scrollToBottom();
     }
   }, [messages, isOpen]);
@@ -75,7 +119,10 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
 
     // Detect if we mention @bean
     const mentions: string[] = [];
-    if (text.toLowerCase().includes('@bean')) mentions.push('bean');
+    if (text.toLowerCase().includes('@bean')) {
+      mentions.push('bean');
+      setIsAiTyping(true);
+    }
 
     try {
       await fetch(`/api/spaces/${spaceId}/chat`, {
@@ -97,6 +144,7 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
       console.error(err);
     } finally {
       setIsSending(false);
+      setIsAiTyping(false);
     }
   };
 
@@ -114,6 +162,11 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
           className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
           <MessageSquare className="w-6 h-6" />
+          {unreadCount > 0 && (
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-bold shadow-sm">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </div>
+          )}
         </motion.button>
       )}
 
@@ -181,6 +234,23 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
                   </div>
                 );
               })}
+
+              {isAiTyping && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-emerald-100 text-emerald-600">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">BEAN</span>
+                    <div className="px-4 py-3.5 rounded-2xl bg-white border border-slate-100 rounded-tl-sm flex items-center gap-1.5 shadow-sm min-h-[44px]">
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.15, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                      <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.3, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 

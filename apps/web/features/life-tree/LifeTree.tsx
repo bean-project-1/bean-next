@@ -513,7 +513,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       </svg>
 
       {/* Interaction Hints - Floating Cursor Tooltip */}
-      {hoveredLeafName && (
+      {mounted && hoveredLeafName && createPortal(
         <div 
           className="fixed pointer-events-none bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 z-[9999] animate-in fade-in zoom-in duration-200"
           style={{ 
@@ -525,7 +525,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           <p className="text-slate-700 font-bold tracking-tight text-xs leading-snug">
             {hoveredLeafName}
           </p>
-        </div>
+        </div>,
+        document.body
       )}
 
       {mounted && (() => {

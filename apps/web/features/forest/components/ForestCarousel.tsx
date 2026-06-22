@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LifeTree } from '../../life-tree/LifeTree';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 import { useUIStore } from '../../../hooks/useUIStore';
-import { InviteBottomSheet } from './InviteBottomSheet';
+import { SpaceOptionsModal } from './SpaceOptionsModal';
 import { SpaceChat } from '../../spaces/components/SpaceChat';
 import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
 
@@ -13,6 +13,8 @@ interface Space {
   id: string;
   name: string;
   theme?: string | null;
+  role?: string;
+  membersList?: any[];
 }
 
 interface ForestCarouselProps {
@@ -24,12 +26,13 @@ interface ForestCarouselProps {
 }
 
 export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCreated, onActionHooks }: ForestCarouselProps) {
-  const [inviteModalSpace, setInviteModalSpace] = useState<Space | null>(null);
+  const [spaceOptionsModalSpace, setSpaceOptionsModalSpace] = useState<Space | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [zoomedSpaceId, setZoomedSpaceId] = useState<string | null>(null);
+
   const setSpaceState = useUIStore(state => state.setSpaceState);
 
   // Sync state with UI Store
@@ -159,7 +162,14 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
               <motion.div
                 key={`${space.id}-${virtualIndex}`}
                 layout
-                initial={{ opacity: 0, x: offset > 0 ? 500 : -500 }}
+                initial={{ 
+                  opacity: 0, 
+                  x: offset > 0 ? 500 : -500,
+                  y: yOffset,
+                  z: zOffset,
+                  scale: scale,
+                  filter: `blur(${blur}px)`
+                }}
                 animate={{
                   x: xOffset,
                   y: yOffset,
@@ -193,7 +203,12 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     space={space} 
                     isActive={isActive} 
                     isZoomed={isZoomed}
-                    onTrunkClick={() => setInviteModalSpace(space)}
+                    onTrunkClick={() => {
+                      // Only show options for non-personal spaces
+                      if (space.id !== 'personal') {
+                        setSpaceOptionsModalSpace(space);
+                      }
+                    }}
                     onActionHooks={onActionHooks}
                   />
                 </div>
@@ -314,16 +329,19 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
           </motion.div>
         )}
       </AnimatePresence>
-
-      <InviteBottomSheet 
-        isOpen={!!inviteModalSpace} 
-        onClose={() => setInviteModalSpace(null)} 
-        spaceName={inviteModalSpace?.name || ''}
-        onGenerateLink={async () => {
-           if (!inviteModalSpace) throw new Error();
-           return generateInviteLink(inviteModalSpace.id);
-        }}
-      />
+      
+      {/* Space Options Modal */}
+      {spaceOptionsModalSpace && (
+        <SpaceOptionsModal 
+          space={spaceOptionsModalSpace}
+          onClose={() => setSpaceOptionsModalSpace(null)} 
+          onDeleted={() => {
+            setSpaceOptionsModalSpace(null);
+            setZoomedSpaceId(null);
+            onIndexChange(0); // Return to personal tree
+          }}
+        />
+      )}
     </div>
   );
 }

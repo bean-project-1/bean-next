@@ -11,9 +11,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const spaceId = searchParams.get('spaceId');
+
+    const whereClause: any = { userId };
+    if (spaceId && spaceId !== 'personal') {
+      whereClause.spaceId = spaceId;
+    } else {
+      // Personal space = null spaceId
+      whereClause.spaceId = null;
+    }
+
     // 1. Fetch User Goals with their Actions (Dynamic to user's actual goals)
     const goals = await (prisma as any).goal.findMany({
-      where: { userId },
+      where: whereClause,
       include: {
         actions: {
           include: { tasks: true }

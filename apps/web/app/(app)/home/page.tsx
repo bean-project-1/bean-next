@@ -9,6 +9,8 @@ import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
 import { TreeData } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 import { SeedbedDashboard } from '../../../features/idea-incubator/SeedbedDashboard';
+import { ForestCarousel } from '../../../features/forest/components/ForestCarousel';
+import { getSpaces } from '../../../features/spaces/actions/spaces';
 
 export default function HomePage() {
   const [viewMode, setViewMode] = useState<'tree' | 'incubator'>('tree');
@@ -17,7 +19,16 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
-  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree();
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([{ id: 'personal', name: 'Bosque Personal' }]);
+  
+  useEffect(() => {
+    getSpaces().then(data => {
+      const formattedSpaces = data.map(s => ({ id: s.id, name: s.name }));
+      setSpaces([{ id: 'personal', name: 'Bosque Personal' }, ...formattedSpaces]);
+    }).catch(console.error);
+  }, []);
+
+  const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree('personal');
 
   const handleLeafClick = (id: string | null) => {
     if (!id) {
@@ -123,7 +134,7 @@ export default function HomePage() {
               viewMode === 'tree' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            El Árbol
+            El Bosque
           </button>
           <button
             onClick={() => setViewMode('incubator')}
@@ -140,16 +151,18 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <main className="flex-1 relative">
           {viewMode === 'tree' ? (
-            <LifeTree 
-              data={treeData}
-              onLeafClick={handleLeafClick}
-              onScoreClick={() => setIsDnaOpen(true)}
-              onRefresh={refresh}
-              activePhaseId={selectedPhaseId}
-              activeLeafId={selectedAction?.id}
-              onEditBranch={(b) => setSelectedBranchId(b ? b.id : null)}
-              onPhaseClick={handlePhaseClick}
-              onDeleteBranch={(b) => handleDeleteGoal(b.id)}
+            <ForestCarousel 
+              spaces={spaces}
+              onActionHooks={{
+                onLeafClick: handleLeafClick,
+                onScoreClick: () => setIsDnaOpen(true),
+                onRefresh: refresh,
+                activePhaseId: selectedPhaseId,
+                activeLeafId: selectedAction?.id,
+                onEditBranch: (b: any) => setSelectedBranchId(b ? b.id : null),
+                onPhaseClick: handlePhaseClick,
+                onDeleteBranch: (b: any) => handleDeleteGoal(b.id)
+              }}
             />
           ) : (
             <SeedbedDashboard />

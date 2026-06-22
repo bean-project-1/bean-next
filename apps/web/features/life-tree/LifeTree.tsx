@@ -16,11 +16,12 @@ interface LifeTreeProps {
   onDeleteBranch?: (branch: BranchData) => void;
   onEditBranch?: (branch: BranchData | null) => void;
   onPhaseClick?: (phaseId: string | null) => void;
+  onTrunkClick?: () => void;
   activePhaseId?: string | null;
   activeLeafId?: string | null;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, activePhaseId, activeLeafId }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -335,7 +336,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   // so manual mouse wheel scrolling doesn't accidentally fade out the tree.
 
   return (
-    <div ref={containerRef} className="fixed inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
+    <div ref={containerRef} className="absolute inset-0 w-full h-full bg-transparent font-sans overflow-hidden z-10">
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
@@ -384,7 +385,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           )}
 
           {/* 3. Realistic Trunk */}
-          <g ref={trunkRef} className="pointer-events-none transition-opacity duration-700 ease-out" style={{ opacity: zoomedBranchId ? 0 : 1 }}>
+          <g 
+            ref={trunkRef} 
+            className={`transition-opacity duration-700 ease-out ${onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none'}`}
+            style={{ opacity: zoomedBranchId ? 0 : 1 }}
+            onClick={onTrunkClick}
+          >
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
             <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />

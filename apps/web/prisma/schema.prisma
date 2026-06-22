@@ -41,6 +41,7 @@ model User {
   pushSubscriptions PushSubscription[]
   notificationLogs  NotificationLog[]
   incubatorSeeds    IncubatorSeed[]
+  spaceMembers      SpaceMember[]
 
   @@map("users")
 }
@@ -163,6 +164,9 @@ model BaseCommitment {
   isActive  Boolean  @default(true)
   energyLevel String? @default("medium") @map("energy_level")
   createdAt DateTime @default(now()) @map("created_at")
+
+  spaceId String? @map("space_id") @db.ObjectId
+  space   Space?  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -320,6 +324,9 @@ model Goal {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
+
+  spaceId String? @map("space_id") @db.ObjectId
+  space   Space?  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   actions GoalAction[]
@@ -511,7 +518,61 @@ model IncubatorSeed {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  spaceId String? @map("space_id") @db.ObjectId
+  space   Space?  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("incubator_seeds")
+}
+
+//
+// ───────────────── FOREST SPACES (CAROUSEL) ─────────────────
+//
+model Space {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   // e.g. "Personal", "Pareja", "Startup"
+  description String?
+  icon        String?
+  theme       String?  // e.g. "blue", "green", "gold"
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members         SpaceMember[]
+  invitations     SpaceInvitation[]
+  goals           Goal[]
+  baseCommitments BaseCommitment[]
+  incubatorSeeds  IncubatorSeed[]
+
+  @@map("spaces")
+}
+
+model SpaceMember {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String @map("user_id") @db.ObjectId
+  spaceId  String @map("space_id") @db.ObjectId
+  
+  role     String @default("member") // "owner" | "member"
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("space_members")
+}
+
+model SpaceInvitation {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  spaceId   String   @map("space_id") @db.ObjectId
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  status    String   @default("pending") // "pending", "accepted", "revoked"
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("space_invitations")
 }

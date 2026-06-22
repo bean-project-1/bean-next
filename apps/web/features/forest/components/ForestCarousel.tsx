@@ -140,17 +140,18 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             }`}
           />
         ))}
-        <button 
-          onClick={() => setIsCreatingSpace(true)}
-          className="w-8 h-8 ml-2 rounded-full bg-slate-200/50 hover:bg-slate-300/80 backdrop-blur-sm border border-slate-300 text-slate-700 flex items-center justify-center transition-all group shadow-sm"
-          title="Crear Nuevo Bosque"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:scale-110 transition-transform">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
       </div>
+
+      {/* Floating Create Tree Button */}
+      <button 
+        onClick={() => setIsCreatingSpace(true)}
+        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-200/50 hover:bg-slate-300/80 backdrop-blur-sm border border-slate-300 text-slate-700 flex items-center justify-center transition-all shadow-sm z-50"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
 
       <AnimatePresence>
         {isCreatingSpace && (

@@ -344,6 +344,7 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks 
     <LifeTree 
       data={treeData} 
       onTrunkClick={isZoomed ? onTrunkClick : undefined}
+      isInteractive={isZoomed}
       {...activeHooks}
     />
   );

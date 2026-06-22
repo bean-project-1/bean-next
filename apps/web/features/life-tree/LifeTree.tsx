@@ -19,9 +19,10 @@ interface LifeTreeProps {
   onTrunkClick?: () => void;
   activePhaseId?: string | null;
   activeLeafId?: string | null;
+  isInteractive?: boolean;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, isInteractive = true }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -262,6 +263,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handleWheel = (e: React.WheelEvent) => {
+    if (!isInteractive) return;
     e.preventDefault();
     const zoomFactor = 1.05; // Smoother manual zoom step
     const factor = e.deltaY > 0 ? zoomFactor : 1 / zoomFactor;
@@ -296,6 +298,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isInteractive) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for pan if using mouse
     setIsPanning(true);
     panStart.current = { x: e.clientX, y: e.clientY };
@@ -340,7 +343,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
-        className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} transition-all duration-300`}
+        className={`w-full h-full ${isInteractive ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-auto'} transition-all duration-300`}
         style={{ touchAction: 'none' }}
         xmlns="http://www.w3.org/2000/svg"
         onWheel={handleWheel}
@@ -557,6 +560,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       )}
 
       {(() => {
+        if (!isInteractive) return null;
         const isDefaultView = 
           Math.abs(viewBox.w - 1000) < 1 && 
           Math.abs(viewBox.x - (-100)) < 1 && 

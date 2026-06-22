@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     const { finalGoalInput, chatHistory, userEmail, branchData } = body;
     sessionId = body.sessionId;
     const byokKey = req.cookies.get('bean_byok_key')?.value;
+    const byokProvider = req.cookies.get('bean_byok_provider')?.value;
 
     // 1. Resolve User
     let user = null;
@@ -69,7 +70,7 @@ ${rawChat}`;
       const client = goalService.getClient({
         userId: user.id,
         tags: ["agent:goal-generate", `env:${process.env.NODE_ENV || 'development'}`]
-      }, byokKey);
+      }, byokKey, byokProvider);
       const distillationRes = await client.chat.completions.create({
         model: hasOpenAI ? "gpt-4o-mini" : "deepseek-chat",
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
@@ -83,20 +84,20 @@ ${rawChat}`;
     console.log(`[GoalGenerate] User: ${user.email} | Distilled Intent: "${goalText.substring(0, 200)}..."`);
 
     // 3. Unified Pipeline
-    const parsedGoal = await goalService.parseGoalWithAI(goalText, user.id, byokKey);
+    const parsedGoal = await goalService.parseGoalWithAI(goalText, user.id, byokKey, byokProvider);
     const userDNA = await goalService.getUserDNA(user.id);
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
 
     // 3.5 Resource Audit
     if (!body.draftPlan) {
-      const auditResult = await goalService.auditGoalResources(parsedGoal, user.id, byokKey);
+      const auditResult = await goalService.auditGoalResources(parsedGoal, user.id, byokKey, byokProvider);
       if (!auditResult.isViable && auditResult.renegotiationMessage) {
         console.log(`[GoalGenerate] Audit failed on final save: ${auditResult.renegotiationMessage}`);
         // We no longer throw GoalAuditError here to allow the save of the plan
       }
     }
 
-    const plan = body.draftPlan || await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id, undefined, undefined, byokKey);
+    const plan = body.draftPlan || await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, user.id, undefined, undefined, byokKey, byokProvider);
 
     // 4. Resolve Dimension
     const primaryDimName = parsedGoal.relevantDimensions?.[0] || 'career';

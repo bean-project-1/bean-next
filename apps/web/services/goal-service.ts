@@ -17,9 +17,9 @@ export class GoalAuditError extends Error {
 }
 
 export class GoalService {
-  public getClient(config?: any, byokKey?: string) {
-    if (byokKey && byokKey.startsWith('sk-')) {
-      return getDynamicAIClientByKey(byokKey, config);
+  public getClient(config?: any, byokKey?: string, byokProvider?: string) {
+    if (byokKey && byokKey.length >= 10) {
+      return getDynamicAIClientByKey(byokKey, byokProvider, config);
     }
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
     if (config) {
@@ -29,7 +29,7 @@ export class GoalService {
   }
 
 
-  async parseGoalWithAI(text: string, userId?: string, byokKey?: string) {
+  async parseGoalWithAI(text: string, userId?: string, byokKey?: string, byokProvider?: string) {
     const prompt = `
       Analyze the following user goal intention: "${text}"
       
@@ -49,11 +49,11 @@ export class GoalService {
     `;
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-    const model = (byokKey || hasOpenAI) ? "gpt-4o-mini" : "deepseek-chat";
+    const model = (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat";
     const client = this.getClient({
       userId: userId,
       tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
-    }, byokKey);
+    }, byokKey, byokProvider);
 
     try {
       const response = await client.chat.completions.create({
@@ -176,7 +176,7 @@ export class GoalService {
     };
   }
 
-  async auditGoalResources(parsedGoal: any, userId?: string, byokKey?: string) {
+  async auditGoalResources(parsedGoal: any, userId?: string, byokKey?: string, byokProvider?: string) {
     let workloadContext = "Unknown workload";
     if (userId) {
       const workload = await this.getUserWorkloadContext(userId);
@@ -212,10 +212,10 @@ export class GoalService {
     `;
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-    const client = this.getClient({ userId, tags: ["agent:resource-audit"] }, byokKey);
+    const client = this.getClient({ userId, tags: ["agent:resource-audit"] }, byokKey, byokProvider);
     
     const response = await client.chat.completions.create({
-      model: (byokKey || hasOpenAI) ? "gpt-4o-mini" : "deepseek-chat",
+      model: (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat",
       messages: [{ role: "system", content: "You are a strict resource auditor." }, { role: "user", content: prompt }],
       response_format: { type: "json_object" }
     });
@@ -228,7 +228,7 @@ export class GoalService {
     }
   }
 
-  async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string, previousDraft?: any, revisionInstructions?: string, byokKey?: string) {
+  async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string, previousDraft?: any, revisionInstructions?: string, byokKey?: string, byokProvider?: string) {
     const { title, description } = parsedGoal;
     const { gap } = dnaAnalysis;
     const now = new Date();
@@ -374,11 +374,11 @@ export class GoalService {
     `;
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-    const model = (byokKey || hasOpenAI) ? "gpt-4o-mini" : "deepseek-chat";
+    const model = (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat";
     const client = this.getClient({
       userId: userId,
       tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
-    }, byokKey);
+    }, byokKey, byokProvider);
 
     try {
       const response = await client.chat.completions.create({

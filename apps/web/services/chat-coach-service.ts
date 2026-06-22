@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getTracedOpenAI } from '@/lib/openai';
-import { getDynamicAIClientByKey } from '@/lib/ai-client';
+import { getDynamicAIClientByKey, getDynamicModelByKey } from '@/lib/ai-client';
 import { GoalService } from '@/services/goal-service';
 
 export class ChatCoachService {
@@ -37,7 +37,8 @@ export class ChatCoachService {
     message: string, 
     context: 'insights' | 'tree' | 'global' = 'insights',
     draftPlan: any = null,
-    byokKey?: string
+    byokKey?: string,
+    byokProvider?: string
   ) { if (!message?.trim()) {
       throw new Error('Missing message');
     }
@@ -270,14 +271,16 @@ REGLAS DE FORMATO:
       }
     ];
 
-    const tracedClient = getDynamicAIClientByKey(byokKey, {
+    const tracedClient = getDynamicAIClientByKey(byokKey, byokProvider, {
       userId: userId,
       sessionId: resolvedSessionId,
       tags: ["agent:chat-coach", `env:${process.env.NODE_ENV || 'development'}`]
     });
 
+    const modelToUse = getDynamicModelByKey(byokKey, byokProvider, 'gpt-4o-mini');
+
     const response = await tracedClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelToUse,
       messages: aiMessages as any,
       temperature: 0.8,
       ...(isWeeklyReview ? {} : { tools: tools as any, tool_choice: "auto" }),

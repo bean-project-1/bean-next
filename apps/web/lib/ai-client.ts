@@ -14,20 +14,29 @@ import { openai, getTracedOpenAI } from './openai';
  */
 export function getDynamicAIClient(req: NextRequest, config?: any) {
   const byokKey = req.cookies.get('bean_byok_key')?.value;
-  return getDynamicAIClientByKey(byokKey, config);
+  const byokProvider = req.cookies.get('bean_byok_provider')?.value;
+  return getDynamicAIClientByKey(byokKey, byokProvider, config);
 }
 
-export function getDynamicAIClientByKey(byokKey?: string, config?: any) {
-  if (byokKey && byokKey.startsWith('sk-')) {
+export function getDynamicAIClientByKey(byokKey?: string, byokProvider?: string, config?: any) {
+  if (byokKey && byokKey.length >= 10) {
+    let baseURL = undefined;
+    if (byokProvider === 'deepseek') {
+      baseURL = "https://api.deepseek.com/v1";
+    } else if (byokProvider === 'gemini') {
+      baseURL = "https://generativelanguage.googleapis.com/v1beta/openai/";
+    }
+
     // Create a new instance with the user's key
     const rawClient = new OpenAI({
       apiKey: byokKey,
+      baseURL
     });
     
     // Add the "byok" tag to easily identify these requests in Langfuse
     const traceConfig = {
       ...config,
-      tags: [...(config?.tags || []), 'byok'],
+      tags: [...(config?.tags || []), 'byok', `provider:${byokProvider || 'openai'}`],
     };
 
     return observeOpenAI(rawClient, traceConfig);
@@ -42,10 +51,14 @@ export function getDynamicAIClientByKey(byokKey?: string, config?: any) {
 
 export function getDynamicModel(req: NextRequest, fallbackModel: string = "gpt-4o-mini") {
   const byokKey = req.cookies.get('bean_byok_key')?.value;
-  if (byokKey && byokKey.startsWith('sk-')) {
-    // If they bring their own key, they can access gpt-4o or gpt-4o-mini. We default to gpt-4o-mini for speed/cost,
-    // but we can let them use standard OpenAI models since it's their key.
-    // For now, return gpt-4o-mini as a safe BYOK model
+  const byokProvider = req.cookies.get('bean_byok_provider')?.value;
+  return getDynamicModelByKey(byokKey, byokProvider, fallbackModel);
+}
+
+export function getDynamicModelByKey(byokKey?: string, byokProvider?: string, fallbackModel: string = "gpt-4o-mini") {
+  if (byokKey && byokKey.length >= 10) {
+    if (byokProvider === 'deepseek') return 'deepseek-chat';
+    if (byokProvider === 'gemini') return 'gemini-1.5-flash';
     return "gpt-4o-mini";
   }
   

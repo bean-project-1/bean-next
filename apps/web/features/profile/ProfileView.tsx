@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { NotificationSettings } from './NotificationSettings';
 
-interface User { id: string; name?: string; email: string; createdAt: string; notificationPreferences?: any; hasCustomApiKey?: boolean; }
+interface User { id: string; name?: string; email: string; createdAt: string; notificationPreferences?: any; hasCustomApiKey?: boolean; byokProvider?: string; }
 
 export function ProfileView() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,6 +16,7 @@ export function ProfileView() {
   const [customApiKey, setCustomApiKey] = useState('');
   const [isApiKeySaved, setIsApiKeySaved] = useState(false);
   const [savingApiKey, setSavingApiKey] = useState(false);
+  const [customApiProvider, setCustomApiProvider] = useState('openai');
 
   useEffect(() => {
     fetch('/api/profile')
@@ -27,6 +28,9 @@ export function ProfileView() {
           const prefs = json.data.user.notificationPreferences;
           setWeeklyReviewEnabled(prefs?.weeklyReview !== false);
           setIsApiKeySaved(!!json.data.user.hasCustomApiKey);
+          if (json.data.user.byokProvider) {
+            setCustomApiProvider(json.data.user.byokProvider);
+          }
         }
       })
       .catch(() => {})
@@ -86,7 +90,7 @@ export function ProfileView() {
       const res = await fetch('/api/profile/api-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: customApiKey })
+        body: JSON.stringify({ apiKey: customApiKey, provider: customApiProvider })
       });
       const data = await res.json();
       if (data.success) {
@@ -111,6 +115,7 @@ export function ProfileView() {
       const res = await fetch('/api/profile/api-key', { method: 'DELETE' });
       if (res.ok) {
         setIsApiKeySaved(false);
+        setCustomApiProvider('openai');
       }
     } catch(err) {
       console.error(err);
@@ -277,7 +282,7 @@ export function ProfileView() {
               {isApiKeySaved ? (
                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-3">
                   <div className="flex items-center gap-2 text-emerald-700 font-bold">
-                    <span>✅</span> API Key de OpenAI Activa
+                    <span>✅</span> API Key de {customApiProvider === 'gemini' ? 'Google (Gemini)' : customApiProvider === 'deepseek' ? 'DeepSeek' : 'OpenAI'} Activa
                   </div>
                   <p className="text-xs text-emerald-600/80">Estás utilizando tu propio modelo para potenciar a BEAN.</p>
                   <button 
@@ -290,13 +295,24 @@ export function ProfileView() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <input 
-                    type="password" 
-                    value={customApiKey}
-                    onChange={e => setCustomApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm font-mono focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all"
-                  />
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <select 
+                      value={customApiProvider}
+                      onChange={e => setCustomApiProvider(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all cursor-pointer"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="gemini">Google (Gemini)</option>
+                    </select>
+                    <input 
+                      type="password" 
+                      value={customApiKey}
+                      onChange={e => setCustomApiKey(e.target.value)}
+                      placeholder="Tu API Key..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm font-mono focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all"
+                    />
+                  </div>
                   <button 
                     onClick={handleSaveApiKey}
                     disabled={savingApiKey || !customApiKey.trim()}

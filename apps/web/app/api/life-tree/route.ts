@@ -18,8 +18,11 @@ export async function GET(req: NextRequest) {
     if (spaceId && spaceId !== 'personal') {
       whereClause.spaceId = spaceId;
     } else {
-      // Personal space = null spaceId
-      whereClause.spaceId = null;
+      // Personal space = null spaceId OR spaceId doesn't exist yet in old docs
+      whereClause.OR = [
+        { spaceId: null },
+        { spaceId: { isSet: false } }
+      ];
     }
 
     // 1. Fetch User Goals with their Actions (Dynamic to user's actual goals)

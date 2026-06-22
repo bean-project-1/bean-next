@@ -46,8 +46,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const panStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    // No more offset needed.
-  }, []);
+    // Reset view when leaving the tree
+    if (!isInteractive) {
+      resetZoom();
+    }
+  }, [isInteractive]);
 
   useGSAP(() => {
     const tl = gsap.timeline();
@@ -587,7 +590,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-24 left-4 sm:top-8 sm:left-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white hover:scale-105 transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+            className="absolute top-20 right-4 sm:top-8 sm:right-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
+            style={{ transform: isInteractive ? 'scale(0.714)' : 'scale(1)', transformOrigin: 'top right' }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6"/>

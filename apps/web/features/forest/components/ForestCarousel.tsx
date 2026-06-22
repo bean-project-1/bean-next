@@ -172,6 +172,16 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     onActionHooks={onActionHooks}
                   />
                 </div>
+
+                {/* Tree Name Label */}
+                <motion.div 
+                  animate={{ opacity: isZoomed ? 0 : (isActive ? 1 : 0.7), y: isZoomed ? 40 : 0 }}
+                  className="absolute bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full"
+                >
+                  <h2 className={`text-2xl sm:text-3xl font-black uppercase tracking-widest text-center ${isActive ? 'text-slate-800' : 'text-slate-600'}`} style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
+                    {space.name}
+                  </h2>
+                </motion.div>
               </motion.div>
             );
           })}
@@ -205,23 +215,6 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
               </motion.button>
             )}
           </>
-        )}
-      </AnimatePresence>
-
-      {/* Active Tree Info (Clean and minimal) */}
-      <AnimatePresence>
-        {!zoomedSpaceId && spaces[activeIndex] && (
-          <motion.div 
-            key={`info-${spaces[activeIndex].id}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50 pointer-events-none"
-          >
-            <h2 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-widest text-center opacity-80" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
-              {spaces[activeIndex].name}
-            </h2>
-          </motion.div>
         )}
       </AnimatePresence>
 

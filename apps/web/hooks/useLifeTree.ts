@@ -142,12 +142,12 @@ export function useLifeTree(spaceId?: string) {
     }
   };
 
-  const addGoal = async (data: { title: string; description?: string; purpose?: string; dimensions?: string[] }) => {
+  const addGoal = async (data: { title: string; description?: string; purpose?: string; dimensions?: string[], spaceId?: string }) => {
     try {
       const res = await fetch(`/api/profile/goals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, spaceId: data.spaceId || spaceId }),
       });
       if (res.ok) {
         await fetchTree();

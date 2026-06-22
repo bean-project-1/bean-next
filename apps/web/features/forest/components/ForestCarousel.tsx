@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LifeTree } from '../../life-tree/LifeTree';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 import { InviteBottomSheet } from './InviteBottomSheet';
-import { generateInviteLink } from '../../spaces/actions/spaces';
+import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
 
 interface Space {
   id: string;
@@ -15,25 +15,48 @@ interface Space {
 
 interface ForestCarouselProps {
   spaces: Space[];
+  activeIndex: number;
+  onIndexChange: (index: number) => void;
+  onSpaceCreated: (space: Space) => void;
   onActionHooks: any; // Pointers to the handlers (handleLeafClick, etc) from HomePage
 }
 
-export function ForestCarousel({ spaces, onActionHooks }: ForestCarouselProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCreated, onActionHooks }: ForestCarouselProps) {
   const [inviteModalSpace, setInviteModalSpace] = useState<Space | null>(null);
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isCreatingSpace) return;
       if (e.key === 'ArrowLeft') {
-        setActiveIndex((prev) => Math.max(0, prev - 1));
+        onIndexChange(Math.max(0, activeIndex - 1));
       } else if (e.key === 'ArrowRight') {
-        setActiveIndex((prev) => Math.min(spaces.length - 1, prev + 1));
+        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [spaces.length]);
+  }, [spaces.length, activeIndex, isCreatingSpace, onIndexChange]);
+
+  const handleCreateSpace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSpaceName.trim()) return;
+    setIsCreating(true);
+    try {
+      const newSpace = await createSpace(newSpaceName.trim());
+      onSpaceCreated(newSpace);
+      setIsCreatingSpace(false);
+      setNewSpaceName('');
+    } catch (err) {
+      console.error(err);
+      alert('Error al crear el bosque.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   if (spaces.length === 0) return null;
 
@@ -79,7 +102,7 @@ export function ForestCarousel({ spaces, onActionHooks }: ForestCarouselProps) {
               >
                 <div 
                   className="w-full h-full"
-                  onClick={() => !isActive && setActiveIndex(idx)}
+                  onClick={() => !isActive && onIndexChange(idx)}
                 >
                   <TreeContainer 
                     space={space} 
@@ -109,7 +132,7 @@ export function ForestCarousel({ spaces, onActionHooks }: ForestCarouselProps) {
         {spaces.map((_, idx) => (
           <button
             key={idx}
-            onClick={() => setActiveIndex(idx)}
+            onClick={() => onIndexChange(idx)}
             className={`transition-all duration-300 rounded-full ${
               idx === activeIndex 
                 ? 'w-8 h-2 bg-emerald-400 shadow-[0_0_10px_#34d399]' 
@@ -117,7 +140,61 @@ export function ForestCarousel({ spaces, onActionHooks }: ForestCarouselProps) {
             }`}
           />
         ))}
+        <button 
+          onClick={() => setIsCreatingSpace(true)}
+          className="w-8 h-8 ml-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center transition-all group"
+          title="Crear Nuevo Bosque"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:scale-110 transition-transform">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
       </div>
+
+      <AnimatePresence>
+        {isCreatingSpace && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              className="bg-slate-900 border border-white/10 p-6 sm:p-8 rounded-[2rem] w-full max-w-sm shadow-2xl text-white"
+            >
+              <h3 className="text-xl font-bold mb-2">Plantar un Nuevo Bosque</h3>
+              <p className="text-sm text-slate-400 mb-6">Crea un nuevo espacio para agrupar metas (ej. "Pareja", "Startup").</p>
+              
+              <form onSubmit={handleCreateSpace}>
+                <input 
+                  autoFocus
+                  type="text"
+                  placeholder="Nombre del bosque..."
+                  value={newSpaceName}
+                  onChange={(e) => setNewSpaceName(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 mb-6 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+                <div className="flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsCreatingSpace(false)}
+                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isCreating || !newSpaceName.trim()}
+                    className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold transition-colors disabled:opacity-50"
+                  >
+                    {isCreating ? 'Creando...' : 'Crear'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <InviteBottomSheet 
         isOpen={!!inviteModalSpace} 

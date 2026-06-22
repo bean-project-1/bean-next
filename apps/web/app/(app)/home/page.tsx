@@ -20,6 +20,7 @@ export default function HomePage() {
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
   const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([{ id: 'personal', name: 'Bosque Personal' }]);
+  const [activeSpaceIndex, setActiveSpaceIndex] = useState(0);
   
   useEffect(() => {
     getSpaces().then(data => {
@@ -153,6 +154,12 @@ export default function HomePage() {
           {viewMode === 'tree' ? (
             <ForestCarousel 
               spaces={spaces}
+              activeIndex={activeSpaceIndex}
+              onIndexChange={setActiveSpaceIndex}
+              onSpaceCreated={(newSpace) => {
+                setSpaces(prev => [...prev, newSpace]);
+                setActiveSpaceIndex(spaces.length);
+              }}
               onActionHooks={{
                 onLeafClick: handleLeafClick,
                 onScoreClick: () => setIsDnaOpen(true),
@@ -165,7 +172,7 @@ export default function HomePage() {
               }}
             />
           ) : (
-            <SeedbedDashboard />
+            <SeedbedDashboard activeSpaceId={spaces[activeSpaceIndex]?.id || 'personal'} />
           )}
         </main>
       </div>

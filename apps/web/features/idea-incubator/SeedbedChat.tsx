@@ -10,11 +10,12 @@ import { IdeaDocument } from './IdeaDocument';
 
 interface SeedbedChatProps {
   seedId: string;
+  activeSpaceId: string;
   onBack: () => void;
   onPlanted: () => void;
 }
 
-export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
+export function SeedbedChat({ seedId, activeSpaceId, onBack, onPlanted }: SeedbedChatProps) {
   const { getSeed, addMessage, addCloud, removeCloud, updateScores, deleteSeed, updateDocument, restartChat, evaluateSeed } = useIncubator();
   const { addGoal } = useLifeTree();
   const [input, setInput] = useState('');
@@ -79,8 +80,11 @@ export function SeedbedChat({ seedId, onBack, onPlanted }: SeedbedChatProps) {
     const res = await addGoal({
       title: seed.title,
       description: seed.description,
-      purpose: 'Idea incubada en el Semillero',
-      dimensions: ['personal']
+      spaceId: activeSpaceId,
+      dimensions: [
+        seed.scores.sun > 50 ? 'impact' : 'career',
+      ],
+      purpose: seed.analysis || ''
     });
     
     if (res.success) {

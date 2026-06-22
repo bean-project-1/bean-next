@@ -590,11 +590,11 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute top-20 right-4 sm:top-8 sm:right-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-top-4"
-            style={{ transform: isInteractive ? 'scale(0.714)' : 'scale(1)', transformOrigin: 'top right' }}
+            className="absolute bottom-32 right-4 sm:bottom-24 sm:right-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-bottom-4"
+            style={{ transform: isInteractive ? 'scale(0.714)' : 'scale(1)', transformOrigin: 'bottom right' }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 18-6-6 6-6"/>
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
             </svg>
           </button>
         ) : null;

@@ -93,6 +93,28 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       {/* Background ambient glow based on active tree */}
       <div className="absolute inset-0 bg-gradient-radial from-emerald-900/10 to-transparent pointer-events-none" />
 
+      {/* Zoom Controls (Must stay on top) */}
+      <AnimatePresence>
+        {zoomedSpaceId && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-6 left-6 z-[100]"
+          >
+            <button
+              onClick={() => setZoomedSpaceId(null)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-medium transition-all"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              Volver al Bosque
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Trees Carousel */}
       <div className="absolute inset-0 flex items-center justify-center transform-style-3d">
         <AnimatePresence>
@@ -142,58 +164,62 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     onTrunkClick={() => setInviteModalSpace(space)}
                     onActionHooks={onActionHooks}
                   />
-                  
-                  {/* Click catchers for Forest View */}
-                  {!isZoomed && !isActive && (
-                    <div 
-                      className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-64 z-50 cursor-pointer"
-                      onClick={() => onIndexChange(idx)}
-                    />
-                  )}
-                  {!isZoomed && isActive && (
-                    <div 
-                      className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-64 md:w-96 z-50 cursor-pointer flex items-center justify-center group"
-                      onClick={() => setZoomedSpaceId(space.id)}
-                    >
-                      <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white backdrop-blur-sm px-6 py-3 rounded-full font-bold tracking-wide transition-opacity duration-300 shadow-xl border border-white/10 mt-32">
-                        Entrar al Árbol
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                {/* Tree Name Label (Visible only when slightly zoomed out or switching) */}
-                <motion.div 
-                  animate={{ opacity: isActive && !isZoomed ? 1 : 0, y: isActive && !isZoomed ? 0 : 40 }}
-                  className="absolute bottom-44 sm:bottom-28 left-1/2 -translate-x-1/2 text-center pointer-events-none"
-                >
-                  <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
-                    {space.name}
-                  </h2>
-                </motion.div>
               </motion.div>
             );
           })}
         </AnimatePresence>
       </div>
 
-      {/* Zoom Controls */}
+      {/* Explicit Navigation Arrows */}
       <AnimatePresence>
-        {zoomedSpaceId && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
+        {!zoomedSpaceId && spaces.length > 1 && (
+          <>
+            {activeIndex > 0 && (
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onClick={() => onIndexChange(activeIndex - 1)}
+                className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </motion.button>
+            )}
+            {activeIndex < spaces.length - 1 && (
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={() => onIndexChange(activeIndex + 1)}
+                className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </motion.button>
+            )}
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Active Tree Info (Always centered, unaffected by 3D transforms) */}
+      <AnimatePresence>
+        {!zoomedSpaceId && spaces[activeIndex] && (
+          <motion.div 
+            key={`info-${spaces[activeIndex].id}`}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-6 left-6 z-[100]"
+            className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-50"
           >
-            <button
-              onClick={() => setZoomedSpaceId(null)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-medium transition-all"
+            <h2 className="text-3xl font-black text-slate-800 uppercase tracking-widest text-center" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
+              {spaces[activeIndex].name}
+            </h2>
+            <button 
+              onClick={() => setZoomedSpaceId(spaces[activeIndex].id)}
+              className="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 flex items-center gap-2"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-              </svg>
-              Volver al Bosque
+              <span>Entrar al Árbol</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </motion.div>
         )}
@@ -206,7 +232,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-32 sm:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 z-50"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-50"
           >
             {spaces.map((_, idx) => (
               <button
@@ -231,7 +257,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => setIsCreatingSpace(true)}
-            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-200/50 hover:bg-slate-300/80 backdrop-blur-sm border border-slate-300 text-slate-700 flex items-center justify-center transition-all shadow-sm z-50"
+            className="absolute right-6 top-6 w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-all shadow-lg z-50"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />

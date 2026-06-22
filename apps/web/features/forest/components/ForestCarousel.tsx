@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LifeTree } from '../../life-tree/LifeTree';
 import { useLifeTree } from '../../../hooks/useLifeTree';
+import { useUIStore } from '../../../hooks/useUIStore';
 import { InviteBottomSheet } from './InviteBottomSheet';
 import { SpaceChat } from '../../spaces/components/SpaceChat';
 import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
@@ -29,6 +30,20 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
   const [isCreating, setIsCreating] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [zoomedSpaceId, setZoomedSpaceId] = useState<string | null>(null);
+  const setSpaceState = useUIStore(state => state.setSpaceState);
+
+  // Sync state with UI Store
+  useEffect(() => {
+    const space = spaces[activeIndex];
+    if (space) {
+      setSpaceState(space.id, !!zoomedSpaceId);
+    }
+  }, [zoomedSpaceId, activeIndex, spaces, setSpaceState]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => setSpaceState(null, false);
+  }, [setSpaceState]);
 
   // Keyboard navigation
   useEffect(() => {

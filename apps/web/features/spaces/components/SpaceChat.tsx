@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, X, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare, BrainCircuit } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
+import { useGlobalChat } from '../../chat/GlobalChatProvider';
 
 interface Message {
   id: string;
@@ -31,6 +32,11 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
   const [isSending, setIsSending] = useState(false);
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Try to use global chat context (will be available if wrapped in provider)
+  const globalChat = useGlobalChat();
+
+  const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
 
   useEffect(() => {
     setMounted(true);
@@ -107,9 +113,9 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-4 sm:bottom-12 sm:right-12 w-12 h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-xl flex items-center justify-center z-[9999] transition-colors"
+          className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
-          <MessageSquare className="w-5 h-5" />
+          <MessageSquare className="w-6 h-6" />
         </motion.button>
       )}
 
@@ -124,20 +130,42 @@ export function SpaceChat({ spaceId, spaceName, onRefreshTree }: SpaceChatProps)
             className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[10000] flex flex-col border-l border-slate-200"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
-              <div>
-                <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-emerald-500" />
-                  Chat del Árbol
-                </h3>
-                <p className="text-xs text-slate-500 line-clamp-1">{spaceName}</p>
+            <div className="flex flex-col border-b border-slate-100 bg-white">
+              <div className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-emerald-500" />
+                    Chat del Árbol
+                  </h3>
+                  <p className="text-xs text-slate-500 line-clamp-1">{spaceName}</p>
+                </div>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* TABS (Solo para el Árbol Personal) */}
+              {isPersonal && (
+                <div className="flex border-t border-slate-100 p-2 gap-2 bg-slate-50/50">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold bg-white text-emerald-700 shadow-sm border border-emerald-100 transition-colors">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Chat Árbol
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsOpen(false);
+                      globalChat.openChat();
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    <BrainCircuit className="w-3.5 h-3.5" />
+                    Coach Global
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Messages Area */}

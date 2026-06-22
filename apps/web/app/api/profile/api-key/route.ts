@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
 
     // Set the cookie
     // HttpOnly and Secure ensure the cookie isn't readable by JS and is only sent over HTTPS (in prod)
-    cookies().set('bean_byok_key', apiKey, {
+    const cookieStore = await cookies();
+    cookieStore.set('bean_byok_key', apiKey, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 365, // 1 year
     });
 
-    cookies().set('bean_byok_provider', selectedProvider, {
+    cookieStore.set('bean_byok_provider', selectedProvider, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -50,8 +51,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    cookies().delete('bean_byok_key');
-    cookies().delete('bean_byok_provider');
+    const cookieStore = await cookies();
+    cookieStore.delete('bean_byok_key');
+    cookieStore.delete('bean_byok_provider');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

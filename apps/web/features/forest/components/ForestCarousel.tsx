@@ -53,15 +53,13 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCreatingSpace || zoomedSpaceId) return;
       if (e.key === 'ArrowLeft') {
-        onIndexChange(activeIndex - 1);
+        onIndexChange(Math.max(0, activeIndex - 1));
       } else if (e.key === 'ArrowRight') {
-        onIndexChange(activeIndex + 1);
+        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
       } else if (e.key === 'Escape' && zoomedSpaceId) {
         setZoomedSpaceId(null);
       } else if (e.key === 'Enter' && !zoomedSpaceId) {
-        // Find safe active index
-        const safeIndex = ((activeIndex % spaces.length) + spaces.length) % spaces.length;
-        setZoomedSpaceId(spaces[safeIndex]?.id);
+        setZoomedSpaceId(spaces[activeIndex]?.id);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -94,9 +92,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     const diff = touchStart - touchEnd;
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
-        onIndexChange(activeIndex + 1);
+        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
       } else {
-        onIndexChange(activeIndex - 1);
+        onIndexChange(Math.max(0, activeIndex - 1));
       }
     }
     setTouchStart(null);
@@ -139,12 +137,10 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       {/* Trees Carousel */}
       <div className="absolute inset-0 flex items-center justify-center transform-style-3d">
         <AnimatePresence>
-          {(spaces.length === 1 ? [0] : [-2, -1, 0, 1, 2]).map((offset) => {
-            const virtualIndex = activeIndex + offset;
-            const safeIndex = ((virtualIndex % spaces.length) + spaces.length) % spaces.length;
-            const space = spaces[safeIndex];
+          {spaces.map((space, index) => {
+            const offset = index - activeIndex;
             
-            if (!space) return null;
+            if (Math.abs(offset) > 2) return null;
 
             const isActive = offset === 0;
             const isZoomed = zoomedSpaceId === space.id && offset === 0;
@@ -160,7 +156,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 
             return (
               <motion.div
-                key={`${space.id}-${virtualIndex}`}
+                key={space.id}
                 layout
                 initial={{ 
                   opacity: 0, 
@@ -195,7 +191,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     if (isActive && !isZoomed) {
                       setZoomedSpaceId(space.id);
                     } else if (!isZoomed && !isActive) {
-                      onIndexChange(virtualIndex);
+                      onIndexChange(index);
                     }
                   }}
                 >
@@ -222,24 +218,28 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       <AnimatePresence>
         {!zoomedSpaceId && spaces.length > 1 && (
           <>
-            <motion.button
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              onClick={() => onIndexChange(activeIndex - 1)}
-              className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </motion.button>
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              onClick={() => onIndexChange(activeIndex + 1)}
-              className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-            </motion.button>
+            {activeIndex > 0 && (
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onClick={() => onIndexChange(activeIndex - 1)}
+                className="absolute left-4 sm:left-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </motion.button>
+            )}
+            {activeIndex < spaces.length - 1 && (
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onClick={() => onIndexChange(activeIndex + 1)}
+                className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </motion.button>
+            )}
           </>
         )}
       </AnimatePresence>

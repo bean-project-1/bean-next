@@ -176,7 +176,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                 {/* Tree Name Label */}
                 <motion.div 
                   animate={{ opacity: isZoomed ? 0 : (isActive ? 1 : 0.7), y: isZoomed ? 40 : 0 }}
-                  className="absolute bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full"
+                  className="absolute top-[58%] sm:top-[62%] left-1/2 -translate-x-1/2 text-center pointer-events-none w-full"
                 >
                   <h2 className={`text-2xl sm:text-3xl font-black uppercase tracking-widest text-center ${isActive ? 'text-slate-800' : 'text-slate-600'}`} style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
                     {space.name}

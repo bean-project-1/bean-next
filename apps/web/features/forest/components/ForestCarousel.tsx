@@ -26,6 +26,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   // Keyboard navigation
   useEffect(() => {
@@ -58,10 +59,29 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        onIndexChange(Math.min(spaces.length - 1, activeIndex + 1));
+      } else {
+        onIndexChange(Math.max(0, activeIndex - 1));
+      }
+    }
+    setTouchStart(null);
+  };
+
   if (spaces.length === 0) return null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden perspective-[1000px]">
+    <div 
+      className="relative w-full h-full overflow-hidden perspective-[1000px]"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       
       {/* Background ambient glow based on active tree */}
       <div className="absolute inset-0 bg-gradient-radial from-emerald-900/10 to-transparent pointer-events-none" />
@@ -97,12 +117,11 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                   mass: 0.8
                 }}
                 className={`absolute w-full max-w-[800px] h-full flex items-center justify-center origin-bottom ${
-                  isActive ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'
+                  isActive ? 'z-10' : 'z-0'
                 }`}
               >
                 <div 
-                  className="w-full h-full"
-                  onClick={() => !isActive && onIndexChange(idx)}
+                  className="w-full h-full relative"
                 >
                   <TreeContainer 
                     space={space} 
@@ -110,6 +129,12 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     onTrunkClick={() => setInviteModalSpace(space)}
                     onActionHooks={onActionHooks}
                   />
+                  {!isActive && (
+                    <div 
+                      className="absolute inset-0 z-50 cursor-pointer"
+                      onClick={() => onIndexChange(idx)}
+                    />
+                  )}
                 </div>
 
                 {/* Tree Name Label (Visible only when slightly zoomed out or switching) */}

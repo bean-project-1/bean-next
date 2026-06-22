@@ -155,7 +155,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                 } ${isOtherZoomed ? 'pointer-events-none' : ''}`}
               >
                 <div 
-                  className={`w-full h-full relative transition-transform duration-300 ${isActive && !isZoomed ? 'cursor-pointer hover:scale-105' : ''}`}
+                  className={`w-full h-full relative transition-transform duration-300 ${isActive && !isZoomed ? 'cursor-pointer' : ''}`}
                   onClick={() => {
                     if (isActive && !isZoomed) {
                       setZoomedSpaceId(space.id);

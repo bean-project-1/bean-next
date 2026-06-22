@@ -29,7 +29,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
   const [zoomedBranchId, setZoomedBranchId] = useState<string | null>(null);
   const [zoomedPhaseId, setZoomedPhaseId] = useState<string | null>(null);
-  const [isPlanting, setIsPlanting] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -87,31 +86,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       }
     }
   }, { scope: containerRef });
-
-  // Animation for "Planting" state
-  useGSAP(() => {
-    if (isPlanting && seedRef.current) {
-      gsap.to(seedRef.current, {
-        scale: 1.3,
-        duration: 0.8,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-      });
-      // Add a glow effect
-      gsap.to(seedRef.current.querySelector('path'), {
-        filter: "drop-shadow(0 0 20px #10b981)",
-        duration: 0.8,
-        repeat: -1,
-        yoyo: true,
-      });
-    } else if (seedRef.current) {
-      gsap.killTweensOf(seedRef.current);
-      gsap.to(seedRef.current, { scale: 1, duration: 0.5 });
-      gsap.to(seedRef.current.querySelector('path'), { filter: "none", duration: 0.5 });
-    }
-  }, [isPlanting]);
-
   const handleBranchClick = (branch: BranchData) => {
     onEditBranch?.(branch); // Always trigger the UI to open the panel
     
@@ -394,7 +368,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           {/* 3. Realistic Trunk */}
           <g 
             ref={trunkRef} 
-            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer hover:scale-[1.01] origin-bottom' : (onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none')}`}
+            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer origin-bottom' : (onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none')}`}
             style={{ opacity: zoomedBranchId ? 0 : 1 }}
             onClick={(e) => {
               if (!isInteractive) return; // Let it bubble up to ForestCarousel!
@@ -584,21 +558,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
       {(() => {
         if (!isInteractive) return null;
-        const isDefaultView = 
-          Math.abs(viewBox.w - 1000) < 1 && 
-          Math.abs(viewBox.x - (-100)) < 1 && 
-          Math.abs(viewBox.y - (-100)) < 1 && 
-          Math.abs(rotation) < 1;
           
-        return (zoomedBranchId || !isDefaultView) ? (
+        return (zoomedBranchId || zoomedPhaseId) ? (
           <button 
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               resetZoom();
             }}
-            className="absolute bottom-32 right-4 sm:bottom-24 sm:right-8 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-bottom-4"
-            style={{ transform: isInteractive ? 'scale(0.714)' : 'scale(1)', transformOrigin: 'bottom right' }}
+            className="fixed bottom-24 left-4 sm:bottom-12 sm:left-12 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-bottom-4"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>

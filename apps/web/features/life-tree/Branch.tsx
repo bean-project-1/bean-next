@@ -21,7 +21,6 @@ interface BranchProps {
   zoomedPhaseId?: string | null;
   activeLeafId?: string | null;
   activePhaseId?: string | null;
-  activePhaseId?: string | null;
   currentRotation?: number;
   opacity?: number;
   isInteractive?: boolean;

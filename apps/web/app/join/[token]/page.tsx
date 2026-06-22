@@ -1,8 +1,8 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '../../../../auth';
-import { prisma } from '../../../../lib/prisma';
+import { auth } from '../../../auth';
+import { prisma } from '../../../lib/prisma';
 import { JoinSpaceClient } from './JoinSpaceClient';
 
 interface JoinPageProps {

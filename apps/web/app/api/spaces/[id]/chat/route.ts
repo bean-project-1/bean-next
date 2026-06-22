@@ -63,7 +63,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const history = await prisma.spaceMessage.findMany({
         where: { spaceId },
         orderBy: { createdAt: 'asc' },
-        take: 20
+        take: 20,
+        include: {
+          user: {
+            select: { name: true }
+          }
+        }
       });
 
       const aiMessages = [

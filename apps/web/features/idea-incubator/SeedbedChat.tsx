@@ -84,7 +84,7 @@ export function SeedbedChat({ seedId, activeSpaceId, onBack, onPlanted }: Seedbe
       dimensions: [
         seed.scores.sun > 50 ? 'impact' : 'career',
       ],
-      purpose: seed.analysis || ''
+      purpose: seed.proposal?.executiveSummary || seed.description || ''
     });
     
     if (res.success) {

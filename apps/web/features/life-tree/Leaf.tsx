@@ -13,11 +13,12 @@ interface LeafProps {
   delay: number;
   isSelected?: boolean;
   isActive?: boolean;
+  isInteractive?: boolean;
   onHover: (name: string | null) => void;
   onClick: (id: string, name: string) => void;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, onClick }: LeafProps) => {
+export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInteractive = true, onHover, onClick }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
@@ -44,6 +45,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, onHover, 
         onMouseEnter={() => onHover(leaf.name)}
         onMouseLeave={() => onHover(null)}
         onClick={(e) => {
+          if (!isInteractive) return;
           e.stopPropagation();
           onClick(leaf.originalId || leaf.id, leaf.name);
         }}

@@ -23,12 +23,13 @@ interface BranchProps {
   activePhaseId?: string | null;
   currentRotation?: number;
   opacity?: number;
+  isInteractive?: boolean;
 }
 
 export const Branch = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
   onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
-  activeLeafId, activePhaseId, currentRotation = 0
+  activeLeafId, activePhaseId, currentRotation = 0, isInteractive = true
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
 
@@ -195,6 +196,7 @@ export const Branch = ({
       <g 
         className="group/main-branch cursor-pointer"
         onClick={(e) => {
+          if (!isInteractive) return;
           e.stopPropagation();
           onBranchClick(branch);
         }}
@@ -238,6 +240,7 @@ export const Branch = ({
               transition: 'opacity 0.6s ease'
             }}
             onClick={(e) => {
+              if (!isInteractive) return;
               e.stopPropagation();
               const midX = (sub.start.x + sub.end.x) / 2;
               const midY = (sub.start.y + sub.end.y) / 2;
@@ -279,6 +282,7 @@ export const Branch = ({
                   delay={2.8 + index * 0.1 + pIdx * 0.1}
                   isSelected={clickedLeafId === tipLeaf.id}
                   isActive={activeLeafId === tipLeaf.id}
+                  isInteractive={isInteractive}
                   onHover={onHover}
                   onClick={onClick}
                 />
@@ -315,6 +319,7 @@ export const Branch = ({
                     delay={3.0 + index * 0.1 + lIdx * 0.1}
                     isSelected={clickedLeafId === leaf.id}
                     isActive={activeLeafId === leaf.id}
+                    isInteractive={isInteractive}
                     onHover={onHover}
                     onClick={onClick}
                   />
@@ -354,6 +359,7 @@ export const Branch = ({
                 delay={2.8 + index * 0.1 + oIdx * 0.1}
                 isSelected={clickedLeafId === leaf.id}
                 isActive={activeLeafId === leaf.id}
+                isInteractive={isInteractive}
                 onHover={onHover}
                 onClick={onClick}
               />

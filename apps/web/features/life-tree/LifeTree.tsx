@@ -394,9 +394,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           {/* 3. Realistic Trunk */}
           <g 
             ref={trunkRef} 
-            className={`transition-opacity duration-700 ease-out ${onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none'}`}
+            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer hover:scale-[1.01] origin-bottom' : (onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none')}`}
             style={{ opacity: zoomedBranchId ? 0 : 1 }}
-            onClick={onTrunkClick}
+            onClick={(e) => {
+              if (!isInteractive) return; // Let it bubble up to ForestCarousel!
+              if (onTrunkClick) {
+                e.stopPropagation();
+                onTrunkClick();
+              }
+            }}
           >
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
             <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
@@ -484,6 +490,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 activeLeafId={activeLeafId}
                 activePhaseId={activePhaseId}
                 currentRotation={rotation}
+                isInteractive={isInteractive}
               />
             );
           })}

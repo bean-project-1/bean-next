@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DnaModal from '../../../features/life-tree/DnaModal';
 import NodeSidePanel from '../../../features/life-tree/NodeSidePanel';
 import { LifeTree } from '../../../features/life-tree/LifeTree';

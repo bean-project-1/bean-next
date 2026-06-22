@@ -6,13 +6,13 @@ import { prisma } from '../../../lib/prisma';
 import { JoinSpaceClient } from './JoinSpaceClient';
 
 interface JoinPageProps {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }
 
 export default async function JoinPage({ params }: JoinPageProps) {
-  const { token } = params;
+  const { token } = await params;
 
   // 1. Validar Token en BD
   const invitation = await prisma.spaceInvitation.findUnique({

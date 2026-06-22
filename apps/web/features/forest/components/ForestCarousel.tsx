@@ -114,10 +114,10 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 
                 {/* Tree Name Label (Visible only when slightly zoomed out or switching) */}
                 <motion.div 
-                  animate={{ opacity: isActive ? 0.3 : 1, y: isActive ? 100 : 0 }}
-                  className="absolute bottom-24 left-1/2 -translate-x-1/2 text-center pointer-events-none"
+                  animate={{ opacity: isActive ? 0.1 : 1, y: isActive ? 40 : 0 }}
+                  className="absolute bottom-44 sm:bottom-28 left-1/2 -translate-x-1/2 text-center pointer-events-none"
                 >
-                  <h2 className="text-2xl font-black text-white uppercase tracking-widest" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.8)' }}>
+                  <h2 className="text-2xl font-black text-slate-800 uppercase tracking-widest" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8)' }}>
                     {space.name}
                   </h2>
                 </motion.div>
@@ -128,7 +128,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       </div>
 
       {/* Navigation Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-50">
+      <div className="absolute bottom-32 sm:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 z-50">
         {spaces.map((_, idx) => (
           <button
             key={idx}
@@ -142,7 +142,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
         ))}
         <button 
           onClick={() => setIsCreatingSpace(true)}
-          className="w-8 h-8 ml-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center transition-all group"
+          className="w-8 h-8 ml-2 rounded-full bg-slate-200/50 hover:bg-slate-300/80 backdrop-blur-sm border border-slate-300 text-slate-700 flex items-center justify-center transition-all group shadow-sm"
           title="Crear Nuevo Bosque"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:scale-110 transition-transform">

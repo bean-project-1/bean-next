@@ -144,7 +144,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             if (!space) return null;
 
             const isActive = offset === 0;
-            const isZoomed = zoomedSpaceId === space.id;
+            const isZoomed = zoomedSpaceId === space.id && offset === 0;
             const isOtherZoomed = zoomedSpaceId !== null && !isZoomed;
 
             // Positioning logic

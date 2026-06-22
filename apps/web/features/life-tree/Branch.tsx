@@ -21,15 +21,17 @@ interface BranchProps {
   zoomedPhaseId?: string | null;
   activeLeafId?: string | null;
   activePhaseId?: string | null;
+  activePhaseId?: string | null;
   currentRotation?: number;
   opacity?: number;
   isInteractive?: boolean;
+  animate?: boolean;
 }
 
 export const Branch = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
   onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
-  activeLeafId, activePhaseId, currentRotation = 0, isInteractive = true
+  activeLeafId, activePhaseId, currentRotation = 0, isInteractive = true, animate = false
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
 
@@ -155,7 +157,7 @@ export const Branch = ({
 
   useGSAP(() => {
     const group = groupRef.current;
-    if (!group) return;
+    if (!group || !animate) return;
 
     // Grow branches from root outward
     const paths = group.querySelectorAll('path.branch-stroke');
@@ -167,8 +169,8 @@ export const Branch = ({
         {
           strokeDashoffset: 0,
           opacity: 0.8,
-          duration: 2,
-          delay: 0.8 + index * 0.15,
+          duration: 1,
+          delay: 0.2 + index * 0.1,
           ease: 'power2.inOut',
           onComplete: () => {
             gsap.set(svgPath, { clearProps: 'strokeDasharray,strokeDashoffset' });
@@ -182,10 +184,10 @@ export const Branch = ({
     stems.forEach((stem) => {
       gsap.fromTo(stem,
         { opacity: 0, scale: 0 },
-        { opacity: 0.5, scale: 1, duration: 0.8, delay: 2.8, ease: "back.out(1.2)" }
+        { opacity: 0.5, scale: 1, duration: 0.5, delay: 1.0, ease: "back.out(1.2)" }
       );
     });
-  }, [index, branch.leaves.length]);
+  }, [index, branch.leaves.length, animate]);
 
   return (
     <g 
@@ -279,10 +281,11 @@ export const Branch = ({
                   x={sub.end.x}
                   y={sub.end.y}
                   angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
-                  delay={2.8 + index * 0.1 + pIdx * 0.1}
+                  delay={1.0 + index * 0.05 + pIdx * 0.05}
                   isSelected={clickedLeafId === tipLeaf.id}
                   isActive={activeLeafId === tipLeaf.id}
                   isInteractive={isInteractive}
+                  animate={animate}
                   onHover={onHover}
                   onClick={onClick}
                 />
@@ -316,10 +319,11 @@ export const Branch = ({
                     x={lx}
                     y={ly}
                     angle={(sub.rad * 180) / Math.PI + (60 * side)}
-                    delay={3.0 + index * 0.1 + lIdx * 0.1}
+                    delay={1.2 + index * 0.05 + lIdx * 0.05}
                     isSelected={clickedLeafId === leaf.id}
                     isActive={activeLeafId === leaf.id}
                     isInteractive={isInteractive}
+                    animate={animate}
                     onHover={onHover}
                     onClick={onClick}
                   />
@@ -356,10 +360,11 @@ export const Branch = ({
                 x={lx}
                 y={ly}
                 angle={angle + (60 * side)}
-                delay={2.8 + index * 0.1 + oIdx * 0.1}
+                delay={1.0 + index * 0.05 + oIdx * 0.05}
                 isSelected={clickedLeafId === leaf.id}
                 isActive={activeLeafId === leaf.id}
                 isInteractive={isInteractive}
+                animate={animate}
                 onHover={onHover}
                 onClick={onClick}
               />

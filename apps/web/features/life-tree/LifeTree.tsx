@@ -43,10 +43,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const [mounted, setMounted] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
+  
+  const prevBranchCount = useRef<number>(data?.branches?.length || 0);
+  const hasInitialDataRef = useRef<boolean>(!!data?.branches);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted && data?.branches) {
+      if (!hasInitialDataRef.current) {
+        // Initial load of data, skip animation
+        prevBranchCount.current = data.branches.length;
+        hasInitialDataRef.current = true;
+      } else {
+        // Update the previous count after a short delay so animation has time to read it
+        const t = setTimeout(() => {
+          prevBranchCount.current = data.branches.length;
+        }, 500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [data?.branches, mounted]);
 
   useEffect(() => {
     // Reset view when leaving the tree
@@ -417,6 +436,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 activePhaseId={activePhaseId}
                 currentRotation={rotation}
                 isInteractive={isInteractive}
+                animate={i >= prevBranchCount.current}
               />
             );
           })}

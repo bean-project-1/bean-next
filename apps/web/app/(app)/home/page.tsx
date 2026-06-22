@@ -24,11 +24,10 @@ export default function HomePage() {
   
   useEffect(() => {
     getSpaces().then(data => {
-      if (data.length === 0) {
-        setSpaces([{ id: 'personal', name: 'Mi Árbol', role: 'owner', membersList: [] }]);
-      } else {
-        setSpaces(data.map(s => ({ id: s.id, name: s.name, role: s.role, membersList: s.membersList })));
-      }
+      setSpaces([
+        { id: 'personal', name: 'Mi Árbol', role: 'owner', membersList: [] },
+        ...data.map(s => ({ id: s.id, name: s.name, role: s.role, membersList: s.membersList }))
+      ]);
     }).catch(console.error);
   }, []);
 

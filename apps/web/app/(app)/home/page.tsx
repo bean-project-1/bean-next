@@ -19,13 +19,13 @@ export default function HomePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   
-  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([{ id: 'personal', name: 'Bosque Personal' }]);
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([{ id: 'personal', name: 'Árbol Personal' }]);
   const [activeSpaceIndex, setActiveSpaceIndex] = useState(0);
   
   useEffect(() => {
     getSpaces().then(data => {
       const formattedSpaces = data.map(s => ({ id: s.id, name: s.name }));
-      setSpaces([{ id: 'personal', name: 'Bosque Personal' }, ...formattedSpaces]);
+      setSpaces([{ id: 'personal', name: 'Árbol Personal' }, ...formattedSpaces]);
     }).catch(console.error);
   }, []);
 

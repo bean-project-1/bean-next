@@ -39,7 +39,7 @@ export function InviteBottomSheet({ isOpen, onClose, spaceName, onGenerateLink }
     if (navigator.share && inviteLink) {
       try {
         await navigator.share({
-          title: `Únete a mi bosque: ${spaceName}`,
+          title: `Únete a mi árbol: ${spaceName}`,
           text: `Te invito a colaborar en "${spaceName}" dentro de Bean.`,
           url: inviteLink,
         });

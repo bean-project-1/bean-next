@@ -52,7 +52,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       setNewSpaceName('');
     } catch (err) {
       console.error(err);
-      alert('Error al crear el bosque.');
+      alert('Error al crear el árbol.');
     } finally {
       setIsCreating(false);
     }
@@ -163,14 +163,14 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
               initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
               className="bg-slate-900 border border-white/10 p-6 sm:p-8 rounded-[2rem] w-full max-w-sm shadow-2xl text-white"
             >
-              <h3 className="text-xl font-bold mb-2">Plantar un Nuevo Bosque</h3>
-              <p className="text-sm text-slate-400 mb-6">Crea un nuevo espacio para agrupar metas (ej. "Pareja", "Startup").</p>
+              <h3 className="text-xl font-bold mb-2">Plantar un Nuevo Árbol</h3>
+              <p className="text-sm text-slate-400 mb-6">Crea un nuevo grupo de metas compartidas (ej. "Pareja", "Startup").</p>
               
               <form onSubmit={handleCreateSpace}>
                 <input 
                   autoFocus
                   type="text"
-                  placeholder="Nombre del bosque..."
+                  placeholder="Nombre del árbol..."
                   value={newSpaceName}
                   onChange={(e) => setNewSpaceName(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 mb-6 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"

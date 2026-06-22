@@ -353,6 +353,9 @@ export async function GET(req: NextRequest) {
 
     const allDimensions = await prisma.dimension.findMany();
 
+    const hasCustomApiKey = !!req.cookies.get('bean_byok_key')?.value;
+    const byokProvider = req.cookies.get('bean_byok_provider')?.value || 'openai';
+
     return NextResponse.json({
       success: true,
       data: {
@@ -364,7 +367,10 @@ export async function GET(req: NextRequest) {
           hasSeenTour: user.hasSeenTour,
           attributes: user.attributes,
           baseCommitments: user.baseCommitments,
-          notificationPreferences: user.notificationPreferences
+          notificationPreferences: user.notificationPreferences,
+          createdAt: user.createdAt,
+          hasCustomApiKey,
+          byokProvider
         },
         dimensions: allDimensions
       },

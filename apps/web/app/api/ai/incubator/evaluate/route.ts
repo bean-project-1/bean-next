@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getTracedOpenAI } from '@/lib/openai';
+import { getDynamicAIClient, getDynamicModel } from '@/lib/ai-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +48,7 @@ IMPORTANTE: El progreso debe notarse. Si el usuario elaboró mejor su idea respe
 
 Tu única salida debe ser el llamado a la función \`set_scores\`.`;
 
-    const tracedClient = getTracedOpenAI({
+    const tracedClient = getDynamicAIClient(req, {
       userId: userId,
       tags: ["agent:incubator:evaluator"]
     });
@@ -78,8 +78,10 @@ Tu única salida debe ser el llamado a la función \`set_scores\`.`;
       }
     ];
 
+    const modelToUse = getDynamicModel(req, 'gpt-4o-mini');
+
     const response = await tracedClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelToUse,
       messages: [{ role: 'system', content: systemPrompt }],
       temperature: 0.1, // Strict and deterministic
       tools: tools as any,

@@ -44,7 +44,9 @@ export async function POST(req: NextRequest) {
     }
 
     const chatCoachService = new ChatCoachService();
-    const result = await chatCoachService.generateResponse(userId, sessionId, message, context, draftPlan);
+    const byokKey = req.cookies.get('bean_byok_key')?.value;
+    const byokProvider = req.cookies.get('bean_byok_provider')?.value;
+    const result = await chatCoachService.generateResponse(userId, sessionId, message, context, draftPlan, byokKey, byokProvider);
 
     return NextResponse.json({
       success: true,

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { NotificationSettings } from './NotificationSettings';
 
-interface User { id: string; name?: string; email: string; createdAt: string; notificationPreferences?: any; }
+interface User { id: string; name?: string; email: string; createdAt: string; notificationPreferences?: any; hasCustomApiKey?: boolean; byokProvider?: string; }
 
 export function ProfileView() {
   const [user, setUser] = useState<User | null>(null);
@@ -13,6 +13,10 @@ export function ProfileView() {
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
   const [weeklyReviewEnabled, setWeeklyReviewEnabled] = useState(true);
+  const [customApiKey, setCustomApiKey] = useState('');
+  const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  const [savingApiKey, setSavingApiKey] = useState(false);
+  const [customApiProvider, setCustomApiProvider] = useState('openai');
 
   useEffect(() => {
     fetch('/api/profile')
@@ -23,6 +27,10 @@ export function ProfileView() {
           setEditName(json.data.user.name || '');
           const prefs = json.data.user.notificationPreferences;
           setWeeklyReviewEnabled(prefs?.weeklyReview !== false);
+          setIsApiKeySaved(!!json.data.user.hasCustomApiKey);
+          if (json.data.user.byokProvider) {
+            setCustomApiProvider(json.data.user.byokProvider);
+          }
         }
       })
       .catch(() => {})
@@ -69,6 +77,50 @@ export function ProfileView() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSaveApiKey = async () => {
+    if (!customApiKey.trim() || !customApiKey.startsWith('sk-')) {
+      alert('Por favor, ingresa una API Key válida de OpenAI (debe comenzar con "sk-").');
+      return;
+    }
+    setSavingApiKey(true);
+    try {
+      const res = await fetch('/api/profile/api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: customApiKey, provider: customApiProvider })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsApiKeySaved(true);
+        setCustomApiKey(''); // Clear the input for security
+        alert('API Key guardada exitosamente. Tu propia llave se usará para la Inteligencia Artificial.');
+      } else {
+        alert(data.error || 'Error al guardar la API Key.');
+      }
+    } catch(err) {
+      console.error(err);
+      alert('Error al guardar la API Key.');
+    } finally {
+      setSavingApiKey(false);
+    }
+  };
+
+  const handleDeleteApiKey = async () => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar tu API Key? Volverás a usar el modelo por defecto de BEAN.')) return;
+    setSavingApiKey(true);
+    try {
+      const res = await fetch('/api/profile/api-key', { method: 'DELETE' });
+      if (res.ok) {
+        setIsApiKeySaved(false);
+        setCustomApiProvider('openai');
+      }
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setSavingApiKey(false);
     }
   };
 
@@ -207,6 +259,69 @@ export function ProfileView() {
                   <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-violet-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
                 </label>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Ajustes Avanzados (BYOK)</h3>
+          <div className="space-y-4">
+            <div className="p-5 bg-white/80 rounded-2xl border border-slate-200/60 shadow-sm">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="p-2 rounded-xl bg-slate-800 text-amber-400">
+                  <span className="text-xl">🔑</span>
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-900 text-base">Trae tu propia API Key</p>
+                  <p className="text-xs text-slate-500/80 font-medium mt-1">
+                    Conecta tu cuenta de OpenAI para evitar límites de uso y garantizar que tus datos viajen por tu propia cuenta. La llave se guarda de forma segura en tu navegador.
+                  </p>
+                </div>
+              </div>
+              
+              {isApiKeySaved ? (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-3">
+                  <div className="flex items-center gap-2 text-emerald-700 font-bold">
+                    <span>✅</span> API Key de {customApiProvider === 'gemini' ? 'Google (Gemini)' : customApiProvider === 'deepseek' ? 'DeepSeek' : 'OpenAI'} Activa
+                  </div>
+                  <p className="text-xs text-emerald-600/80">Estás utilizando tu propio modelo para potenciar a BEAN.</p>
+                  <button 
+                    onClick={handleDeleteApiKey}
+                    disabled={savingApiKey}
+                    className="mt-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                  >
+                    Eliminar Llave
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <select 
+                      value={customApiProvider}
+                      onChange={e => setCustomApiProvider(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all cursor-pointer"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="gemini">Google (Gemini)</option>
+                    </select>
+                    <input 
+                      type="password" 
+                      value={customApiKey}
+                      onChange={e => setCustomApiKey(e.target.value)}
+                      placeholder="Tu API Key..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm font-mono focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleSaveApiKey}
+                    disabled={savingApiKey || !customApiKey.trim()}
+                    className="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md transition-all disabled:opacity-50"
+                  >
+                    {savingApiKey ? 'Guardando...' : 'Guardar API Key'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

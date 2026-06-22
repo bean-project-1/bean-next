@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import { getTracedDeepseek } from '@/lib/openai';
+import { NextResponse, NextRequest } from 'next/server';
+import { getDynamicAIClient, getDynamicModel } from '@/lib/ai-client';
 import { auth } from '@/auth';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     const userId = session?.user?.id;
@@ -26,13 +26,15 @@ REGLAS:
 
     const openAiMessages = [systemPrompt, ...messages];
 
-    const tracedDeepseek = getTracedDeepseek({
+    const tracedClient = getDynamicAIClient(req, {
       userId: userId,
       tags: ["agent:task-coach", `env:${process.env.NODE_ENV || 'development'}`]
     });
 
-    const response = await tracedDeepseek.chat.completions.create({
-      model: 'deepseek-chat',
+    const modelToUse = getDynamicModel(req, 'deepseek-chat');
+
+    const response = await tracedClient.chat.completions.create({
+      model: modelToUse,
       messages: openAiMessages as any,
       temperature: 0.7,
     });

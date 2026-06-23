@@ -380,6 +380,7 @@ REGLAS DE FORMATO:
     spaceId: string, 
     userId: string, 
     message: string, 
+    draftPlan: any = null,
     byokKey?: string, 
     byokProvider?: string
   ) {
@@ -402,11 +403,24 @@ REGLAS DE FORMATO:
 
     if (!space) throw new Error('Space not found');
 
+    const goalService = new GoalService();
     let teamContext = '';
     for (const member of space.members) {
       const u = member.user;
       const dna = u.attributes.map(a => `- ${a.dimension.label}: ${a.name}`).join('\n');
-      teamContext += `Miembro: ${u.name} (ID: ${u.id})\nRol: ${member.role}\nADN:\n${dna || 'Sin ADN definido'}\n\n`;
+      
+      let workloadStr = 'Carga de trabajo no disponible';
+      try {
+        const wl = await goalService.getUserWorkloadContext(u.id);
+        const activeCommitments = wl.commitmentsSummary.join(', ');
+        const values = Object.values(wl.dailyHours);
+        const avgHours = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / 30).toFixed(1) : '0.0';
+        workloadStr = `${activeCommitments || 'Sin compromisos recurrentes'} (Promedio ocupado en metas/rutinas: ${avgHours}h/día)`;
+      } catch (e) {
+        console.warn(`Failed to fetch workload for user ${u.id}:`, e);
+      }
+
+      teamContext += `Miembro: ${u.name} (ID: ${u.id})\nRol: ${member.role}\nADN:\n${dna || 'Sin ADN definido'}\nCompromisos/Carga de trabajo:\n${workloadStr}\n\n`;
     }
 
     const history = await prisma.spaceMessage.findMany({
@@ -420,16 +434,23 @@ REGLAS DE FORMATO:
 Eres BEAN, el Project Manager Colaborativo de Inteligencia Artificial para el equipo en este Espacio/Árbol.
 
 TU MISIÓN:
-Escuchar las ideas del equipo, proponer planes y usar la herramienta 'create_collaborative_branch' para generar un plan de acción completo (Fases y Tareas).
+Escuchar las ideas del equipo, proponer planes y usar la herramienta 'create_collaborative_branch' para generar o actualizar el plan de acción completo (Fases y Tareas).
 
-CONTEXTO DEL EQUIPO (ADN y Roles):
+CONTEXTO DEL EQUIPO (ADN, Roles y Disponibilidad):
 ${teamContext}
 
 REGLAS PARA CREAR PLANES:
 1. Divide el objetivo en 'Fases' claras.
 2. Dentro de cada fase, crea 'Tareas' específicas.
-3. Para cada tarea, DEBES seleccionar un 'assigneeId' (el ID exacto de un miembro del equipo) basándote en su ADN. Si Juan es analítico, dale las tareas de análisis. Si Ana es creativa, dale el diseño.
-4. Explícale al equipo tu razonamiento ("Le asigne esto a Ana por su perfil creativo").
+3. Para cada tarea, DEBES seleccionar un 'assigneeId' (el ID exacto de un miembro del equipo) basándote en su ADN y en su carga de trabajo (evita sobrecargar a miembros que ya están muy ocupados).
+4. Explícale al equipo tu razonamiento ("Le asigné esto a Ana por su perfil creativo y porque tiene espacio en su agenda").
+5. Si el equipo te pide ajustar el plan o reasignar tareas, vuelve a ejecutar la herramienta 'create_collaborative_branch' con la versión actualizada de las fases, tareas y responsables.
+
+${draftPlan ? `
+BORRADOR ACTUAL DEL PLAN EN LA MESA DE DIBUJO:
+${JSON.stringify(draftPlan)}
+-> El equipo está revisando este borrador. Si te piden cambiar o ajustar algo en este plan, vuelve a proponerlo completo con la herramienta 'create_collaborative_branch' aplicando las modificaciones solicitadas.
+` : ''}
 
 Sé directo, profesional pero amistoso.
     `.trim();
@@ -503,48 +524,30 @@ Sé directo, profesional pero amistoso.
     const toolCall = choice.message?.tool_calls?.[0];
     
     let cleanReply = choice.message?.content || "";
+    let branchData = null;
 
     if (toolCall && (toolCall as any).function?.name === 'create_collaborative_branch') {
       try {
         const args = JSON.parse((toolCall as any).function.arguments);
         
-        const newGoal = await prisma.goal.create({
-          data: {
-            spaceId: spaceId === 'personal' ? null : spaceId,
-            userId: userId,
-            title: args.title,
-            description: args.description,
-            status: 'active'
-          }
-        });
+        // Normalize title to name for task compatibility with standard frontend/backend schema
+        const normalizedPhases = args.phases.map((p: any) => ({
+          ...p,
+          tasks: (p.tasks || []).map((t: any) => ({
+            ...t,
+            name: t.name || t.title // Ensure we have the name property
+          }))
+        }));
 
-        for (const phase of args.phases) {
-          const newPhase = await prisma.goalAction.create({
-            data: {
-              goalId: newGoal.id,
-              type: 'phase',
-              title: phase.title,
-            }
-          });
+        branchData = {
+          title: args.title,
+          description: args.description,
+          phases: normalizedPhases
+        };
 
-          for (const task of phase.tasks) {
-            await prisma.goalAction.create({
-              data: {
-                goalId: newGoal.id,
-                parentId: newPhase.id,
-                type: 'task',
-                title: task.title,
-                description: task.description,
-                estimatedHours: task.estimatedHours,
-                assigneeId: task.assigneeId,
-              }
-            });
-          }
-        }
-
-        cleanReply = cleanReply || `¡Listo! Acabo de crear la meta "${args.title}" y distribuí las tareas entre el equipo según su perfil.`;
+        cleanReply = cleanReply || `He diseñado un borrador del plan "${args.title}" con las fases y tareas asignadas. ¡Revisémoslo en la Mesa de Dibujo a la derecha!`;
       } catch (e) {
-        console.warn('Failed to create collaborative branch:', e);
+        console.warn('Failed to process collaborative branch tool arguments:', e);
       }
     } else if (!cleanReply) {
       cleanReply = "Hubo un error al procesar la respuesta.";
@@ -559,6 +562,6 @@ Sé directo, profesional pero amistoso.
       }
     });
 
-    return { reply: cleanReply, message: msg };
+    return { reply: cleanReply, message: msg, branchData };
   }
 }

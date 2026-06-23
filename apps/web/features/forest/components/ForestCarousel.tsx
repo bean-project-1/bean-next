@@ -375,6 +375,7 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks 
         <SpaceChat 
           spaceId={space.id} 
           spaceName={space.name} 
+          members={space.membersList || []}
           onRefreshTree={() => onActionHooks?.onRefresh?.()}
         />
       )}

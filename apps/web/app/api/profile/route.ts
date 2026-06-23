@@ -223,21 +223,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Create Base Commitments (Routine)
+    // 4. Create or Update Base Commitments (Routine)
     const baseCommitments = [];
     
     // Sleep
     const healthDim = dimensions.find(d => d.name === 'physical_health');
-    baseCommitments.push({
-      userId: user.id,
-      title: 'Dormir',
-      type: 'routine',
-      hoursPerDay: data.sleepHours,
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Everyday
-      dimensionIds: healthDim ? [healthDim.id] : [],
-      spaceId: space.id,
-      isActive: true,
+    const existingSleep = await prisma.baseCommitment.findFirst({
+      where: {
+        userId: user.id,
+        title: 'Dormir',
+      },
     });
+
+    if (existingSleep) {
+      await prisma.baseCommitment.update({
+        where: { id: existingSleep.id },
+        data: {
+          hoursPerDay: data.sleepHours,
+          spaceId: space.id,
+          dimensionIds: healthDim ? [healthDim.id] : [],
+        },
+      });
+    } else {
+      baseCommitments.push({
+        userId: user.id,
+        title: 'Dormir',
+        type: 'routine',
+        hoursPerDay: data.sleepHours,
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Everyday
+        dimensionIds: healthDim ? [healthDim.id] : [],
+        spaceId: space.id,
+        isActive: true,
+      });
+    }
 
     // Work/Study
     if (data.workSchedule && data.workSchedule !== 'none') {
@@ -245,17 +263,39 @@ export async function POST(req: NextRequest) {
       const title = data.workSchedule === 'study' ? 'Estudio Principal' : 'Trabajo Principal';
       const hours = data.workSchedule === '9-5' ? 8 : (data.workSchedule === 'study' ? 6 : 4);
       const days = data.workSchedule === '9-5' ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5]; // Mon-Fri
-      
-      baseCommitments.push({
-        userId: user.id,
-        title,
-        type: data.workSchedule === 'study' ? 'study' : 'work',
-        hoursPerDay: hours,
-        daysOfWeek: days,
-        dimensionIds: careerDim ? [careerDim.id] : [],
-        spaceId: space.id,
-        isActive: true,
+      const type = data.workSchedule === 'study' ? 'study' : 'work';
+
+      const existingWorkStudy = await prisma.baseCommitment.findFirst({
+        where: {
+          userId: user.id,
+          title: { in: ['Trabajo Principal', 'Estudio Principal'] },
+        },
       });
+
+      if (existingWorkStudy) {
+        await prisma.baseCommitment.update({
+          where: { id: existingWorkStudy.id },
+          data: {
+            title,
+            type,
+            hoursPerDay: hours,
+            daysOfWeek: days,
+            dimensionIds: careerDim ? [careerDim.id] : [],
+            spaceId: space.id,
+          },
+        });
+      } else {
+        baseCommitments.push({
+          userId: user.id,
+          title,
+          type,
+          hoursPerDay: hours,
+          daysOfWeek: days,
+          dimensionIds: careerDim ? [careerDim.id] : [],
+          spaceId: space.id,
+          isActive: true,
+        });
+      }
     }
 
     if (baseCommitments.length > 0) {

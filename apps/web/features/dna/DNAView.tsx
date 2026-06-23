@@ -601,7 +601,7 @@ export function DNAView() {
 
       {/* Dimension Detail Modal */}
       {selectedDimKey && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setSelectedDimKey(null)}>
           <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}>

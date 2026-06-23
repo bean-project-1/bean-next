@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
       where: { userId, status: 'active' },
       include: {
         actions: {
-          include: { tasks: true }
+          include: { 
+            tasks: true,
+            assignee: {
+              select: { name: true, email: true, image: true }
+            }
+          }
         }
       }
     });
@@ -107,6 +112,7 @@ export async function GET(req: NextRequest) {
             id: action.id,
             title: action.title,
             description: action.description,
+            notes: action.notes || '',
             startDate: action.startDate,
             date: action.targetDate,
             type: action.type,
@@ -117,7 +123,12 @@ export async function GET(req: NextRequest) {
             dimensions: action.dimensions || [],
             attributes: action.attributes || [],
             tasks: action.tasks || [],
-            itemType: 'action'
+            itemType: 'action',
+            assignee: action.assignee ? {
+              name: action.assignee.name,
+              email: action.assignee.email,
+              image: action.assignee.image
+            } : null
           });
         }
 
@@ -130,6 +141,7 @@ export async function GET(req: NextRequest) {
               id: task.id,
               title: task.title,
               description: task.description,
+              notes: task.notes || '',
               startDate: task.startDate,
               date: task.endDate || task.startDate,
               type: action.type === 'phase' ? action.title : 'subtask', // User wants the phase to which it belongs instead of 'task'/'subtask'

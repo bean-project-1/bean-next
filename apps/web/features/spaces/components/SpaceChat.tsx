@@ -29,6 +29,10 @@ interface SpaceChatProps {
   spaceName: string;
   members?: Member[];
   onRefreshTree: () => void;
+  isOpenExternal?: boolean;
+  onCloseExternal?: () => void;
+  onChangeOpenExternal?: (val: boolean) => void;
+  initialMessage?: string;
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
@@ -92,7 +96,7 @@ const EditableField = ({ value, onChange, isCompleted, className = '', placehold
   );
 };
 
-const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanItem, handleDeleteDraftItem, handleAddDraftItem, handleAddContextToChat, members = [] }: any) => {
+const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanItem, handleDeleteDraftItem, handleAddDraftItem, handleAddContextToChat, members = [], isPersonal }: any) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { type, pIdx, tIdx } = selection;
 
@@ -151,21 +155,23 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
               </div>
             </div>
 
-            <div>
-              <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Responsable en el Equipo</h4>
-              <select
-                value={itemData.assigneeId || ''}
-                onChange={(e) => updateDraftPlanItem(type, pIdx, tIdx, 'assigneeId', e.target.value)}
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium text-stone-700 cursor-pointer"
-              >
-                <option value="">Seleccionar responsable...</option>
-                {members.map((m: any) => (
-                  <option key={m.userId} value={m.userId}>
-                    {m.name} ({m.role})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {type === 'task' && !isPersonal && (
+              <div>
+                <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Responsable en el Equipo</h4>
+                <select
+                  value={itemData.assigneeId || ''}
+                  onChange={(e) => updateDraftPlanItem(type, pIdx, tIdx, 'assigneeId', e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium text-stone-700 cursor-pointer"
+                >
+                  <option value="">Seleccionar responsable...</option>
+                  {members.map((m: any) => (
+                    <option key={m.userId} value={m.userId}>
+                      {m.name} ({m.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
 
@@ -178,7 +184,7 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
             }}
             className="w-full bg-stone-900 text-white hover:bg-stone-800 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
           >
-            <MessageSquare className="w-4 h-4" /> Preguntar a @bean sobre esto
+            <MessageSquare className="w-4 h-4" /> Preguntar a {isPersonal ? 'Guía BEAN' : '@bean'} sobre esto
           </button>
           
           <div className="flex gap-2">
@@ -214,9 +220,26 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
   );
 };
 
-export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: SpaceChatProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage }: SpaceChatProps) {
+  const [isOpenInternal, setIsOpenInternal] = useState(false);
+  const isOpen = isOpenExternal !== undefined ? isOpenExternal : isOpenInternal;
+  const setIsOpen = (val: boolean) => {
+    if (onChangeOpenExternal) {
+      onChangeOpenExternal(val);
+    } else if (onCloseExternal && !val) {
+      onCloseExternal();
+    } else {
+      setIsOpenInternal(val);
+    }
+  };
   const [input, setInput] = useState('');
+
+  // Handle initialMessage
+  useEffect(() => {
+    if (initialMessage && isOpen) {
+      setInput(initialMessage);
+    }
+  }, [initialMessage, isOpen]);
   const [isSending, setIsSending] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -231,6 +254,11 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [selectedDraftItem, setSelectedDraftItem] = useState<any>(null);
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
+
+  const [pendingBranch, setPendingBranch] = useState<any>(null);
+  const [branchCreated, setBranchCreated] = useState(false);
+
+  const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
 
   const updateDraftPlanItem = (type: 'phase' | 'task' | 'subTask', phaseIdx: number, taskIdx?: number, subTaskIdx?: number, field?: string, newValue?: any) => {
     if (!draftPlan) return;
@@ -273,6 +301,120 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
     setInput(prev => `${ctx}\n${prev}`.trim());
   };
 
+  // Fetch SWR dynamically
+  const { data: sessionData, mutate: mutateSession } = useSWR<any>(
+    isPersonal ? `/api/ai/chat?context=global` : null, 
+    fetcher, 
+    { refreshInterval: 3000 }
+  );
+
+  const { data: spaceMessages, mutate: mutateSpaceMessages } = useSWR<Message[]>(
+    isPersonal ? null : `/api/spaces/${spaceId}/chat`, 
+    fetcher, 
+    { refreshInterval: 3000 }
+  );
+
+  const messages = isPersonal 
+    ? (sessionData?.success ? sessionData.data.messages : []) 
+    : spaceMessages;
+
+  const mutate = (data?: any, options?: any) => {
+    if (isPersonal) {
+      if (typeof data === 'function') {
+        mutateSession((current: any) => {
+          if (!current?.success) return current;
+          const dummyMsg = data([]);
+          const newMsgs = dummyMsg.filter((m: any) => !current.data.messages.some((existing: any) => existing.id === m.id));
+          return {
+            ...current,
+            data: {
+              ...current.data,
+              messages: [...(current.data.messages || []), ...newMsgs]
+            }
+          };
+        }, options);
+      } else {
+        mutateSession(data, options);
+      }
+    } else {
+      mutateSpaceMessages(data, options);
+    }
+  };
+
+  const generateDraft = async (goalData: any, revisionInstructions?: string) => {
+    setIsDrafting(true);
+    setMobileTab('draft');
+    setDraftStep(revisionInstructions ? 'Repensando el plan...' : 'Analizando agenda...');
+    let timer: any;
+    if (!revisionInstructions) {
+      timer = setTimeout(() => setDraftStep('Diseñando el plan estructurado...'), 4000);
+    }
+    try {
+      const res = await fetch('/api/ai/draft-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goalData,
+          previousDraft: draftPlan,
+          revisionInstructions,
+          spaceId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDraftPlan(data.draft);
+      } else {
+        const errorText = data.error || 'Error interno';
+        const errorMsg: Message = {
+          id: Date.now().toString() + '_err',
+          role: 'assistant',
+          content: `❌ Error al diseñar el borrador del plan: ${errorText}`,
+          createdAt: new Date().toISOString()
+        };
+        if (isPersonal) {
+          mutateSession((current: any) => {
+            if (!current?.success) return current;
+            return {
+              ...current,
+              data: {
+                ...current.data,
+                messages: [...(current.data.messages || []), errorMsg]
+              }
+            };
+          }, false);
+        } else {
+          mutateSpaceMessages((current) => [...(current || []), errorMsg], false);
+        }
+      }
+    } catch (e: any) {
+      console.error(e);
+      const connErrorMsg: Message = {
+        id: Date.now().toString() + '_err_conn',
+        role: 'assistant',
+        content: `❌ Error de conexión al generar el borrador del plan.`,
+        createdAt: new Date().toISOString()
+      };
+      if (isPersonal) {
+        mutateSession((current: any) => {
+          if (!current?.success) return current;
+          return {
+            ...current,
+            data: {
+              ...current.data,
+              messages: [...(current.data.messages || []), connErrorMsg]
+            }
+          };
+        }, false);
+      } else {
+        mutateSpaceMessages((current) => [...(current || []), connErrorMsg], false);
+      }
+    } finally {
+      if (timer) clearTimeout(timer);
+      setIsDrafting(false);
+      setDraftStep('');
+    }
+  };
+
   const handleCreateBranch = async () => {
     if (!draftPlan) return;
     setCreatingBranch(true);
@@ -287,7 +429,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
         },
         draftPlan: draftPlan,
         chatHistory: messages,
-        spaceId: spaceId
+        spaceId: isPersonal ? null : spaceId
       };
 
       const res = await fetch('/api/ai/goal-generate', {
@@ -298,13 +440,30 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
       const data = await res.json();
       if (data.success) {
         setDraftPlan(null);
+        setBranchCreated(true);
+        setPendingBranch(null);
         const confirmMsg: Message = {
           id: Date.now().toString() + '_sys',
           role: 'assistant',
-          content: `🌳 ¡Perfecto! He plantado la meta colaborativa **"${draftPlan.title}"** en el árbol del equipo. ¡Ya pueden verla!`,
+          content: isPersonal 
+            ? `🌳 ¡Perfecto! He plantado tu meta **"${draftPlan.title}"** en tu árbol. ¡Ya puedes verla!`
+            : `🌳 ¡Perfecto! He plantado la meta colaborativa **"${draftPlan.title}"** en el árbol del equipo. ¡Ya pueden verla!`,
           createdAt: new Date().toISOString()
         };
-        mutate((current) => [...(current || []), confirmMsg], false);
+        if (isPersonal) {
+          mutateSession((current: any) => {
+            if (!current?.success) return current;
+            return {
+              ...current,
+              data: {
+                ...current.data,
+                messages: [...(current.data.messages || []), confirmMsg]
+              }
+            };
+          }, false);
+        } else {
+          mutateSpaceMessages((current) => [...(current || []), confirmMsg], false);
+        }
         onRefreshTree();
       } else {
         alert(`Error al plantar la rama: ${data.error || 'Error interno'}`);
@@ -317,69 +476,6 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
     }
   };
 
-  const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
-
-  useEffect(() => {
-    setMounted(true);
-    // Request notification permission on mount
-    if ('Notification' in window) {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          notificationPermissionGranted.current = true;
-        }
-      });
-    }
-  }, []);
-
-  // Fetch messages all the time so we can get notifications when closed
-  const { data: messages, mutate } = useSWR<Message[]>(
-    isPersonal ? null : `/api/spaces/${spaceId}/chat`, 
-    fetcher, 
-    { refreshInterval: 3000 }
-  );
-
-  useEffect(() => {
-    if (messages) {
-      const prevLen = previousMessagesLengthRef.current;
-      const curLen = messages.length;
-      
-      if (prevLen > 0 && curLen > prevLen) {
-        // We have new messages!
-        const newMessages = messages.slice(prevLen);
-        
-        // If chat is closed, increment unread count and trigger system notifications
-        if (!isOpen) {
-          setUnreadCount(prev => prev + newMessages.length);
-          
-          if (notificationPermissionGranted.current) {
-            newMessages.forEach(msg => {
-              // Don't notify for our own messages (optimistic or synced)
-              if (msg.user?.name !== 'Tú' && msg.role !== 'user') {
-                const title = msg.role === 'assistant' ? 'BEAN (Asistente)' : (msg.user?.name || 'Nuevo Mensaje');
-                new Notification(title, {
-                  body: msg.content,
-                  icon: '/favicon.ico'
-                });
-              }
-            });
-          }
-        }
-      }
-      previousMessagesLengthRef.current = curLen;
-    }
-  }, [messages, isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setUnreadCount(0);
-      scrollToBottom();
-    }
-  }, [messages, isOpen]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isSending) return;
@@ -390,42 +486,107 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
 
     // Optimistic update
     const tempId = Date.now().toString();
-    mutate((current) => [...(current || []), {
-      id: tempId,
-      role: 'user',
-      content: text,
-      createdAt: new Date().toISOString(),
-      user: { name: 'Tú', avatarUrl: null }
-    }], false);
+    if (isPersonal) {
+      mutateSession((current: any) => {
+        if (!current?.success) return current;
+        return {
+          ...current,
+          data: {
+            ...current.data,
+            messages: [
+              ...(current.data.messages || []),
+              {
+                id: tempId,
+                role: 'user',
+                content: text,
+                createdAt: new Date().toISOString(),
+                user: { name: 'Tú', avatarUrl: null }
+              }
+            ]
+          }
+        };
+      }, false);
+    } else {
+      mutateSpaceMessages((current) => [...(current || []), {
+        id: tempId,
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+        user: { name: 'Tú', avatarUrl: null }
+      }], false);
+    }
 
-    // Detect if we mention @bean
+    const isAiTarget = isPersonal || text.toLowerCase().includes('@bean');
     const mentions: string[] = [];
     if (text.toLowerCase().includes('@bean')) {
       mentions.push('bean');
+    }
+    if (isAiTarget) {
       setIsAiTyping(true);
     }
 
     try {
-      const res = await fetch(`/api/spaces/${spaceId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text, mentions, draftPlan })
-      });
-      
+      let res;
+      if (isPersonal) {
+        res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            context: 'global',
+            sessionId: sessionData?.data?.id || undefined,
+            draftPlan
+          })
+        });
+      } else {
+        res = await fetch(`/api/spaces/${spaceId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text, mentions, draftPlan })
+        });
+      }
+
       const data = await res.json();
       
-      if (data.success && data.aiResponse?.branchData) {
-        setDraftPlan(data.aiResponse.branchData);
-        setMobileTab('draft');
-      }
-      
-      if (mentions.includes('bean')) {
-        setTimeout(() => {
-          onRefreshTree();
-          mutate();
-        }, 1500);
-      } else {
-        mutate();
+      if (data.success) {
+        const aiResponse = isPersonal ? data : data.aiResponse;
+        
+        if (aiResponse) {
+          if (aiResponse.triggerRevision && draftPlan && pendingBranch) {
+            generateDraft(pendingBranch, aiResponse.triggerRevision);
+          } else if (aiResponse.branchData) {
+            setPendingBranch(aiResponse.branchData);
+            setBranchCreated(false);
+            generateDraft(aiResponse.branchData);
+          } else if (aiResponse.saveNote && draftPlan) {
+            const newDraft = { ...draftPlan };
+            const targetId = String(aiResponse.saveNote.taskNameOrId).toLowerCase();
+            let found = false;
+            newDraft.phases.forEach((p: any, pIdx: number) => {
+              p.tasks?.forEach((t: any, tIdx: number) => {
+                if (t.id === targetId || t.name.toLowerCase().includes(targetId)) {
+                  if (!found) {
+                    updateDraftPlanItem('task', pIdx, tIdx, undefined, 'notes', aiResponse.saveNote.content);
+                    found = true;
+                  }
+                }
+              });
+            });
+            setMobileTab('draft');
+          }
+        }
+
+        if (isPersonal) {
+          mutateSession();
+        } else {
+          mutateSpaceMessages();
+        }
+
+        if (isAiTarget) {
+          setTimeout(() => {
+            onRefreshTree();
+          }, 1500);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -434,8 +595,6 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
       setIsAiTyping(false);
     }
   };
-
-  if (isPersonal) return null;
 
   const content = (
     <>
@@ -524,7 +683,11 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-center px-4">
                       <Bot className="w-12 h-12 mb-3 text-slate-300" />
                       <p className="text-sm font-medium">No hay mensajes aún.</p>
-                      <p className="text-xs mt-1">Escribe @bean para que la IA te ayude a crear ramas nuevas.</p>
+                      <p className="text-xs mt-1">
+                        {isPersonal 
+                          ? "Escribe qué meta te gustaría planificar para empezar." 
+                          : "Escribe @bean para que la IA te ayude a crear ramas nuevas."}
+                      </p>
                     </div>
                   )}
                   
@@ -580,7 +743,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Escribe un mensaje o etiqueta a @bean..."
+                      placeholder={isPersonal ? "Escribe un mensaje a tu Guía BEAN..." : "Escribe un mensaje o etiqueta a @bean..."}
                       className="w-full bg-slate-100 text-slate-800 text-sm rounded-full pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all border border-transparent focus:border-emerald-500/30"
                     />
                     <button
@@ -683,16 +846,18 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
                                     </div>
                                   </div>
 
-                                  {assignee ? (
-                                    <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-emerald-600 pointer-events-none">
-                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                      <span>Asignado a: {assignee.name}</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-600 pointer-events-none">
-                                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                                      <span>Sin responsable asignado</span>
-                                    </div>
+                                  {!isPersonal && (
+                                    assignee ? (
+                                      <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-emerald-600 pointer-events-none">
+                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                        <span>Asignado a: {assignee.name}</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-600 pointer-events-none">
+                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                                        <span>Sin responsable asignado</span>
+                                      </div>
+                                    )
                                   )}
                                 </div>
                               );
@@ -719,6 +884,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree }: S
                         handleDeleteDraftItem={handleDeleteDraftItem}
                         handleAddDraftItem={handleAddDraftItem}
                         handleAddContextToChat={handleAddContextToChat}
+                        isPersonal={isPersonal}
                       />
                     )}
                   </AnimatePresence>

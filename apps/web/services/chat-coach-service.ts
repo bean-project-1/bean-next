@@ -446,38 +446,63 @@ Sé directo, profesional pero amistoso.
       {
         type: "function",
         function: {
-          name: "create_collaborative_branch",
-          description: "Genera una meta completa con fases y tareas asignadas al equipo.",
+          name: "dimension_goal",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario y tú hayan acordado la meta, las horas a la semana y la fecha límite.",
           parameters: {
             type: "object",
             properties: {
-              title: { type: "string", description: "El título de la meta" },
-              description: { type: "string", description: "Descripción general" },
-              phases: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string", description: "Nombre de la fase" },
-                    tasks: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          title: { type: "string" },
-                          description: { type: "string" },
-                          estimatedHours: { type: "number" },
-                          assigneeId: { type: "string", description: "ID exacto del miembro del equipo tomado del Contexto" }
-                        },
-                        required: ["title", "assigneeId"]
-                      }
-                    }
-                  },
-                  required: ["title", "tasks"]
-                }
-              }
+              goalTitle: { type: "string", description: "Título claro de la meta" },
+              dimensionName: { type: "string", description: "Dimensión (ej: Profesión, Intelecto, Salud)" },
+              hoursPerWeek: { type: "number", description: "Horas semanales a dedicar" },
+              targetDate: { type: "string", description: "Fecha límite" },
+              budget: { type: "number", description: "Presupuesto (opcional)" }
             },
-            required: ["title", "description", "phases"]
+            required: ["goalTitle", "dimensionName", "hoursPerWeek", "targetDate"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_goal_status",
+          description: "Ejecuta esta herramienta SOLO si el usuario acepta pausar, reanudar o cancelar una meta existente.",
+          parameters: {
+            type: "object",
+            properties: {
+              goalId: { type: "string", description: "El ID exacto de la meta a actualizar" },
+              newStatus: { type: "string", enum: ["active", "paused", "cancelled"], description: "El nuevo estado de la meta" },
+              resumeDate: { type: "string", description: "Fecha estimada en la que se retomará (YYYY-MM-DD), opcional." }
+            },
+            required: ["goalId", "newStatus"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "request_draft_revision",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario te pida explícitamente que modifiques estructuralmente una tarea, fase o aspecto del Borrador del Plan que están construyendo (ej: cambiar horas, eliminar o agregar tareas). NO la uses para guardar notas o contexto.",
+          parameters: {
+            type: "object",
+            properties: {
+              instructions: { type: "string", description: "Instrucción detallada de qué cambiar en el borrador (ej: 'Quita la tarea de leer el libro y pon una de ver videos en su lugar')." }
+            },
+            required: ["instructions"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "add_task_note",
+          description: "Ejecuta esta herramienta SOLO cuando el usuario te pida guardar una nota, un tip, un contexto o apuntes específicos sobre una tarea en la Mesa de Dibujo.",
+          parameters: {
+            type: "object",
+            properties: {
+              taskNameOrId: { type: "string", description: "El nombre de la tarea (ej: 'Configurar entorno') o su ID exacto para la cual se guardará la nota." },
+              noteContent: { type: "string", description: "El contenido de la nota, apunte o tip a guardar. Puede ser multilínea y detallado." }
+            },
+            required: ["taskNameOrId", "noteContent"]
           }
         }
       }
@@ -503,48 +528,50 @@ Sé directo, profesional pero amistoso.
     const toolCall = choice.message?.tool_calls?.[0];
     
     let cleanReply = choice.message?.content || "";
+    let branchData = null;
+    let saveNote = null;
+    let triggerRevision = null;
 
-    if (toolCall && (toolCall as any).function?.name === 'create_collaborative_branch') {
+    if (toolCall && (toolCall as any).function?.name === 'dimension_goal') {
       try {
         const args = JSON.parse((toolCall as any).function.arguments);
-        
-        const newGoal = await prisma.goal.create({
-          data: {
-            spaceId: spaceId === 'personal' ? null : spaceId,
-            userId: userId,
-            title: args.title,
-            description: args.description,
-            status: 'active'
+        branchData = args;
+        cleanReply = cleanReply || `¡Perfecto! Ya tenemos claras las metas y dimensiones para el equipo. Dame un momento, estoy diseñando y calculando el borrador del plan colaborativo en la Mesa de Dibujo...`;
+      } catch (e) {
+        console.warn('Failed to parse dimension_goal arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'update_goal_status') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        await prisma.goal.update({
+          where: { id: args.goalId },
+          data: { 
+            status: args.newStatus,
+            resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
           }
         });
-
-        for (const phase of args.phases) {
-          const newPhase = await prisma.goalAction.create({
-            data: {
-              goalId: newGoal.id,
-              type: 'phase',
-              title: phase.title,
-            }
-          });
-
-          for (const task of phase.tasks) {
-            await prisma.goalAction.create({
-              data: {
-                goalId: newGoal.id,
-                parentId: newPhase.id,
-                type: 'task',
-                title: task.title,
-                description: task.description,
-                estimatedHours: task.estimatedHours,
-                assigneeId: task.assigneeId,
-              }
-            });
-          }
-        }
-
-        cleanReply = cleanReply || `¡Listo! Acabo de crear la meta "${args.title}" y distribuí las tareas entre el equipo según su perfil.`;
+        cleanReply = cleanReply || `He actualizado el estado de la meta a "${args.newStatus}" para el equipo.`;
       } catch (e) {
-        console.warn('Failed to create collaborative branch:', e);
+        console.warn('Failed to parse update_goal_status arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'request_draft_revision') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        triggerRevision = args.instructions;
+        cleanReply = cleanReply || `¡Entendido! Estoy ajustando el borrador del plan colaborativo con tus indicaciones...`;
+      } catch (e) {
+        console.warn('Failed to parse request_draft_revision arguments:', e);
+      }
+    } else if (toolCall && (toolCall as any).function?.name === 'add_task_note') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        saveNote = {
+          taskNameOrId: args.taskNameOrId,
+          content: args.noteContent
+        };
+        cleanReply = cleanReply || `He añadido tu nota a la tarea respectiva en la Mesa de Dibujo del equipo.`;
+      } catch (e) {
+        console.warn('Failed to parse add_task_note arguments:', e);
       }
     } else if (!cleanReply) {
       cleanReply = "Hubo un error al procesar la respuesta.";
@@ -559,6 +586,6 @@ Sé directo, profesional pero amistoso.
       }
     });
 
-    return { reply: cleanReply, message: msg };
+    return { reply: cleanReply, message: msg, branchData, triggerRevision, saveNote };
   }
 }

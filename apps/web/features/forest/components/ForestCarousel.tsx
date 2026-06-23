@@ -32,6 +32,14 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
   const [isCreating, setIsCreating] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [zoomedSpaceId, setZoomedSpaceId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const setSpaceState = useUIStore(state => state.setSpaceState);
 
@@ -112,27 +120,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
       {/* Background ambient glow based on active tree */}
       <div className="absolute inset-0 bg-gradient-radial from-emerald-900/10 to-transparent pointer-events-none" />
 
-      {/* Zoom Controls (Must stay on top) */}
-      <AnimatePresence>
-        {zoomedSpaceId && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-6 left-6 z-[100]"
-          >
-            <button
-              onClick={() => setZoomedSpaceId(null)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-medium transition-all"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-              </svg>
-              Volver al Bosque
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Trees Carousel */}
       <div className="absolute inset-0 flex items-center justify-center transform-style-3d">
@@ -147,17 +135,16 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             const isOtherZoomed = zoomedSpaceId !== null && !isZoomed;
 
             // Positioning logic
-            const xOffset = isZoomed ? 0 : offset * 250;
+            const xOffset = isZoomed ? 0 : offset * (isMobile ? 145 : 250);
             const yOffset = isZoomed ? 80 : 0; // Shift down slightly when zoomed to center the tree better
-            const zOffset = isZoomed ? 250 : Math.abs(offset) * -200;
-            const scale = isZoomed ? 1.4 : (isActive ? 1 : 0.8);
+            const zOffset = isZoomed ? 250 : Math.abs(offset) * (isMobile ? -120 : -200);
+            const scale = isZoomed ? 1.4 : (isActive ? 1 : (isMobile ? 0.65 : 0.8));
             const opacity = isZoomed ? 1 : (isOtherZoomed ? 0 : (isActive ? 1 : 0.6));
-            const blur = isZoomed ? 0 : (isOtherZoomed ? 0 : Math.min(Math.abs(offset) * 3, 6));
+            const blur = isZoomed ? 0 : (isOtherZoomed ? 0 : Math.min(Math.abs(offset) * (isMobile ? 1.5 : 3), 6));
 
             return (
               <motion.div
                 key={space.id}
-                layout
                 initial={{ 
                   opacity: 0, 
                   x: offset > 0 ? 500 : -500,
@@ -181,7 +168,8 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                   damping: 25,
                   mass: 0.8
                 }}
-                className={`absolute w-full max-w-[800px] h-full flex items-center justify-center origin-bottom ${
+                style={{ transformOrigin: 'center 55.4%' }}
+                className={`absolute w-full max-w-[800px] h-full flex items-center justify-center ${
                   isActive ? 'z-10' : 'z-0'
                 } ${isOtherZoomed ? 'pointer-events-none' : ''}`}
               >
@@ -206,6 +194,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                       }
                     }}
                     onActionHooks={onActionHooks}
+                    onZoomIn={() => setZoomedSpaceId(space.id)}
+                    onBackToForest={() => setZoomedSpaceId(null)}
+                    isMobile={isMobile}
                   />
                 </div>
               </motion.div>
@@ -214,12 +205,14 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
         </AnimatePresence>
       </div>
 
-      {/* Explicit Navigation Arrows */}
+      {/* Navigation Arrows + Add Tree at ends */}
       <AnimatePresence>
-        {!zoomedSpaceId && spaces.length > 1 && (
+        {!zoomedSpaceId && (
           <>
+            {/* LEFT side: arrow back OR nothing if at start */}
             {activeIndex > 0 && (
               <motion.button
+                key="left-arrow"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -229,8 +222,11 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
               </motion.button>
             )}
-            {activeIndex < spaces.length - 1 && (
+
+            {/* RIGHT side: arrow forward OR + add tree if at end */}
+            {activeIndex < spaces.length - 1 ? (
               <motion.button
+                key="right-arrow"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -238,6 +234,18 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                 className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-900/10 hover:bg-slate-900/20 backdrop-blur-md rounded-full text-slate-800 shadow-sm border border-slate-900/10 transition-colors"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </motion.button>
+            ) : (
+              <motion.button
+                key="add-right"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={() => setIsCreatingSpace(true)}
+                title="Plantar un nuevo árbol"
+                className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center bg-slate-800 hover:bg-emerald-700 backdrop-blur-md rounded-full text-white shadow-lg border border-white/10 transition-all"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </motion.button>
             )}
           </>
@@ -268,23 +276,6 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
         )}
       </AnimatePresence>
 
-      {/* Floating Create Tree Button */}
-      <AnimatePresence>
-        {!zoomedSpaceId && (
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={() => setIsCreatingSpace(true)}
-            className="absolute right-6 top-6 w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-all shadow-lg z-50"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </motion.button>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {isCreatingSpace && (
@@ -347,7 +338,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 }
 
 // Separate component to handle individual tree data fetching
-function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks }: { space: Space, isActive: boolean, isZoomed: boolean, onTrunkClick: () => void, onActionHooks: any }) {
+function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks, onZoomIn, onBackToForest, isMobile }: { space: Space, isActive: boolean, isZoomed: boolean, onTrunkClick: () => void, onActionHooks: any, onZoomIn: () => void, onBackToForest: () => void, isMobile: boolean }) {
   const { treeData, loading } = useLifeTree(space.id);
 
   if (loading || !treeData) {
@@ -358,18 +349,38 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks 
     );
   }
 
-  // Si no está zoomed, pasamos un objeto de hooks vacío para deshabilitar clicks internos.
-  // Si está zoomed, pasamos los hooks reales para que se puedan abrir modales.
-  const activeHooks = isZoomed ? onActionHooks : {};
+  // On mobile, if the tree is active in the carousel, we allow it to be interactive
+  // so that clicking a branch zooms in automatically.
+  const isInteractive = isZoomed || (isMobile && isActive);
+
+  // Intercept hooks to auto-zoom the tree on mobile if clicked when zoomed-out
+  const activeHooks = { ...onActionHooks };
+  if (isInteractive && !isZoomed) {
+    const wrapAction = (fn: any) => (...args: any[]) => {
+      const isClearing = args.length === 0 || args[0] === null || args[0] === undefined;
+      if (!isClearing) {
+        onZoomIn();
+      }
+      fn?.(...args);
+    };
+    if (activeHooks.onLeafClick) activeHooks.onLeafClick = wrapAction(activeHooks.onLeafClick);
+    if (activeHooks.onBranchClick) activeHooks.onBranchClick = wrapAction(activeHooks.onBranchClick);
+    if (activeHooks.onPhaseClick) activeHooks.onPhaseClick = wrapAction(activeHooks.onPhaseClick);
+    if (activeHooks.onEditBranch) activeHooks.onEditBranch = wrapAction(activeHooks.onEditBranch);
+  }
+
+  const finalHooks = isInteractive ? activeHooks : {};
 
   return (
     <>
       <LifeTree 
         data={treeData} 
         onTrunkClick={isZoomed ? onTrunkClick : undefined}
-        isInteractive={isZoomed}
+        isInteractive={isInteractive}
         spaceName={space.name}
-        {...activeHooks}
+        isZoomed={isZoomed}
+        onBackToForest={onBackToForest}
+        {...finalHooks}
       />
       {isZoomed && (
         <SpaceChat 

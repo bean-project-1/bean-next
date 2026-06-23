@@ -7,6 +7,7 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LifeTreeProps {
   data: TreeData;
@@ -20,16 +21,21 @@ interface LifeTreeProps {
   onTrunkClick?: () => void;
   activePhaseId?: string | null;
   activeLeafId?: string | null;
+  activeBranchId?: string | null;
   isInteractive?: boolean;
   spaceName?: string;
+  isZoomed?: boolean;
+  onBackToForest?: () => void;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, isInteractive = true, spaceName }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, activeBranchId, isInteractive = true, spaceName, isZoomed = false, onBackToForest }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
   const [zoomedBranchId, setZoomedBranchId] = useState<string | null>(null);
   const [zoomedPhaseId, setZoomedPhaseId] = useState<string | null>(null);
+  const [isGoalListOpen, setIsGoalListOpen] = useState(false);
+  const [activeTrunkTab, setActiveTrunkTab] = useState<'metas' | 'compartir'>('metas');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -68,11 +74,35 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   }, [data?.branches, mounted]);
 
   useEffect(() => {
-    // Reset view when leaving the tree
-    if (!isInteractive) {
+    // Reset view when leaving or entering zoomed-in state
+    if (!isZoomed) {
       resetZoom();
+    } else {
+      // Zoom in slightly on mobile when entering the tree
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      if (isMobile && !zoomedBranchId && !zoomedPhaseId) {
+        gsap.to(viewBox, {
+          x: 100,
+          y: 80,
+          w: 600,
+          h: 600,
+          duration: 1.0,
+          ease: "power2.out",
+          onUpdate: () => setViewBox({ ...viewBox })
+        });
+      }
     }
-  }, [isInteractive]);
+  }, [isZoomed]);
+
+  // When the branch detail panel is closed externally (activeBranchId → null),
+  // reset the camera back to the full tree view.
+  useEffect(() => {
+    if (activeBranchId === null || activeBranchId === undefined) {
+      if (zoomedBranchId !== null) {
+        resetZoom();
+      }
+    }
+  }, [activeBranchId]);
 
   useGSAP(() => {
     const tl = gsap.timeline();
@@ -110,18 +140,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       // Sync with Branch.tsx lengths
       const length = 180 + (branch.progress / 100) * 100;
       
-      let targetRot = -90 - angle;
-      
-      // Pivot is (400, 350). Since we rotate around it, the pivot's position doesn't change relative to the SVG.
-      // We want (400, 350) to be at the bottom-center of the zoomed view.
-      // Dynamic zoom based on branch length
-      const zoomSize = length * 1.5; // Increased slightly for better view
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
       
-      // Desktop: Shift camera right by 20% (branch moves left). Mobile: Center X.
-      const targetX = isMobile ? 400 - zoomSize / 2 : (400 - zoomSize / 2) + (zoomSize * 0.2);
-      // Desktop: Center Y. Mobile: Shift camera down significantly so branch is at the top of the screen (visible area).
-      const targetY = isMobile ? 350 - zoomSize * 0.25 : 350 - zoomSize * 0.85;
+      let targetX, targetY, zoomSize, targetRot;
+      
+      if (isMobile) {
+        targetRot = 0;
+        zoomSize = length * 1.6;
+        const rad = (angle * Math.PI) / 180;
+        const midX = 400 + Math.cos(rad) * (length * 0.5);
+        const midY = 350 + Math.sin(rad) * (length * 0.5);
+        targetX = midX - zoomSize / 2;
+        targetY = midY - zoomSize * 0.22; // Shift up slightly to avoid bottom sheet overlap
+      } else {
+        targetRot = -90 - angle;
+        // Pivot is (400, 350). Since we rotate around it, the pivot's position doesn't change relative to the SVG.
+        // We want (400, 350) to be at the bottom-center of the zoomed view.
+        // Dynamic zoom based on branch length
+        zoomSize = length * 1.5; // Increased slightly for better view
+        // Desktop: Shift camera right by 20% (branch moves left).
+        targetX = (400 - zoomSize / 2) + (zoomSize * 0.2);
+        // Desktop: Center Y.
+        targetY = 350 - zoomSize * 0.85;
+      }
 
       gsap.to(viewBox, {
         x: targetX,
@@ -169,27 +210,38 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       }
 
       if (angle !== undefined && startX !== undefined && startY !== undefined) {
-        const angleDeg = (angle * 180) / Math.PI;
-        let targetRot = -90 - angleDeg;
-        
-        // Target zoom area centered around the rotated start point
-        const zoomSize = len ? (len * 2.5) : 420;
-        
-        // To keep the point centered after rotation, we must focus the viewBox 
-        // on where the point WILL BE after rotating around (400, 350).
-        const targetRad = (targetRot * Math.PI) / 180;
-        const px = 400, py = 350;
-        
-        // Target rotated position of (startX, startY)
-        const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
-        const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
-
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+        
+        let targetX, targetY, zoomSize, targetRot;
+        
+        if (isMobile) {
+          targetRot = 0;
+          zoomSize = len ? (len * 2.2) : 420;
+          const midX = (startX + x) / 2;
+          const midY = (startY + y) / 2;
+          targetX = midX - zoomSize / 2;
+          targetY = midY - zoomSize * 0.22;
+        } else {
+          const angleDeg = (angle * 180) / Math.PI;
+          targetRot = -90 - angleDeg;
+          
+          // Target zoom area centered around the rotated start point
+          zoomSize = len ? (len * 2.5) : 420;
+          
+          // To keep the point centered after rotation, we must focus the viewBox 
+          // on where the point WILL BE after rotating around (400, 350).
+          const targetRad = (targetRot * Math.PI) / 180;
+          const px = 400, py = 350;
+          
+          // Target rotated position of (startX, startY)
+          const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
+          const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
 
-        // Desktop: Shift camera right by 20% (phase moves left). Mobile: Center X.
-        const targetX = isMobile ? rx - zoomSize / 2 : (rx - zoomSize / 2) + (zoomSize * 0.2);
-        // Desktop: Center Y. Mobile: Shift camera down significantly so phase is at the top of the screen (visible area).
-        const targetY = isMobile ? ry - zoomSize * 0.2 : ry - zoomSize * 0.9;
+          // Desktop: Shift camera right by 20% (phase moves left).
+          targetX = (rx - zoomSize / 2) + (zoomSize * 0.2);
+          // Desktop: Center Y.
+          targetY = ry - zoomSize * 0.9;
+        }
 
         gsap.to(viewBox, {
           x: targetX,
@@ -219,16 +271,21 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const resetZoom = () => {
     setZoomedBranchId(null);
     setZoomedPhaseId(null);
-    onEditBranch?.(null); // Notify parent to close the panel
+    setIsGoalListOpen(false); // Close trunk menu if open
+    onEditBranch?.(null); // Notify parent to close the branch panel
     onPhaseClick?.(null); // Clear phase selection
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
+    const targetX = (isMobile && isZoomed) ? 100 : -100;
+    const targetY = (isMobile && isZoomed) ? 80 : -100;
+    const targetSize = (isMobile && isZoomed) ? 600 : 1000;
+
     gsap.to(viewBox, {
-      x: -100,
-      y: -100,
-      w: 1000,
-      h: 1000,
+      x: targetX,
+      y: targetY,
+      w: targetSize,
+      h: targetSize,
       duration: 1.2,
       ease: "power2.inOut",
       onUpdate: () => setViewBox({ ...viewBox })
@@ -250,7 +307,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (!isInteractive) return;
+    if (!isInteractive || !isZoomed) return;
     e.preventDefault();
     const zoomFactor = 1.05; // Smoother manual zoom step
     const factor = e.deltaY > 0 ? zoomFactor : 1 / zoomFactor;
@@ -285,15 +342,17 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!isInteractive) return;
+    if (!isInteractive || !isZoomed) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for pan if using mouse
+    if (e.pointerType === 'touch' && !e.isPrimary) return; // Ignore secondary touch points during pinch zoom
     setIsPanning(true);
     panStart.current = { x: e.clientX, y: e.clientY };
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     setMousePos({ x: e.clientX, y: e.clientY });
-    if (!isPanning) return;
+    if (!isPanning || !isZoomed) return;
+    if (e.pointerType === 'touch' && !e.isPrimary) return; // Only track primary touch pointer
     
     const dx = (e.clientX - panStart.current.x) * (viewBox.w / (svgRef.current?.clientWidth || 800));
     const dy = (e.clientY - panStart.current.y) * (viewBox.h / (svgRef.current?.clientHeight || 800));
@@ -377,12 +436,16 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           {/* 3. Realistic Trunk */}
           <g 
             ref={trunkRef} 
-            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer origin-bottom' : (onTrunkClick ? 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'pointer-events-none')}`}
+            className={`transition-opacity duration-700 ease-out ${!isInteractive ? 'cursor-pointer origin-bottom' : 'cursor-pointer hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]'}`}
             style={{ opacity: zoomedBranchId ? 0 : 1 }}
             onClick={(e) => {
               if (!isInteractive) return; // Let it bubble up to ForestCarousel!
-              if (onTrunkClick) {
-                e.stopPropagation();
+              e.stopPropagation();
+              if (isZoomed) {
+                // In tree view: open the tabbed trunk menu
+                setActiveTrunkTab('metas');
+                setIsGoalListOpen(true);
+              } else if (onTrunkClick) {
                 onTrunkClick();
               }
             }}
@@ -405,7 +468,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               y="540" 
               textAnchor="middle" 
               className={`text-[42px] font-black uppercase tracking-widest transition-opacity duration-500`}
-              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: isInteractive ? 0 : 1 }}
+              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: zoomedBranchId ? 0 : 1 }}
             >
               {spaceName}
             </text>
@@ -513,7 +576,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       </svg>
 
       {/* Interaction Hints - Floating Cursor Tooltip */}
-      {mounted && hoveredLeafName && createPortal(
+      {mounted && hoveredLeafName && (typeof window !== 'undefined' && window.innerWidth >= 640) && createPortal(
         <div 
           className="fixed pointer-events-none bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 z-[9999] animate-in fade-in zoom-in duration-200"
           style={{ 
@@ -529,26 +592,176 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         document.body
       )}
 
-      {mounted && (() => {
-        if (!isInteractive) return null;
-          
-        const content = (zoomedBranchId || zoomedPhaseId) ? (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
+      {mounted && isZoomed && createPortal(
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (zoomedBranchId || zoomedPhaseId) {
+              // Zoomed into a branch → go back to full tree view
               resetZoom();
-            }}
-            className="fixed bottom-24 left-4 sm:bottom-12 sm:left-12 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white/90 backdrop-blur-md border border-slate-200 text-slate-700 rounded-full shadow-xl hover:bg-slate-900 hover:text-white transition-all z-[9999] animate-in fade-in slide-in-from-bottom-4"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-            </svg>
-          </button>
-        ) : null;
-        
-        return content ? createPortal(content, document.body) : null;
-      })()}
+            } else {
+              // Full tree view → go back to the forest (close everything first)
+              resetZoom();
+              onBackToForest?.();
+            }
+          }}
+          className="fixed top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-bold transition-all z-[100000] animate-in fade-in slide-in-from-top-4 active:scale-95 text-xs sm:text-sm"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          {zoomedBranchId || zoomedPhaseId ? 'Volver al Árbol' : 'Volver al Bosque'}
+        </button>,
+        document.body
+      )}
+
+      {mounted && isZoomed && createPortal(
+        <AnimatePresence>
+          {isGoalListOpen && (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99990]"
+                onClick={() => setIsGoalListOpen(false)}
+              />
+              {/* Drawer */}
+              <motion.div 
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed bottom-0 inset-x-0 bg-slate-950 text-white rounded-t-[2rem] border-t border-white/10 z-[99991] shadow-2xl flex flex-col"
+                style={{ maxHeight: '65vh' }}
+              >
+                {/* Handle */}
+                <div className="shrink-0 flex flex-col items-center pt-4 pb-2">
+                  <div className="w-12 h-1 bg-white/20 rounded-full" />
+                </div>
+
+                {/* Tab switcher */}
+                <div className="shrink-0 flex gap-2 mx-5 mb-4 bg-white/10 p-1 rounded-2xl">
+                  <button
+                    onClick={() => setActiveTrunkTab('metas')}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      activeTrunkTab === 'metas'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                  >
+                    🌿 Metas
+                  </button>
+                  <button
+                    onClick={() => setActiveTrunkTab('compartir')}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                      activeTrunkTab === 'compartir'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                  >
+                    🤝 Compartir
+                  </button>
+                </div>
+
+                {/* Tab content */}
+                <div className="flex-1 overflow-y-auto px-5 pb-8">
+                  {activeTrunkTab === 'metas' && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                        {data.branches.length} Meta{data.branches.length !== 1 ? 's' : ''} · {spaceName || 'Mi Árbol'}
+                      </p>
+                      {data.branches.length === 0 ? (
+                        <div className="flex flex-col items-center py-10 gap-3 text-center">
+                          <span className="text-4xl">🌱</span>
+                          <p className="text-slate-400 text-sm font-medium">Este árbol no tiene metas plantadas aún.</p>
+                        </div>
+                      ) : (
+                        data.branches.map((branch) => {
+                          const isActive = zoomedBranchId === branch.id;
+                          const pct = Math.round(branch.progress);
+                          return (
+                            <button
+                              key={branch.id}
+                              onClick={() => {
+                                handleBranchClick(branch);
+                                setIsGoalListOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 p-4 rounded-2xl border text-left transition-all active:scale-[0.98] ${
+                                isActive
+                                  ? 'border-emerald-500 bg-emerald-500/10'
+                                  : 'bg-white/5 border-white/5 hover:bg-white/10'
+                              }`}
+                            >
+                              {/* Progress ring */}
+                              <div className="relative shrink-0 w-10 h-10">
+                                <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
+                                  <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3"/>
+                                  <circle cx="18" cy="18" r="15" fill="none"
+                                    stroke={isActive ? '#34d399' : '#6ee7b7'}
+                                    strokeWidth="3"
+                                    strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-100 line-clamp-2 leading-snug">{branch.goal}</p>
+                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
+                                  {branch.leaves?.length || 0} fase{(branch.leaves?.length || 0) !== 1 ? 's' : ''}
+                                </p>
+                              </div>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-500 shrink-0">
+                                <path d="M9 18l6-6-6-6"/>
+                              </svg>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  {activeTrunkTab === 'compartir' && (
+                    <div className="flex flex-col gap-3">
+                      {onTrunkClick ? (
+                        <>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Opciones del Espacio</p>
+                          <button
+                            onClick={() => {
+                              setIsGoalListOpen(false);
+                              setTimeout(() => onTrunkClick(), 300);
+                            }}
+                            className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-left transition-all active:scale-[0.98]"
+                          >
+                            <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-xl shrink-0">⚙️</div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-100">Gestionar Espacio</p>
+                              <p className="text-xs text-slate-400 mt-0.5">Miembros, permisos y más</p>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-500 ml-auto shrink-0">
+                              <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mi Árbol Personal</p>
+                          <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center gap-3 text-center">
+                            <span className="text-4xl">🌳</span>
+                            <p className="text-sm font-bold text-slate-200">Este es tu árbol privado</p>
+                            <p className="text-xs text-slate-400 leading-relaxed">Puedes crear espacios compartidos para colaborar con otras personas en metas en común.</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

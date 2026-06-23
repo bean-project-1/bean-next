@@ -38,7 +38,12 @@ export async function GET(req: NextRequest) {
       where: whereClause,
       include: {
         actions: {
-          include: { tasks: true }
+          include: { 
+            tasks: true,
+            assignee: {
+              select: { name: true, email: true, image: true }
+            }
+          }
         }
       }
     });
@@ -70,11 +75,17 @@ export async function GET(req: NextRequest) {
           dimensions: action.dimensions || [],
           attributes: action.attributes || [],
           description: action.description,
+          notes: action.notes,
           frequency: action.frequency,
           streak: action.streak,
           consistency: action.consistency,
           tasks: action.tasks || [],
-          impact: action.impact || null
+          impact: action.impact || null,
+          assignee: action.assignee ? {
+            name: action.assignee.name,
+            email: action.assignee.email,
+            image: action.assignee.image
+          } : null
         }))
       }))
     };

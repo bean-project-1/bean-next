@@ -14,9 +14,16 @@ export type Leaf = {
   consistency?: number;
 
   targetDate?: string;
+  startDate?: string;
+  assignee?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   dimensions?: string[];
   attributes?: string[];
   description?: string;
+  notes?: string;
   tasks?: any[]; // sub-tasks (Task model)
   // milestone evaluation metadata (from GoalAction.impact)
   impact?: {

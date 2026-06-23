@@ -257,6 +257,14 @@ export class GoalService {
       
       ${workloadContext}
 
+      ${constraints.teamContext ? `
+      TEAM CONTEXT (Members, roles, and strengths):
+      ${constraints.teamContext}
+      
+      INSTRUCTION FOR TEAM ASSIGNMENT:
+      You MUST assign every "task" in the phases to a specific member of the team using the "assigneeId" property. Select the best member based on their role and ADN strengths. If a member's schedule is overloaded, distribute tasks to other members. Every task should have an assignee.
+      ` : 'All tasks are assigned to the main user.'}
+
       ${previousDraft ? `
       PREVIOUS DRAFT:
       ${JSON.stringify(previousDraft)}
@@ -286,10 +294,10 @@ export class GoalService {
       - PREREQUISITE RECURRING COMMITMENTS (CRITICAL): If a recurring commitment (e.g., studying a language, learning a technical skill, daily training) is a PREREQUISITE for subsequent tasks in the plan, you MUST create a dedicated "Phase" in the plan representing that preparation/prerequisite stage (e.g., "Fase 1: Estudio de Fundamentos de React"). Set the phase's targetDate to match the end date of that recurring project/habit. Subsequent tasks and phases must depend on this prerequisite phase.
       
       - DEFINITION OF HIERARCHY (PHASE vs TASK vs SUB-TASK):
-        1. "Phase" (Fase): A major chronological stage or milestone of the goal (e.g., "Fase 1: Preparación y Estudio", "Fase 2: Construcción de Prototipo"). If a recurring commitment is a prerequisite, it must define or align with a Phase.
-        2. "Task" (Tarea): Specific deliverables or achievements that happen within a phase. These MUST be unique, non-repeating events (e.g., "Inscribirse en el semestre", "Rendir examen final de anatomía", "Presentar tesis"). DO NOT create generic, long-term tasks representing the overall process itself (e.g., "Estudiar la carrera de Medicina", "Completar la residencia", "Trabajar en la empresa"). Those efforts are represented by the Phase timeline itself and by the corresponding recurring base commitments (habits or continuous projects).
-        3. "Sub-task" (Subtarea): Actionable, granular steps of 1 to 1.5 hours maximum (e.g., "Instalar Node.js", "Ver videos de la sección 1"). You MUST include sub-tasks for any complex task.
-        
+      		1. "Phase" (Fase): A major chronological stage or milestone of the goal (e.g., "Fase 1: Preparación y Estudio", "Fase 2: Construcción de Prototipo"). If a recurring commitment is a prerequisite, it must define or align with a Phase.
+      		2. "Task" (Tarea): Specific deliverables or achievements that happen within a phase. These MUST be unique, non-repeating events (e.g., "Inscribirse en el semestre", "Rendir examen final de anatomía", "Presentar tesis"). DO NOT create generic, long-term tasks representing the overall process itself (e.g., "Estudiar la carrera de Medicina", "Completar la residencia", "Trabajar en la empresa"). Those efforts are represented by the Phase timeline itself and by the corresponding recurring base commitments (habits or continuous projects).
+      		3. "Sub-task" (Subtarea): Actionable, granular steps of 1 to 1.5 hours maximum (e.g., "Instalar Node.js", "Ver videos de la sección 1"). You MUST include sub-tasks for any complex task.
+      		
       - TASK DISTRIBUTION & SUB-TASKS (CRITICAL): Tasks can take longer than 1 hour IF they represent a larger block. HOWEVER, if a task is generic or takes > 1 hour, you MUST include a "subTasks" array inside it. Each subTask must be HIGHLY specific, actionable, and take MAX 1.5 HOURS.
       - INSTITUTIONAL PATHS: Include formal steps (Apply, Enroll) for careers.
       - REASONABLE SPREAD: Distribute tasks logically across the timeline.
@@ -330,6 +338,7 @@ export class GoalService {
                 "startDate": "ISO-8601 (Optional, for multi-day tasks)",
                 "targetDate": "ISO-8601",
                 "estimatedHours": "Number (Total hours for the task)",
+                "assigneeId": "String (Optional, the exact user ID of the team member assigned to this task, matching one of the team member IDs provided in the TEAM CONTEXT)",
                 "dimensions": ["skills", etc],
                 "attributes": ["focus", etc],
                 "subTasks": [
@@ -433,6 +442,7 @@ export class GoalService {
             startDate: task.startDate || null,
             targetDate: task.targetDate || null,
             estimatedHours: Math.min(100, parseFloat(task.estimatedHours) || 1.0),
+            assigneeId: task.assigneeId || null,
             dimensions: Array.isArray(task.dimensions) ? task.dimensions : [],
             attributes: Array.isArray(task.attributes) ? task.attributes : [],
             subTasks: Array.isArray(task.subTasks) ? task.subTasks.map((st: any) => ({

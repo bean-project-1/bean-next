@@ -4,12 +4,13 @@ import { prisma } from '@/lib/prisma';
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { isCompleted, title, description } = await req.json();
+    const { isCompleted, title, description, notes } = await req.json();
 
     const updateData: any = {};
     if (isCompleted !== undefined) updateData.isCompleted = isCompleted;
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
+    if (notes !== undefined) updateData.notes = notes;
 
     const task = await prisma.task.update({
       where: { id },
@@ -22,3 +23,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    await prisma.task.delete({
+      where: { id }
+    });
+    return NextResponse.json({ success: true, message: 'Task deleted successfully' });
+  } catch (error: any) {
+    console.error('[DELETE /api/profile/goals/tasks/[id]] Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+

@@ -21,8 +21,21 @@ export async function DELETE(
       include: { actions: { include: { tasks: true } } }
     });
 
-    if (!goal || goal.userId !== userId) {
-      return NextResponse.json({ error: 'Goal not found or unauthorized' }, { status: 404 });
+    if (!goal) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
+
+    if (goal.userId !== userId) {
+      if (goal.spaceId) {
+        const member = await (prisma as any).spaceMember.findFirst({
+          where: { spaceId: goal.spaceId, userId }
+        });
+        if (!member) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // 2. Cascaded delete
@@ -73,13 +86,26 @@ export async function PATCH(
     const body = await req.json();
     const { goal, description } = body;
 
-    // Verify ownership
+    // Verify ownership or space membership
     const existing = await prisma.goal.findUnique({
       where: { id },
     });
 
-    if (!existing || existing.userId !== userId) {
-      return NextResponse.json({ error: 'Goal not found or unauthorized' }, { status: 404 });
+    if (!existing) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
+
+    if (existing.userId !== userId) {
+      if (existing.spaceId) {
+        const member = await (prisma as any).spaceMember.findFirst({
+          where: { spaceId: existing.spaceId, userId }
+        });
+        if (!member) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // Update the goal

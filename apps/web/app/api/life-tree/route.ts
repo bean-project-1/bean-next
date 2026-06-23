@@ -14,10 +14,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const spaceId = searchParams.get('spaceId');
 
-    const whereClause: any = { userId };
+    const whereClause: any = {};
     if (spaceId && spaceId !== 'personal') {
+      // Validate that the user has access to the space
+      const member = await (prisma as any).spaceMember.findFirst({
+        where: { spaceId, userId }
+      });
+      if (!member) {
+        return NextResponse.json({ error: 'Unauthorized to access this space tree' }, { status: 403 });
+      }
       whereClause.spaceId = spaceId;
     } else {
+      whereClause.userId = userId;
       // Personal space = null spaceId OR spaceId doesn't exist yet in old docs
       whereClause.OR = [
         { spaceId: null },

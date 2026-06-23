@@ -16,14 +16,27 @@ export async function DELETE(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // 1. Verify ownership (via goal)
+    // 1. Verify ownership (via goal) or space membership
     const action = await prisma.goalAction.findUnique({
       where: { id },
       include: { goal: true }
     });
 
-    if (!action || action.goal.userId !== userId) {
-      return NextResponse.json({ error: 'Action not found or unauthorized' }, { status: 404 });
+    if (!action) {
+      return NextResponse.json({ error: 'Action not found' }, { status: 404 });
+    }
+
+    if (action.goal.userId !== userId) {
+      if (action.goal.spaceId) {
+        const member = await (prisma as any).spaceMember.findFirst({
+          where: { spaceId: action.goal.spaceId, userId }
+        });
+        if (!member) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // 2. Cascaded delete
@@ -69,14 +82,27 @@ export async function PATCH(
 
     const { isCompleted, title, targetDate, dimensions, attributes, description } = await req.json();
 
-    // 1. Verify ownership (via goal)
+    // 1. Verify ownership (via goal) or space membership
     const action = await prisma.goalAction.findUnique({
       where: { id },
       include: { goal: true }
     });
 
-    if (!action || action.goal.userId !== userId) {
-      return NextResponse.json({ error: 'Action not found or unauthorized' }, { status: 404 });
+    if (!action) {
+      return NextResponse.json({ error: 'Action not found' }, { status: 404 });
+    }
+
+    if (action.goal.userId !== userId) {
+      if (action.goal.spaceId) {
+        const member = await (prisma as any).spaceMember.findFirst({
+          where: { spaceId: action.goal.spaceId, userId }
+        });
+        if (!member) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // 2. Update the action

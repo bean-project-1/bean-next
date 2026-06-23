@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
         hoursPerDay: 8,
         commuteHours: 0,
-        dimensionId: dim?.id || null
+        dimensionIds: dim?.id ? [dim.id] : []
       }
     });
 

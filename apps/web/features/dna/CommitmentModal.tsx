@@ -138,7 +138,7 @@ export function CommitmentModal({ commitment, onClose, onSave }: CommitmentModal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
       <div 
         className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90dvh] flex flex-col"
         onClick={e => e.stopPropagation()}

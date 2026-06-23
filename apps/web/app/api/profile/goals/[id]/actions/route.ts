@@ -22,13 +22,26 @@ export async function POST(
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // 1. Verify goal ownership
+    // 1. Verify goal ownership or space membership
     const goal = await (prisma as any).goal.findUnique({
       where: { id: goalId }
     });
 
-    if (!goal || goal.userId !== userId) {
-      return NextResponse.json({ error: 'Goal not found or unauthorized' }, { status: 404 });
+    if (!goal) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
+
+    if (goal.userId !== userId) {
+      if (goal.spaceId) {
+        const member = await (prisma as any).spaceMember.findFirst({
+          where: { spaceId: goal.spaceId, userId }
+        });
+        if (!member) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
     }
 
     // 2. Create the action

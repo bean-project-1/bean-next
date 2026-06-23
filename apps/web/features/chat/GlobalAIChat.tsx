@@ -422,6 +422,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
           continuousProjects: []
         };
         setDraftPlan(mappedDraft);
+        setMobileTab('draft');
       }
     }
   }, [isOpen, loadSession, existingGoalData]);
@@ -449,10 +450,12 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
     setDraftPlan(null);
     setAttachedContexts([]);
     setBranchCreated(false);
+    setMobileTab('chat');
   };
 
   const generateDraft = async (goalData: BranchData, revisionInstructions?: string) => {
     setIsDrafting(true);
+    setMobileTab('draft');
     setDraftStep(revisionInstructions ? 'Repensando el plan...' : 'Analizando agenda...');
     let timer: any;
     if (!revisionInstructions) {
@@ -544,6 +547,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
               }
             });
           });
+          setMobileTab('draft');
         }
       } else {
         const errorMsg = data.error === 'Not authenticated'

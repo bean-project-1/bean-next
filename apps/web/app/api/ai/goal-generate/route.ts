@@ -126,6 +126,7 @@ ${rawChat}`;
       const goal = await tx.goal.create({
         data: {
           userId: user.id,
+          spaceId: body.spaceId || null,
           title: parsedGoal.title,
           description: parsedGoal.description,
           dimensionId: dimension?.id,
@@ -156,14 +157,15 @@ ${rawChat}`;
               data: {
                 goalId: goal.id,
                 parentId: phase.id,
-                title: t.name,
+                title: t.name || t.title || 'Tarea sin título',
                 description: t.description || null,
                 type: 'task',
                 startDate: t.startDate ? new Date(t.startDate) : null,
                 targetDate: t.targetDate ? new Date(t.targetDate) : null,
                 estimatedHours: t.estimatedHours || 0,
                 dimensions: t.dimensions || [],
-                attributes: t.attributes || []
+                attributes: t.attributes || [],
+                assigneeId: t.assigneeId || null
               }
             });
 

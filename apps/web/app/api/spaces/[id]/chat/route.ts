@@ -76,11 +76,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const byokKey = req.cookies.get('user_ai_key')?.value;
       const byokProvider = req.cookies.get('user_ai_provider')?.value;
 
-      aiRes = await coachService.generateGroupResponse(
+      await coachService.generateGroupResponse(
         spaceId,
         session.user.id,
         content,
-        draftPlan,
         byokKey,
         byokProvider
       );

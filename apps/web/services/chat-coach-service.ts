@@ -375,4 +375,190 @@ REGLAS DE FORMATO:
       saveNote
     };
   }
+
+  async generateGroupResponse(
+    spaceId: string, 
+    userId: string, 
+    message: string, 
+    byokKey?: string, 
+    byokProvider?: string
+  ) {
+    if (!message?.trim()) throw new Error('Missing message');
+
+    const space = await prisma.space.findUnique({
+      where: { id: spaceId },
+      include: {
+        members: {
+          include: {
+            user: {
+              include: {
+                attributes: { include: { dimension: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!space) throw new Error('Space not found');
+
+    let teamContext = '';
+    for (const member of space.members) {
+      const u = member.user;
+      const dna = u.attributes.map(a => `- ${a.dimension.label}: ${a.name}`).join('\n');
+      teamContext += `Miembro: ${u.name} (ID: ${u.id})\nRol: ${member.role}\nADN:\n${dna || 'Sin ADN definido'}\n\n`;
+    }
+
+    const history = await prisma.spaceMessage.findMany({
+      where: { spaceId },
+      orderBy: { createdAt: 'asc' },
+      take: 30,
+      include: { user: { select: { name: true } } }
+    });
+
+    const systemPrompt = `
+Eres BEAN, el Project Manager Colaborativo de Inteligencia Artificial para el equipo en este Espacio/Árbol.
+
+TU MISIÓN:
+Escuchar las ideas del equipo, proponer planes y usar la herramienta 'create_collaborative_branch' para generar un plan de acción completo (Fases y Tareas).
+
+CONTEXTO DEL EQUIPO (ADN y Roles):
+${teamContext}
+
+REGLAS PARA CREAR PLANES:
+1. Divide el objetivo en 'Fases' claras.
+2. Dentro de cada fase, crea 'Tareas' específicas.
+3. Para cada tarea, DEBES seleccionar un 'assigneeId' (el ID exacto de un miembro del equipo) basándote en su ADN. Si Juan es analítico, dale las tareas de análisis. Si Ana es creativa, dale el diseño.
+4. Explícale al equipo tu razonamiento ("Le asigne esto a Ana por su perfil creativo").
+
+Sé directo, profesional pero amistoso.
+    `.trim();
+
+    const aiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...history.map(m => ({ 
+        role: m.role === 'user' ? 'user' : 'assistant', 
+        content: m.role === 'user' ? `[${m.user?.name || 'Usuario'}]: ${m.content}` : m.content 
+      }))
+    ];
+
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "create_collaborative_branch",
+          description: "Genera una meta completa con fases y tareas asignadas al equipo.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "El título de la meta" },
+              description: { type: "string", description: "Descripción general" },
+              phases: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string", description: "Nombre de la fase" },
+                    tasks: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string" },
+                          description: { type: "string" },
+                          estimatedHours: { type: "number" },
+                          assigneeId: { type: "string", description: "ID exacto del miembro del equipo tomado del Contexto" }
+                        },
+                        required: ["title", "assigneeId"]
+                      }
+                    }
+                  },
+                  required: ["title", "tasks"]
+                }
+              }
+            },
+            required: ["title", "description", "phases"]
+          }
+        }
+      }
+    ];
+
+    const tracedClient = getDynamicAIClientByKey(byokKey, byokProvider, {
+      userId: userId,
+      sessionId: spaceId,
+      tags: ["agent:group_chat", `env:${process.env.NODE_ENV || 'development'}`]
+    });
+
+    const modelToUse = getDynamicModelByKey(byokKey, byokProvider, 'gpt-4o');
+
+    const response = await tracedClient.chat.completions.create({
+      model: modelToUse,
+      messages: aiMessages as any,
+      temperature: 0.7,
+      tools: tools as any,
+      tool_choice: "auto",
+    });
+
+    const choice = response.choices[0];
+    const toolCall = choice.message?.tool_calls?.[0];
+    
+    let cleanReply = choice.message?.content || "";
+
+    if (toolCall && (toolCall as any).function?.name === 'create_collaborative_branch') {
+      try {
+        const args = JSON.parse((toolCall as any).function.arguments);
+        
+        const newGoal = await prisma.goal.create({
+          data: {
+            spaceId: spaceId === 'personal' ? null : spaceId,
+            userId: userId,
+            title: args.title,
+            description: args.description,
+            status: 'active'
+          }
+        });
+
+        for (const phase of args.phases) {
+          const newPhase = await prisma.goalAction.create({
+            data: {
+              goalId: newGoal.id,
+              type: 'phase',
+              title: phase.title,
+            }
+          });
+
+          for (const task of phase.tasks) {
+            await prisma.goalAction.create({
+              data: {
+                goalId: newGoal.id,
+                parentId: newPhase.id,
+                type: 'task',
+                title: task.title,
+                description: task.description,
+                estimatedHours: task.estimatedHours,
+                assigneeId: task.assigneeId,
+              }
+            });
+          }
+        }
+
+        cleanReply = cleanReply || `¡Listo! Acabo de crear la meta "${args.title}" y distribuí las tareas entre el equipo según su perfil.`;
+      } catch (e) {
+        console.warn('Failed to create collaborative branch:', e);
+      }
+    } else if (!cleanReply) {
+      cleanReply = "Hubo un error al procesar la respuesta.";
+    }
+
+    const msg = await prisma.spaceMessage.create({
+      data: {
+        spaceId,
+        role: 'assistant',
+        content: cleanReply,
+        mentions: []
+      }
+    });
+
+    return { reply: cleanReply, message: msg };
+  }
 }

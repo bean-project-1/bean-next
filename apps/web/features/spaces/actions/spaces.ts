@@ -111,6 +111,22 @@ export async function deleteSpace(spaceId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId }
+  });
+
+  if (!space) {
+    throw new Error('Space not found');
+  }
+
+  if (
+    space.name === 'Mi Bosque Personal' ||
+    space.name === 'Mi Arbol Personal' ||
+    space.name === 'Mi Árbol Personal'
+  ) {
+    throw new Error('El árbol personal no puede ser eliminado');
+  }
+
   const membership = await prisma.spaceMember.findFirst({
     where: { spaceId, userId: session.user.id }
   });

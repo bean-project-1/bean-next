@@ -44,6 +44,7 @@ model User {
   incubatorSeeds    IncubatorSeed[]
   spaceMembers      SpaceMember[]
   spaceMessages     SpaceMessage[]
+  assignedActions   GoalAction[] @relation("AssignedActions")
 
   @@map("users")
 }
@@ -376,6 +377,9 @@ model GoalAction {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
+
+  assigneeId String? @map("assignee_id") @db.ObjectId
+  assignee   User?   @relation("AssignedActions", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   goal  Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
   tasks Task[]

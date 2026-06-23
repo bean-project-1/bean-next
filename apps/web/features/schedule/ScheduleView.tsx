@@ -6,8 +6,6 @@ import { es } from 'date-fns/locale';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { PostItWall } from './PostItWall';
 
-import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
-import { Leaf } from '@/features/life-tree/types';
 import { TaskDetailModal } from './TaskDetailModal';
 
 export interface ScheduledEvent {
@@ -20,13 +18,20 @@ export interface ScheduledEvent {
   date: string;
   type: string;
   status: string;
+  goalId?: string;
   goalTitle?: string;
   estimatedHours: number;
   itemType: 'action' | 'habit' | 'task' | 'commitment' | 'daily' | 'post-it' | 'project';
   dimensions?: string[];
   attributes?: string[];
+  notes?: string;
   tasks?: any[];
   originalPostIt?: any;
+  assignee?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
 }
 
 // ─── Bottom Sheet Component (mobile agenda drawer) ───────────────────────────
@@ -448,7 +453,6 @@ export function ScheduleView() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<Leaf | null>(null);
   const [selectedTask, setSelectedTask] = useState<ScheduledEvent | null>(null);
 
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
@@ -616,38 +620,7 @@ export function ScheduleView() {
 
   const handleOpenActivity = (event: ScheduledEvent) => {
     if (event.itemType === 'commitment') return;
-
-    if (event.itemType === 'task' || event.itemType === 'action' || event.itemType === 'daily' || event.itemType === 'habit') {
-      setSelectedTask(event);
-      return;
-    }
-
-    const leaf: Leaf = {
-      id: event.id,
-      name: event.title,
-      description: event.description,
-      type: event.type as any,
-      completed: event.status === 'completed',
-      targetDate: event.date,
-      dimensions: event.dimensions || [],
-      attributes: event.attributes || [],
-      tasks: event.tasks || [],
-    };
-    setSelectedActivity(leaf);
-  };
-
-  const handleToggleAction = async (id: string, data: any) => {
-    try {
-      const res = await fetch(`/api/profile/goals/actions/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isCompleted: data.completed }),
-      });
-      if (res.ok) {
-        fetchEvents();
-        if (selectedActivity && selectedActivity.id === id)
-          setSelectedActivity({ ...selectedActivity, completed: data.completed });
-      }
-    } catch (e) { console.error(e); }
+    setSelectedTask(event);
   };
 
   const handleToggleTask = async (taskId: string, isCompleted: boolean) => {
@@ -664,20 +637,21 @@ export function ScheduleView() {
       });
       if (res.ok) {
         fetchEvents();
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask({ ...selectedTask, status: isCompleted ? 'completed' : 'pending' });
-        }
-        if (selectedActivity) {
-          const updatedTasks = selectedActivity.tasks?.map(t =>
-            t.id === taskId ? { ...t, isCompleted } : t
-          );
-          setSelectedActivity({ ...selectedActivity, tasks: updatedTasks });
+        if (selectedTask) {
+          if (selectedTask.id === taskId) {
+            setSelectedTask({ ...selectedTask, status: isCompleted ? 'completed' : 'pending' });
+          } else {
+            const updatedTasks = selectedTask.tasks?.map(t =>
+              t.id === taskId ? { ...t, isCompleted } : t
+            );
+            setSelectedTask({ ...selectedTask, tasks: updatedTasks });
+          }
         }
       }
     } catch (e) { console.error(e); }
   };
 
-  const handleUpdateTask = async (taskId: string, data: { title: string; description: string }) => {
+  const handleUpdateTask = async (taskId: string, data: { title: string; description?: string; notes?: string }) => {
     try {
       let endpoint = `/api/profile/goals/tasks/${taskId}`;
       if (selectedTask?.id === taskId) {
@@ -692,14 +666,15 @@ export function ScheduleView() {
       });
       if (res.ok) {
         fetchEvents();
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask({ ...selectedTask, title: data.title, description: data.description });
-        }
-        if (selectedActivity) {
-          const updatedTasks = selectedActivity.tasks?.map(t =>
-            t.id === taskId ? { ...t, ...data } : t
-          );
-          setSelectedActivity({ ...selectedActivity, tasks: updatedTasks });
+        if (selectedTask) {
+          if (selectedTask.id === taskId) {
+            setSelectedTask({ ...selectedTask, title: data.title, description: data.description, notes: data.notes });
+          } else {
+            const updatedTasks = selectedTask.tasks?.map(t =>
+              t.id === taskId ? { ...t, title: data.title, description: data.description, notes: data.notes } : t
+            );
+            setSelectedTask({ ...selectedTask, tasks: updatedTasks });
+          }
         }
       }
     } catch (e) { console.error(e); }
@@ -720,13 +695,6 @@ export function ScheduleView() {
           setSelectedTask(null);
         }
       }
-    } catch (e) { console.error(e); }
-  };
-
-  const handleDeleteAction = async (id: string) => {
-    try {
-      const res = await fetch(`/api/profile/goals/actions/${id}`, { method: 'DELETE' });
-      if (res.ok) { fetchEvents(); setSelectedActivity(null); }
     } catch (e) { console.error(e); }
   };
 
@@ -1208,17 +1176,6 @@ export function ScheduleView() {
         </BottomSheet>
       </div>
 
-      {/* ── Activity Detail Modal ─────────────────────────────────────────── */}
-      {selectedActivity && (
-        <LeafDetailView
-          action={selectedActivity}
-          onClose={() => setSelectedActivity(null)}
-          onDelete={handleDeleteAction}
-          onToggle={handleToggleAction}
-          onToggleTask={handleToggleTask}
-        />
-      )}
-
       {/* ── Task Detail Modal ─────────────────────────────────────────────── */}
       {selectedTask && (
         <TaskDetailModal
@@ -1227,6 +1184,7 @@ export function ScheduleView() {
           onDelete={handleDeleteTask}
           onToggle={handleToggleTask}
           onUpdate={handleUpdateTask}
+          onToggleTask={handleToggleTask}
         />
       )}
     </div>

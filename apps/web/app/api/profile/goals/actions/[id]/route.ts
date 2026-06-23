@@ -80,7 +80,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { isCompleted, title, targetDate, dimensions, attributes, description } = await req.json();
+    const { isCompleted, title, targetDate, dimensions, attributes, description, notes } = await req.json();
 
     // 1. Verify ownership (via goal) or space membership
     const action = await prisma.goalAction.findUnique({
@@ -112,6 +112,7 @@ export async function PATCH(
         isCompleted: typeof isCompleted === 'boolean' ? isCompleted : action.isCompleted,
         title: title || action.title,
         description: description !== undefined ? description : action.description,
+        notes: notes !== undefined ? notes : action.notes,
         targetDate: targetDate !== undefined ? (targetDate ? new Date(targetDate) : null) : action.targetDate,
         dimensions: Array.isArray(dimensions) ? dimensions : action.dimensions,
         attributes: Array.isArray(attributes) ? attributes : action.attributes,

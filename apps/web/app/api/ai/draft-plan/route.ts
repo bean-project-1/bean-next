@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { goalData, previousDraft, revisionInstructions } = body;
+    const { goalData, previousDraft, revisionInstructions, spaceId } = body;
     
     const session = await auth();
     let userId = session?.user?.id;
@@ -54,7 +54,37 @@ export async function POST(request: Request) {
     // Fetch actual DNA context
     const userDNA = await goalService.getUserDNA(userId);
     const dnaAnalysis = goalService.computeDNAAnalysis([parsedGoal.dimensionName], userDNA);
-    const constraints = parsedGoal.constraints;
+
+    // Fetch team context if spaceId is provided and not personal
+    let teamContext = '';
+    if (spaceId && spaceId !== 'personal') {
+      const space = await prisma.space.findUnique({
+        where: { id: spaceId },
+        include: {
+          members: {
+            include: {
+              user: {
+                include: {
+                  attributes: { include: { dimension: true } }
+                }
+              }
+            }
+          }
+        }
+      });
+      if (space) {
+        for (const member of space.members) {
+          const u = member.user;
+          const dna = u.attributes.map(a => `- ${a.dimension.label}: ${a.name}`).join('\n');
+          teamContext += `Miembro: ${u.name} (ID: ${u.id})\nRol: ${member.role}\nADN:\n${dna || 'Sin ADN definido'}\n\n`;
+        }
+      }
+    }
+
+    const constraints = {
+      ...parsedGoal.constraints,
+      teamContext
+    };
 
     const draft = await goalService.generateHierarchicalPlan(
       parsedGoal,

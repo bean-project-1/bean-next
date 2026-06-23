@@ -17,6 +17,7 @@ interface Props {
   zoomedPhaseId?: string | null;
   activeLeafId?: string | null;
   onPhaseSelect?: (phaseId: string | null) => void;
+  onOpenTaskModal?: (item: any, itemType: 'action' | 'task') => void;
 }
 
 
@@ -486,12 +487,10 @@ function LeafPanel({
 }
 
 // ── Main View ────────────────────────────────────
-export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction, onPhaseSelect }: Props) {
+export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose, onDelete, onUpdateGoal, onToggleAction, onDeleteAction, onLeafClick, onAddAction, onPhaseSelect, onOpenTaskModal }: Props) {
   const palette = getPalette(branch.id);
   const [mounted, setMounted] = useState(false);
   const [selectedLeaf, setSelectedLeaf] = useState<Branch['leaves'][0] | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const [commitments, setCommitments] = useState<any[]>([]);
   const [loadingCommitments, setLoadingCommitments] = useState(false);
@@ -633,12 +632,26 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                             </p>
                           )}
                           
-                          <button
-                            onClick={() => openChat(`Necesito ayuda con la Tarea: "${task.title}". ¿Me puedes dar contexto o sugerencias de cómo abordarla?`, 'tree', branch)}
-                            className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-emerald-600 bg-emerald-50 hover:bg-emerald-100`}
-                          >
-                            🤖 Consultar tarea en Mesa de Dibujo
-                          </button>
+                          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenTaskModal?.(task, 'task');
+                              }}
+                              className="text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-stone-600 bg-stone-100 hover:bg-stone-200"
+                            >
+                              📝 Detalles y notas
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openChat(`Necesito ayuda con la Tarea: "${task.title}". ¿Me puedes dar contexto o sugerencias de cómo abordarla?`, 'tree', branch);
+                              }}
+                              className="text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                            >
+                              🤖 Mesa de Dibujo
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -648,12 +661,18 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
             )}
       
             {/* Activity-level Coach Chat */}
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center">
+            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-2">
+              <button
+                onClick={() => onOpenTaskModal?.(child, 'action')}
+                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+              >
+                📝 Ver detalles y notas
+              </button>
               <button
                 onClick={() => openChat(`Necesito consejos generales para abordar la Fase completa: "${child.name}".`, 'tree', branch)}
-                className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50 text-indigo-600 hover:bg-indigo-100`}
+                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
               >
-                🤖 Consultar fase en Mesa de Dibujo
+                🤖 Consultar en Mesa de Dibujo
               </button>
             </div>
           </div>
@@ -662,12 +681,6 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
     );
   };
 
-  const [editGoal, setEditGoal] = useState(branch.goal);
-  const [editDesc, setEditDesc] = useState(branch.description || '');
-  const [isEditingDesc, setIsEditingDesc] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newDate, setNewDate] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(zoomedPhaseId || null);
   
   // Inline Leaf state
@@ -675,8 +688,22 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const { openChat } = useGlobalChat();
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     setIsDesktop(window.innerWidth >= 640);
@@ -791,28 +818,10 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                 {completed}/{phases.length} Fases
               </span>
             </div>
-            {isEditingTitle ? (
-              <input
-                autoFocus
-                className="w-full text-xl sm:text-2xl font-black text-slate-900 bg-slate-50 border-b-2 border-emerald-500 focus:outline-none"
-                value={editGoal}
-                onChange={e => setEditGoal(e.target.value)}
-                onBlur={async () => {
-                  setIsEditingTitle(false);
-                  if (editGoal.trim() && editGoal !== branch.goal) {
-                    await onUpdateGoal?.(branch.id, { goal: editGoal.trim() });
-                  }
-                }}
-                onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
-              />
-            ) : (
-              <div>
-                <h2 
-                  onClick={() => setIsEditingTitle(true)}
-                  className="text-xl sm:text-2xl font-black text-slate-900 truncate hover:text-emerald-600 transition-colors cursor-pointer"
-                >
-                  {editGoal}
-                </h2>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 truncate">
+                {branch.goal}
+              </h2>
                 {(() => {
                   let dateStr = branch.deadline;
                   if (!dateStr) {
@@ -837,77 +846,89 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                     </div>
                   );
                 })()}
-              </div>
-            )}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={() => {
-                  onClose();
-                  openChat(`Quiero hacer algunos cambios a mi meta: ${branch.goal}`, 'refactor_goal', branch);
-                }}
-                className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition-colors"
-                title="Editar Plan en Mesa de Dibujo"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-              </button>
-              <button
-                onClick={async () => {
-                  if (confirm('¿Eliminar esta meta completa?')) {
-                    await onDelete?.(branch.id);
+          {/* ── Action Menu ── */}
+          <div className="relative" ref={menuRef}>
+            {/* Trigger */}
+            <button
+              onClick={() => setIsMenuOpen(v => !v)}
+              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors text-lg font-bold leading-none"
+              title="Opciones"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="19" cy="12" r="2" />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            {isMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                {/* Edit */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
                     onClose();
-                  }
-                }}
-                className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors"
-                title="Eliminar Meta"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-              </button>
-              <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center transition-colors">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
+                    openChat(`Quiero hacer algunos cambios a mi meta: ${branch.goal}`, 'refactor_goal', branch);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Editar plan
+                </button>
+
+                <div className="mx-4 border-t border-slate-100" />
+
+                {/* Close */}
+                <button
+                  onClick={() => { setIsMenuOpen(false); onClose(); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  Cerrar
+                </button>
+
+                <div className="mx-4 border-t border-slate-100" />
+
+                {/* Delete — destructive, at bottom */}
+                <button
+                  onClick={async () => {
+                    setIsMenuOpen(false);
+                    if (confirm('¿Eliminar esta meta completa? Esta acción no se puede deshacer.')) {
+                      await onDelete?.(branch.id);
+                      onClose();
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                  Eliminar meta
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* ── Content ── */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-slate-50/30 custom-scrollbar">
           <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Proyecto</p>
-              {!isEditingDesc && (
-                <button onClick={() => setIsEditingDesc(true)} className="text-[9px] sm:text-[10px] font-bold text-emerald-600 hover:underline">Editar</button>
-              )}
             </div>
-            {isEditingDesc ? (
-              <div className="space-y-3">
-                <textarea
-                  autoFocus
-                  className="w-full p-3 sm:p-4 bg-slate-50 rounded-2xl text-xs sm:text-sm font-medium border-0 focus:ring-2 focus:ring-emerald-500/20"
-                  rows={3}
-                  value={editDesc}
-                  onChange={e => setEditDesc(e.target.value)}
-                />
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => setIsEditingDesc(false)} className="px-4 py-2 text-xs font-bold text-slate-400">Cancelar</button>
-                  <button 
-                    onClick={async () => {
-                      setIsEditingDesc(false);
-                      await onUpdateGoal?.(branch.id, { description: editDesc.trim() });
-                    }}
-                    className="px-4 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-xl"
-                  >Guardar</button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                {editDesc || 'Sin descripción detallada.'}
-              </p>
-            )}
+            <p className="text-sm font-medium text-slate-600 leading-relaxed">
+              {branch.description || 'Sin descripción detallada.'}
+            </p>
           </section>
 
           {/* Ritmos y Rutinas vinculados */}
@@ -951,14 +972,8 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           </section>
 
           <section className="space-y-3">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="mb-3 sm:mb-4">
               <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Planificación por Fases</p>
-              <button 
-                onClick={() => setIsAdding(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
-              >
-                + Nueva Fase
-              </button>
             </div>
 
             <div className="space-y-3">
@@ -987,15 +1002,27 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                       <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
                         {phase.completed ? '✓' : '⏳'}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-                          {phase.name}
-                        </h4>
-                        {phase.targetDate && (
-                          <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-1">
-                            <span className="text-[8px]">📅</span> {new Date(phase.targetDate).toLocaleDateString()}
-                          </p>
-                        )}
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'} truncate`}>
+                            {phase.name}
+                          </h4>
+                          {phase.targetDate && (
+                            <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                              <span className="text-[8px]">📅</span> {new Date(phase.targetDate).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenTaskModal?.(phase, 'action');
+                          }}
+                          className="shrink-0 p-1.5 text-stone-400 hover:text-stone-600 transition-colors text-xs hover:bg-stone-50 rounded-lg"
+                          title="Detalles y notas de la fase"
+                        >
+                          📝
+                        </button>
                       </div>
                       <svg 
                         width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
@@ -1013,12 +1040,6 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                           ) : (
                             <p className="text-xs text-slate-400 italic text-center py-4">Sin actividades registradas.</p>
                           )}
-                          <button 
-                            onClick={() => { setIsAdding(true); /* Logic to set parentId needed if strictly hierarchical */ }}
-                            className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-100 text-slate-400 text-xs font-bold hover:border-emerald-200 hover:text-emerald-500 transition-all"
-                          >
-                            + Añadir Tarea a esta Fase
-                          </button>
                         </div>
                       </div>
                     )}
@@ -1050,70 +1071,6 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           </p>
         </div>
       </motion.div>
-
-
-
-      {isAdding && (
-        <div 
-          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setIsAdding(false)}
-        >
-          <div 
-            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-slate-900">Nueva Actividad</h3>
-              <button onClick={() => setIsAdding(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">¿Qué vas a hacer?</label>
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="Nombre de la actividad"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) document.getElementById('add-btn')?.click(); }}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 transition-all"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">¿Cuándo? (opcional)</label>
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={e => setNewDate(e.target.value)}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-medium focus:outline-none transition-all"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => { setIsAdding(false); setNewName(''); setNewDate(''); }}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-400 bg-slate-50 hover:bg-slate-100 transition-colors"
-              >Cancelar</button>
-              <button
-                id="add-btn"
-                disabled={!newName.trim() || isSubmitting}
-                onClick={async () => {
-                  if (!newName.trim() || isSubmitting) return;
-                  setIsSubmitting(true);
-                  await onAddAction?.(branch.id, newName.trim(), { targetDate: newDate || undefined });
-                  setIsSubmitting(false);
-                  setNewName(''); setNewDate('');
-                  setIsAdding(false);
-                }}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white disabled:opacity-50 transition-all"
-                style={{ background: `linear-gradient(135deg,${palette.primary},${palette.mid})` }}
-              >{isSubmitting ? 'Añadiendo…' : '✓ Añadir'}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

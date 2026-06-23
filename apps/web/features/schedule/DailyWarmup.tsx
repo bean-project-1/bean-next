@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom';
 import { isSameDay, addDays } from 'date-fns';
 import confetti from 'canvas-confetti';
 import { TaskDetailModal } from '@/features/schedule/TaskDetailModal';
-import { LeafDetailView } from '@/features/life-tree/LeafDetailView';
 
 interface WarmupEvent {
   id: string;
@@ -340,21 +339,12 @@ export function DailyWarmup() {
       </AnimatePresence>
 
       {selectedTask && (
-        selectedTask.itemType === 'daily' || selectedTask.itemType === 'task' ? (
-          <TaskDetailModal
-            task={selectedTask as any}
-            onClose={() => setSelectedTask(null)}
-            onDelete={() => {}}
-            onToggle={() => {}}
-          />
-        ) : (
-          <LeafDetailView
-            action={selectedTask as any}
-            onClose={() => setSelectedTask(null)}
-            onDelete={() => {}}
-            onToggle={() => {}}
-          />
-        )
+        <TaskDetailModal
+          task={selectedTask as any}
+          onClose={() => setSelectedTask(null)}
+          onDelete={() => {}}
+          onToggle={() => {}}
+        />
       )}
     </div>,
     document.body

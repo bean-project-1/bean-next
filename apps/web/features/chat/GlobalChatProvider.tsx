@@ -2,8 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { GlobalAIChat } from './GlobalAIChat';
-import { MessageSquare, Bot } from 'lucide-react';
+import { SpaceChat } from '../spaces/components/SpaceChat';
 import { useUIStore } from '../../hooks/useUIStore';
 
 interface GlobalChatContextType {
@@ -42,11 +41,9 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [existingGoalData, setExistingGoalData] = useState<any>(undefined);
 
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
-  const activeSpaceId = useUIStore(state => state.activeSpaceId);
   
-  // Hide global chat ONLY if we are zoomed into a shared space
-  const isPersonalTree = activeSpaceId === 'personal' || activeSpaceId === null;
-  const hideGlobalButton = isSpaceZoomed && !isPersonalTree;
+  // Hide global chat if zoomed into any space (since that space will render its own chat)
+  const hideGlobalButton = isSpaceZoomed;
 
   const openChat = (msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);
@@ -61,7 +58,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
       setInitialMsg(undefined);
       setChatContext('global');
       setExistingGoalData(undefined);
-    }, 300); // Clear message and reset context after animation
+    }, 300);
   };
 
   return (
@@ -72,17 +69,27 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
         <URLChatTrigger openChat={openChat} />
       </Suspense>
 
-      {/* Floating Action Button (FAB) */}
-      {!isOpen && !hideGlobalButton && (
-        <button
-          onClick={() => openChat()}
-          className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-        >
-          <MessageSquare className="w-6 h-6" />
-        </button>
+      {!hideGlobalButton && (
+        <SpaceChat 
+          spaceId="personal" 
+          spaceName="Árbol Personal" 
+          members={[]} 
+          isOpenExternal={isOpen}
+          onChangeOpenExternal={(val) => {
+            if (val) {
+              openChat();
+            } else {
+              closeChat();
+            }
+          }}
+          onRefreshTree={() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          }} 
+          initialMessage={initialMsg}
+        />
       )}
-
-      <GlobalAIChat isOpen={isOpen} onClose={closeChat} initialMessage={initialMsg} context={chatContext} existingGoalData={existingGoalData} />
     </GlobalChatContext.Provider>
   );
 }

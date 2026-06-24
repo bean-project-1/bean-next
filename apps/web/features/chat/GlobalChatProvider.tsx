@@ -7,7 +7,9 @@ import { useUIStore } from '../../hooks/useUIStore';
 
 interface GlobalChatContextType {
   isOpen: boolean;
+  existingGoalData: any;
   openChat: (initialMessage?: string, context?: string, existingGoalData?: any) => void;
+  openDraft: (goalData: any) => void;
   closeChat: () => void;
 }
 
@@ -52,6 +54,14 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
     setIsOpen(true);
   };
 
+  // Open the chat directly on the draft tab with the given goal data pre-loaded
+  const openDraft = (goalData: any) => {
+    setExistingGoalData(goalData);
+    setInitialMsg(undefined);
+    setChatContext('refactor_goal');
+    setIsOpen(true);
+  };
+
   const closeChat = () => {
     setIsOpen(false);
     setTimeout(() => {
@@ -62,7 +72,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <GlobalChatContext.Provider value={{ isOpen, openChat, closeChat }}>
+    <GlobalChatContext.Provider value={{ isOpen, existingGoalData, openChat, openDraft, closeChat }}>
       {children}
       
       <Suspense fallback={null}>
@@ -88,6 +98,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
             }
           }} 
           initialMessage={initialMsg}
+          existingGoalData={existingGoalData}
         />
       )}
     </GlobalChatContext.Provider>

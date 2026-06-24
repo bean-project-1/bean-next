@@ -48,7 +48,29 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 2. Calculate organic growthScore based on goal progress
+    // 2. Fetch User Base Commitments to calculate dynamic progress of mirror tasks
+    const baseCommitments = await prisma.baseCommitment.findMany({
+      where: { userId }
+    });
+    const commitmentMap = new Map(baseCommitments.map(bc => [bc.id, bc]));
+
+    const calculateCommitmentSessions = (bc: any) => {
+      if (!bc.startDate || !bc.endDate) return 10;
+      const start = new Date(bc.startDate);
+      const end = new Date(bc.endDate);
+      let count = 0;
+      const days = bc.daysOfWeek || [1, 2, 3, 4, 5];
+      let current = new Date(start);
+      while (current <= end) {
+        if (days.includes(current.getDay())) {
+          count++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      return count === 0 ? 1 : count;
+    };
+
+    // Calculate organic growthScore based on goal progress
     const totalProgress = goals.reduce((acc: number, g: any) => acc + (g.progress || 0), 0);
     const growthScore = goals.length > 0 ? Math.round(totalProgress / goals.length) : 0;
 
@@ -63,30 +85,59 @@ export async function GET(req: NextRequest) {
         progress: goal.progress || 0,
         status: goal.status || 'active',
         resumeDate: goal.resumeDate || null,
-        leaves: (goal.actions || []).map((action: any) => ({
-          id: action.id,
-          name: action.title,
-          type: action.type,
-          parentId: action.parentId,
-          completed: action.isCompleted,
-          startDate: action.startDate,
-          targetDate: action.targetDate,
-          estimatedHours: action.estimatedHours || 0,
-          dimensions: action.dimensions || [],
-          attributes: action.attributes || [],
-          description: action.description,
-          notes: action.notes,
-          frequency: action.frequency,
-          streak: action.streak,
-          consistency: action.consistency,
-          tasks: action.tasks || [],
-          impact: action.impact || null,
-          assignee: action.assignee ? {
-            name: action.assignee.name,
-            email: action.assignee.email,
-            image: action.assignee.image
-          } : null
-        }))
+        leaves: (goal.actions || []).map((action: any) => {
+          let resolvedType = action.type;
+          let resolvedCompleted = action.isCompleted;
+          let resolvedConsistency = action.consistency;
+          let resolvedStreak = action.streak;
+          let resolvedFrequency = action.frequency;
+
+          if (action.baseCommitmentId) {
+            const bc = commitmentMap.get(action.baseCommitmentId);
+            if (bc) {
+              resolvedType = 'habit'; // Show as habit in tree
+              resolvedStreak = bc.streakCount || 0;
+              resolvedFrequency = bc.frequency;
+              const totalSessions = calculateCommitmentSessions(bc);
+              const progressVal = Math.min(100, Math.round(((bc.completedCount || 0) / totalSessions) * 100));
+              resolvedConsistency = progressVal / 100;
+              resolvedCompleted = progressVal >= 100;
+
+              // Self-healing check: Update GoalAction isCompleted in background if needed
+              if (resolvedCompleted !== action.isCompleted) {
+                prisma.goalAction.update({
+                  where: { id: action.id },
+                  data: { isCompleted: resolvedCompleted }
+                }).catch(err => console.error("Error updating goalaction in background:", err));
+              }
+            }
+          }
+
+          return {
+            id: action.id,
+            name: action.title,
+            type: resolvedType,
+            parentId: action.parentId,
+            completed: resolvedCompleted,
+            startDate: action.startDate,
+            targetDate: action.targetDate,
+            estimatedHours: action.estimatedHours || 0,
+            dimensions: action.dimensions || [],
+            attributes: action.attributes || [],
+            description: action.description,
+            notes: action.notes,
+            frequency: resolvedFrequency,
+            streak: resolvedStreak,
+            consistency: resolvedConsistency,
+            tasks: action.tasks || [],
+            impact: action.impact || null,
+            assignee: action.assignee ? {
+              name: action.assignee.name,
+              email: action.assignee.email,
+              image: action.assignee.image
+            } : null
+          };
+        })
       }))
     };
 

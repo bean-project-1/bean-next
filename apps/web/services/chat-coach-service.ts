@@ -38,7 +38,8 @@ export class ChatCoachService {
     context: 'insights' | 'tree' | 'global' = 'insights',
     draftPlan: any = null,
     byokKey?: string,
-    byokProvider?: string
+    byokProvider?: string,
+    attachedContext?: { id: string; name: string; type: 'goal' | 'task' | 'habit' }
   ) { if (!message?.trim()) {
       throw new Error('Missing message');
     }
@@ -81,6 +82,49 @@ export class ChatCoachService {
     const dnaSummary = user.attributes.length > 0
       ? user.attributes.map(a => `- ${a.dimension.label} (${a.category}): ${a.name}`).join('\n')
       : 'Sin características registradas aún.';
+
+    // 2b. Fetch attached context details if present
+    let attachedContextSummary = '';
+    if (attachedContext) {
+      try {
+        if (attachedContext.type === 'goal') {
+          const goal = await prisma.goal.findUnique({
+            where: { id: attachedContext.id },
+            include: { actions: true }
+          });
+          if (goal) {
+            attachedContextSummary = `
+📌 META ADJUNTADA POR EL USUARIO (Contexto activo de la conversación):
+- Título de la Meta: "${goal.title}"
+- Descripción: ${goal.description || 'Sin descripción'}
+- Estado: ${goal.status}
+- Progreso: ${goal.progress}%
+- Hitos / Tareas contenidas:
+${(goal.actions || []).map(a => `  * [${a.isCompleted ? 'X' : ' '}] ${a.title} (${a.type})`).join('\n')}
+`;
+          }
+        } else if (attachedContext.type === 'task' || attachedContext.type === 'habit' || attachedContext.type === 'phase') {
+          const action = await prisma.goalAction.findUnique({
+            where: { id: attachedContext.id },
+            include: { goal: true, tasks: true }
+          });
+          if (action) {
+            attachedContextSummary = `
+📌 TAREA/HITOS ADJUNTADO POR EL USUARIO (Contexto activo de la conversación):
+- Nombre: "${action.title}"
+- Tipo: ${action.type}
+- Descripción: ${action.description || 'Sin descripción'}
+- Completado: ${action.isCompleted ? 'Sí' : 'No'}
+- Horas estimadas: ${action.estimatedHours || 'No definidas'}
+- Pertenece a la Meta Madre: "${action.goal.title}" (ID: ${action.goal.id})
+${action.tasks.length > 0 ? `- Sub-tareas contenidas:\n${action.tasks.map(t => `  * [${t.isCompleted ? 'X' : ' '}] ${t.title}`).join('\n')}` : ''}
+`;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching attached context details:', err);
+      }
+    }
 
     const goalsSummary = user.goals.length > 0
       ? user.goals.map(g => {
@@ -136,6 +180,7 @@ FASE 1: EXPLORADOR (Ideación y ADN)
 
 FASE 2: ARQUITECTO (Dimensionamiento y Realidad)
 - Cuando el usuario decide perseguir una meta, te conviertes en un ASESOR/MENTOR estricto pero amable y orgánico.
+- **PUNTO DE PARTIDA (DNA ACTIVO):** Antes de dimensionar la meta, revisa el "ADN DEL USUARIO" para identificar qué conocimientos, habilidades o intereses anteriores pueden servir como base. Menciona proactivamente qué parte de su plan se verá beneficiada o abreviada gracias a su base (ej. *"Dado que ya tienes experiencia en React en tu ADN, nuestro plan iniciará directamente con el desarrollo de la app"*), asegurándole que no arranca desde cero.
 - **FILTRO DE IDENTIDAD (CRÍTICO / OBLIGATORIO):** En lugar de hacerle preguntas abiertas y difíciles al usuario, **PROPÓN TÚ MISMO** el cambio de identidad necesario para lograr esta meta (ej. *"Para lograr esto, necesitas convertirte en alguien que prioriza su salud y aparta 30 min diarios. ¿Te resuena esta identidad?"*). Haz esta propuesta en los primeros 2 o 3 turnos para ver si el usuario está de acuerdo en adoptar esa mentalidad.
 - **FILTRO SMART:** Asegúrate de que la meta consensuada sea Específica, Medible, Alcanzable, Relevante y con un Límite de tiempo. Define el destino con precisión.
 - **REGLA DE ORO (Metas vs Tareas):** La META PRINCIPAL es el resultado final que el usuario busca (ej. "Conseguir empleo como AI Engineer"). Las certificaciones, cursos o herramientas específicas que le recomiendes son simplemente HITOS (tareas) de esa meta. NUNCA reemplaces su meta principal por un hito a la hora de estructurar el plan.
@@ -160,6 +205,10 @@ ${draftPlan ? `
 BORRADOR ACTUAL DEL PLAN (Mesa de Dibujo):
 ${JSON.stringify(draftPlan)}
 -> El usuario está viendo este borrador en su pantalla. Recuerda las reglas de EDICIÓN VS. COACHING mencionadas arriba.
+` : ''}
+
+${attachedContextSummary ? `
+${attachedContextSummary}
 ` : ''}
 
 ADN DEL USUARIO:
@@ -381,7 +430,8 @@ REGLAS DE FORMATO:
     userId: string, 
     message: string, 
     byokKey?: string, 
-    byokProvider?: string
+    byokProvider?: string,
+    attachedContext?: { id: string; name: string; type: 'goal' | 'task' | 'habit' }
   ) {
     if (!message?.trim()) throw new Error('Missing message');
 
@@ -416,6 +466,49 @@ REGLAS DE FORMATO:
       include: { user: { select: { name: true } } }
     });
 
+    // Fetch attached context details if present
+    let attachedContextSummary = '';
+    if (attachedContext) {
+      try {
+        if (attachedContext.type === 'goal') {
+          const goal = await prisma.goal.findUnique({
+            where: { id: attachedContext.id },
+            include: { actions: true }
+          });
+          if (goal) {
+            attachedContextSummary = `
+📌 META ADJUNTADA POR EL EQUIPO (Contexto activo de la conversación):
+- Título de la Meta: "${goal.title}"
+- Descripción: ${goal.description || 'Sin descripción'}
+- Estado: ${goal.status}
+- Progreso: ${goal.progress}%
+- Hitos / Tareas contenidas:
+${(goal.actions || []).map(a => `  * [${a.isCompleted ? 'X' : ' '}] ${a.title} (${a.type})`).join('\n')}
+`;
+          }
+        } else if (attachedContext.type === 'task' || attachedContext.type === 'habit' || attachedContext.type === 'phase') {
+          const action = await prisma.goalAction.findUnique({
+            where: { id: attachedContext.id },
+            include: { goal: true, tasks: true }
+          });
+          if (action) {
+            attachedContextSummary = `
+📌 TAREA/HITOS ADJUNTADO POR EL EQUIPO (Contexto activo de la conversación):
+- Nombre: "${action.title}"
+- Tipo: ${action.type}
+- Descripción: ${action.description || 'Sin descripción'}
+- Completado: ${action.isCompleted ? 'Sí' : 'No'}
+- Horas estimadas: ${action.estimatedHours || 'No definidas'}
+- Pertenece a la Meta Madre: "${action.goal.title}" (ID: ${action.goal.id})
+${action.tasks.length > 0 ? `- Sub-tareas contenidas:\n${action.tasks.map(t => `  * [${t.isCompleted ? 'X' : ' '}] ${t.title}`).join('\n')}` : ''}
+`;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching attached context details:', err);
+      }
+    }
+
     const systemPrompt = `
 Eres BEAN, el Project Manager Colaborativo de Inteligencia Artificial para el equipo en este Espacio/Árbol.
 
@@ -432,6 +525,10 @@ REGLAS PARA CREAR PLANES:
 4. Explícale al equipo tu razonamiento ("Le asigne esto a Ana por su perfil creativo").
 
 Sé directo, profesional pero amistoso.
+
+${attachedContextSummary ? `
+${attachedContextSummary}
+` : ''}
     `.trim();
 
     const aiMessages = [

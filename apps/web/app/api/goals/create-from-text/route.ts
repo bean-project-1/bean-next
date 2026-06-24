@@ -58,52 +58,6 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // Create Actions (Phases first)
-      for (const phaseData of plan.phases) {
-        const phase = await tx.goalAction.create({
-          data: {
-            goalId: goal.id,
-            title: phaseData.title,
-            description: phaseData.description || null,
-            type: 'phase',
-            targetDate: phaseData.targetDate ? new Date(phaseData.targetDate) : null
-          }
-        });
-
-        // Create Tasks for this phase
-        if (phaseData.tasks) {
-          for (const taskObj of phaseData.tasks) {
-            const t = typeof taskObj === 'string' ? { name: taskObj, description: '', startDate: null, targetDate: null, dimensions: [], attributes: [] } : taskObj;
-            await tx.goalAction.create({
-              data: {
-                goalId: goal.id,
-                parentId: phase.id,
-                title: t.name,
-                description: t.description || null,
-                type: 'task',
-                startDate: t.startDate ? new Date(t.startDate) : null,
-                targetDate: t.targetDate ? new Date(t.targetDate) : null,
-                estimatedHours: t.estimatedHours || 0,
-                dimensions: Array.isArray(t.dimensions) ? t.dimensions : [],
-                attributes: Array.isArray(t.attributes) ? t.attributes : []
-              }
-            });
-          }
-        }
-
-        // Create Milestone for this phase
-        if (phaseData.milestone) {
-          await tx.goalAction.create({
-            data: {
-              goalId: goal.id,
-              parentId: phase.id,
-              title: phaseData.milestone,
-              type: 'milestone'
-            }
-          });
-        }
-      }
-
       // Helper function for fallback days
       const getFallbackDaysOfWeek = (days: any[], freq: any) => {
         if (Array.isArray(days) && days.length > 0) return days.map(Number);
@@ -119,7 +73,9 @@ export async function POST(req: NextRequest) {
         return [1];
       };
 
-      // Create Habits (directly under Goal) as BaseCommitments
+      const commitmentTitleToId = new Map<string, string>();
+
+      // 1. Create Habits (directly under Goal) as BaseCommitments
       if (plan.habits) {
         for (const habitData of plan.habits) {
           let resolvedDims: string[] = [];
@@ -128,7 +84,7 @@ export async function POST(req: NextRequest) {
             resolvedDims = dims.map(d => d.id);
           }
 
-          await tx.baseCommitment.create({
+          const bc = await tx.baseCommitment.create({
             data: {
               userId,
               goalId: goal.id,
@@ -147,10 +103,11 @@ export async function POST(req: NextRequest) {
               }
             }
           });
+          commitmentTitleToId.set(habitData.title.trim().toLowerCase(), bc.id);
         }
       }
 
-      // Create Continuous Projects (directly under Goal) as BaseCommitments
+      // 2. Create Continuous Projects (directly under Goal) as BaseCommitments
       if (plan.continuousProjects) {
         for (const cpData of plan.continuousProjects) {
           let resolvedDims: string[] = [];
@@ -159,7 +116,7 @@ export async function POST(req: NextRequest) {
             resolvedDims = dims.map(d => d.id);
           }
 
-          await tx.baseCommitment.create({
+          const bc = await tx.baseCommitment.create({
             data: {
               userId,
               goalId: goal.id,
@@ -174,6 +131,57 @@ export async function POST(req: NextRequest) {
               dimensions: {
                 connect: resolvedDims.map(id => ({ id }))
               }
+            }
+          });
+          commitmentTitleToId.set(cpData.title.trim().toLowerCase(), bc.id);
+        }
+      }
+
+      // 3. Create Actions (Phases first)
+      for (const phaseData of plan.phases) {
+        const phase = await tx.goalAction.create({
+          data: {
+            goalId: goal.id,
+            title: phaseData.title,
+            description: phaseData.description || null,
+            type: 'phase',
+            targetDate: phaseData.targetDate ? new Date(phaseData.targetDate) : null
+          }
+        });
+
+        // Create Tasks for this phase
+        if (phaseData.tasks) {
+          for (const taskObj of phaseData.tasks) {
+            const t = typeof taskObj === 'string' ? { name: taskObj, description: '', startDate: null, targetDate: null, dimensions: [], attributes: [] } : taskObj;
+            const taskTitle = t.name;
+            const matchedCommitmentId = commitmentTitleToId.get(taskTitle.trim().toLowerCase()) || null;
+
+            await tx.goalAction.create({
+              data: {
+                goalId: goal.id,
+                parentId: phase.id,
+                title: taskTitle,
+                description: t.description || null,
+                type: 'task',
+                startDate: t.startDate ? new Date(t.startDate) : null,
+                targetDate: t.targetDate ? new Date(t.targetDate) : null,
+                estimatedHours: t.estimatedHours || 0,
+                dimensions: Array.isArray(t.dimensions) ? t.dimensions : [],
+                attributes: Array.isArray(t.attributes) ? t.attributes : [],
+                baseCommitmentId: matchedCommitmentId
+              }
+            });
+          }
+        }
+
+        // Create Milestone for this phase
+        if (phaseData.milestone) {
+          await tx.goalAction.create({
+            data: {
+              goalId: goal.id,
+              parentId: phase.id,
+              title: phaseData.milestone,
+              type: 'milestone'
             }
           });
         }

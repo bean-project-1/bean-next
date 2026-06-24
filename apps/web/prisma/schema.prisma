@@ -162,6 +162,7 @@ model BaseCommitment {
 
   // Gamification & Streaks
   streakCount     Int       @default(0) @map("streak_count")
+  completedCount  Int       @default(0) @map("completed_count")
   lastCompletedAt DateTime? @map("last_completed_at")
 
   isActive  Boolean  @default(true)
@@ -380,6 +381,8 @@ model GoalAction {
 
   assigneeId String? @map("assignee_id") @db.ObjectId
   assignee   User?   @relation("AssignedActions", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  baseCommitmentId String? @map("base_commitment_id") @db.ObjectId
 
   goal  Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
   tasks Task[]

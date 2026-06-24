@@ -384,6 +384,14 @@ model GoalAction {
 
   baseCommitmentId String? @map("base_commitment_id") @db.ObjectId
 
+  // 🔗 Dependency intelligence (3-agent pipeline)
+  requiresSameAssignee Boolean @default(false) @map("requires_same_assignee")
+  // If true: this task MUST be assigned to the same person as its dependency
+  dependencyType String? @map("dependency_type")
+  // "blocks" | "same_person_required" | "soft" | null
+  isLongTermTask Boolean @default(false) @map("is_long_term_task")
+  // true = this task IS a BaseCommitment visualized as a leaf in the goal tree
+
   goal  Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
   tasks Task[]
 

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { openai, deepseek, getTracedOpenAI, getTracedDeepseek } from '@/lib/openai';
-import { getDynamicAIClientByKey } from '@/lib/ai-client';
+import { getDynamicAIClientByKey, getDynamicModelByKey } from '@/lib/ai-client';
 
 // Removed static GOAL_TYPE_WEIGHTS in favor of dynamic analysis
 
@@ -26,6 +26,62 @@ export class GoalService {
       return hasOpenAI ? getTracedOpenAI(config) : getTracedDeepseek(config);
     }
     return hasOpenAI ? openai : deepseek;
+  }
+
+  /**
+   * Resolves which model to call for a given agent, respecting BYOK provider/model
+   * mapping (so e.g. a Gemini BYOK key never gets sent a "gpt-4o" model id).
+   * `platformModel` is used when running on the platform key; `byokOpenAIModel`
+   * (defaults to platformModel) is used when the user's BYOK provider is openai/unset.
+   */
+  public pickModel(byokKey?: string, byokProvider?: string, platformModel: string = 'gpt-4o-mini', byokOpenAIModel?: string) {
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sk-your-openai-api-key-here';
+    const fallback = hasOpenAI ? platformModel : 'deepseek-chat';
+    return getDynamicModelByKey(byokKey, byokProvider, fallback, byokOpenAIModel || platformModel);
+  }
+
+  /**
+   * Calls an LLM expecting a JSON object response. On malformed JSON (or a
+   * thrown API error), retries once by feeding the error back to the model
+   * instead of failing the whole agent outright.
+   */
+  private async callJsonAgent(
+    client: any,
+    model: string,
+    system: string,
+    userPrompt: string,
+    maxTokens?: number,
+    retries: number = 1
+  ): Promise<any> {
+    let messages: any[] = [
+      { role: 'system', content: system },
+      { role: 'user', content: userPrompt }
+    ];
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      let raw = '';
+      try {
+        const res = await client.chat.completions.create({
+          model,
+          messages,
+          response_format: { type: 'json_object' },
+          ...(maxTokens ? { max_tokens: maxTokens } : {})
+        });
+        raw = res.choices[0]?.message?.content || '{}';
+        return JSON.parse(raw.replace(/```json|```/g, '').trim());
+      } catch (e: any) {
+        lastError = e;
+        if (attempt < retries) {
+          messages = [
+            ...messages,
+            ...(raw ? [{ role: 'assistant', content: raw }] : []),
+            { role: 'user', content: `Tu respuesta anterior no fue JSON válido (${e.message}). Devuelve ÚNICAMENTE el JSON correcto, sin texto adicional ni markdown.` }
+          ];
+        }
+      }
+    }
+    throw lastError;
   }
 
 
@@ -64,31 +120,25 @@ export class GoalService {
       10. "dnaAnalysisInsight": (string) A short explanation in Spanish of what the user already has as a base according to their DNA, and where they are starting from (e.g., "Dado que ya tienes conocimientos en React, no iniciaremos desde cero. El plan se enfocará en...").
     `;
 
-    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-    const model = (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat";
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
     const client = this.getClient({
       userId: userId,
       tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
     }, byokKey, byokProvider);
 
     try {
-      const response = await client.chat.completions.create({
-        model: model,
-        messages: [{ role: "system", content: "You are a Goal Architecture AI. Return JSON only." }, { role: "user", content: prompt }],
-        response_format: { type: "json_object" }
-      });
-
-      const content = response.choices[0]?.message.content;
-      return JSON.parse(content || '{}');
+      return await this.callJsonAgent(client, model, "You are a Goal Architecture AI. Return JSON only.", prompt);
     } catch (error) {
       console.error('Error parsing goal with AI:', error);
-      // Fallback
+      // Fallback — flagged so callers can short-circuit instead of running the
+      // full pipeline on an intent the AI never actually understood.
       return {
         title: text,
         description: `Plan para: ${text}`,
         relevantDimensions: ["skills", "knowledge"],
         startingAssets: [],
-        dnaAnalysisInsight: ""
+        dnaAnalysisInsight: "",
+        _parseFailed: true
       };
     }
   }
@@ -194,19 +244,19 @@ export class GoalService {
     };
   }
 
-  async auditGoalResources(parsedGoal: any, userId?: string, byokKey?: string, byokProvider?: string) {
+  async auditGoalResources(parsedGoal: any, userId?: string, chatContext: string = '', byokKey?: string, byokProvider?: string) {
     let workloadContext = "Unknown workload";
     if (userId) {
       const workload = await this.getUserWorkloadContext(userId);
       workloadContext = `EXISTING SCHEDULE: ${JSON.stringify(workload.dailyHours)}`;
     }
-
+ 
     const timePerWeek = parsedGoal.constraints?.timePerWeek || 10;
     const targetDate = parsedGoal.constraints?.targetDate || "Unknown";
     const budget = parsedGoal.constraints?.budgetTotal || "Unknown";
     
     const prompt = `
-      Actúa como un Auditor de Viabilidad Realista. Evalúa si la siguiente meta es matemática y físicamente posible de lograr dadas las restricciones de recursos.
+      Actúa como un Auditor de Viabilidad Realista. Evalúa si la siguiente meta es matemática y físicamente posible de lograr dadas las restricciones de recursos y los acuerdos recientes de la conversación.
       
       META: "${parsedGoal.title}" - ${parsedGoal.description}
       COMPLEJIDAD: ${parsedGoal.complexityLevel || 'medium'}
@@ -217,7 +267,12 @@ export class GoalService {
       - Presupuesto: ${budget}
       - Agenda actual ocupada del usuario: ${workloadContext}
       
-      Si la matemática NO da (ej. requiere 1000 horas pero a ${timePerWeek}h/semana tomaría años y la fecha límite es en 2 meses), debes rechazarlo.
+      CONTEXTO RECIENTE DE LA CONVERSACIÓN (ACUERDOS RECIENTES):
+      ${chatContext || 'Sin historial reciente de conversación.'}
+      
+      IMPORTANTE:
+      - Si en el chat el usuario y el coach ya acordaron explícitamente esta disponibilidad y plazo para esta meta (o para una versión acotada de la misma, como por ejemplo hacer un portafolio básico de 3 proyectos en lugar de ser un profesional senior de inmediato), debes considerarlo VIABLE ("isViable": true) para no contradecir lo pactado y evitar ciclos infinitos de rechazo.
+      - Si la matemática de verdad NO da y NO se ha discutido en el chat, o si es absurdamente imposible bajo cualquier supuesto (ej. ser neurocirujano o aprender medicina en 1 mes), entonces recházalo.
       
       Si debes rechazarlo, redacta un "renegotiationMessage" dirigiéndote al usuario en primera persona del plural (como si fueras el equipo del coach). Ofrece opciones conversacionales. Ejemplo: "Analicé nuestra meta con el equipo de planificación y los números no dan para lograrlo en 2 meses con 5 horas a la semana. Toma unas 300 horas en total. ¿Qué te parece si extendemos la fecha a Diciembre, o subimos a 15 horas semanales?"
       
@@ -228,308 +283,488 @@ export class GoalService {
         "renegotiationMessage": "Mensaje para el usuario (vacío si es viable)"
       }
     `;
-
-    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+ 
     const client = this.getClient({ userId, tags: ["agent:resource-audit"] }, byokKey, byokProvider);
-    
-    const response = await client.chat.completions.create({
-      model: (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat",
-      messages: [{ role: "system", content: "You are a strict resource auditor." }, { role: "user", content: prompt }],
-      response_format: { type: "json_object" }
-    });
-
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
+ 
     try {
-      const raw = response.choices[0]?.message?.content || '{}';
-      return JSON.parse(raw);
-    } catch {
+      return await this.callJsonAgent(client, model, "You are a strict resource auditor.", prompt);
+    } catch (e) {
+      console.error('[ResourceAudit] Error:', e);
       return { isViable: true, reason: "Parse error", renegotiationMessage: "" };
     }
   }
 
-  async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string, previousDraft?: any, revisionInstructions?: string, byokKey?: string, byokProvider?: string) {
-    const { title, description, startingAssets = [], dnaAnalysisInsight = "" } = parsedGoal;
-    const { gap } = dnaAnalysis;
-    const now = new Date();
-    const timePerWeek = constraints?.timePerWeek || 10;
+  // ─────────────────────────────────────────────────────────
+  // AGENT 1: Analyst — Detects starting point & feasibility
+  // ─────────────────────────────────────────────────────────
+  async analyzeGoalOrigin(
+    parsedGoal: any,
+    dnaAnalysis: any,
+    constraints: any,
+    teamContext: string,
+    chatContext: string,
+    byokKey?: string,
+    byokProvider?: string
+  ): Promise<{
+    origin: string;
+    startingAssets: { dimension: string; attribute: string; relevance: string }[];
+    gaps: string[];
+    feasibility: 'ok' | 'tight' | 'unrealistic';
+    feasibilityNote: string;
+    estimatedMonths: number;
+    warnings: string[];
+  }> {
+    const { title, description, startingAssets = [], dnaAnalysisInsight = '' } = parsedGoal;
+    const timePerWeek = constraints.timePerWeek || 5;
+    const targetDate = constraints.targetDate || 'No definida';
 
-    let workloadContext = "";
-    if (userId) {
-      const workload = await this.getUserWorkloadContext(userId);
-      workloadContext = `EXISTING SCHEDULE & ROUTINES:
-      ${workload.commitmentsSummary.join('\n')}
-      
-      TOTAL OCCUPIED HOURS PER DAY (Including sleep/work):
-      ${JSON.stringify(workload.dailyHours)}
-      
-      INSTRUCTION: Avoid adding tasks on days that already have > 22 hours occupied (including sleep). Distribute the new tasks into the "empty" or "light" days where (24 - occupied) >= task estimated hours.`;
-    }
+    const prompt = `You are a Goal Feasibility Analyst. Analyze the user's starting point.
 
-    console.log(`[GoalService] Generating workload-aware plan for: "${title}" (Complexity: ${parsedGoal.complexityLevel})`);
+GOAL: "${title}" — ${description}
+WEEKLY AVAILABILITY: ${timePerWeek} hours/week
+TARGET DATE: ${targetDate}
+USER DNA (existing skills/attributes): ${JSON.stringify(startingAssets)}
+DNA ANALYSIS INSIGHT: ${dnaAnalysisInsight}
+${teamContext ? `TEAM MEMBERS:\n${teamContext}` : ''}
+${chatContext ? `CONVERSATION CONTEXT (what was agreed):\n${chatContext.slice(0, 2000)}` : ''}
 
-    const financialContext = parsedGoal.constraints?.budgetTotal || parsedGoal.constraints?.savingsPerMonth 
-      ? `- FINANCIAL CONSTRAINTS: Budget: ${parsedGoal.constraints.budgetTotal || 'Unknown'}. Savings Capacity: ${parsedGoal.constraints.savingsPerMonth || 'Unknown'} per month. Target Date: ${parsedGoal.constraints.targetDate || 'Unknown'}. You MUST create explicit "Milestone" or "Task" items in the phases for saving money (e.g., "Ahorro Mes 1: $X", "Abrir cuenta de inversión"). The duration of the plan MUST stretch logically to allow the user to save the required budget based on their monthly capacity.`
-      : `- FINANCIAL CONSTRAINTS: None specified. Assume standard costs, but if it's an expensive goal, add a phase for "Financial Planning & Funding".`;
+Analyze strictly and realistically:
+1. What does the user ALREADY HAVE from their DNA that's relevant? (list it as startingAssets)
+2. What are the GAPS they must develop?
+3. Given ${timePerWeek}h/week and the target date, is this FEASIBLE?
+   - "ok": achievable with the given time
+   - "tight": possible but will require strict discipline
+   - "unrealistic": not possible — the goal requires significantly more time or has a longer natural duration
+4. Realistic estimated duration in months for this goal in the real world
 
-    const prompt = `
-      As a World-Class Practical Execution Expert and Domain Specialist, create a highly realistic and structured action plan.
-      
-      ${workloadContext}
+Return ONLY valid JSON (no markdown):
+{
+  "origin": "1-2 sentence description of where the user starts from",
+  "startingAssets": [{"dimension": "skills", "attribute": "Programming", "relevance": "Allows skipping basic coding setup phases"}],
+  "gaps": ["Gap 1", "Gap 2"],
+  "feasibility": "ok" | "tight" | "unrealistic",
+  "feasibilityNote": "Brief explanation of feasibility assessment in Spanish",
+  "estimatedMonths": 6,
+  "warnings": ["Warning if any, in Spanish"]
+}`;
 
-      ${constraints.teamContext ? `
-      TEAM CONTEXT (Members, roles, and strengths):
-      ${constraints.teamContext}
-      
-      INSTRUCTION FOR TEAM ASSIGNMENT:
-      You MUST assign every "task" in the phases to a specific member of the team using the "assigneeId" property. Select the best member based on their role and ADN strengths. If a member's schedule is overloaded, distribute tasks to other members. Every task should have an assignee.
-      
-      AFINIDAD DE DEPENDENCIA EN EQUIPO: Si la Tarea B depende directamente de la Tarea A (por ejemplo: Fase 1 y Fase 2 de un mismo estudio, o la escritura y revisión técnica de un módulo), DEBES asignar ambas tareas a la misma persona (mismo assigneeId) para mantener la continuidad de contexto.
-      ` : 'All tasks are assigned to the main user.'}
-
-      ${previousDraft ? `
-      PREVIOUS DRAFT:
-      ${JSON.stringify(previousDraft)}
-      
-      REVISION INSTRUCTIONS FROM USER:
-      ${revisionInstructions}
-      
-      INSTRUCTION: Modify the PREVIOUS DRAFT strictly according to the REVISION INSTRUCTIONS. 
-      CRITICAL RULE FOR PREVIOUS DRAFTS: Any element (phase, task, subtask, habit, project) that has an "id" AND "isCompleted": true MUST BE PRESERVED EXACTLY AS IS. Do not modify, remove, or change its dates. You may add, remove, or modify elements that are NOT completed. For elements you preserve from the previous draft, you MUST include their original "id" and "isCompleted" flags in your JSON output.
-      ` : ''}
-      
-      
-      CRITICAL PLANNING CONSTRAINTS & REALISM:
-      - USER AVAILABILITY: The user has ONLY ${timePerWeek} hours per week for this goal.
-      ${financialContext}
-      - REALISTIC SCALE: This goal has a complexity level of [${parsedGoal.complexityLevel || 'medium'}] and is estimated to take ${parsedGoal.estimatedDurationMonths || 6} months. DO NOT compress a multi-year goal into a few weeks. Spread the phases realistically over the estimated duration.
-      - DOMAIN EXPERTISE REQUIRED: ${parsedGoal.domainExpertiseNeeded || 'General knowledge'}. You MUST apply deep domain realism. For example, if the goal is climbing Everest, you must include financial planning, acclimatization, technical ice training, and previous expedition tests (e.g. Aconcagua). If it's becoming a Senior Developer, include deep architectural study, system design, and real-world project deployments.
-      
-      - OMITIR PRERREQUISITOS EXISTENTES: Revisa la lista de 'startingAssets' y el 'dnaAnalysisInsight'. Si el usuario ya posee conocimientos o habilidades base relacionados con la meta, DEBES omitir o abreviar drásticamente las fases básicas de preparación y aprendizaje de esas habilidades en el plan. Comienza directamente desde su nivel actual real.
-      
-      - PROFESSIONAL/ACADEMIC PATHS (CRITICAL): If the goal is a highly regulated professional career (e.g., Doctor, Neurosurgeon, Lawyer, Commercial Pilot), the plan MUST strictly reflect the actual sequence of phases and timeline required in the real world. For example, for a Neurosurgeon, there must be a phase for General Medicine (typically 60-72 months) followed by a phase for Specialization (typically 36-48 months), each with their corresponding study/work routines. Do NOT compress these regulated durations.
-      
-      - ACADEMIC/SEMESTER TIMING (CRITICAL): For formal education phases (like university semesters or school terms), align the start dates with standard academic terms (e.g., standard semesters start in February/March or August/September, choosing the next upcoming term start date relative to today's date).
-      
-      - PHASE-SPECIFIC ROUTINES & DATES (CRITICAL): Habits and recurring projects MUST NOT span the entire goal duration if they only apply to a specific phase. You MUST define their "startDate" and "endDate" to align strictly with the specific Phase or time period they run in. For example, study habits for medical school must start at the beginning of the Medicine phase and end when that phase ends; specialization habits must only start at the beginning of the Specialization phase and end when it ends.
-      
-      - LONG-TERM REPETITION (ROUTINES AS BASE COMMITMENTS): For activities that repeat over months (e.g., "Gym 3 times a week", "Read 30 mins daily"), DO NOT create individual tasks. You MUST create them as "habits" or "continuousProjects" in their respective arrays. They will be registered in the system as "Compromisos Base" (Base Commitments) of type "study", "work", or "routine".
-      
-      - TAREAS ESPEJO PARA COMPROMISOS BASE (CRÍTICO): Por cada hábito o proyecto continuo recurrente que definas en los arrays 'habits' o 'continuousProjects', DEBES crear obligatoriamente una tarea ('Task') correspondiente con el mismo título exacto dentro de la Fase correspondiente. Esta tarea representará visualmente el progreso del compromiso recurrente en el árbol de metas del usuario y permitirá llevar el control de su avance.
-      
-      - PREREQUISITE RECURRING COMMITMENTS (CRITICAL): If a recurring commitment (e.g., studying a language, learning a technical skill, daily training) is a PREREQUISITE for subsequent tasks in the plan, you MUST create a dedicated "Phase" in the plan representing that preparation/prerequisite stage (e.g., "Fase 1: Estudio de Fundamentos de React"). Set the phase's targetDate to match the end date of that recurring project/habit. Subsequent tasks and phases must depend on this prerequisite phase.
-      
-      - DEFINITION OF HIERARCHY (PHASE vs TASK vs SUB-TASK):
-      		1. "Phase" (Fase): A major chronological stage or milestone of the goal (e.g., "Fase 1: Preparación y Estudio", "Fase 2: Construcción de Prototipo"). If a recurring commitment is a prerequisite, it must define or align with a Phase.
-      		2. "Task" (Tarea): Specific deliverables or achievements that happen within a phase. These MUST be unique, non-repeating events (e.g., "Inscribirse en el semestre", "Rendir examen final de anatomía", "Presentar tesis"). DO NOT create generic, long-term tasks representing the overall process itself (e.g., "Estudiar la carrera de Medicina", "Completar la residencia", "Trabajar en la empresa"). Those efforts are represented by the Phase timeline itself and by the corresponding recurring base commitments (habits or continuous projects).
-      		3. "Sub-task" (Subtarea): Actionable, granular steps of 1 to 1.5 hours maximum (e.g., "Instalar Node.js", "Ver videos de la sección 1"). You MUST include sub-tasks for any complex task.
-      		
-      - TASK DISTRIBUTION & SUB-TASKS (CRITICAL): Tasks can take longer than 1 hour IF they represent a larger block. HOWEVER, if a task is generic or takes > 1 hour, you MUST include a "subTasks" array inside it. Each subTask must be HIGHLY specific, actionable, and take MAX 1.5 HOURS.
-      - SUBTAREAS Y EXCEPCIONES: Si una tarea representa una práctica acumulativa, esfuerzo físico o un bloque largo no divisible (ej: 'Entrenamiento de ciclismo de fondo de 6 horas', 'Clase presencial de universidad', 'Práctica clínica'), NO obligues a desglosarla en subtareas; déjala como tarea simple sin subtareas.
-      - INSTITUTIONAL PATHS: Include formal steps (Apply, Enroll) for careers.
-      - REASONABLE SPREAD: Distribute tasks logically across the timeline.
-      
-      GOAL CONTEXT:
-      - Title: "${title}"
-      - Main Description: ${description}
-      - DNA Gaps: ${JSON.stringify(gap)}
-      - Active starting assets: ${JSON.stringify(startingAssets)}
-      - Starting assets analysis: "${dnaAnalysisInsight}"
-      - Today's Date: ${now.toISOString()}
-      
-      STRICT JSON SCHEMA REQUIREMENT:
-      Return ONLY a JSON object with this exact structure:
-      {
-        "analysis": {
-          "identityShift": "Description of the identity shift required for the user (who do they need to become on a daily basis to achieve this, e.g., 'someone who studies coding 30 mins a day')",
-          "reverseEngineering": "Step-by-step reasoning decomposing the macro goal (Years/Months -> Quarters -> Weeks -> Days) based on constraints and timeline",
-          "resourceAudit": "Auditing needed skills/knowledge, budget, and time availability/workload context to ensure viability"
-        },
-        "phases": [
-          {
-            "id": "String (Only if preserving an existing phase)",
-            "isCompleted": "Boolean (Only if preserving an existing phase)",
-            "title": "Phase Title",
-            "description": "Why this phase matters",
-            "targetDate": "ISO-8601-Date-String",
-            "milestone": {
-              "title": "Measurable outcome title",
-              "description": "Detailed description of the outcome",
-              "evaluationType": "text | image | document | questionnaire | none",
-              "evaluationInstructions": "Specific instructions on what the user must provide (e.g. 'Sube una foto de tu certificado', 'Escribe un párrafo sobre lo que aprendiste')"
-            },
-            "tasks": [
-              {
-                "id": "String (Only if preserving an existing task)",
-                "isCompleted": "Boolean (Only if preserving an existing task)",
-                "name": "Task Name (e.g. Enroll in semester, Submit exam application, Defend thesis proposal)",
-                "description": "Specific instructions",
-                "startDate": "ISO-8601 (Optional, for multi-day tasks)",
-                "targetDate": "ISO-8601",
-                "estimatedHours": "Number (Total hours for the task)",
-                "assigneeId": "String (Optional, the exact user ID of the team member assigned to this task, matching one of the team member IDs provided in the TEAM CONTEXT)",
-                "dimensions": ["skills", etc],
-                "attributes": ["focus", etc],
-                "subTasks": [
-                  {
-                    "id": "String (Only if preserving an existing subtask)",
-                    "isCompleted": "Boolean (Only if preserving an existing subtask)",
-                    "name": "Granular step (e.g. Gather transcripts, Fill registration form)",
-                    "description": "Details",
-                    "estimatedHours": "Number (Max 1.5)"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        "habits": [
-          {
-            "title": "Habit Name",
-            "description": "Context",
-            "type": "work | study | routine", // choose: 'study' if the habit is to learn/acquire knowledge; 'work' if it relates to professional/productive output; 'routine' if it is wellness, health, sleep or lifestyle.
-            "frequency": { "type": "daily" | "weekly", "value": number },
-            "daysOfWeek": [1, 3, 5], // array of integers 0-6 (0 is Sunday, 1 is Monday, etc.) representing which days this habit should run, matching the frequency.
-            "estimatedHours": "Number (Max 2.0 per session)",
-            "startDate": "ISO-8601-Date-String (start date of the specific phase this habit runs in)",
-            "endDate": "ISO-8601-Date-String (end date of the specific phase this habit runs in)",
-            "dimensions": ["resilience", etc]
-          }
-        ],
-        "continuousProjects": [
-          {
-            "title": "Project Name (recurrent long-term task)",
-            "description": "Detailed context",
-            "type": "work | study | routine", // choose: 'study' if the project is to learn/acquire skills; 'work' if it relates to professional/productive work; 'routine' if it is health, wellness, sleep or lifestyle.
-            "daysOfWeek": [1, 2, 3, 4, 5], // array of integers 0-6 representing days of week dedicated to this project
-            "estimatedHours": "Number (hours per session, max 4.0)",
-            "startDate": "ISO-8601-Date-String (start of phase)",
-            "endDate": "ISO-8601-Date-String (end of phase)",
-            "dimensions": ["skills", etc]
-          }
-        ]
-      }
-    `;
-
-    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
-    const model = (byokKey || hasOpenAI) ? (byokProvider === 'deepseek' ? 'deepseek-chat' : (byokProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')) : "deepseek-chat";
-    const client = this.getClient({
-      userId: userId,
-      tags: ["agent:goal-architect", `env:${process.env.NODE_ENV || 'development'}`]
-    }, byokKey, byokProvider);
+    const client = this.getClient({ tags: ['agent:analyst'] }, byokKey, byokProvider);
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
 
     try {
-      const response = await client.chat.completions.create({
-        model: model,
-        messages: [
-          { role: "system", content: "You are a professional Life Architect. You provide detailed, structured JSON plans. You split long tasks into digestible blocks of 1-4 hours." },
-          { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 4096
-      });
-
-      const rawContent = response.choices[0]?.message.content || '{}';
-      
-      // Clean up markdown if present
-      const content = rawContent
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-
-      let plan;
-      try {
-        plan = JSON.parse(content);
-      } catch (parseError) {
-        console.error("JSON Parse Error in generateHierarchicalPlan:", parseError);
-        console.error("Raw Content received:", content);
-        // Fallback or re-throw with better context
-        throw new Error(`Failed to parse AI plan: ${content.substring(0, 100)}...`);
-      }
-      
-      if (!plan.analysis) {
-        plan.analysis = {
-          identityShift: "",
-          reverseEngineering: "",
-          resourceAudit: ""
-        };
-      }
-      if (!plan.phases) plan.phases = [];
-      if (!plan.habits) plan.habits = [];
-      if (!plan.continuousProjects) plan.continuousProjects = [];
-
-      plan.phases = plan.phases.map((p: any) => ({
-        title: p.title || p.name || 'Sin título',
-        description: p.description || p.desc || '',
-        targetDate: p.targetDate || null,
-        milestone: p.milestone || { title: 'Completar phase', evaluationType: 'none' },
-        tasks: (p.tasks || []).map((t: any) => {
-          const task = typeof t === 'string' ? { name: t } : t;
-          return {
-            name: task.name || task.title || 'Tarea',
-            description: task.description || task.desc || '',
-            startDate: task.startDate || null,
-            targetDate: task.targetDate || null,
-            estimatedHours: Math.min(100, parseFloat(task.estimatedHours) || 1.0),
-            assigneeId: task.assigneeId || null,
-            dimensions: Array.isArray(task.dimensions) ? task.dimensions : [],
-            attributes: Array.isArray(task.attributes) ? task.attributes : [],
-            subTasks: Array.isArray(task.subTasks) ? task.subTasks.map((st: any) => ({
-              name: st.name || st.title || 'Sub-tarea',
-              description: st.description || st.desc || '',
-              estimatedHours: Math.min(4, parseFloat(st.estimatedHours) || 1.0)
-            })) : []
-          };
-        })
-      }));
-
-      plan.habits = plan.habits.map((h: any) => {
-        let type = h.type || 'routine';
-        if (type !== 'work' && type !== 'study' && type !== 'routine') {
-          type = 'routine';
-        }
-        return {
-          title: h.title || h.name || 'Hábito',
-          description: h.description || h.desc || '',
-          type,
-          frequency: h.frequency || { type: 'daily', value: 1 },
-          daysOfWeek: Array.isArray(h.daysOfWeek) && h.daysOfWeek.length > 0 ? h.daysOfWeek.map(Number) : [],
-          estimatedHours: Math.min(4, parseFloat(h.estimatedHours) || 0.5),
-          startDate: h.startDate || null,
-          endDate: h.endDate || null,
-          dimensions: Array.isArray(h.dimensions) ? h.dimensions : [],
-          attributes: Array.isArray(h.attributes) ? h.attributes : []
-        };
-      });
-
-      plan.continuousProjects = plan.continuousProjects.map((cp: any) => {
-        let type = cp.type || 'routine';
-        if (type !== 'work' && type !== 'study' && type !== 'routine') {
-          type = 'routine';
-        }
-        return {
-          title: cp.title || cp.name || 'Proyecto Continuo',
-          description: cp.description || cp.desc || '',
-          type,
-          daysOfWeek: Array.isArray(cp.daysOfWeek) && cp.daysOfWeek.length > 0 ? cp.daysOfWeek.map(Number) : [],
-          estimatedHours: Math.min(8, parseFloat(cp.estimatedHours) || 1.0),
-          startDate: cp.startDate || null,
-          endDate: cp.endDate || null,
-          dimensions: Array.isArray(cp.dimensions) ? cp.dimensions : []
-        };
-      });
-
-      return plan;
-    } catch (error) {
-      console.error('[GoalService] Error generating plan:', error);
+      return await this.callJsonAgent(
+        client,
+        model,
+        'You are a precise goal feasibility analyst. Return only valid JSON.',
+        prompt,
+        1024
+      );
+    } catch (e) {
+      console.error('[Agent1:Analyst] Error:', e);
       return {
-        phases: [{ 
-          title: "Inicio del Plan", 
-          description: "Preparación inicial.",
-          targetDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          tasks: [{ name: "Definir objetivos", description: "Establecer métricas.", estimatedHours: 1 }] 
-        }],
-        habits: []
+        origin: dnaAnalysisInsight || 'Punto de partida no determinado.',
+        startingAssets: [],
+        gaps: [],
+        feasibility: 'ok',
+        feasibilityNote: 'Análisis no disponible, se continúa con el plan.',
+        estimatedMonths: 6,
+        warnings: []
       };
     }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Extracts a structured phase outline from a raw chat transcript, so the
+  // Architect gets data to extend rather than prose it's told not to deviate
+  // from. Returns null if there's nothing to extract or the call fails.
+  // ─────────────────────────────────────────────────────────
+  async extractAgreedOutline(
+    chatContext: string,
+    byokKey?: string,
+    byokProvider?: string
+  ): Promise<{ phases: { title: string; description: string }[] } | null> {
+    if (!chatContext || !chatContext.trim()) return null;
+
+    const prompt = `The following is a conversation between a user and an AI life coach negotiating a goal plan.
+Extract ONLY the phases/stages the two of them explicitly agreed on, if any. Do not invent phases that were not discussed.
+If no specific phases were agreed upon (e.g. they only discussed hours/deadline/identity), return an empty "phases" array.
+
+CONVERSATION:
+${chatContext.slice(0, 4000)}
+
+Return ONLY valid JSON:
+{ "phases": [{ "title": "Phase title as agreed", "description": "1-sentence summary of what was agreed for this phase" }] }`;
+
+    const client = this.getClient({ tags: ['agent:outline-extractor'] }, byokKey, byokProvider);
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
+
+    try {
+      const result = await this.callJsonAgent(
+        client,
+        model,
+        'You extract structured agreements from conversations. Return only valid JSON.',
+        prompt,
+        800
+      );
+      return { phases: Array.isArray(result.phases) ? result.phases : [] };
+    } catch (e) {
+      console.error('[OutlineExtractor] Error:', e);
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // AGENT 2: Architect — Designs phases & tasks only
+  // ─────────────────────────────────────────────────────────
+  async generatePhasesAndTasks(
+    parsedGoal: any,
+    dnaAnalysis: any,
+    originAnalysis: any,
+    constraints: any,
+    teamContext: string,
+    agreedOutline: { phases: { title: string; description: string }[] } | null,
+    previousDraft?: any,
+    revisionInstructions?: string,
+    byokKey?: string,
+    byokProvider?: string
+  ): Promise<any> {
+    const { title, description } = parsedGoal;
+    const { gap } = dnaAnalysis;
+    const timePerWeek = constraints.timePerWeek || 5;
+    const targetDate = constraints.targetDate || '';
+    const now = new Date();
+
+    const outlineBlock = (agreedOutline && agreedOutline.phases.length > 0) ? `
+AGREED PHASE OUTLINE (extracted from the coaching conversation — the user already confirmed these phases):
+${JSON.stringify(agreedOutline.phases, null, 2)}
+
+RULE: Use these phases as the backbone of the plan. You may refine titles/dates and you MUST fill in the tasks for each one, but do not drop them or replace them with different phases.
+` : '';
+
+    const prevDraftBlock = previousDraft ? `
+PREVIOUS DRAFT (modify according to REVISION INSTRUCTIONS below):
+${JSON.stringify(previousDraft).slice(0, 3000)}
+
+REVISION INSTRUCTIONS: ${revisionInstructions}
+RULE: Preserve any element with "isCompleted": true exactly as-is. Only change non-completed elements.
+` : '';
+
+    const teamBlock = teamContext ? `
+TEAM MEMBERS (assign tasks based on their role and DNA):
+${teamContext}
+
+ASSIGNMENT RULES:
+- Assign every task to exactly ONE team member using "assigneeId" (their exact user ID from above)
+- If task B directly depends on task A because of knowledge continuity (e.g., same course, same specialization chain), set requiresSameAssignee: true and dependencyType: "same_person_required"
+- If task B is blocked until task A is done but can be done by anyone, set dependencyType: "blocks"
+- If dependency is loose, set dependencyType: "soft"
+` : 'Assign all tasks to the main user (no team).';
+
+    const prompt = `${outlineBlock}
+
+You are a Goal Architect. Create a REALISTIC, STRUCTURED plan with phases and tasks.
+
+GOAL: "${title}" — ${description}
+WEEKLY AVAILABILITY: ${timePerWeek} hours/week
+TARGET DATE: ${targetDate || 'Flexible'}
+TODAY: ${now.toISOString()}
+
+STARTING POINT (from Analyst):
+- Origin: ${originAnalysis.origin}
+- Starting Assets: ${JSON.stringify(originAnalysis.startingAssets)}
+- Gaps to close: ${JSON.stringify(originAnalysis.gaps)}
+- Feasibility: ${originAnalysis.feasibility} — ${originAnalysis.feasibilityNote}
+- Realistic duration: ${originAnalysis.estimatedMonths} months
+
+SKILL GAPS: ${JSON.stringify(gap)}
+
+${teamBlock}
+${prevDraftBlock}
+
+RULES (CRITICAL):
+1. DO NOT include phases the user already completed based on their starting assets
+2. Each task must have: name, description, estimatedHours, targetDate (ISO), startDate (optional)
+3. For each task, set:
+   - "needsSubtasks": true if it can be broken into ≤1.5h steps (e.g., "Configure environment", "Research competitors")
+   - "needsSubtasks": false if it's indivisible (e.g., "Bike 6 hours", "Attend university class", "Study Medicine career")
+   - "isLongTerm": true if it's a recurring commitment over days/weeks (e.g., "Study marketing daily", "Practice coding 3x/week") — these become BaseCommitments
+   - "isLongTerm": false for one-off tasks
+4. Long-term tasks (isLongTerm=true) must include: frequency {type, value}, daysOfWeek[], startDate, endDate, type (work|study|routine)
+5. Spread tasks realistically across the timeline — do NOT compress a 6-month goal into 2 weeks
+6. No limits on phases or tasks — include as many as needed for a complete plan
+
+Return ONLY valid JSON:
+{
+  "title": "Goal title",
+  "description": "Goal description",
+  "analysis": {
+    "identityShift": "Who the user needs to become",
+    "reverseEngineering": "Step-by-step breakdown from end to start",
+    "resourceAudit": "Assessment of skills, time, and resources"
+  },
+  "phases": [
+    {
+      "title": "Phase title",
+      "description": "Why this phase matters",
+      "targetDate": "ISO date",
+      "milestone": {
+        "title": "Measurable outcome",
+        "description": "What must be demonstrated",
+        "evaluationType": "text | image | document | questionnaire | none",
+        "evaluationInstructions": "What the user must provide"
+      },
+      "tasks": [
+        {
+          "name": "Task name",
+          "description": "Specific details",
+          "estimatedHours": 2,
+          "startDate": "ISO date (optional)",
+          "targetDate": "ISO date",
+          "assigneeId": "userId (team only, exact ID from TEAM MEMBERS)",
+          "requiresSameAssignee": false,
+          "dependencyType": "blocks | same_person_required | soft | none",
+          "dimensions": ["skills"],
+          "attributes": [],
+          "needsSubtasks": true,
+          "isLongTerm": false,
+          "frequency": null,
+          "daysOfWeek": [],
+          "commitmentType": null
+        }
+      ]
+    }
+  ]
+}`;
+
+    const client = this.getClient({ tags: ['agent:architect'] }, byokKey, byokProvider);
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o');
+
+    try {
+      const plan = await this.callJsonAgent(
+        client,
+        model,
+        'You are a professional Goal Architect. Return only valid JSON. No markdown.',
+        prompt,
+        6000
+      );
+      if (!plan.phases) plan.phases = [];
+      if (!plan.analysis) plan.analysis = { identityShift: '', reverseEngineering: '', resourceAudit: '' };
+      return plan;
+    } catch (e) {
+      console.error('[Agent2:Architect] Error:', e);
+      return { title, description, analysis: {}, phases: [] };
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // AGENT 3: Enricher — Adds subtasks & BaseCommitment metadata
+  // ─────────────────────────────────────────────────────────
+  async enrichWithSubtasks(
+    draft: any,
+    byokKey?: string,
+    byokProvider?: string
+  ): Promise<any> {
+    // Collect only tasks that need enrichment
+    const tasksNeedingSubtasks = draft.phases.flatMap((p: any, pi: number) =>
+      (p.tasks || [])
+        .map((t: any, ti: number) => ({ task: t, phaseIdx: pi, taskIdx: ti }))
+        .filter(({ task }: any) => task.needsSubtasks && !task.isLongTerm && (task.estimatedHours || 0) > 1.5)
+    );
+
+    if (tasksNeedingSubtasks.length === 0) {
+      // Nothing to enrich — just normalize
+      return this.normalizeDraft(draft);
+    }
+
+    // Build a compact representation for the enricher
+    const tasksForEnricher = tasksNeedingSubtasks.map(({ task, phaseIdx, taskIdx }: any) => ({
+      phaseIdx,
+      taskIdx,
+      name: task.name,
+      description: task.description,
+      estimatedHours: task.estimatedHours
+    }));
+
+    const prompt = `You are a Task Enricher. Your ONLY job is to break down tasks into granular subtasks.
+
+TASKS TO BREAK DOWN:
+${JSON.stringify(tasksForEnricher, null, 2)}
+
+RULES (CRITICAL):
+- Each subtask must be a specific, actionable step taking MAX 1.5 hours
+- Subtasks must be concrete (e.g., "Install Node.js and verify version", "Read chapter 3 of Clean Code")
+- Do NOT rename or change the parent tasks
+- Return EXACTLY the same phaseIdx and taskIdx from input
+
+Return ONLY valid JSON:
+{
+  "enriched": [
+    {
+      "phaseIdx": 0,
+      "taskIdx": 0,
+      "subTasks": [
+        { "name": "Step name", "description": "Details", "estimatedHours": 1.0 }
+      ]
+    }
+  ]
+}`;
+
+    const client = this.getClient({ tags: ['agent:enricher'] }, byokKey, byokProvider);
+    const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
+
+    try {
+      const enriched = await this.callJsonAgent(
+        client,
+        model,
+        'You are a Task Enricher. Return only valid JSON. No markdown.',
+        prompt,
+        4096
+      );
+
+      // Inject subtasks back into draft
+      for (const item of (enriched.enriched || [])) {
+        const phase = draft.phases[item.phaseIdx];
+        if (!phase) continue;
+        const task = phase.tasks?.[item.taskIdx];
+        if (!task) continue;
+        task.subTasks = (item.subTasks || []).map((st: any) => ({
+          name: st.name || 'Sub-tarea',
+          description: st.description || '',
+          estimatedHours: Math.min(1.5, parseFloat(st.estimatedHours) || 1.0)
+        }));
+      }
+    } catch (e) {
+      console.error('[Agent3:Enricher] Error:', e);
+      // Continue without subtasks — not fatal
+    }
+
+    return this.normalizeDraft(draft);
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Normalize draft: validate types, extract habits/continuousProjects
+  // ─────────────────────────────────────────────────────────
+  private normalizeDraft(draft: any): any {
+    const habits: any[] = [];
+    const continuousProjects: any[] = [];
+
+    draft.phases = (draft.phases || []).map((p: any) => ({
+      title: p.title || p.name || 'Sin título',
+      description: p.description || '',
+      targetDate: p.targetDate || null,
+      milestone: p.milestone || { title: 'Completar fase', evaluationType: 'none' },
+      tasks: (p.tasks || []).map((t: any) => {
+        const task = typeof t === 'string' ? { name: t } : t;
+
+        // Long-term tasks → extract as BaseCommitment equivalent
+        if (task.isLongTerm) {
+          const commitmentType = task.commitmentType || task.type || 'study';
+          const validType = ['work', 'study', 'routine'].includes(commitmentType) ? commitmentType : 'study';
+          if (task.frequency) {
+            habits.push({
+              title: task.name || task.title || 'Compromiso',
+              description: task.description || '',
+              type: validType,
+              frequency: task.frequency || { type: 'daily', value: 1 },
+              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number) : [],
+              estimatedHours: Math.min(4, parseFloat(task.estimatedHours) || 1.0),
+              startDate: task.startDate || null,
+              endDate: task.targetDate || task.endDate || null,
+              dimensions: Array.isArray(task.dimensions) ? task.dimensions : []
+            });
+          } else {
+            continuousProjects.push({
+              title: task.name || task.title || 'Proyecto Continuo',
+              description: task.description || '',
+              type: validType,
+              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number) : [1, 2, 3, 4, 5],
+              estimatedHours: Math.min(8, parseFloat(task.estimatedHours) || 2.0),
+              startDate: task.startDate || null,
+              endDate: task.targetDate || task.endDate || null,
+              dimensions: Array.isArray(task.dimensions) ? task.dimensions : []
+            });
+          }
+        }
+
+        return {
+          name: task.name || task.title || 'Tarea',
+          description: task.description || task.desc || '',
+          startDate: task.startDate || null,
+          targetDate: task.targetDate || null,
+          estimatedHours: Math.min(200, parseFloat(task.estimatedHours) || 1.0),
+          assigneeId: task.assigneeId || null,
+          requiresSameAssignee: !!task.requiresSameAssignee,
+          dependencyType: task.dependencyType || null,
+          isLongTermTask: !!task.isLongTerm,
+          dimensions: Array.isArray(task.dimensions) ? task.dimensions : [],
+          attributes: Array.isArray(task.attributes) ? task.attributes : [],
+          subTasks: Array.isArray(task.subTasks) ? task.subTasks.map((st: any) => ({
+            name: st.name || st.title || 'Sub-tarea',
+            description: st.description || st.desc || '',
+            estimatedHours: Math.min(1.5, parseFloat(st.estimatedHours) || 1.0)
+          })) : []
+        };
+      })
+    }));
+
+    draft.habits = habits;
+    draft.continuousProjects = continuousProjects;
+    if (!draft.analysis) draft.analysis = { identityShift: '', reverseEngineering: '', resourceAudit: '' };
+
+    return draft;
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // ORCHESTRATOR: Coordinates the 3 agents in sequence
+  // ─────────────────────────────────────────────────────────
+  async generateHierarchicalPlan(
+    parsedGoal: any,
+    dnaAnalysis: any,
+    constraints: any = {},
+    userId?: string,
+    previousDraft?: any,
+    revisionInstructions?: string,
+    byokKey?: string,
+    byokProvider?: string,
+    onProgress?: (event: { type: string; step?: number; label?: string; status?: string; data?: any }) => void
+  ): Promise<{ draft: any; diagnosis: any }> {
+    const teamContext = constraints.teamContext || '';
+    const chatContext = constraints.chatContext || '';
+
+    const emit = (event: any) => { if (onProgress) onProgress(event); };
+
+    // ── Agent 1: Analyst ──
+    emit({ type: 'step', step: 1, label: 'Analizando tu punto de partida...', status: 'active' });
+    const diagnosis = await this.analyzeGoalOrigin(
+      parsedGoal, dnaAnalysis, constraints, teamContext, chatContext, byokKey, byokProvider
+    );
+    emit({ type: 'diagnosis', data: diagnosis });
+    emit({ type: 'step', step: 1, status: 'done' });
+
+    console.log('[Orchestrator] Diagnosis:', JSON.stringify(diagnosis));
+
+    // If unrealistic, return early for negotiation
+    if (diagnosis.feasibility === 'unrealistic' && !previousDraft) {
+      emit({ type: 'negotiation_needed', diagnosis });
+      return { draft: null as any, diagnosis };
+    }
+
+    // ── Agent 2: Architect ──
+    const agreedOutline = await this.extractAgreedOutline(chatContext, byokKey, byokProvider);
+    emit({ type: 'step', step: 2, label: 'Diseñando fases y tareas...', status: 'active' });
+    const roughDraft = await this.generatePhasesAndTasks(
+      parsedGoal, dnaAnalysis, diagnosis, constraints, teamContext, agreedOutline,
+      previousDraft, revisionInstructions, byokKey, byokProvider
+    );
+    emit({ type: 'step', step: 2, status: 'done' });
+
+    // ── Agent 3: Enricher ──
+    emit({ type: 'step', step: 3, label: 'Desgranando subtareas...', status: 'active' });
+    const finalDraft = await this.enrichWithSubtasks(roughDraft, byokKey, byokProvider);
+    emit({ type: 'step', step: 3, status: 'done' });
+
+    return { draft: finalDraft, diagnosis };
   }
 
   /**

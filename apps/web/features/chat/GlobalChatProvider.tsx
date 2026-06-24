@@ -94,7 +94,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
           }}
           onRefreshTree={() => {
             if (typeof window !== 'undefined') {
-              window.location.reload();
+              window.dispatchEvent(new CustomEvent('refresh-life-tree'));
             }
           }} 
           initialMessage={initialMsg}

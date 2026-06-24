@@ -55,12 +55,12 @@ export function getDynamicModel(req: NextRequest, fallbackModel: string = "gpt-4
   return getDynamicModelByKey(byokKey, byokProvider, fallbackModel);
 }
 
-export function getDynamicModelByKey(byokKey?: string, byokProvider?: string, fallbackModel: string = "gpt-4o-mini") {
+export function getDynamicModelByKey(byokKey?: string, byokProvider?: string, fallbackModel: string = "gpt-4o-mini", byokDefaultModel: string = "gpt-4o-mini") {
   if (byokKey && byokKey.length >= 10) {
     if (byokProvider === 'deepseek') return 'deepseek-chat';
     if (byokProvider === 'gemini') return 'gemini-1.5-flash';
-    return "gpt-4o-mini";
+    return byokDefaultModel;
   }
-  
+
   return fallbackModel;
 }

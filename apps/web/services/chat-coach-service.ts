@@ -225,6 +225,8 @@ NOMBRE DEL USUARIO: ${user.name ?? 'Viajero'}
 REGLAS DE FORMATO:
 - Usa **negritas** para conceptos clave.
 - Respuestas cortas, muy humanas y cálidas, sin viñetas excesivas.
+- **PROHIBICIÓN DE MARKDOWN ESTRUCTURADO (CRÍTICO):** NUNCA utilices títulos de markdown (ej. '#', '##', '###') ni viñetas de guión o asterisco (ej. '-', '*'). El chat no renderiza estos símbolos y se verán como texto plano roto. Si necesitas estructurar, usa saltos de línea normales y **negritas**. Si necesitas listar elementos, usa números normales (1., 2., 3.).
+- **PRIVACIDAD DE IDs (CRÍTICO):** NUNCA muestres IDs internos de base de datos o usuarios (ej: '6a183...') en tu mensaje conversacional al usuario. Identifica a las personas de su equipo únicamente por sus nombres de pila (ej: 'Daniel' o 'Daniel Diaz').
       `.trim();
     }
 
@@ -248,13 +250,14 @@ REGLAS DE FORMATO:
           parameters: {
             type: "object",
             properties: {
-              goalTitle: { type: "string", description: "Título claro de la meta" },
+              goalTitle: { type: "string", description: "Título claro y conciso de la meta" },
+              description: { type: "string", description: "Descripción detallada del plan acordado: fases, objetivos principales y asignaciones. Resumen de todo lo que acordaste con el usuario." },
               dimensionName: { type: "string", description: "Dimensión (ej: Profesión, Intelecto, Salud)" },
               hoursPerWeek: { type: "number", description: "Horas semanales a dedicar" },
               targetDate: { type: "string", description: "Fecha límite" },
               budget: { type: "number", description: "Presupuesto (opcional)" }
             },
-            required: ["goalTitle", "dimensionName", "hoursPerWeek", "targetDate"]
+            required: ["goalTitle", "description", "dimensionName", "hoursPerWeek", "targetDate"]
           }
         }
       },
@@ -336,78 +339,81 @@ REGLAS DE FORMATO:
     });
 
     const choice = response.choices[0];
-    const toolCall = choice.message?.tool_calls?.[0];
+    const toolCalls = choice.message?.tool_calls || [];
     
     let cleanReply = choice.message?.content || "";
     let branchData = null;
     let saveNote = null;
     let triggerRevision = null;
 
-    if (toolCall && (toolCall as any).function?.name === 'dimension_goal') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        branchData = args;
-        // Provide a friendly confirmation that generation is starting
-        cleanReply = cleanReply || `¡Perfecto! Ya tenemos las dimensiones claras (${args.hoursPerWeek}h/semana para ${args.targetDate}). Dame un momento, estoy diseñando y calculando el plan exacto para tu meta...`;
-      } catch (e) {
-        console.warn('Failed to parse tool arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'update_goal_status') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        await prisma.goal.update({
-          where: { id: args.goalId },
-          data: { 
-            status: args.newStatus,
-            resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
-          }
-        });
-        cleanReply = cleanReply || `He actualizado el estado de tu meta a "${args.newStatus}". ¡Avancemos!`;
-      } catch (e) {
-        console.warn('Failed to parse update_goal_status arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'request_draft_revision') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        triggerRevision = args.instructions;
-        cleanReply = cleanReply || `¡Entendido! Dame un momento, estoy ajustando el borrador del plan con tus indicaciones...`;
-      } catch (e) {
-        console.warn('Failed to parse request_draft_revision arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'add_task_note') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        saveNote = {
-          taskNameOrId: args.taskNameOrId,
-          content: args.noteContent
-        };
-        cleanReply = cleanReply || `He guardado la nota en la tarea de tu Mesa de Dibujo. ¡Mírala a la derecha!`;
-      } catch (e) {
-        console.warn('Failed to parse add_task_note arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'create_goal') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        const { title, description } = args;
-        
-        await prisma.goal.create({
-          data: {
-            spaceId: null, // Asumiendo árbol personal desde el coach global
-            userId: userId,
-            title,
-            description,
-            status: 'active'
-          }
-        });
+    for (const toolCall of toolCalls) {
+      const functionName = (toolCall as any).function?.name;
+      if (functionName === 'dimension_goal') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          branchData = args;
+          // Provide a friendly confirmation that generation is starting
+          cleanReply = cleanReply || `¡Perfecto! Ya tenemos las dimensiones claras (${args.hoursPerWeek}h/semana para ${args.targetDate}). Dame un momento, estoy diseñando y calculando el plan exacto para tu meta...`;
+        } catch (e) {
+          console.warn('Failed to parse tool arguments:', e);
+        }
+      } else if (functionName === 'update_goal_status') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          await prisma.goal.update({
+            where: { id: args.goalId },
+            data: { 
+              status: args.newStatus,
+              resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
+            }
+          });
+          cleanReply = cleanReply || `He actualizado el estado de tu meta a "${args.newStatus}". ¡Avancemos!`;
+        } catch (e) {
+          console.warn('Failed to parse update_goal_status arguments:', e);
+        }
+      } else if (functionName === 'request_draft_revision') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          triggerRevision = args.instructions;
+          cleanReply = cleanReply || `¡Entendido! Dame un momento, estoy ajustando el borrador del plan con tus indicaciones...`;
+        } catch (e) {
+          console.warn('Failed to parse request_draft_revision arguments:', e);
+        }
+      } else if (functionName === 'add_task_note') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          saveNote = {
+            taskNameOrId: args.taskNameOrId,
+            content: args.noteContent
+          };
+          cleanReply = cleanReply || `He guardado la nota en la tarea de tu Mesa de Dibujo. ¡Mírala a la derecha!`;
+        } catch (e) {
+          console.warn('Failed to parse add_task_note arguments:', e);
+        }
+      } else if (functionName === 'create_goal') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          const { title, description } = args;
+          
+          await prisma.goal.create({
+            data: {
+              spaceId: null, // Asumiendo árbol personal desde el coach global
+              userId: userId,
+              title,
+              description,
+              status: 'active'
+            }
+          });
 
-        cleanReply = cleanReply || `¡Listo! Acabo de crear la rama "${title}" en tu árbol personal. Ya puedes verla.`;
-        // Trigger a fake saveNote or branchData so UI refetches? No, UI refetches on new messages sometimes.
-        // For now, returning the cleanReply is enough, user can refresh or we trigger revision.
-        triggerRevision = 'fetch_goals_trigger'; // small hack to tell UI to refresh tree
-      } catch (e) {
-        console.warn('Failed to create goal:', e);
+          cleanReply = cleanReply || `¡Listo! Acabo de crear la rama "${title}" en tu árbol personal. Ya puedes verla.`;
+          triggerRevision = 'fetch_goals_trigger'; // small hack to tell UI to refresh tree
+        } catch (e) {
+          console.warn('Failed to create goal:', e);
+        }
       }
-    } else if (!cleanReply) {
+    }
+
+    if (!cleanReply && toolCalls.length === 0) {
       cleanReply = "Hubo un error al procesar la respuesta.";
     }
 
@@ -526,6 +532,9 @@ REGLAS PARA CREAR PLANES:
 
 Sé directo, profesional pero amistoso.
 
+REGLAS DE FORMATO (CRÍTICO):
+- **PRIVACIDAD DE IDs:** NUNCA muestres ni menciones IDs internos de base de datos o de usuarios (ej: '6a39a...') en tus respuestas del chat. Identifica a las personas de tu equipo únicamente por sus nombres de pila (ej: 'Daniel' o 'Daniel Diaz').
+
 ${attachedContextSummary ? `
 ${attachedContextSummary}
 ` : ''}
@@ -548,13 +557,14 @@ ${attachedContextSummary}
           parameters: {
             type: "object",
             properties: {
-              goalTitle: { type: "string", description: "Título claro de la meta" },
+              goalTitle: { type: "string", description: "Título claro y conciso de la meta del equipo" },
+              description: { type: "string", description: "Descripción detallada del plan acordado: fases, objetivos principales, asignaciones. Resumen de todo lo discutido con el equipo." },
               dimensionName: { type: "string", description: "Dimensión (ej: Profesión, Intelecto, Salud)" },
               hoursPerWeek: { type: "number", description: "Horas semanales a dedicar" },
               targetDate: { type: "string", description: "Fecha límite" },
               budget: { type: "number", description: "Presupuesto (opcional)" }
             },
-            required: ["goalTitle", "dimensionName", "hoursPerWeek", "targetDate"]
+            required: ["goalTitle", "description", "dimensionName", "hoursPerWeek", "targetDate"]
           }
         }
       },
@@ -622,55 +632,60 @@ ${attachedContextSummary}
     });
 
     const choice = response.choices[0];
-    const toolCall = choice.message?.tool_calls?.[0];
+    const toolCalls = choice.message?.tool_calls || [];
     
     let cleanReply = choice.message?.content || "";
     let branchData = null;
     let saveNote = null;
     let triggerRevision = null;
 
-    if (toolCall && (toolCall as any).function?.name === 'dimension_goal') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        branchData = args;
-        cleanReply = cleanReply || `¡Perfecto! Ya tenemos claras las metas y dimensiones para el equipo. Dame un momento, estoy diseñando y calculando el borrador del plan colaborativo en la Mesa de Dibujo...`;
-      } catch (e) {
-        console.warn('Failed to parse dimension_goal arguments:', e);
+    for (const toolCall of toolCalls) {
+      const functionName = (toolCall as any).function?.name;
+      if (functionName === 'dimension_goal') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          branchData = args;
+          cleanReply = cleanReply || `¡Perfecto! Ya tenemos claras las metas y dimensiones para el equipo. Dame un momento, estoy diseñando y calculando el borrador del plan colaborativo en la Mesa de Dibujo...`;
+        } catch (e) {
+          console.warn('Failed to parse dimension_goal arguments:', e);
+        }
+      } else if (functionName === 'update_goal_status') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          await prisma.goal.update({
+            where: { id: args.goalId },
+            data: { 
+              status: args.newStatus,
+              resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
+            }
+          });
+          cleanReply = cleanReply || `He actualizado el estado de la meta a "${args.newStatus}" para el equipo.`;
+        } catch (e) {
+          console.warn('Failed to parse update_goal_status arguments:', e);
+        }
+      } else if (functionName === 'request_draft_revision') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          triggerRevision = args.instructions;
+          cleanReply = cleanReply || `¡Entendido! Estoy ajustando el borrador del plan colaborativo con tus indicaciones...`;
+        } catch (e) {
+          console.warn('Failed to parse request_draft_revision arguments:', e);
+        }
+      } else if (functionName === 'add_task_note') {
+        try {
+          const args = JSON.parse((toolCall as any).function.arguments);
+          saveNote = {
+            taskNameOrId: args.taskNameOrId,
+            content: args.noteContent
+          };
+          cleanReply = cleanReply || `He añadido tu nota a la tarea respectiva en la Mesa de Dibujo del equipo.`;
+        } catch (e) {
+          console.warn('Failed to parse add_task_note arguments:', e);
+        }
       }
-    } else if (toolCall && (toolCall as any).function?.name === 'update_goal_status') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        await prisma.goal.update({
-          where: { id: args.goalId },
-          data: { 
-            status: args.newStatus,
-            resumeDate: args.resumeDate ? new Date(args.resumeDate) : null
-          }
-        });
-        cleanReply = cleanReply || `He actualizado el estado de la meta a "${args.newStatus}" para el equipo.`;
-      } catch (e) {
-        console.warn('Failed to parse update_goal_status arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'request_draft_revision') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        triggerRevision = args.instructions;
-        cleanReply = cleanReply || `¡Entendido! Estoy ajustando el borrador del plan colaborativo con tus indicaciones...`;
-      } catch (e) {
-        console.warn('Failed to parse request_draft_revision arguments:', e);
-      }
-    } else if (toolCall && (toolCall as any).function?.name === 'add_task_note') {
-      try {
-        const args = JSON.parse((toolCall as any).function.arguments);
-        saveNote = {
-          taskNameOrId: args.taskNameOrId,
-          content: args.noteContent
-        };
-        cleanReply = cleanReply || `He añadido tu nota a la tarea respectiva en la Mesa de Dibujo del equipo.`;
-      } catch (e) {
-        console.warn('Failed to parse add_task_note arguments:', e);
-      }
-    } else if (!cleanReply) {
+    }
+
+    if (!cleanReply && toolCalls.length === 0) {
       cleanReply = "Hubo un error al procesar la respuesta.";
     }
 

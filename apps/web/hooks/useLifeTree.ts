@@ -166,6 +166,20 @@ export function useLifeTree(spaceId?: string) {
     fetchTree();
   }, [fetchTree]);
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchTree();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('refresh-life-tree', handleRefresh);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('refresh-life-tree', handleRefresh);
+      }
+    };
+  }, [fetchTree]);
+
   return {
     treeData,
     loading,

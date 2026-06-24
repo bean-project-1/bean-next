@@ -25,7 +25,12 @@ async function testPlanner(input: string, hoursPerWeek: number) {
     timePerWeek: hoursPerWeek
   };
   
-  const plan = await service.generateHierarchicalPlan(parsedGoal, dnaAnalysis, constraints);
+  const { draft: plan } = await service.generateHierarchicalPlan(parsedGoal, dnaAnalysis, constraints);
+  
+  if (!plan) {
+    console.log('\nNO PLAN GENERATED (Unrealistic goal / negotiation needed)');
+    return;
+  }
   
   console.log('\nGENERATED PLAN SUMMARY:');
   console.log(`Phases Count: ${plan.phases.length}`);
@@ -62,7 +67,7 @@ async function testPlanner(input: string, hoursPerWeek: number) {
 }
 
 async function main() {
-  await testPlanner("Quiero ser neurocirujano", 40);
+  await testPlanner("Quiero ser diseñador web UX/UI", 10);
 }
 
 main().catch(console.error);

@@ -30,8 +30,22 @@ export class GoalService {
 
 
   async parseGoalWithAI(text: string, userId?: string, byokKey?: string, byokProvider?: string) {
+    let dnaContext = "No user DNA attributes specified.";
+    if (userId) {
+      const attributes = await prisma.userAttribute.findMany({
+        where: { userId },
+        include: { dimension: true }
+      });
+      if (attributes.length > 0) {
+        dnaContext = "USER DNA ATTRIBUTES (Current starting assets/skills):\n" + 
+          attributes.map(a => `- ${a.dimension.label} (${a.category}): ${a.name}`).join('\n');
+      }
+    }
+
     const prompt = `
       Analyze the following user goal intention: "${text}"
+      
+      ${dnaContext}
       
       Return a JSON object with:
       1. "title": A concise, inspiring title for the goal.
@@ -46,6 +60,8 @@ export class GoalService {
       6. "estimatedDurationMonths": (number) A highly realistic estimate of how many months this goal typically takes to achieve in the real world (e.g., becoming a General Doctor = 72 to 84 months; becoming a Neurosurgeon or medical specialist = 120 to 144 months; climbing Everest = 24 to 36 months; obtaining a cloud certification = 3 to 6 months). If the user provided a targetDate or savingsPerMonth, use those to calculate the exact duration (e.g., Cost / savingsPerMonth).
       7. "complexityLevel": (string) "low", "medium", "high", or "extreme".
       8. "domainExpertiseNeeded": (string) A comma-separated list of technical/domain knowledge needed.
+      9. "startingAssets": (array of strings) The user's DNA attributes/skills that are relevant to this goal and can serve as a base (from USER DNA ATTRIBUTES). If none are relevant, return an empty array.
+      10. "dnaAnalysisInsight": (string) A short explanation in Spanish of what the user already has as a base according to their DNA, and where they are starting from (e.g., "Dado que ya tienes conocimientos en React, no iniciaremos desde cero. El plan se enfocará en...").
     `;
 
     const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
@@ -70,7 +86,9 @@ export class GoalService {
       return {
         title: text,
         description: `Plan para: ${text}`,
-        relevantDimensions: ["skills", "knowledge"]
+        relevantDimensions: ["skills", "knowledge"],
+        startingAssets: [],
+        dnaAnalysisInsight: ""
       };
     }
   }
@@ -229,7 +247,7 @@ export class GoalService {
   }
 
   async generateHierarchicalPlan(parsedGoal: any, dnaAnalysis: any, constraints: any = {}, userId?: string, previousDraft?: any, revisionInstructions?: string, byokKey?: string, byokProvider?: string) {
-    const { title, description } = parsedGoal;
+    const { title, description, startingAssets = [], dnaAnalysisInsight = "" } = parsedGoal;
     const { gap } = dnaAnalysis;
     const now = new Date();
     const timePerWeek = constraints?.timePerWeek || 10;
@@ -263,6 +281,8 @@ export class GoalService {
       
       INSTRUCTION FOR TEAM ASSIGNMENT:
       You MUST assign every "task" in the phases to a specific member of the team using the "assigneeId" property. Select the best member based on their role and ADN strengths. If a member's schedule is overloaded, distribute tasks to other members. Every task should have an assignee.
+      
+      AFINIDAD DE DEPENDENCIA EN EQUIPO: Si la Tarea B depende directamente de la Tarea A (por ejemplo: Fase 1 y Fase 2 de un mismo estudio, o la escritura y revisión técnica de un módulo), DEBES asignar ambas tareas a la misma persona (mismo assigneeId) para mantener la continuidad de contexto.
       ` : 'All tasks are assigned to the main user.'}
 
       ${previousDraft ? `
@@ -283,6 +303,8 @@ export class GoalService {
       - REALISTIC SCALE: This goal has a complexity level of [${parsedGoal.complexityLevel || 'medium'}] and is estimated to take ${parsedGoal.estimatedDurationMonths || 6} months. DO NOT compress a multi-year goal into a few weeks. Spread the phases realistically over the estimated duration.
       - DOMAIN EXPERTISE REQUIRED: ${parsedGoal.domainExpertiseNeeded || 'General knowledge'}. You MUST apply deep domain realism. For example, if the goal is climbing Everest, you must include financial planning, acclimatization, technical ice training, and previous expedition tests (e.g. Aconcagua). If it's becoming a Senior Developer, include deep architectural study, system design, and real-world project deployments.
       
+      - OMITIR PRERREQUISITOS EXISTENTES: Revisa la lista de 'startingAssets' y el 'dnaAnalysisInsight'. Si el usuario ya posee conocimientos o habilidades base relacionados con la meta, DEBES omitir o abreviar drásticamente las fases básicas de preparación y aprendizaje de esas habilidades en el plan. Comienza directamente desde su nivel actual real.
+      
       - PROFESSIONAL/ACADEMIC PATHS (CRITICAL): If the goal is a highly regulated professional career (e.g., Doctor, Neurosurgeon, Lawyer, Commercial Pilot), the plan MUST strictly reflect the actual sequence of phases and timeline required in the real world. For example, for a Neurosurgeon, there must be a phase for General Medicine (typically 60-72 months) followed by a phase for Specialization (typically 36-48 months), each with their corresponding study/work routines. Do NOT compress these regulated durations.
       
       - ACADEMIC/SEMESTER TIMING (CRITICAL): For formal education phases (like university semesters or school terms), align the start dates with standard academic terms (e.g., standard semesters start in February/March or August/September, choosing the next upcoming term start date relative to today's date).
@@ -290,6 +312,8 @@ export class GoalService {
       - PHASE-SPECIFIC ROUTINES & DATES (CRITICAL): Habits and recurring projects MUST NOT span the entire goal duration if they only apply to a specific phase. You MUST define their "startDate" and "endDate" to align strictly with the specific Phase or time period they run in. For example, study habits for medical school must start at the beginning of the Medicine phase and end when that phase ends; specialization habits must only start at the beginning of the Specialization phase and end when it ends.
       
       - LONG-TERM REPETITION (ROUTINES AS BASE COMMITMENTS): For activities that repeat over months (e.g., "Gym 3 times a week", "Read 30 mins daily"), DO NOT create individual tasks. You MUST create them as "habits" or "continuousProjects" in their respective arrays. They will be registered in the system as "Compromisos Base" (Base Commitments) of type "study", "work", or "routine".
+      
+      - TAREAS ESPEJO PARA COMPROMISOS BASE (CRÍTICO): Por cada hábito o proyecto continuo recurrente que definas en los arrays 'habits' o 'continuousProjects', DEBES crear obligatoriamente una tarea ('Task') correspondiente con el mismo título exacto dentro de la Fase correspondiente. Esta tarea representará visualmente el progreso del compromiso recurrente en el árbol de metas del usuario y permitirá llevar el control de su avance.
       
       - PREREQUISITE RECURRING COMMITMENTS (CRITICAL): If a recurring commitment (e.g., studying a language, learning a technical skill, daily training) is a PREREQUISITE for subsequent tasks in the plan, you MUST create a dedicated "Phase" in the plan representing that preparation/prerequisite stage (e.g., "Fase 1: Estudio de Fundamentos de React"). Set the phase's targetDate to match the end date of that recurring project/habit. Subsequent tasks and phases must depend on this prerequisite phase.
       
@@ -299,6 +323,7 @@ export class GoalService {
       		3. "Sub-task" (Subtarea): Actionable, granular steps of 1 to 1.5 hours maximum (e.g., "Instalar Node.js", "Ver videos de la sección 1"). You MUST include sub-tasks for any complex task.
       		
       - TASK DISTRIBUTION & SUB-TASKS (CRITICAL): Tasks can take longer than 1 hour IF they represent a larger block. HOWEVER, if a task is generic or takes > 1 hour, you MUST include a "subTasks" array inside it. Each subTask must be HIGHLY specific, actionable, and take MAX 1.5 HOURS.
+      - SUBTAREAS Y EXCEPCIONES: Si una tarea representa una práctica acumulativa, esfuerzo físico o un bloque largo no divisible (ej: 'Entrenamiento de ciclismo de fondo de 6 horas', 'Clase presencial de universidad', 'Práctica clínica'), NO obligues a desglosarla en subtareas; déjala como tarea simple sin subtareas.
       - INSTITUTIONAL PATHS: Include formal steps (Apply, Enroll) for careers.
       - REASONABLE SPREAD: Distribute tasks logically across the timeline.
       
@@ -306,6 +331,8 @@ export class GoalService {
       - Title: "${title}"
       - Main Description: ${description}
       - DNA Gaps: ${JSON.stringify(gap)}
+      - Active starting assets: ${JSON.stringify(startingAssets)}
+      - Starting assets analysis: "${dnaAnalysisInsight}"
       - Today's Date: ${now.toISOString()}
       
       STRICT JSON SCHEMA REQUIREMENT:

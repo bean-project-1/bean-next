@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Invalid space ID' }, { status: 400 });
     }
 
-    const { content, mentions, draftPlan } = await req.json();
+    const { content, mentions, draftPlan, attachedContext } = await req.json();
 
     if (!content.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 });
 
@@ -76,18 +76,45 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const byokKey = req.cookies.get('user_ai_key')?.value;
       const byokProvider = req.cookies.get('user_ai_provider')?.value;
 
-      await coachService.generateGroupResponse(
+      aiRes = await coachService.generateGroupResponse(
         spaceId,
         session.user.id,
         content,
         byokKey,
-        byokProvider
+        byokProvider,
+        attachedContext
       );
     }
 
     return NextResponse.json({ success: true, message: userMessage, aiResponse: aiRes });
   } catch (error: any) {
     console.error("Chat error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const { id: spaceId } = resolvedParams;
+
+    if (!/^[0-9a-fA-F]{24}$/.test(spaceId)) {
+      return NextResponse.json({ error: 'Invalid space ID' }, { status: 400 });
+    }
+
+    // Delete all messages in the space
+    await prisma.spaceMessage.deleteMany({
+      where: { spaceId }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("DELETE /api/spaces/[id]/chat Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

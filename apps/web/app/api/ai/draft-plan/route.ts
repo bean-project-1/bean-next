@@ -27,18 +27,14 @@ export async function POST(request: Request) {
 
     const goalService = new GoalService();
 
-    // Reconstruct parsed goal
-    const parsedGoal = {
-      title: goalData.goalTitle,
-      description: goalData.description || `Meta de ${goalData.dimensionName}`,
-      dimensionName: goalData.dimensionName,
-      complexityLevel: 'medium',
-      constraints: {
-        timePerWeek: goalData.hoursPerWeek,
-        targetDate: goalData.targetDate,
-        budgetTotal: goalData.budget
-      } as any
-    };
+    // Real DNA Starting Point Diagnosis
+    const parsedGoal = await goalService.parseGoalWithAI(goalData.goalTitle, userId);
+    // Overwrite constraints with the consensus values from the tool call
+    parsedGoal.constraints = {
+      timePerWeek: goalData.hoursPerWeek,
+      targetDate: goalData.targetDate,
+      budgetTotal: goalData.budget || 0
+    } as any;
 
     // 1. Audit Resources (We no longer block the draft, we just log it)
     if (!previousDraft) {
@@ -53,7 +49,7 @@ export async function POST(request: Request) {
     // 2. Draft the Plan
     // Fetch actual DNA context
     const userDNA = await goalService.getUserDNA(userId);
-    const dnaAnalysis = goalService.computeDNAAnalysis([parsedGoal.dimensionName], userDNA);
+    const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions || ['skills'], userDNA);
 
     // Fetch team context if spaceId is provided and not personal
     let teamContext = '';

@@ -7,6 +7,7 @@ import { useLifeTree } from '../../../hooks/useLifeTree';
 import { useUIStore } from '../../../hooks/useUIStore';
 import { SpaceOptionsModal } from './SpaceOptionsModal';
 import { SpaceChat } from '../../spaces/components/SpaceChat';
+import { useGlobalChat } from '../../chat/GlobalChatProvider';
 import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
 
 interface Space {
@@ -340,6 +341,7 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 // Separate component to handle individual tree data fetching
 function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks, onZoomIn, onBackToForest, isMobile }: { space: Space, isActive: boolean, isZoomed: boolean, onTrunkClick: () => void, onActionHooks: any, onZoomIn: () => void, onBackToForest: () => void, isMobile: boolean }) {
   const { treeData, loading } = useLifeTree(space.id);
+  const { isOpen: isChatOpen, existingGoalData, closeChat, openChat } = useGlobalChat();
 
   if (loading || !treeData) {
     return (
@@ -388,6 +390,12 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks,
           spaceName={space.name} 
           members={space.membersList || []}
           onRefreshTree={() => onActionHooks?.onRefresh?.()}
+          isOpenExternal={isChatOpen}
+          onChangeOpenExternal={(val) => {
+            if (!val) closeChat();
+            else openChat();
+          }}
+          existingGoalData={existingGoalData}
         />
       )}
     </>

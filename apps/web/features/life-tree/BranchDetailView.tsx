@@ -691,7 +691,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
-  const { openChat } = useGlobalChat();
+  const { openChat, openDraft } = useGlobalChat();
 
   // Close menu on outside click
   useEffect(() => {
@@ -871,8 +871,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
-                    onClose();
-                    openChat(`Quiero hacer algunos cambios a mi meta: ${branch.goal}`, 'refactor_goal', branch);
+                    openDraft(branch);
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                 >

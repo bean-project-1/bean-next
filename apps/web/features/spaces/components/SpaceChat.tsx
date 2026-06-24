@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus, RotateCcw, Search, Target, CheckSquare, ChevronLeft } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
+import { useLifeTree } from '../../../hooks/useLifeTree';
+import { getSpaces } from '../actions/spaces';
 
 interface Message {
   id: string;
@@ -33,6 +35,7 @@ interface SpaceChatProps {
   onCloseExternal?: () => void;
   onChangeOpenExternal?: (val: boolean) => void;
   initialMessage?: string;
+  existingGoalData?: any;
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
@@ -220,7 +223,28 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
   );
 };
 
-export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage }: SpaceChatProps) {
+function renderFormattedText(text: string, isAI: boolean) {
+  return text.split('\n').map((line, i, arr) => (
+    <React.Fragment key={i}>
+      {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return (
+            <strong 
+              key={j} 
+              className={`font-black ${isAI ? 'text-slate-900' : 'text-white'}`}
+            >
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        return part;
+      })}
+      {i !== arr.length - 1 && <br />}
+    </React.Fragment>
+  ));
+}
+
+export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage, existingGoalData }: SpaceChatProps) {
   const [isOpenInternal, setIsOpenInternal] = useState(false);
   const isOpen = isOpenExternal !== undefined ? isOpenExternal : isOpenInternal;
   const setIsOpen = (val: boolean) => {
@@ -232,7 +256,89 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
       setIsOpenInternal(val);
     }
   };
+  const [activeSpaceId, setActiveSpaceId] = useState(spaceId);
+  const [activeSpaceName, setActiveSpaceName] = useState(spaceName);
+  const [userSpaces, setUserSpaces] = useState<{ id: string; name: string }[]>([
+    { id: spaceId, name: spaceName }
+  ]);
+  const [selectedGoalForTasks, setSelectedGoalForTasks] = useState<any | null>(null);
+
+  const isPersonal = activeSpaceId === 'personal' || activeSpaceName === 'Árbol Personal';
+
   const [input, setInput] = useState('');
+  const [attachedContext, setAttachedContext] = useState<{ id: string; name: string; type: 'goal' | 'task' | 'habit' } | null>(null);
+  const [showContextPopover, setShowContextPopover] = useState(false);
+  const [popoverTab, setPopoverTab] = useState<'goals' | 'tasks'>('goals');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Clear search query when changing views
+  useEffect(() => {
+    setSearchQuery('');
+  }, [popoverTab, selectedGoalForTasks, showContextPopover]);
+
+  const { treeData, loading: loadingTree } = useLifeTree(isPersonal ? undefined : activeSpaceId);
+
+  const goalsList = treeData?.branches || [];
+  const tasksList = treeData 
+    ? treeData.branches.flatMap((branch: any) => 
+        (branch.leaves || []).map((leaf: any) => ({
+          id: leaf.id,
+          name: leaf.name,
+          type: leaf.type,
+          completed: leaf.completed,
+          parentName: branch.goal
+        }))
+      )
+    : [];
+
+  // Sync state with props
+  useEffect(() => {
+    setActiveSpaceId(spaceId);
+  }, [spaceId]);
+
+  useEffect(() => {
+    setActiveSpaceName(spaceName);
+  }, [spaceName]);
+
+  // Load spaces list
+  useEffect(() => {
+    getSpaces()
+      .then((data) => {
+        setUserSpaces([
+          { id: 'personal', name: 'Árbol Personal' },
+          ...data.map((s) => ({ id: s.id, name: s.name }))
+        ]);
+      })
+      .catch((err) => {
+        console.error('Failed to load user spaces:', err);
+        setUserSpaces([
+          { id: 'personal', name: 'Árbol Personal' }
+        ]);
+      });
+  }, []);
+
+  // Reset drill-down context when popover closes
+  useEffect(() => {
+    if (!showContextPopover) {
+      setSelectedGoalForTasks(null);
+    }
+  }, [showContextPopover]);
+
+  // Reset drill-down context when switching tabs
+  useEffect(() => {
+    setSelectedGoalForTasks(null);
+  }, [popoverTab]);
+
+  // Listen for Escape key to close the modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Handle initialMessage
   useEffect(() => {
@@ -240,13 +346,94 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
       setInput(initialMessage);
     }
   }, [initialMessage, isOpen]);
+
+  // When opened with an existing goal, pre-load it as a draft plan and go to draft tab
+  useEffect(() => {
+    if (isOpen && existingGoalData) {
+      try {
+        const allLeaves = existingGoalData.leaves || [];
+      const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
+      const tasks = allLeaves.filter((l: any) => l.type === 'task');
+      const milestones = allLeaves.filter((l: any) => l.type === 'milestone');
+
+      const mappedDraft = {
+        isExistingRefactor: true,
+        goalId: existingGoalData.id,
+        phases: phases.map((phase: any) => {
+          const phaseTasks = tasks.filter((t: any) => t.parentId === phase.id);
+          const phaseMilestone = milestones.find((m: any) => m.parentId === phase.id);
+          return {
+            id: phase.id,
+            isCompleted: phase.completed,
+            title: phase.name,
+            description: phase.description,
+            targetDate: phase.targetDate,
+            milestone: phaseMilestone ? {
+              title: phaseMilestone.name,
+              description: phaseMilestone.description,
+              evaluationType: phaseMilestone.impact?.evaluationType,
+              evaluationInstructions: phaseMilestone.impact?.evaluationInstructions
+            } : undefined,
+            tasks: phaseTasks.map((t: any) => ({
+              id: t.id,
+              isCompleted: t.completed ?? t.isCompleted,
+              name: t.title || t.name,
+              description: t.description,
+              targetDate: t.targetDate,
+              estimatedHours: t.estimatedHours,
+              notes: t.notes || '',
+              subTasks: (t.tasks || []).map((st: any) => ({
+                id: st.id,
+                isCompleted: st.isCompleted,
+                name: st.title || st.name,
+                description: st.description,
+                estimatedHours: st.estimatedHours
+              }))
+            }))
+          };
+        }),
+        habits: [],
+        continuousProjects: []
+      };
+      setDraftPlan(mappedDraft);
+      setMobileTab('draft');
+    } catch (e) {
+      console.error('[SpaceChat] draftPlan mapping error', e);
+    }
+    }
+  }, [isOpen, existingGoalData]);
   const [isSending, setIsSending] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef<number>(0);
   const notificationPermissionGranted = useRef<boolean>(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on input content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+    }
+  }, [input]);
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const form = e.currentTarget.form;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  };
 
   const [draftPlan, setDraftPlan] = useState<any>(null);
   const [isDrafting, setIsDrafting] = useState(false);
@@ -258,7 +445,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const [pendingBranch, setPendingBranch] = useState<any>(null);
   const [branchCreated, setBranchCreated] = useState(false);
 
-  const isPersonal = spaceId === 'personal' || spaceName === 'Árbol Personal';
+
 
   const updateDraftPlanItem = (type: 'phase' | 'task' | 'subTask', phaseIdx: number, taskIdx?: number, subTaskIdx?: number, field?: string, newValue?: any) => {
     if (!draftPlan) return;
@@ -309,7 +496,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   );
 
   const { data: spaceMessages, mutate: mutateSpaceMessages } = useSWR<Message[]>(
-    isPersonal ? null : `/api/spaces/${spaceId}/chat`, 
+    isPersonal ? null : `/api/spaces/${activeSpaceId}/chat`, 
     fetcher, 
     { refreshInterval: 3000 }
   );
@@ -357,7 +544,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
           goalData,
           previousDraft: draftPlan,
           revisionInstructions,
-          spaceId
+          spaceId: activeSpaceId
         })
       });
       const data = await res.json();
@@ -429,7 +616,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
         },
         draftPlan: draftPlan,
         chatHistory: messages,
-        spaceId: isPersonal ? null : spaceId
+        spaceId: isPersonal ? null : activeSpaceId
       };
 
       const res = await fetch('/api/ai/goal-generate', {
@@ -473,6 +660,48 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
       alert('Error de red al plantar la rama.');
     } finally {
       setCreatingBranch(false);
+    }
+  };
+
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetChat = async () => {
+    if (!confirm('¿Estás seguro de que deseas reiniciar esta conversación? Se borrarán todos los mensajes.')) {
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const url = isPersonal 
+        ? `/api/ai/chat?context=global` 
+        : `/api/spaces/${activeSpaceId}/chat`;
+        
+      const res = await fetch(url, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        if (isPersonal) {
+          mutateSession((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              data: {
+                ...prev.data,
+                messages: []
+              }
+            };
+          }, false);
+          mutateSession();
+        } else {
+          mutateSpaceMessages([], false);
+          mutateSpaceMessages();
+        }
+      } else {
+        alert('Error al reiniciar el chat.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al reiniciar el chat.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -535,20 +764,35 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
             message: text,
             context: 'global',
             sessionId: sessionData?.data?.id || undefined,
-            draftPlan
+            draftPlan,
+            attachedContext: attachedContext ? {
+              id: attachedContext.id,
+              name: attachedContext.name,
+              type: attachedContext.type
+            } : undefined
           })
         });
       } else {
-        res = await fetch(`/api/spaces/${spaceId}/chat`, {
+        res = await fetch(`/api/spaces/${activeSpaceId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: text, mentions, draftPlan })
+          body: JSON.stringify({ 
+            content: text, 
+            mentions, 
+            draftPlan,
+            attachedContext: attachedContext ? {
+              id: attachedContext.id,
+              name: attachedContext.name,
+              type: attachedContext.type
+            } : undefined
+          })
         });
       }
 
       const data = await res.json();
       
       if (data.success) {
+        setAttachedContext(null);
         const aiResponse = isPersonal ? data : data.aiResponse;
         
         if (aiResponse) {
@@ -596,8 +840,20 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
     }
   };
 
+  const filteredGoals = (goalsList || []).filter((g: any) => 
+    g.goal?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    g.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredTasks = selectedGoalForTasks
+    ? (selectedGoalForTasks.leaves || []).filter((t: any) => 
+        t.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
   const content = (
     <>
+
       {/* Floating Toggle Button */}
       {!isOpen && (
         <motion.button
@@ -616,27 +872,44 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
         </motion.button>
       )}
 
-      {/* Chat Sidebar / Drawer */}
+      {/* Centered Global Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className={`fixed inset-y-0 right-0 h-full bg-white shadow-2xl z-[10000] flex flex-col border-l border-slate-200 transition-all duration-300 ${
-              draftPlan ? 'w-full md:max-w-6xl' : 'w-full sm:w-96'
-            }`}
+          <div
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 md:p-6"
           >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`bg-white shadow-2xl flex flex-col border border-slate-100 overflow-hidden rounded-3xl transition-all duration-300 max-h-[85vh] ${
+                draftPlan ? 'w-full max-w-6xl h-[85vh]' : 'w-full max-w-3xl h-[80vh] md:h-[75vh]'
+              }`}
+            >
             {/* Header */}
             <div className="flex flex-col border-b border-slate-100 bg-white">
               <div className="flex items-center justify-between px-6 py-4">
-                <div>
-                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-emerald-500" />
-                    Chat del Árbol
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-1">{spaceName}</p>
+                <div className="flex-1 pr-4">
+                  <div className="relative inline-block w-full max-w-[220px]">
+                    <select
+                      value={activeSpaceId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const selected = userSpaces.find(s => s.id === selectedId);
+                        if (selected) {
+                          setActiveSpaceId(selected.id);
+                          setActiveSpaceName(selected.name);
+                        }
+                      }}
+                      className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-800 cursor-pointer appearance-none pr-8 transition-colors"
+                    >
+                      {userSpaces.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.id === 'personal' ? '🌳' : '👥'} {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 {draftPlan && (
@@ -660,6 +933,14 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                   </div>
                 )}
 
+                <button 
+                  onClick={handleResetChat}
+                  disabled={isResetting}
+                  title="Reiniciar chat"
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600 disabled:opacity-50 mr-1"
+                >
+                  <RotateCcw className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} />
+                </button>
                 <button 
                   onClick={() => setIsOpen(false)}
                   className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
@@ -701,16 +982,16 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                         }`}>
                           {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
-                        <div className={`flex flex-col ${isAI ? 'items-start' : 'items-end'}`}>
+                        <div className={`flex flex-col max-w-[85%] ${isAI ? 'items-start' : 'items-end'}`}>
                           <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">
                             {isAI ? 'BEAN' : msg.user?.name || 'Usuario'}
                           </span>
-                          <div className={`px-4 py-2.5 rounded-2xl max-w-[260px] text-[13px] leading-relaxed shadow-sm ${
+                          <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
                             isAI 
                               ? 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm' 
                               : 'bg-emerald-600 text-white rounded-tr-sm'
                           }`}>
-                            {msg.content}
+                            {renderFormattedText(msg.content, isAI)}
                           </div>
                         </div>
                       </div>
@@ -722,7 +1003,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                       <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-emerald-100 text-emerald-600">
                         <Bot className="w-4 h-4" />
                       </div>
-                      <div className="flex flex-col items-start">
+                      <div className="flex flex-col max-w-[85%] items-start">
                         <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">BEAN</span>
                         <div className="px-4 py-3.5 rounded-2xl bg-white border border-slate-100 rounded-tl-sm flex items-center gap-1.5 shadow-sm min-h-[44px]">
                           <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
@@ -738,21 +1019,218 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
 
                 {/* Input Area */}
                 <div className="p-4 bg-white border-t border-slate-100">
-                  <form onSubmit={handleSend} className="relative">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder={isPersonal ? "Escribe un mensaje a tu Guía BEAN..." : "Escribe un mensaje o etiqueta a @bean..."}
-                      className="w-full bg-slate-100 text-slate-800 text-sm rounded-full pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all border border-transparent focus:border-emerald-500/30"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!input.trim() || isSending}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Attached Context Badge */}
+                  {attachedContext && (
+                    <div className="mb-2 flex items-center gap-1.5 bg-emerald-50 text-emerald-800 text-xs px-3 py-1.5 rounded-xl border border-emerald-100 w-fit font-semibold shadow-sm animate-in fade-in slide-in-from-bottom-1 duration-150">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="max-w-[200px] truncate">
+                        Contexto: {attachedContext.name} ({attachedContext.type === 'goal' ? 'Meta' : 'Tarea/Hábito'})
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => setAttachedContext(null)} 
+                        className="ml-1 p-0.5 hover:bg-emerald-100 rounded-full text-emerald-600 hover:text-emerald-800 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSend} className="relative flex items-end gap-2">
+                    {/* Add Context Button */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowContextPopover(!showContextPopover)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors border shrink-0 ${
+                          showContextPopover 
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-600' 
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                        }`}
+                      >
+                        <Plus className={`w-5 h-5 transition-transform ${showContextPopover ? 'rotate-45' : ''}`} />
+                      </button>
+
+                      {/* Context Popover Dropdown */}
+                      {showContextPopover && (
+                        <div className="absolute bottom-12 left-0 z-50 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                          {/* Title */}
+                          <div className="flex justify-between items-center px-1">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Adjuntar contexto</h4>
+                            <button 
+                              type="button" 
+                              onClick={() => setShowContextPopover(false)}
+                              className="text-slate-400 hover:text-slate-600 p-0.5"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          
+                          {/* Search Input */}
+                          <div className="relative px-0.5">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder={
+                                popoverTab === 'goals' 
+                                  ? "Buscar meta..." 
+                                  : selectedGoalForTasks 
+                                    ? "Buscar tarea..." 
+                                    : "Buscar meta..."
+                              }
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-7 py-1.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all text-slate-800"
+                            />
+                            {searchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Tabs */}
+                          <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-[11px] font-bold">
+                            <button
+                              type="button"
+                              onClick={() => setPopoverTab('goals')}
+                              className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                                popoverTab === 'goals' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              Metas
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPopoverTab('tasks')}
+                              className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                                popoverTab === 'tasks' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              Tareas
+                            </button>
+                          </div>
+
+                          {/* List container */}
+                          <div className="max-h-48 overflow-y-auto mt-0.5 space-y-1 pr-0.5">
+                            {popoverTab === 'goals' && (
+                              loadingTree ? (
+                                <p className="text-xs text-slate-400 p-3 text-center">Cargando metas...</p>
+                              ) : filteredGoals.length === 0 ? (
+                                <p className="text-xs text-slate-400 p-3 text-center">No se encontraron metas</p>
+                              ) : (
+                                filteredGoals.map((g: any) => (
+                                  <button
+                                    key={g.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setAttachedContext({ id: g.id, name: g.goal, type: 'goal' });
+                                      setShowContextPopover(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-emerald-50/50 hover:border-emerald-100 border border-transparent transition-all text-slate-700 hover:text-emerald-950 text-xs font-semibold flex items-start gap-2"
+                                  >
+                                    <Target className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="truncate font-bold text-slate-800">{g.goal}</div>
+                                      <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">{g.description || 'Sin descripción'}</div>
+                                    </div>
+                                  </button>
+                                ))
+                              )
+                            )}
+
+                            {popoverTab === 'tasks' && (
+                              loadingTree ? (
+                                <p className="text-xs text-slate-400 p-3 text-center">Cargando...</p>
+                              ) : selectedGoalForTasks === null ? (
+                                <>
+                                  <p className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                                    Selecciona una meta:
+                                  </p>
+                                  {filteredGoals.length === 0 ? (
+                                    <p className="text-xs text-slate-400 p-3 text-center">No se encontraron metas</p>
+                                  ) : (
+                                    filteredGoals.map((g: any) => (
+                                      <button
+                                        key={g.id}
+                                        type="button"
+                                        onClick={() => setSelectedGoalForTasks(g)}
+                                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-emerald-50/50 hover:border-emerald-100 border border-transparent transition-all text-slate-700 hover:text-emerald-950 text-xs font-semibold flex items-center gap-2"
+                                      >
+                                        <Target className="w-4 h-4 text-emerald-500 shrink-0" />
+                                        <span className="truncate flex-1 font-bold text-slate-800">🌳 {g.goal}</span>
+                                      </button>
+                                    ))
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-2 pb-2 mb-2 border-b border-slate-100 px-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedGoalForTasks(null)}
+                                      className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-500 hover:text-slate-700 flex items-center"
+                                    >
+                                      <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Ver tareas en</p>
+                                      <p className="text-xs font-bold text-slate-700 truncate">{selectedGoalForTasks.goal}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  {filteredTasks.length === 0 ? (
+                                    <p className="text-xs text-slate-400 p-3 text-center">No se encontraron tareas</p>
+                                  ) : (
+                                    filteredTasks.map((t: any) => (
+                                      <button
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setAttachedContext({ id: t.id, name: t.name, type: t.type === 'task' ? 'task' : 'habit' });
+                                          setSelectedGoalForTasks(null);
+                                          setShowContextPopover(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-emerald-50/50 hover:border-emerald-100 border border-transparent transition-all text-slate-700 hover:text-emerald-950 text-xs font-semibold flex items-center gap-2"
+                                      >
+                                        <CheckSquare className={`w-4 h-4 shrink-0 ${t.completed ? 'text-slate-350' : 'text-emerald-500'}`} />
+                                        <span className={`truncate flex-1 font-medium ${t.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                          {t.name}
+                                        </span>
+                                      </button>
+                                    ))
+                                  )}
+                                </>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Chat Text Input */}
+                    <div className="relative flex-1">
+                      <textarea
+                        ref={textareaRef}
+                        rows={1}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleTextareaKeyDown}
+                        placeholder={isPersonal ? "Escribe un mensaje a tu Guía BEAN..." : "Escribe un mensaje o etiqueta a @bean..."}
+                        className="w-full bg-slate-100 text-slate-800 text-sm rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all border border-transparent focus:border-emerald-500/30 resize-none min-h-[44px] max-h-40 overflow-y-auto align-bottom block"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!input.trim() || isSending}
+                        className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>
@@ -867,34 +1345,35 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                       ))}
                     </div>
                   </div>
-                  
-                  {/* Draft Detail Modal Sheet */}
-                  <AnimatePresence>
-                    {selectedDraftItem && (
-                      <DraftItemDetailSheet
-                        selection={selectedDraftItem}
-                        itemData={
-                          selectedDraftItem.type === 'phase'
-                            ? draftPlan.phases[selectedDraftItem.pIdx]
-                            : draftPlan.phases[selectedDraftItem.pIdx]?.tasks[selectedDraftItem.tIdx!]
-                        }
-                        members={members}
-                        onClose={() => setSelectedDraftItem(null)}
-                        updateDraftPlanItem={updateDraftPlanItem}
-                        handleDeleteDraftItem={handleDeleteDraftItem}
-                        handleAddDraftItem={handleAddDraftItem}
-                        handleAddContextToChat={handleAddContextToChat}
-                        isPersonal={isPersonal}
-                      />
-                    )}
-                  </AnimatePresence>
-
                 </div>
               )}
+                  
+              {/* Draft Detail Modal Sheet */}
+              <AnimatePresence>
+                {selectedDraftItem && (
+                  <DraftItemDetailSheet
+                    selection={selectedDraftItem}
+                    itemData={
+                      selectedDraftItem.type === 'phase'
+                        ? draftPlan.phases[selectedDraftItem.pIdx]
+                        : draftPlan.phases[selectedDraftItem.pIdx]?.tasks[selectedDraftItem.tIdx!]
+                    }
+                    members={members}
+                    onClose={() => setSelectedDraftItem(null)}
+                    updateDraftPlanItem={updateDraftPlanItem}
+                    handleDeleteDraftItem={handleDeleteDraftItem}
+                    handleAddDraftItem={handleAddDraftItem}
+                    handleAddContextToChat={handleAddContextToChat}
+                    isPersonal={isPersonal}
+                  />
+                )}
+              </AnimatePresence>
+
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
+    </AnimatePresence>
     </>
   );
 

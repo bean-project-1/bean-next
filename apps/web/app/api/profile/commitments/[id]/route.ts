@@ -123,6 +123,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         where: { id },
         data: {
           streakCount: newStreak,
+          completedCount: { increment: 1 },
           lastCompletedAt: now
         }
       });

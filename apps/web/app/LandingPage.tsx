@@ -640,7 +640,7 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
           </div>
 
           {/* árbol SVG — GSAP controla todo */}
-          <div className="relative z-10 flex justify-center w-full max-w-[320px] sm:max-w-[440px] lg:max-w-[540px] xl:max-w-[580px] aspect-[440/430] flex-shrink-0">
+          <div className="relative z-10 flex justify-center w-full max-w-[380px] sm:max-w-[520px] lg:max-w-[640px] xl:max-w-[700px] aspect-[440/430] flex-shrink-0">
             <HeroTree svgRef={treeSvgRef} />
           </div>
         </div>
@@ -659,93 +659,60 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         </div>
       </div>
 
-      {/* ═════ SPLIT ═════ */}
-      <section className="grid md:grid-cols-2" style={{ minHeight: 480 }}>
+      {/* ═════ DIMENSIONES ═════ */}
+      <section className="py-20 px-6" style={{ background: C.creamDk }}>
+        <div className="mx-auto max-w-6xl">
+          <motion.div className="mb-12"
+            variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Tu desarrollo integral</p>
+            <h2 className="font-serif leading-tight" style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', color: C.ink }}>
+              19 dimensiones de{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>lo que eres.</em>
+            </h2>
+          </motion.div>
 
-        {/* izq — dark, chat */}
-        <motion.div className="flex flex-col justify-center px-10 py-16" style={{ background: C.ink }}
-          variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: C.green }}>Tu coach de vida</p>
-          <h2 className="font-serif mb-4 leading-tight" style={{ fontSize: 'clamp(28px, 3.5vw, 40px)', color: '#fff' }}>
-            La IA que te conoce{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>de verdad.</em>
-          </h2>
-          <p className="mb-8 text-sm leading-relaxed" style={{ color: C.ghost }}>
-            No respuestas genéricas. El coach recuerda tus metas, hábitos y estado anímico para guiarte con precisión.
-          </p>
-          <div className="flex flex-col gap-3">
-            {[
-              { from: 'bean', text: 'Hola Valeria 👋 Vi que cerraste el curso de diseño. ¿Cómo te sientes?' },
-              { from: 'user', text: 'Muy bien! Aunque siento que me falta practicar más.' },
-              { from: 'bean', text: 'Perfecto — ¿lo agregamos como meta de práctica a tu árbol?' },
-            ].map((msg, i) => (
-              <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'items-start gap-2'}`}>
-                {msg.from === 'bean' && (
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
-                    style={{ background: C.green }}>
-                    <SeedIcon size={13} />
+          <div className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
+            {/* dim cards — GSAP stagger */}
+            <div ref={dimCardsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {DIMS.map((d) => (
+                <div key={d.name} data-dim-card
+                  className="flex flex-col gap-1.5 rounded-2xl p-5"
+                  style={{ background: 'rgba(255,255,255,0.7)', border: `1px solid ${C.border}` }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">{d.icon}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: C.green }}>
+                      {d.status}
+                    </span>
                   </div>
-                )}
-                <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed" style={{
-                  maxWidth: 280,
-                  background: msg.from === 'bean' ? '#2A2A2A' : C.green,
-                  color: msg.from === 'bean' ? '#E5E5E5' : '#fff',
-                  borderRadius: msg.from === 'bean' ? '4px 18px 18px 18px' : '18px 4px 18px 18px',
-                }}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
- 
-        {/* der — crema, dimensiones */}
-        <motion.div className="flex flex-col justify-center px-10 py-16" style={{ background: C.creamDk }}
-          variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} custom={0.15}>
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Tu desarrollo integral</p>
-          <h2 className="font-serif mb-8 leading-tight" style={{ fontSize: 'clamp(28px, 3.5vw, 40px)', color: C.ink }}>
-            19 dimensiones de{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>lo que eres.</em>
-          </h2>
- 
-          {/* dim cards — GSAP stagger */}
-          <div ref={dimCardsRef} className="grid grid-cols-2 gap-4 mb-4">
-            {DIMS.map((d) => (
-              <div key={d.name} data-dim-card
-                className="flex flex-col gap-1.5 rounded-2xl p-4 min-h-[140px]"
-                style={{ background: 'rgba(255,255,255,0.6)', border: `1px solid ${C.border}` }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">{d.icon}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.1)', color: C.green }}>
-                    {d.status}
-                  </span>
-                </div>
-                <span className="text-xs font-bold mt-1" style={{ color: C.ink }}>{d.name}</span>
-                <span className="font-serif text-xl font-bold leading-none" style={{ color: C.green }}>{d.count}</span>
-                <p className="text-[10px] leading-normal mt-0.5" style={{ color: C.muted }}>{d.desc}</p>
-              </div>
-            ))}
-          </div>
- 
-          {/* value proposition card */}
-          <div className="rounded-2xl px-5 py-4 text-left" style={{ background: C.ink }}>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.green }}>Lo que BEAN activa en ti</p>
-            <div className="flex flex-col gap-2.5">
-              {[
-                { icon: '🌱', label: 'Coach IA personalizado', detail: 'Que recuerda quién eres y te guía con precisión' },
-                { icon: '🌿', label: 'Metas con propósito real', detail: 'Conectadas a tus dimensiones y compromisos base' },
-                { icon: '🌳', label: 'Tu bosque personal', detail: 'Una metáfora visual de todo tu crecimiento en la vida' },
-                { icon: '✦', label: '19 dimensiones de vida', detail: 'Identidad, Capital y Experiencia — todo lo que eres' },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-3">
-                  <span className="text-base mt-0.5 shrink-0">{item.icon}</span>
-                  <div>
-                    <p className="text-xs font-bold leading-none" style={{ color: '#fff' }}>{item.label}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: C.ghost }}>{item.detail}</p>
-                  </div>
+                  <span className="text-sm font-bold mt-2" style={{ color: C.ink }}>{d.name}</span>
+                  <span className="font-serif text-2xl font-bold leading-none" style={{ color: C.green }}>{d.count}</span>
+                  <p className="text-[11px] leading-normal mt-1" style={{ color: C.muted }}>{d.desc}</p>
                 </div>
               ))}
             </div>
+
+            {/* value proposition card */}
+            <motion.div className="rounded-2xl px-6 py-6 text-left h-full flex flex-col justify-center" style={{ background: C.ink }}
+              variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} custom={0.2}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.green }}>Lo que BEAN activa en ti</p>
+              <div className="flex flex-col gap-4">
+                {[
+                  { icon: '🌱', label: 'Coach IA personalizado', detail: 'Que recuerda quién eres y te guía con precisión en cada etapa' },
+                  { icon: '🌿', label: 'Metas con propósito real', detail: 'Conectadas a tus dimensiones y compromisos base' },
+                  { icon: '🌳', label: 'Tu bosque personal', detail: 'Una metáfora visual de todo tu crecimiento en la vida' },
+                  { icon: '✦', label: 'Identidad, Capital y Experiencia', detail: 'Los tres pilares que cubren todo lo que eres' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-start gap-3">
+                    <span className="text-lg mt-0.5 shrink-0">{item.icon}</span>
+                    <div>
+                      <p className="text-sm font-bold leading-tight" style={{ color: '#fff' }}>{item.label}</p>
+                      <p className="text-xs mt-0.5 leading-relaxed" style={{ color: C.ghost }}>{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ═════ PANORAMIC TREES ═════ */}

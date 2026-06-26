@@ -178,6 +178,23 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
           </div>
         )}
 
+        {type === 'task' && itemData.subTasks && itemData.subTasks.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Sub-tareas Desgranadas</h4>
+            <div className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4 space-y-2.5 shadow-inner">
+              {itemData.subTasks.map((st: any, sIdx: number) => (
+                <div key={sIdx} className="flex items-start gap-2 text-xs text-stone-700">
+                  <span className="mt-1 w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-bold text-stone-850">{st.name || st.title}</span>
+                    {st.description && <p className="text-stone-500 mt-0.5">{st.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="pt-4 border-t border-stone-100 space-y-3 pb-8">
           <button 
             onClick={() => {
@@ -224,24 +241,68 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
 };
 
 function renderFormattedText(text: string, isAI: boolean) {
-  return text.split('\n').map((line, i, arr) => (
-    <React.Fragment key={i}>
-      {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return (
-            <strong 
-              key={j} 
-              className={`font-black ${isAI ? 'text-slate-900' : 'text-white'}`}
-            >
-              {part.slice(2, -2)}
-            </strong>
-          );
-        }
-        return part;
-      })}
-      {i !== arr.length - 1 && <br />}
-    </React.Fragment>
-  ));
+  const parseInlineBold = (lineText: string) => {
+    return lineText.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong 
+            key={j} 
+            className={`font-black ${isAI ? 'text-slate-900' : 'text-white'}`}
+          >
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
+
+  const lines = text.split('\n');
+  const textClassName = isAI ? 'text-slate-700' : 'text-white/90';
+  const headerClassName = isAI ? 'text-slate-900' : 'text-white';
+
+  return lines.map((line, i) => {
+    // 1. Headers (### or ## or #)
+    const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+      const parsed = parseInlineBold(content);
+      if (level === 1) return <h1 key={i} className={`text-xl font-bold mt-4 mb-2 ${headerClassName}`}>{parsed}</h1>;
+      if (level === 2) return <h2 key={i} className={`text-lg font-bold mt-3 mb-2 ${headerClassName}`}>{parsed}</h2>;
+      return <h3 key={i} className={`text-md font-bold mt-2.5 mb-1.5 ${headerClassName}`}>{parsed}</h3>;
+    }
+
+    // 2. Unordered Lists (- or * or •)
+    const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
+    if (bulletMatch) {
+      const content = bulletMatch[1];
+      return (
+        <li key={i} className={`list-disc ml-5 mb-1 text-[14px] ${textClassName}`}>
+          {parseInlineBold(content)}
+        </li>
+      );
+    }
+
+    // 3. Ordered Lists (1.)
+    const numberMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (numberMatch) {
+      const content = numberMatch[2];
+      return (
+        <li key={i} className={`list-decimal ml-5 mb-1 text-[14px] ${textClassName}`}>
+          {parseInlineBold(content)}
+        </li>
+      );
+    }
+
+    // Default paragraph or break
+    if (line.trim() === '') return <div key={i} className="h-2" />;
+    return (
+      <p key={i} className={`mb-1 leading-relaxed text-[15px] ${textClassName}`}>
+        {parseInlineBold(line)}
+      </p>
+    );
+  });
 }
 
 export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage, existingGoalData }: SpaceChatProps) {
@@ -438,6 +499,13 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const [draftPlan, setDraftPlan] = useState<any>(null);
   const [isDrafting, setIsDrafting] = useState(false);
   const [draftStep, setDraftStep] = useState('');
+  const [draftSteps, setDraftSteps] = useState<Array<{ step: number; label: string; status: 'pending' | 'active' | 'done' | 'failed' }>>([
+    { step: 0, label: 'Inicializando parámetros y ADN...', status: 'pending' },
+    { step: 1, label: 'Analizando punto de partida...', status: 'pending' },
+    { step: 2, label: 'Diseñando fases y tareas...', status: 'pending' },
+    { step: 3, label: 'Desgranando subtareas...', status: 'pending' },
+  ]);
+  const [draftDiagnosis, setDraftDiagnosis] = useState<any>(null);
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [selectedDraftItem, setSelectedDraftItem] = useState<any>(null);
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
@@ -531,11 +599,17 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const generateDraft = async (goalData: any, revisionInstructions?: string) => {
     setIsDrafting(true);
     setMobileTab('draft');
-    setDraftStep(revisionInstructions ? 'Repensando el plan...' : 'Analizando agenda...');
-    let timer: any;
-    if (!revisionInstructions) {
-      timer = setTimeout(() => setDraftStep('Diseñando el plan estructurado...'), 4000);
-    }
+    
+    // Reset steps
+    setDraftSteps([
+      { step: 0, label: 'Inicializando parámetros y ADN...', status: 'active' },
+      { step: 1, label: 'Analizando punto de partida...', status: 'pending' },
+      { step: 2, label: 'Diseñando fases y tareas...', status: 'pending' },
+      { step: 3, label: 'Desgranando subtareas...', status: 'pending' },
+    ]);
+    setDraftDiagnosis(null);
+    setDraftStep('Inicializando parámetros y ADN...');
+
     try {
       const res = await fetch('/api/ai/draft-plan', {
         method: 'POST',
@@ -547,30 +621,118 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
           spaceId: activeSpaceId
         })
       });
-      const data = await res.json();
-      if (data.success) {
-        setDraftPlan(data.draft);
-      } else {
-        const errorText = data.error || 'Error interno';
-        const errorMsg: Message = {
-          id: Date.now().toString() + '_err',
-          role: 'assistant',
-          content: `❌ Error al diseñar el borrador del plan: ${errorText}`,
-          createdAt: new Date().toISOString()
-        };
-        if (isPersonal) {
-          mutateSession((current: any) => {
-            if (!current?.success) return current;
-            return {
-              ...current,
-              data: {
-                ...current.data,
-                messages: [...(current.data.messages || []), errorMsg]
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      if (!res.body) {
+        throw new Error('Response body is empty');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processEvent = (event: any) => {
+        if (event.type === 'step') {
+          setDraftSteps(prev => prev.map(s => {
+            if (s.step === event.step) {
+              return { ...s, label: event.label || s.label, status: event.status };
+            }
+            if (event.status === 'active' && s.step < event.step) {
+              return { ...s, status: 'done' };
+            }
+            return s;
+          }));
+          if (event.status === 'active') {
+            setDraftStep(event.label || 'Procesando...');
+          }
+        } else if (event.type === 'diagnosis') {
+          setDraftDiagnosis(event.data);
+        } else if (event.type === 'negotiation_needed') {
+          const diagnosis = event.diagnosis;
+          const renegotiationMsg: Message = {
+            id: Date.now().toString() + '_reneg',
+            role: 'assistant',
+            content: `⚠️ **Evaluación de Viabilidad (Meta No Viable Directamente)**:
+            
+* **Punto de partida**: ${diagnosis.origin}
+* **Brechas identificadas**:
+${(diagnosis.gaps || []).map((g: string) => `  - ${g}`).join('\n')}
+* **Riesgos y Advertencias**:
+${(diagnosis.warnings || []).map((w: string) => `  - ${w}`).join('\n')}
+* **Duración estimada**: ${diagnosis.estimatedMonths} meses.
+
+El plan no es viable actualmente con la disponibilidad de horas o el presupuesto indicado. ¿Cómo deseas proceder? Podemos:
+1. Ajustar el presupuesto o tiempo semanal.
+2. Extender el plazo.
+3. Acotar el alcance.`,
+            createdAt: new Date().toISOString()
+          };
+
+          if (isPersonal) {
+            mutateSession((current: any) => {
+              if (!current?.success) return current;
+              return {
+                ...current,
+                data: {
+                  ...current.data,
+                  messages: [...(current.data.messages || []), renegotiationMsg]
+                }
+              };
+            }, false);
+          } else {
+            mutateSpaceMessages((current) => [...(current || []), renegotiationMsg], false);
+          }
+          setIsDrafting(false);
+          return true; // halted
+        } else if (event.type === 'complete') {
+          setDraftPlan(event.draft);
+        } else if (event.type === 'error') {
+          throw new Error(event.error);
+        }
+        return false;
+      };
+
+      let halted = false;
+      while (true) {
+        const { value, done } = await reader.read();
+        
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            try {
+              const event = JSON.parse(trimmed);
+              if (processEvent(event)) {
+                halted = true;
+                break;
               }
-            };
-          }, false);
-        } else {
-          mutateSpaceMessages((current) => [...(current || []), errorMsg], false);
+            } catch (jsonErr) {
+              console.error('Error parsing line:', trimmed, jsonErr);
+            }
+          }
+        }
+
+        if (halted) break;
+
+        if (done) {
+          const trimmed = buffer.trim();
+          if (trimmed) {
+            try {
+              const event = JSON.parse(trimmed);
+              processEvent(event);
+            } catch (jsonErr) {
+              console.error('Error parsing final line:', trimmed, jsonErr);
+            }
+          }
+          break;
         }
       }
     } catch (e: any) {
@@ -578,7 +740,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
       const connErrorMsg: Message = {
         id: Date.now().toString() + '_err_conn',
         role: 'assistant',
-        content: `❌ Error de conexión al generar el borrador del plan.`,
+        content: `❌ Error al generar el borrador del plan: ${e.message || 'Error de conexión'}`,
         createdAt: new Date().toISOString()
       };
       if (isPersonal) {
@@ -596,7 +758,6 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
         mutateSpaceMessages((current) => [...(current || []), connErrorMsg], false);
       }
     } finally {
-      if (timer) clearTimeout(timer);
       setIsDrafting(false);
       setDraftStep('');
     }
@@ -796,8 +957,15 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
         const aiResponse = isPersonal ? data : data.aiResponse;
         
         if (aiResponse) {
-          if (aiResponse.triggerRevision && draftPlan && pendingBranch) {
-            generateDraft(pendingBranch, aiResponse.triggerRevision);
+          if (aiResponse.triggerRevision && draftPlan) {
+            const branchToUse = pendingBranch || {
+              goalTitle: draftPlan.title || 'Meta',
+              dimensionName: 'skills',
+              hoursPerWeek: 10,
+              targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            };
+            setPendingBranch(branchToUse);
+            generateDraft(branchToUse, aiResponse.triggerRevision);
           } else if (aiResponse.branchData) {
             setPendingBranch(aiResponse.branchData);
             setBranchCreated(false);
@@ -882,7 +1050,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
             <div
               onClick={(e) => e.stopPropagation()}
               className={`bg-white shadow-2xl flex flex-col border border-slate-100 overflow-hidden rounded-3xl transition-all duration-300 max-h-[85vh] ${
-                draftPlan ? 'w-full max-w-6xl h-[85vh]' : 'w-full max-w-3xl h-[80vh] md:h-[75vh]'
+                (draftPlan || isDrafting) ? 'w-full max-w-6xl h-[85vh]' : 'w-full max-w-3xl h-[80vh] md:h-[75vh]'
               }`}
             >
             {/* Header */}
@@ -912,7 +1080,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                   </div>
                 </div>
 
-                {draftPlan && (
+                {(draftPlan || isDrafting) && (
                   <div className="flex md:hidden bg-slate-100 p-0.5 rounded-full border border-slate-200">
                     <button
                       onClick={() => setMobileTab('chat')}
@@ -951,12 +1119,12 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
             </div>
 
             {/* Split content */}
-            <div className={`flex-1 flex overflow-hidden ${draftPlan ? 'flex-col md:flex-row' : 'flex-col'}`}>
+            <div className={`flex-1 flex overflow-hidden ${(draftPlan || isDrafting) ? 'flex-col md:flex-row' : 'flex-col'}`}>
               
               {/* Left Column: Chat */}
               <div className={`flex flex-col h-full border-r border-slate-100 ${
-                draftPlan ? 'md:w-5/12 w-full' : 'w-full'
-              } ${mobileTab === 'draft' && draftPlan ? 'hidden md:flex' : 'flex'}`}>
+                (draftPlan || isDrafting) ? 'md:w-5/12 w-full' : 'w-full'
+              } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'}`}>
                 
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
@@ -1009,6 +1177,39 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                           <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                           <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.15, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                           <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.3, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isDrafting && (
+                    <div className="flex gap-3 animate-in fade-in duration-200">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-stone-100 text-stone-600 border border-stone-200">
+                        <Bot className="w-4 h-4 text-emerald-600 animate-pulse" />
+                      </div>
+                      <div className="flex flex-col max-w-[85%] items-start">
+                        <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">Planificador BEAN</span>
+                        <div className="px-4 py-3.5 rounded-2xl bg-stone-50 border border-stone-200 rounded-tl-sm flex flex-col gap-2.5 shadow-sm min-w-[240px]">
+                          <div className="space-y-1.5">
+                            {draftSteps.map((s) => (
+                              <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{s.step === 0 ? '🔍' : s.step === 1 ? '🧠' : s.step === 2 ? '🏗️' : '🔬'}</span>
+                                  <span className={s.status === 'active' ? 'text-stone-850 font-bold text-stone-900' : s.status === 'done' ? 'text-stone-400 line-through' : 'text-stone-450 text-stone-400'}>
+                                    {s.label}
+                                  </span>
+                                </div>
+                                <div className="shrink-0 flex items-center justify-center">
+                                  {s.status === 'active' && <div className="w-2.5 h-2.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                                  {s.status === 'done' && <span className="text-emerald-500 font-bold">✓</span>}
+                                  {s.status === 'pending' && <span className="text-stone-300">○</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-[9px] text-stone-450 border-t border-stone-200/60 pt-1.5 mt-0.5 text-stone-500 block">
+                            Puedes ver el avance en tiempo real en la **Mesa de Dibujo** al lado derecho.
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1236,7 +1437,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
               </div>
 
               {/* Right Column: Mesa de Dibujo */}
-              {draftPlan && (
+              {(draftPlan || isDrafting) && (
                 <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-1 flex-col h-full bg-stone-50 overflow-y-auto`}>
                   {/* Draft Header */}
                   <div className="px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm">
@@ -1247,13 +1448,14 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                     <div className="flex gap-2">
                       <button
                         onClick={() => setDraftPlan(null)}
-                        className="px-4 py-2 border border-stone-200 text-stone-600 text-sm font-bold rounded-xl bg-white hover:bg-stone-50 transition-all shadow-sm"
+                        disabled={isDrafting}
+                        className="px-4 py-2 border border-stone-200 text-stone-600 text-sm font-bold rounded-xl bg-white hover:bg-stone-50 transition-all shadow-sm disabled:opacity-40"
                       >
                         Descartar
                       </button>
                       <button
                         onClick={handleCreateBranch}
-                        disabled={creatingBranch}
+                        disabled={creatingBranch || isDrafting || !draftPlan}
                         className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 shadow-sm"
                       >
                         {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
@@ -1262,95 +1464,170 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
                   </div>
 
                   {/* Draft Content */}
-                  <div className="p-6 space-y-6">
-                    <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Meta</span>
-                      </div>
-                      <h4 className="text-lg font-black text-stone-800 mb-1">
-                        <EditableField 
-                          value={draftPlan.title} 
-                          onChange={(val: string) => setDraftPlan({ ...draftPlan, title: val })}
-                          placeholder="Nombre de la meta..."
-                        />
-                      </h4>
-                      <p className="text-sm text-stone-505 text-slate-500">
-                        <EditableField 
-                          value={draftPlan.description} 
-                          onChange={(val: string) => setDraftPlan({ ...draftPlan, description: val })}
-                          placeholder="Descripción general..."
-                          isMultiline={true}
-                        />
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      {draftPlan.phases?.map((phase: any, pIdx: number) => (
-                        <div 
-                          key={pIdx} 
-                          className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors relative cursor-pointer"
-                          onClick={() => setSelectedDraftItem({ type: 'phase', pIdx })}
-                        >
-                          <div className="pr-12 pointer-events-none">
-                            <span className="font-black text-stone-800 text-base mb-1 block">
-                              {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
-                            </span>
-                            {phase.description && (
-                              <p className="text-xs text-stone-500">{phase.description}</p>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2 mt-4" onClick={(e) => e.stopPropagation()}>
-                            {phase.tasks?.map((task: any, tIdx: number) => {
-                              const assignee = members.find(m => m.userId === task.assigneeId);
-                              
-                              return (
-                                <div 
-                                  key={tIdx} 
-                                  className="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col gap-1 hover:bg-stone-100 cursor-pointer relative"
-                                  onClick={() => setSelectedDraftItem({ type: 'task', pIdx, tIdx })}
-                                >
-                                  <div className="flex justify-between items-start pointer-events-none">
-                                    <div className="flex items-center gap-1 flex-1">
-                                      <span className="text-sm font-bold text-stone-700 flex-1 block">
-                                        {task.name || <span className="text-stone-300 italic">Sin título...</span>}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center ml-2 shrink-0">
-                                      <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
-                                        {task.estimatedHours || '0'}
-                                      </span>
-                                      <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
-                                    </div>
-                                  </div>
-
-                                  {!isPersonal && (
-                                    assignee ? (
-                                      <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-emerald-600 pointer-events-none">
-                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                        <span>Asignado a: {assignee.name}</span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-600 pointer-events-none">
-                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                                        <span>Sin responsable asignado</span>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                  <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
+                    {isDrafting ? (
+                      <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto">
+                        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
+                        <h4 className="text-sm font-bold text-stone-850 text-stone-800 mb-4 text-center">Construyendo borrador con IA...</h4>
+                        <div className="w-full space-y-3 bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
+                          {draftSteps.map((s) => (
+                            <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span>{s.step === 0 ? '🔍' : s.step === 1 ? '🧠' : s.step === 2 ? '🏗️' : '🔬'}</span>
+                                <span className={s.status === 'active' ? 'text-stone-850 font-bold text-stone-900' : s.status === 'done' ? 'text-stone-400 line-through' : 'text-stone-450 text-stone-400'}>
+                                  {s.label}
+                                </span>
+                              </div>
+                              <div className="shrink-0 flex items-center justify-center">
+                                {s.status === 'active' && <div className="w-2.5 h-2.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                                {s.status === 'done' && <span className="text-emerald-500 font-bold">✓</span>}
+                                {s.status === 'pending' && <span className="text-stone-300">○</span>}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ) : draftPlan ? (
+                      <>
+                        {draftDiagnosis && (
+                          <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 shadow-sm space-y-3 text-stone-850">
+                            <div className="flex items-center gap-2 border-b border-emerald-100/60 pb-2">
+                              <span className="text-emerald-700 text-sm">🧠</span>
+                              <h5 className="font-bold text-xs text-emerald-800">Diagnóstico de Viabilidad (Agente 1)</h5>
+                              <span className="text-[9px] bg-emerald-100 text-emerald-800 font-black uppercase px-2 py-0.5 rounded ml-auto">
+                                {draftDiagnosis.feasibility === 'possible' ? 'Viable' : 'Desafiante'}
+                              </span>
+                            </div>
+                            
+                            <div className="text-xs space-y-2">
+                              <p><strong>Punto de Partida (ADN):</strong> {draftDiagnosis.origin}</p>
+                              
+                              {draftDiagnosis.gaps && draftDiagnosis.gaps.length > 0 && (
+                                <div>
+                                  <span className="font-bold text-stone-700 block mb-0.5">Brechas a Cerrar:</span>
+                                  <ul className="list-disc pl-4 space-y-0.5 text-stone-600">
+                                    {draftDiagnosis.gaps.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {draftDiagnosis.warnings && draftDiagnosis.warnings.length > 0 && (
+                                <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-2.5 mt-1.5 text-amber-900">
+                                  <span className="font-bold text-amber-800 block mb-0.5">⚠️ Advertencias / Recomendaciones:</span>
+                                  <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+                                    {draftDiagnosis.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+
+                              <div className="text-stone-500 text-[9px] flex justify-between items-center mt-1.5 pt-1.5 border-t border-stone-100">
+                                <span>Duración sugerida: {draftDiagnosis.estimatedMonths} meses</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Meta</span>
+                          </div>
+                          <h4 className="text-lg font-black text-stone-800 mb-1">
+                            <EditableField 
+                              value={draftPlan.title} 
+                              onChange={(val: string) => setDraftPlan({ ...draftPlan, title: val })}
+                              placeholder="Nombre de la meta..."
+                            />
+                          </h4>
+                          <p className="text-sm text-stone-505 text-slate-500">
+                            <EditableField 
+                              value={draftPlan.description} 
+                              onChange={(val: string) => setDraftPlan({ ...draftPlan, description: val })}
+                              placeholder="Descripción general..."
+                              isMultiline={true}
+                            />
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          {draftPlan.phases?.map((phase: any, pIdx: number) => (
+                            <div 
+                              key={pIdx} 
+                              className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors relative cursor-pointer"
+                              onClick={() => setSelectedDraftItem({ type: 'phase', pIdx })}
+                            >
+                              <div className="pr-12 pointer-events-none">
+                                <span className="font-black text-stone-800 text-base mb-1 block">
+                                  {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
+                                </span>
+                                {phase.description && (
+                                  <p className="text-xs text-stone-500">{phase.description}</p>
+                                )}
+                              </div>
+                              
+                              <div className="space-y-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                                {phase.tasks?.map((task: any, tIdx: number) => {
+                                  const assignee = members.find(m => m.userId === task.assigneeId);
+                                  
+                                  return (
+                                    <div 
+                                      key={tIdx} 
+                                      className="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col gap-1 hover:bg-stone-100 cursor-pointer relative"
+                                      onClick={() => setSelectedDraftItem({ type: 'task', pIdx, tIdx })}
+                                    >
+                                      <div className="flex justify-between items-start pointer-events-none">
+                                        <div className="flex items-center gap-1 flex-1">
+                                          <span className="text-sm font-bold text-stone-700 flex-1 block">
+                                            {task.name || <span className="text-stone-300 italic">Sin título...</span>}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center ml-2 shrink-0">
+                                          <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
+                                            {task.estimatedHours || '0'}
+                                          </span>
+                                          <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
+                                        </div>
+                                      </div>
+
+                                      {task.subTasks && task.subTasks.length > 0 && (
+                                        <div className="mt-2 pl-3 border-l-2 border-emerald-500/20 space-y-1 pointer-events-none">
+                                          {task.subTasks.map((st: any, sIdx: number) => (
+                                            <div key={sIdx} className="flex items-center gap-1.5 text-[11px] text-stone-500">
+                                              <span className="w-1 h-1 bg-stone-400 rounded-full shrink-0" />
+                                              <span className="line-clamp-1">{st.name || st.title}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {!isPersonal && (
+                                        assignee ? (
+                                          <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-emerald-600 pointer-events-none">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                            <span>Asignado a: {assignee.name}</span>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-600 pointer-events-none">
+                                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                                            <span>Sin responsable asignado</span>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               )}
                   
               {/* Draft Detail Modal Sheet */}
               <AnimatePresence>
-                {selectedDraftItem && (
+                {selectedDraftItem && draftPlan && (
                   <DraftItemDetailSheet
                     selection={selectedDraftItem}
                     itemData={

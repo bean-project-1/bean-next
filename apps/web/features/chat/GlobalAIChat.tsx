@@ -29,17 +29,58 @@ interface GlobalAIChatProps {
 }
 
 function renderFormattedText(text: string) {
-  return text.split('\n').map((line, i, arr) => (
-    <React.Fragment key={i}>
-      {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={j} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>;
-        }
-        return part;
-      })}
-      {i !== arr.length - 1 && <br />}
-    </React.Fragment>
-  ));
+  const parseInlineBold = (lineText: string) => {
+    return lineText.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={j} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const lines = text.split('\n');
+  return lines.map((line, i) => {
+    // 1. Headers (### or ## or #)
+    const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headerMatch) {
+      const level = headerMatch[1].length;
+      const content = headerMatch[2];
+      const parsed = parseInlineBold(content);
+      if (level === 1) return <h1 key={i} className="text-xl font-bold mt-4 mb-2 text-slate-900">{parsed}</h1>;
+      if (level === 2) return <h2 key={i} className="text-lg font-bold mt-3 mb-2 text-slate-900">{parsed}</h2>;
+      return <h3 key={i} className="text-md font-bold mt-2.5 mb-1.5 text-slate-900">{parsed}</h3>;
+    }
+
+    // 2. Unordered Lists (- or * or •)
+    const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
+    if (bulletMatch) {
+      const content = bulletMatch[1];
+      return (
+        <li key={i} className="list-disc ml-5 mb-1 text-[14px] text-slate-700">
+          {parseInlineBold(content)}
+        </li>
+      );
+    }
+
+    // 3. Ordered Lists (1.)
+    const numberMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (numberMatch) {
+      const content = numberMatch[2];
+      return (
+        <li key={i} className="list-decimal ml-5 mb-1 text-[14px] text-slate-700">
+          {parseInlineBold(content)}
+        </li>
+      );
+    }
+
+    // Default paragraph or break
+    if (line.trim() === '') return <div key={i} className="h-2" />;
+    return (
+      <p key={i} className="mb-1 leading-relaxed text-[15px] text-slate-700">
+        {parseInlineBold(line)}
+      </p>
+    );
+  });
 }
 
 const EditableField = ({ value, onChange, className, isMultiline = false, isCompleted = false, placeholder = '' }: any) => {
@@ -206,6 +247,23 @@ const DraftItemDetailSheet = ({ itemData, selection, parentPhase, parentTask, on
           </div>
         </div>
 
+        {type === 'task' && itemData.subTasks && itemData.subTasks.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Sub-tareas Desgranadas</h4>
+            <div className="bg-stone-50/50 rounded-2xl border border-stone-100 p-4 space-y-2.5 shadow-inner">
+              {itemData.subTasks.map((st: any, sIdx: number) => (
+                <div key={sIdx} className="flex items-start gap-2 text-xs text-stone-700 font-sans">
+                  <span className="mt-1 w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-bold text-stone-850">{st.name || st.title}</span>
+                    {st.description && <p className="text-stone-500 mt-0.5">{st.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {(type === 'phase' || type === 'task') && (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -325,6 +383,13 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const [draftPlan, setDraftPlan] = useState<any>(null);
   const [isDrafting, setIsDrafting] = useState(false);
   const [draftStep, setDraftStep] = useState<string>('');
+  const [draftSteps, setDraftSteps] = useState<Array<{ step: number; label: string; status: 'pending' | 'active' | 'done' | 'failed' }>>([
+    { step: 0, label: 'Inicializando parámetros y ADN...', status: 'pending' },
+    { step: 1, label: 'Analizando punto de partida...', status: 'pending' },
+    { step: 2, label: 'Diseñando fases y tareas...', status: 'pending' },
+    { step: 3, label: 'Desgranando subtareas...', status: 'pending' },
+  ]);
+  const [draftDiagnosis, setDraftDiagnosis] = useState<any>(null);
   const [attachedContexts, setAttachedContexts] = useState<string[]>([]);
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [branchCreated, setBranchCreated] = useState(false);
@@ -456,11 +521,17 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const generateDraft = async (goalData: BranchData, revisionInstructions?: string) => {
     setIsDrafting(true);
     setMobileTab('draft');
-    setDraftStep(revisionInstructions ? 'Repensando el plan...' : 'Analizando agenda...');
-    let timer: any;
-    if (!revisionInstructions) {
-      timer = setTimeout(() => setDraftStep('Diseñando tu plan estructurado...'), 4000);
-    }
+    
+    // Reset steps
+    setDraftSteps([
+      { step: 0, label: 'Inicializando parámetros y ADN...', status: 'active' },
+      { step: 1, label: 'Analizando punto de partida...', status: 'pending' },
+      { step: 2, label: 'Diseñando fases y tareas...', status: 'pending' },
+      { step: 3, label: 'Desgranando subtareas...', status: 'pending' },
+    ]);
+    setDraftDiagnosis(null);
+    setDraftStep('Inicializando parámetros y ADN...');
+
     try {
       const res = await fetch('/api/ai/draft-plan', {
         method: 'POST',
@@ -471,21 +542,112 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
           revisionInstructions
         })
       });
-      const data = await res.json();
-      if (data.success) {
-        setDraftPlan(data.draft);
-      } else if (data.auditFailed) {
-        setPendingBranch(null);
-        setDraftPlan(null);
-        setMessages(prev => [...prev, { role: 'assistant', content: data.renegotiationMessage }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error al diseñar el borrador: ${data.error || 'Error interno'}` }]);
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      if (!res.body) {
+        throw new Error('Response body is empty');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processEvent = (event: any) => {
+        if (event.type === 'step') {
+          setDraftSteps(prev => prev.map(s => {
+            if (s.step === event.step) {
+              return { ...s, label: event.label || s.label, status: event.status };
+            }
+            if (event.status === 'active' && s.step < event.step) {
+              return { ...s, status: 'done' };
+            }
+            return s;
+          }));
+          if (event.status === 'active') {
+            setDraftStep(event.label || 'Procesando...');
+          }
+        } else if (event.type === 'diagnosis') {
+          setDraftDiagnosis(event.data);
+        } else if (event.type === 'negotiation_needed') {
+          const diagnosis = event.diagnosis;
+          const renegotiationMsg: Message = {
+            role: 'assistant',
+            content: `⚠️ **Evaluación de Viabilidad (Meta No Viable Directamente)**:
+            
+* **Punto de partida**: ${diagnosis.origin}
+* **Brechas identificadas**:
+${(diagnosis.gaps || []).map((g: string) => `  - ${g}`).join('\n')}
+* **Riesgos y Advertencias**:
+${(diagnosis.warnings || []).map((w: string) => `  - ${w}`).join('\n')}
+* **Duración estimada**: ${diagnosis.estimatedMonths} meses.
+
+El plan no es viable actualmente con la disponibilidad de horas o el presupuesto indicado. ¿Cómo deseas proceder? Podemos:
+1. Ajustar el presupuesto o tiempo semanal.
+2. Extender el plazo.
+3. Acotar el alcance.`
+          };
+
+          setMessages(prev => [...prev, renegotiationMsg]);
+          setIsDrafting(false);
+          return true; // halted
+        } else if (event.type === 'complete') {
+          setDraftPlan(event.draft);
+        } else if (event.type === 'error') {
+          throw new Error(event.error);
+        }
+        return false;
+      };
+
+      let halted = false;
+      while (true) {
+        const { value, done } = await reader.read();
+        
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            try {
+              const event = JSON.parse(trimmed);
+              if (processEvent(event)) {
+                halted = true;
+                break;
+              }
+            } catch (jsonErr) {
+              console.error('Error parsing line:', trimmed, jsonErr);
+            }
+          }
+        }
+
+        if (halted) break;
+
+        if (done) {
+          const trimmed = buffer.trim();
+          if (trimmed) {
+            try {
+              const event = JSON.parse(trimmed);
+              processEvent(event);
+            } catch (jsonErr) {
+              console.error('Error parsing final line:', trimmed, jsonErr);
+            }
+          }
+          break;
+        }
       }
     } catch (e: any) {
       console.error(e);
-      setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error de conexión al generar el borrador.` }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `❌ Error al generar el borrador: ${e.message || 'Error de conexión'}`
+      }]);
     } finally {
-      if (timer) clearTimeout(timer);
       setIsDrafting(false);
       setDraftStep('');
     }
@@ -525,8 +687,15 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
         if (!sessionId && data.sessionId) setSessionId(data.sessionId);
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         
-        if (data.triggerRevision && draftPlan && pendingBranch) {
-          generateDraft(pendingBranch, data.triggerRevision);
+        if (data.triggerRevision && draftPlan) {
+          const branchToUse: BranchData = pendingBranch || {
+            goalTitle: draftPlan.title || 'Meta',
+            dimensionName: 'skills',
+            hoursPerWeek: 10,
+            targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          };
+          setPendingBranch(branchToUse);
+          generateDraft(branchToUse, data.triggerRevision);
         } else if (data.branchData) {
           setPendingBranch(data.branchData);
           setBranchCreated(false);
@@ -766,6 +935,34 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
             </div>
           )}
 
+          {isDrafting && (
+            <div className="flex justify-start animate-in fade-in duration-200">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
+              <div className="bg-stone-50 border border-stone-200/50 rounded-2xl rounded-bl-none px-4 py-3.5 shadow-sm flex flex-col gap-2.5 max-w-[85%] min-w-[240px]">
+                <div className="space-y-1.5">
+                  {draftSteps.map((s) => (
+                    <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span>{s.step === 0 ? '🔍' : s.step === 1 ? '🧠' : s.step === 2 ? '🏗️' : '🔬'}</span>
+                        <span className={s.status === 'active' ? 'text-stone-850 font-bold text-stone-900' : s.status === 'done' ? 'text-stone-400 line-through' : 'text-stone-450 text-stone-400'}>
+                          {s.label}
+                        </span>
+                      </div>
+                      <div className="shrink-0 flex items-center justify-center">
+                        {s.status === 'active' && <div className="w-2.5 h-2.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                        {s.status === 'done' && <span className="text-emerald-500 font-bold">✓</span>}
+                        {s.status === 'pending' && <span className="text-stone-300">○</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <span className="text-[9px] text-stone-450 border-t border-stone-200/60 pt-1.5 mt-0.5 text-stone-500 block">
+                  Puedes ver el avance en tiempo real en la **Mesa de Dibujo** al lado derecho.
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Pending Branch Action */}
           {pendingBranch && !draftPlan && !isDrafting && !branchCreated && !isSending && (
             <div className="mx-auto bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center animate-in slide-in-from-bottom-4 duration-300">
@@ -860,12 +1057,67 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
 
             <div className="p-6">
               {isDrafting ? (
-                <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                  <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-                  <p className="text-sm font-bold text-stone-700 animate-pulse">{draftStep}</p>
+                <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto">
+                  <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
+                  <h4 className="text-sm font-bold text-stone-850 text-stone-800 mb-4 text-center">Construyendo borrador con IA...</h4>
+                  <div className="w-full space-y-3 bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
+                    {draftSteps.map((s) => (
+                      <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span>{s.step === 0 ? '🔍' : s.step === 1 ? '🧠' : s.step === 2 ? '🏗️' : '🔬'}</span>
+                          <span className={s.status === 'active' ? 'text-stone-850 font-bold text-stone-900' : s.status === 'done' ? 'text-stone-400 line-through' : 'text-stone-450 text-stone-400'}>
+                            {s.label}
+                          </span>
+                        </div>
+                        <div className="shrink-0 flex items-center justify-center">
+                          {s.status === 'active' && <div className="w-2.5 h-2.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                          {s.status === 'done' && <span className="text-emerald-500 font-bold">✓</span>}
+                          {s.status === 'pending' && <span className="text-stone-300">○</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : draftPlan ? (
                 <div className="space-y-6">
+                  {draftDiagnosis && (
+                    <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 shadow-sm space-y-3 text-stone-850">
+                      <div className="flex items-center gap-2 border-b border-emerald-100/60 pb-2">
+                        <span className="text-emerald-700 text-sm">🧠</span>
+                        <h5 className="font-bold text-xs text-emerald-800">Diagnóstico de Viabilidad (Agente 1)</h5>
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-black uppercase px-2 py-0.5 rounded ml-auto">
+                          {draftDiagnosis.feasibility === 'possible' ? 'Viable' : 'Desafiante'}
+                        </span>
+                      </div>
+                      
+                      <div className="text-xs space-y-2">
+                        <p><strong>Punto de Partida (ADN):</strong> {draftDiagnosis.origin}</p>
+                        
+                        {draftDiagnosis.gaps && draftDiagnosis.gaps.length > 0 && (
+                          <div>
+                            <span className="font-bold text-stone-700 block mb-0.5">Brechas a Cerrar:</span>
+                            <ul className="list-disc pl-4 space-y-0.5 text-stone-600">
+                              {draftDiagnosis.gaps.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {draftDiagnosis.warnings && draftDiagnosis.warnings.length > 0 && (
+                          <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-2.5 mt-1.5 text-amber-900">
+                            <span className="font-bold text-amber-800 block mb-0.5">⚠️ Advertencias / Recomendaciones:</span>
+                            <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+                              {draftDiagnosis.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="text-stone-500 text-[9px] flex justify-between items-center mt-1.5 pt-1.5 border-t border-stone-100">
+                          <span>Duración sugerida: {draftDiagnosis.estimatedMonths} meses</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {draftPlan.phases?.map((phase: any, pIdx: number) => (
                     <div 
                       key={pIdx} 

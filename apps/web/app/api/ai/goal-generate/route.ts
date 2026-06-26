@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GoalService, GoalAuditError } from '@/services/goal-service';
 import { openai } from '@/lib/openai';
+import { GoogleCalendarService } from '@/services/google-calendar-service';
 
 export async function POST(req: NextRequest) {
   let sessionId = null;
@@ -66,13 +67,12 @@ ${rawChat}`;
         ${rawChat}
       `;
       
-      const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
       const client = goalService.getClient({
         userId: user.id,
         tags: ["agent:goal-generate", `env:${process.env.NODE_ENV || 'development'}`]
       }, byokKey, byokProvider);
       const distillationRes = await client.chat.completions.create({
-        model: hasOpenAI ? "gpt-4o-mini" : "deepseek-chat",
+        model: goalService.pickModel(byokKey, byokProvider, 'gpt-4o-mini'),
         messages: [{ role: "system", content: "You are a Goal Distiller AI." }, { role: "user", content: distillationPrompt }]
       });
       
@@ -247,7 +247,7 @@ ${rawChat}`;
                 estimatedHours: t.estimatedHours || 0,
                 dimensions: t.dimensions || [],
                 attributes: t.attributes || [],
-                assigneeId: t.assigneeId || null,
+                assigneeId: (t.assigneeId && /^[0-9a-fA-F]{24}$/.test(t.assigneeId)) ? t.assigneeId : null,
                 baseCommitmentId: matchedCommitmentId
               }
             });
@@ -291,6 +291,12 @@ ${rawChat}`;
     }, {
       timeout: 40000, // 40 seconds
       maxWait: 10000  // 10 seconds
+    });
+
+    // Trigger Google Calendar synchronization in the background
+    const calendarService = new GoogleCalendarService();
+    calendarService.syncGoalActions(result.id, user.id).catch(err => {
+      console.error('[GoalGenerate] Background sync error:', err);
     });
 
     return NextResponse.json({ success: true, goal: result, plan });

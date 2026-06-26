@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { GoogleCalendarService } from '@/services/google-calendar-service';
 
 export async function DELETE(
   req: NextRequest,
@@ -40,6 +41,12 @@ export async function DELETE(
 
     // 2. Cascaded delete
     const actionIds = goal.actions.map(a => a.id);
+
+    // Delete associated calendar events in Google Calendar first (while DB records still exist)
+    const calendarService = new GoogleCalendarService();
+    await calendarService.deleteGoalEvents(id, userId).catch(err => {
+      console.error(`[DELETE Goal ${id}] Error deleting Google Calendar events:`, err);
+    });
     
     await prisma.$transaction([
       // a. Delete all Tasks associated with these actions

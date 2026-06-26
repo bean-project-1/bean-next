@@ -43,9 +43,11 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [existingGoalData, setExistingGoalData] = useState<any>(undefined);
 
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
+  const pathname = usePathname();
   
   // Hide global chat if zoomed into any space (since that space will render its own chat)
-  const hideGlobalButton = isSpaceZoomed;
+  // Also hide on the public landing page — chat is an in-app feature
+  const hideGlobalButton = isSpaceZoomed || pathname === '/';
 
   const openChat = (msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);
@@ -94,7 +96,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
           }}
           onRefreshTree={() => {
             if (typeof window !== 'undefined') {
-              window.location.reload();
+              window.dispatchEvent(new CustomEvent('refresh-life-tree'));
             }
           }} 
           initialMessage={initialMsg}

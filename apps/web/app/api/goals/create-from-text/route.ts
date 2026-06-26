@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const dnaAnalysis = goalService.computeDNAAnalysis(parsedGoal.relevantDimensions, userDNA);
     
     // d. Generate plan structure
-    const plan = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, userId);
+    const { draft: plan } = await goalService.generateHierarchicalPlan(parsedGoal, dnaAnalysis, parsedGoal.constraints, userId);
 
     // 3. Persist in DB
     const result = await prisma.$transaction(async (tx) => {

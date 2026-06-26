@@ -31,7 +31,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -122,6 +121,22 @@ body {
   50% {
     transform: translateY(-12px);
   }
+}
+
+/* ----- Ticker animation ----- */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 30s linear infinite;
+  will-change: transform;
+}
+
+/* ----- Landing font helpers ----- */
+.font-serif {
+  font-family: var(--font-instrument), Georgia, serif;
 }
 
 /* ----- Focus Styles ----- */

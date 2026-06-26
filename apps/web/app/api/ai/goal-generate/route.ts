@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { GoalService, GoalAuditError } from '@/services/goal-service';
 import { openai } from '@/lib/openai';
+import { GoogleCalendarService } from '@/services/google-calendar-service';
 
 export async function POST(req: NextRequest) {
   let sessionId = null;
@@ -290,6 +291,12 @@ ${rawChat}`;
     }, {
       timeout: 40000, // 40 seconds
       maxWait: 10000  // 10 seconds
+    });
+
+    // Trigger Google Calendar synchronization in the background
+    const calendarService = new GoogleCalendarService();
+    calendarService.syncGoalActions(result.id, user.id).catch(err => {
+      console.error('[GoalGenerate] Background sync error:', err);
     });
 
     return NextResponse.json({ success: true, goal: result, plan });

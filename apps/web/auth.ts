@@ -14,6 +14,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      authorization: {
+        params: {
+          scope: "openid email profile https://www.googleapis.com/auth/calendar.events",
+          access_type: "offline",
+          prompt: "consent"
+        }
+      }
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -48,9 +55,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+      }
+      if (account && account.provider === 'google') {
+        try {
+          const existingAccount = await prisma.account.findFirst({
+            where: {
+              provider: 'google',
+              providerAccountId: account.providerAccountId
+            }
+          });
+          if (existingAccount) {
+            await prisma.account.update({
+              where: { id: existingAccount.id },
+              data: {
+                access_token: account.access_token,
+                refresh_token: account.refresh_token || undefined,
+                expires_at: account.expires_at,
+                scope: account.scope
+              }
+            });
+            console.log(`[auth.ts] Successfully updated Google Account tokens in DB for user ${existingAccount.userId}`);
+          }
+        } catch (err) {
+          console.error('[auth.ts] Failed to update Google Account tokens on sign-in:', err);
+        }
       }
       return token;
     },

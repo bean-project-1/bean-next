@@ -383,6 +383,7 @@ model GoalAction {
   assignee   User?   @relation("AssignedActions", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   baseCommitmentId String? @map("base_commitment_id") @db.ObjectId
+  googleEventId    String? @map("google_event_id")
 
   // 🔗 Dependency intelligence (3-agent pipeline)
   requiresSameAssignee Boolean @default(false) @map("requires_same_assignee")

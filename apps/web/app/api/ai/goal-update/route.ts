@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { GoogleCalendarService } from '@/services/google-calendar-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,21 @@ export async function POST(req: NextRequest) {
 
         for (const st of (t.subTasks || [])) {
           if (st.id) incomingTaskIds.add(st.id);
+        }
+      }
+    }
+
+    // Collect Google Calendar event IDs that will be deleted
+    const deletedEventIds: string[] = [];
+    for (const action of goal.actions) {
+      if (action.googleEventId) {
+        // If it's a phase or task that the user deleted from the UI, and it's not completed:
+        if (!incomingActionIds.has(action.id) && !action.isCompleted && action.type !== 'milestone') {
+          deletedEventIds.push(action.googleEventId);
+        }
+        // If it's an incomplete milestone which will be deleted in bulk:
+        if (action.type === 'milestone' && !action.isCompleted) {
+          deletedEventIds.push(action.googleEventId);
         }
       }
     }
@@ -213,6 +229,21 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    });
+
+    // Sync changes to Google Calendar in the background
+    const calendarService = new GoogleCalendarService();
+    (async () => {
+      // 1. Delete events for removed tasks
+      for (const eventId of deletedEventIds) {
+        await calendarService.deleteEvent(user.id, eventId).catch(err => {
+          console.error(`[GoalUpdate] Error deleting event ${eventId} in background:`, err);
+        });
+      }
+      // 2. Sync current tasks
+      await calendarService.syncGoalActions(goalId, user.id);
+    })().catch(err => {
+      console.error('[GoalUpdate] Background sync error:', err);
     });
 
     return NextResponse.json({ success: true, message: 'Goal updated successfully' });

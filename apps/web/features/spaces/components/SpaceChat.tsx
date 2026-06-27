@@ -518,6 +518,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const [selectedDraftItem, setSelectedDraftItem] = useState<any>(null);
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isSpaceDropdownOpen, setIsSpaceDropdownOpen] = useState(false);
   const [pendingBranch, setPendingBranch] = useState<any>(null);
   const [branchCreated, setBranchCreated] = useState(false);
 
@@ -1067,25 +1068,41 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
               <div className="flex items-center justify-between px-6 py-4">
                 <div className="flex-1 pr-4">
                   <div className="relative inline-block w-full max-w-[220px]">
-                    <select
-                      value={activeSpaceId}
-                      onChange={(e) => {
-                        const selectedId = e.target.value;
-                        const selected = userSpaces.find(s => s.id === selectedId);
-                        if (selected) {
-                          setActiveSpaceId(selected.id);
-                          setActiveSpaceName(selected.name);
-                        }
-                      }}
-                      className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 outline-none text-xs font-bold text-slate-800 cursor-pointer appearance-none pr-8 transition-colors"
+                    <button
+                      onClick={() => setIsSpaceDropdownOpen(!isSpaceDropdownOpen)}
+                      className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer transition-all shadow-sm"
                     >
-                      {userSpaces.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.id === 'personal' ? '🌳' : '👥'} {s.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <span className="truncate">
+                        {activeSpaceId === 'personal' ? '🌳' : '👥'} {activeSpaceName}
+                      </span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isSpaceDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isSpaceDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsSpaceDropdownOpen(false)} />
+                        <div className="absolute left-0 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl p-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                          {userSpaces.map((s) => (
+                            <button
+                              key={s.id}
+                              onClick={() => {
+                                setActiveSpaceId(s.id);
+                                setActiveSpaceName(s.name);
+                                setIsSpaceDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${
+                                activeSpaceId === s.id 
+                                  ? 'bg-emerald-50 text-emerald-800' 
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span>{s.id === 'personal' ? '🌳' : '👥'}</span>
+                              <span className="truncate">{s.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -1131,9 +1148,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
             <div className={`flex-1 flex overflow-hidden ${(draftPlan || isDrafting) ? 'flex-col md:flex-row' : 'flex-col'}`}>
               
               {/* Left Column: Chat */}
-              <div className={`flex flex-col h-full border-r border-slate-100 ${
+              <div className={`flex flex-col h-full border-r border-slate-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${
                 (draftPlan || isDrafting) ? 'md:w-5/12 w-full' : 'w-full'
-              } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'}`}>
+              } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-slate-50/20`}>
                 
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
@@ -1479,14 +1496,14 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                       <button
                         onClick={() => setDraftPlan(null)}
                         disabled={isDrafting}
-                        className="px-4 py-2 border border-stone-200 text-stone-600 text-sm font-bold rounded-xl bg-white hover:bg-stone-50 transition-all shadow-sm disabled:opacity-40"
+                        className="px-4 py-2.5 border border-stone-200 text-stone-600 hover:text-stone-850 hover:border-stone-300 text-xs font-bold rounded-xl bg-white hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-40"
                       >
                         Descartar
                       </button>
                       <button
                         onClick={handleCreateBranch}
                         disabled={creatingBranch || isDrafting || !draftPlan}
-                        className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 shadow-sm"
+                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40"
                       >
                         {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
                       </button>

@@ -898,7 +898,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         <div className={`flex flex-1 overflow-hidden ${draftPlan || isDrafting ? 'flex-col md:flex-row' : 'flex-col'}`}>
           
         {/* Lado Izquierdo: Chat */}
-        <div className={`flex flex-col h-full border-r border-stone-100 ${draftPlan || isDrafting ? 'md:w-5/12 w-full' : 'w-full'} ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex flex-col h-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${draftPlan || isDrafting ? 'md:w-5/12 w-full' : 'w-full'} ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}>
 
         {/* Messages */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-6 space-y-4 bg-stone-50/30">
@@ -1066,7 +1066,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 <button
                   onClick={handleCreateBranch}
                   disabled={creatingBranch || isDrafting}
-                  className="w-full md:w-auto px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 shadow-sm"
+                  className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] active:scale-[0.98] disabled:opacity-40"
                 >
                   {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios a la Meta' : 'Aceptar Plan Definitivo')}
                 </button>

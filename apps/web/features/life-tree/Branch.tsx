@@ -96,14 +96,17 @@ export const Branch = ({
     // Check activities in each phase
     for (const phase of phases) {
       for (const activity of phase.activities || []) {
-        if (!activity.completed) {
-          return activity.id;
-        }
-        if (activity.subtaskLeaves) {
+        if (activity.subtaskLeaves && activity.subtaskLeaves.length > 0) {
+          // Has subtasks: look for the first incomplete subtask
           for (const sub of activity.subtaskLeaves) {
             if (!sub.completed) {
               return sub.id;
             }
+          }
+        } else {
+          // No subtasks: check the task itself
+          if (!activity.completed) {
+            return activity.id;
           }
         }
       }
@@ -113,14 +116,15 @@ export const Branch = ({
     }
     // Check orphans
     for (const orphan of orphans) {
-      if (!orphan.completed) {
-        return orphan.id;
-      }
-      if (orphan.subtaskLeaves) {
+      if (orphan.subtaskLeaves && orphan.subtaskLeaves.length > 0) {
         for (const sub of orphan.subtaskLeaves) {
           if (!sub.completed) {
             return sub.id;
           }
+        }
+      } else {
+        if (!orphan.completed) {
+          return orphan.id;
         }
       }
     }

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, MessageSquare, ChevronRight, ChevronDown, Trash2, Bot, BrainCircuit } from 'lucide-react';
+import { X, RefreshCw, MessageSquare, ChevronRight, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '../../hooks/useUIStore';
 
@@ -384,6 +384,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -998,17 +999,26 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         ) : (
           <form 
             onSubmit={handleSubmit} 
-            className="p-3 border-t border-stone-100 bg-white flex flex-col gap-2 shrink-0"
-            onDragOver={(e) => e.preventDefault()}
+            className={`p-3 border-t transition-all duration-300 bg-white flex flex-col gap-2 shrink-0 ${
+              isDraggingOver ? 'border-dashed border-2 border-emerald-500 bg-emerald-50/40 rounded-2xl m-2' : 'border-stone-100'
+            }`}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+            onDragLeave={() => setIsDraggingOver(false)}
             onDrop={(e) => {
               e.preventDefault();
+              setIsDraggingOver(false);
               const text = e.dataTransfer.getData('text/plain');
               if (text && !attachedContexts.includes(text)) {
                 setAttachedContexts(prev => [...prev, text]);
               }
             }}
           >
-            {attachedContexts.length > 0 && (
+            {isDraggingOver && (
+              <div className="flex items-center justify-center py-3 text-emerald-800 font-bold text-xs gap-1.5 animate-pulse bg-emerald-100/30 rounded-xl">
+                <span>📥</span> Suelta el elemento aquí para añadirlo como contexto
+              </div>
+            )}
+            {!isDraggingOver && attachedContexts.length > 0 && (
               <div className="flex flex-wrap gap-2 px-1">
                 {attachedContexts.map((ctx, i) => (
                   <div key={i} className="flex items-center gap-1 bg-stone-100 border border-stone-200 text-[11px] font-medium text-stone-600 px-2 py-1 rounded-md">
@@ -1143,13 +1153,18 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                         + Chat
                       </button>
 
-                      <div className="pr-12 pointer-events-none">
-                        <span className="font-black text-stone-800 text-base mb-1 block">
-                          {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
-                        </span>
-                        {phase.description && (
-                          <p className="text-xs text-stone-500 mb-4 line-clamp-2">{phase.description}</p>
-                        )}
+                      <div className="flex gap-2 items-start">
+                        <div className="mt-1 text-stone-300 group-hover:text-stone-500 transition-colors shrink-0">
+                          <GripVertical className="w-4 h-4 cursor-grab" />
+                        </div>
+                        <div className="flex-1 pr-12 pointer-events-none">
+                          <span className="font-black text-stone-800 text-base mb-1 block">
+                            {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
+                          </span>
+                          {phase.description && (
+                            <p className="text-xs text-stone-500 mb-4 line-clamp-2">{phase.description}</p>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-2 mt-4" onClick={(e) => e.stopPropagation()}>
@@ -1165,21 +1180,22 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                             onClick={() => !task.isCompleted && setSelectedDraftItem({type: 'task', pIdx, tIdx})}
                           >
                             <div className="flex justify-between items-start pr-14 pointer-events-none">
-                              <div className="flex items-center gap-1 flex-1">
-                                <button onClick={(e) => { e.stopPropagation(); toggleCollapse(`task-${pIdx}-${tIdx}`); }} className="text-stone-400 hover:text-stone-600 p-0.5 rounded-md hover:bg-stone-200 transition-colors pointer-events-auto">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <GripVertical className="w-3.5 h-3.5 text-stone-300 shrink-0 pointer-events-auto" />
+                                <button onClick={(e) => { e.stopPropagation(); toggleCollapse(`task-${pIdx}-${tIdx}`); }} className="text-stone-400 hover:text-stone-600 p-0.5 rounded-md hover:bg-stone-200 transition-colors pointer-events-auto shrink-0">
                                   {collapsedTasks[`task-${pIdx}-${tIdx}`] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 </button>
-                                <span className="text-sm font-bold text-stone-700 flex-1 block">
-                                  {task.name || <span className="text-stone-300 italic">Sin título...</span>}
-                                </span>
-                              </div>
-                              <div className="flex items-center ml-2 shrink-0">
-                                <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
-                                  {task.estimatedHours || '0'}
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
-                              </div>
-                            </div>
+                                <span className="text-sm font-bold text-stone-700 flex-1 truncate block">
+                                   {task.name || <span className="text-stone-300 italic">Sin título...</span>}
+                                 </span>
+                               </div>
+                               <div className="flex items-center ml-2 shrink-0">
+                                 <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
+                                   {task.estimatedHours || '0'}
+                                 </span>
+                                 <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
+                               </div>
+                             </div>
                             
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleAddContextToChat(`[Tarea: ${task.name} (en Fase: ${phase.title})]`); }}
@@ -1215,9 +1231,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                                     }}
                                     onClick={(e) => { e.stopPropagation(); !sub.isCompleted && setSelectedDraftItem({type: 'subTask', pIdx, tIdx, sIdx}); }}
                                   >
-                                    <div className="flex-1 flex items-start pointer-events-none">
-                                      <span className="text-emerald-500 mr-1 shrink-0 mt-[2px]">•</span>
-                                      <span className="w-full flex-1 block">
+                                    <div className="flex-1 flex items-center gap-1.5 pointer-events-none min-w-0">
+                                      <GripVertical className="w-3 h-3 text-stone-300 shrink-0 pointer-events-auto" />
+                                      <span className="w-full flex-1 truncate block">
                                         {sub.name || <span className="text-stone-300 italic">Sin título...</span>}
                                       </span>
                                     </div>

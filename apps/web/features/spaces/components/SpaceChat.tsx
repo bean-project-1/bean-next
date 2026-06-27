@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus, RotateCcw, Search, Target, CheckSquare, ChevronLeft } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus, RotateCcw, Search, Target, CheckSquare, ChevronLeft, GripVertical } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import { useLifeTree } from '../../../hooks/useLifeTree';
@@ -517,7 +517,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [selectedDraftItem, setSelectedDraftItem] = useState<any>(null);
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
-
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [pendingBranch, setPendingBranch] = useState<any>(null);
   const [branchCreated, setBranchCreated] = useState(false);
 
@@ -1246,7 +1246,22 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                     </div>
                   )}
 
-                  <form onSubmit={handleSend} className="relative flex items-end gap-2">
+                  <form 
+                    onSubmit={handleSend} 
+                    className={`relative flex items-end gap-2 p-1.5 transition-all duration-300 ${
+                      isDraggingOver ? 'border-dashed border-2 border-emerald-500 bg-emerald-50/40 rounded-2xl m-1' : ''
+                    }`}
+                    onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                    onDragLeave={() => setIsDraggingOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(false);
+                      const text = e.dataTransfer.getData('text/plain');
+                      if (text) {
+                        setAttachedContext({ id: 'dragged', name: text, type: 'task' });
+                      }
+                    }}
+                  >
                     {/* Add Context Button */}
                     <div className="relative">
                       <button
@@ -1423,24 +1438,30 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                     </div>
 
                     {/* Chat Text Input */}
-                    <div className="relative flex-1">
-                      <textarea
-                        ref={textareaRef}
-                        rows={1}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleTextareaKeyDown}
-                        placeholder={isPersonal ? "Escribe un mensaje a tu Guía BEAN..." : "Escribe un mensaje o etiqueta a @bean..."}
-                        className="w-full bg-slate-100 text-slate-800 text-sm rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all border border-transparent focus:border-emerald-500/30 resize-none min-h-[44px] max-h-40 overflow-y-auto align-bottom block"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!input.trim() || isSending}
-                        className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {isDraggingOver ? (
+                      <div className="flex-1 flex items-center justify-center py-3 text-emerald-800 font-bold text-xs gap-1.5 animate-pulse bg-emerald-100/30 rounded-xl">
+                        <span>📥</span> Suelta el elemento aquí para añadirlo como contexto
+                      </div>
+                    ) : (
+                      <div className="relative flex-1">
+                        <textarea
+                          ref={textareaRef}
+                          rows={1}
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={handleTextareaKeyDown}
+                          placeholder={isPersonal ? "Escribe un mensaje a tu Guía BEAN..." : "Escribe un mensaje o etiqueta a @bean..."}
+                          className="w-full bg-slate-100 text-slate-800 text-sm rounded-2xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all border border-transparent focus:border-emerald-500/30 resize-none min-h-[44px] max-h-40 overflow-y-auto align-bottom block"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!input.trim() || isSending}
+                          className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-colors disabled:opacity-50"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </form>
                 </div>
               </div>
@@ -1561,16 +1582,25 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                           {draftPlan.phases?.map((phase: any, pIdx: number) => (
                             <div 
                               key={pIdx} 
-                              className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors relative cursor-pointer"
+                              className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors relative cursor-grab active:cursor-grabbing group"
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', `[Fase: ${phase.title}]`);
+                              }}
                               onClick={() => setSelectedDraftItem({ type: 'phase', pIdx })}
                             >
-                              <div className="pr-12 pointer-events-none">
-                                <span className="font-black text-stone-800 text-base mb-1 block">
-                                  {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
-                                </span>
-                                {phase.description && (
-                                  <p className="text-xs text-stone-500">{phase.description}</p>
-                                )}
+                              <div className="flex gap-2 items-start">
+                                <div className="mt-1 text-stone-300 group-hover:text-stone-500 transition-colors shrink-0">
+                                  <GripVertical className="w-4 h-4 cursor-grab" />
+                                </div>
+                                <div className="flex-1 pr-12 pointer-events-none">
+                                  <span className="font-black text-stone-800 text-base mb-1 block">
+                                    {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
+                                  </span>
+                                  {phase.description && (
+                                    <p className="text-xs text-stone-500">{phase.description}</p>
+                                  )}
+                                </div>
                               </div>
                               
                               <div className="space-y-2 mt-4" onClick={(e) => e.stopPropagation()}>
@@ -1580,12 +1610,18 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                                   return (
                                     <div 
                                       key={tIdx} 
-                                      className="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col gap-1 hover:bg-stone-100 cursor-pointer relative"
+                                      className="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col gap-1 hover:bg-stone-100 cursor-grab active:cursor-grabbing relative"
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        e.dataTransfer.setData('text/plain', `[Tarea: ${task.name} (en Fase: ${phase.title})]`);
+                                      }}
                                       onClick={() => setSelectedDraftItem({ type: 'task', pIdx, tIdx })}
                                     >
                                       <div className="flex justify-between items-start pointer-events-none">
-                                        <div className="flex items-center gap-1 flex-1">
-                                          <span className="text-sm font-bold text-stone-700 flex-1 block">
+                                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                          <GripVertical className="w-3.5 h-3.5 text-stone-300 shrink-0 pointer-events-auto" />
+                                          <span className="text-sm font-bold text-stone-700 flex-1 truncate block">
                                             {task.name || <span className="text-stone-300 italic">Sin título...</span>}
                                           </span>
                                         </div>
@@ -1598,10 +1634,18 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                                       </div>
 
                                       {task.subTasks && task.subTasks.length > 0 && (
-                                        <div className="mt-2 pl-3 border-l-2 border-emerald-500/20 space-y-1 pointer-events-none">
+                                        <div className="mt-2 pl-3 border-l-2 border-emerald-500/20 space-y-1 pointer-events-auto">
                                           {task.subTasks.map((st: any, sIdx: number) => (
-                                            <div key={sIdx} className="flex items-center gap-1.5 text-[11px] text-stone-500">
-                                              <span className="w-1 h-1 bg-stone-400 rounded-full shrink-0" />
+                                            <div 
+                                              key={sIdx} 
+                                              className="flex items-center gap-1.5 text-[11px] text-stone-500 cursor-grab hover:bg-stone-250 hover:bg-stone-200/35 rounded px-1 py-0.5 -mx-1"
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                e.dataTransfer.setData('text/plain', `[Sub-tarea: ${st.name} (de la Tarea: ${task.name})]`);
+                                              }}
+                                            >
+                                              <GripVertical className="w-2.5 h-2.5 text-stone-300 shrink-0 pointer-events-auto" />
                                               <span className="line-clamp-1">{st.name || st.title}</span>
                                             </div>
                                           ))}

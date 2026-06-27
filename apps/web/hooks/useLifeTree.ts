@@ -8,18 +8,24 @@ export function useLifeTree(spaceId?: string) {
 
   const fetchTree = useCallback(async () => {
     setLoading(true);
+    console.log(`[useLifeTree] fetchTree starting for spaceId: ${spaceId}`);
     try {
-      const url = spaceId ? `/api/life-tree?spaceId=${spaceId}` : '/api/life-tree';
-      const res = await fetch(url);
+      const timestamp = Date.now();
+      const url = spaceId 
+        ? `/api/life-tree?spaceId=${spaceId}&t=${timestamp}` 
+        : `/api/life-tree?t=${timestamp}`;
+      const res = await fetch(url, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
+        console.log(`[useLifeTree] fetchTree success for spaceId: ${spaceId}. Branches count:`, data?.branches?.length);
         setTreeData(data);
         setError(null);
       } else {
+        console.error(`[useLifeTree] fetchTree failed for spaceId: ${spaceId}`);
         setError('Error al cargar los datos del árbol');
       }
     } catch (err) {
-      console.error('Failed to fetch tree data:', err);
+      console.error('[useLifeTree] fetchTree error:', err);
       setError('Error de conexión');
     } finally {
       setLoading(false);
@@ -32,7 +38,11 @@ export function useLifeTree(spaceId?: string) {
         method: 'DELETE',
       });
       if (res.ok) {
+        console.log(`[useLifeTree] deleteGoal success, triggering local fetch and event`);
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -51,6 +61,9 @@ export function useLifeTree(spaceId?: string) {
       });
       if (res.ok) {
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -71,6 +84,9 @@ export function useLifeTree(spaceId?: string) {
       });
       if (res.ok) {
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -91,6 +107,9 @@ export function useLifeTree(spaceId?: string) {
       });
       if (res.ok) {
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -111,6 +130,9 @@ export function useLifeTree(spaceId?: string) {
       });
       if (res.ok) {
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -131,6 +153,9 @@ export function useLifeTree(spaceId?: string) {
       });
       if (res.ok) {
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -150,7 +175,12 @@ export function useLifeTree(spaceId?: string) {
         body: JSON.stringify({ ...data, spaceId: data.spaceId || spaceId }),
       });
       if (res.ok) {
+        console.log(`[useLifeTree] addGoal success, calling local fetchTree and dispatching refresh event`);
         await fetchTree();
+        if (typeof window !== 'undefined') {
+          console.log(`[useLifeTree] dispatching refresh-life-tree event`);
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         return { success: true };
       } else {
         const err = await res.json();
@@ -168,6 +198,7 @@ export function useLifeTree(spaceId?: string) {
 
   useEffect(() => {
     const handleRefresh = () => {
+      console.log(`[useLifeTree] event listener handleRefresh triggered for spaceId: ${spaceId}`);
       fetchTree();
     };
     if (typeof window !== 'undefined') {

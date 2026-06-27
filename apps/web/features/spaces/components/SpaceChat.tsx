@@ -813,6 +813,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
           mutateSpaceMessages((current) => [...(current || []), confirmMsg], false);
         }
         onRefreshTree();
+        setIsOpen(false);
       } else {
         alert(`Error al plantar la rama: ${data.error || 'Error interno'}`);
       }

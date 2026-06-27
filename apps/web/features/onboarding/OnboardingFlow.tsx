@@ -127,7 +127,7 @@ export function OnboardingFlow() {
   if (phase === 'generating') return <GeneratingScreen name={form.name} />;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center px-6 py-12 bg-[#FBF9F6] text-stone-900">
+    <main className="relative flex min-h-screen flex-col items-center justify-center px-6 py-12 bg-transparent text-stone-900">
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -top-32 left-1/2 h-96 w-96 -transtone-x-1/2 rounded-full bg-emerald-600/5 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-indigo-600/5 blur-3xl" />

@@ -8,9 +8,10 @@ import { SeedbedChat } from './SeedbedChat';
 
 interface SeedbedDashboardProps {
   activeSpaceId?: string;
+  onPlanted?: () => void;
 }
 
-export function SeedbedDashboard({ activeSpaceId = 'personal' }: SeedbedDashboardProps) {
+export function SeedbedDashboard({ activeSpaceId = 'personal', onPlanted }: SeedbedDashboardProps) {
   const { seeds, createSeed, deleteSeed } = useIncubator();
   const [activeSeedId, setActiveSeedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -24,7 +25,10 @@ export function SeedbedDashboard({ activeSpaceId = 'personal' }: SeedbedDashboar
             seedId={activeSeedId} 
             activeSpaceId={activeSpaceId}
             onBack={() => setActiveSeedId(null)} 
-            onPlanted={() => setActiveSeedId(null)} 
+            onPlanted={() => {
+              setActiveSeedId(null);
+              if (onPlanted) onPlanted();
+            }} 
           />
         </div>
       </div>

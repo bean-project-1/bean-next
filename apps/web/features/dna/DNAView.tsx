@@ -241,7 +241,7 @@ export function DNAView() {
   }
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-[#FBF9F6] pb-24 sm:pb-8">
+    <div className="min-h-screen px-4 sm:px-6 py-6 sm:py-8 bg-transparent pb-24 sm:pb-8">
       {/* Selector de pestañas "Canto Rodado" Centrado y Alargado */}
       <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-3xl mx-auto mb-10">
         <button 

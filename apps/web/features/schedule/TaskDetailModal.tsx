@@ -356,16 +356,70 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate, o
               {/* Action Buttons inside scrollable steps */}
               {!isEditing && (
                 <div className="pt-4 border-t border-stone-100 flex flex-col gap-2">
-                  <button
-                    onClick={() => onToggle(task.id, !isCompleted)}
-                    className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md active:scale-95 ${
-                      isCompleted 
-                        ? 'bg-stone-100 text-stone-500 hover:bg-stone-200 shadow-none' 
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200/50'
-                    }`}
-                  >
-                    {isCompleted ? 'Marcar como Pendiente' : 'Completar Tarea'}
-                  </button>
+                  {(task as any).baseCommitmentTitle ? (
+                    (() => {
+                      const completed = (task as any).completedCount || 0;
+                      const total = (task as any).totalSessions || 1;
+                      const progressPercent = Math.min(100, Math.round((completed / total) * 100));
+                      return (
+                        <div className="bg-stone-50/80 p-4 rounded-2xl border border-stone-100 flex flex-col gap-3 shadow-sm text-left">
+                          <div className="flex justify-between items-center text-[11px] font-bold text-slate-500">
+                            <span className="flex items-center gap-1">🔄 Hábito: <strong>{(task as any).baseCommitmentTitle}</strong></span>
+                            <span>{progressPercent}%</span>
+                          </div>
+                          {/* Progress Bar Container */}
+                          <div className="w-full bg-stone-200/60 h-2 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-emerald-500 h-full transition-all duration-500" 
+                              style={{ width: `${progressPercent}%` }} 
+                            />
+                          </div>
+                          <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                            <span>{completed} sesiones realizadas</span>
+                            <span>{total} sesiones requeridas</span>
+                          </div>
+                          
+                          {/* Quick session logger */}
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const res = await fetch(`/api/profile/commitments/${(task as any).baseCommitmentId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'complete' })
+                              }).then(r => r.json());
+                              if (res.success) {
+                                // Dispatch global refresh to reload treeData
+                                window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+                                // Trigger parent toggle/refresh
+                                onToggle(task.id, res.commitment.completedCount >= total);
+                              } else {
+                                alert('Error al registrar la sesión: ' + (res.error || 'Inténtalo de nuevo.'));
+                              }
+                            }}
+                            className="w-full py-2.5 bg-emerald-55 text-emerald-600 hover:bg-emerald-100/80 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm border border-emerald-200"
+                          >
+                            <span>🔥</span> Registrar Sesión de Hoy
+                          </button>
+
+                          <p className="text-[10px] text-slate-400 font-bold leading-normal border-t border-stone-100/60 pt-2 mt-0.5">
+                            💡 Este hábito se completa registrando el progreso de tu hábito diario desde tu Agenda o haciendo clic en el botón superior.
+                          </p>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <button
+                      onClick={() => onToggle(task.id, !isCompleted)}
+                      className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md active:scale-95 ${
+                        isCompleted 
+                          ? 'bg-stone-100 text-stone-500 hover:bg-stone-200 shadow-none' 
+                          : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200/50'
+                      }`}
+                    >
+                      {isCompleted ? 'Marcar como Pendiente' : 'Completar Tarea'}
+                    </button>
+                  )}
                   
                   <button
                     onClick={() => {

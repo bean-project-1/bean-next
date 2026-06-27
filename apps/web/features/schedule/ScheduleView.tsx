@@ -637,6 +637,9 @@ export function ScheduleView() {
       });
       if (res.ok) {
         fetchEvents();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         if (selectedTask) {
           if (selectedTask.id === taskId) {
             setSelectedTask({ ...selectedTask, status: isCompleted ? 'completed' : 'pending' });
@@ -666,6 +669,9 @@ export function ScheduleView() {
       });
       if (res.ok) {
         fetchEvents();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         if (selectedTask) {
           if (selectedTask.id === taskId) {
             setSelectedTask({ ...selectedTask, title: data.title, description: data.description, notes: data.notes });
@@ -691,6 +697,9 @@ export function ScheduleView() {
       const res = await fetch(endpoint, { method: 'DELETE' });
       if (res.ok) {
         fetchEvents();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+        }
         if (selectedTask && selectedTask.id === taskId) {
           setSelectedTask(null);
         }

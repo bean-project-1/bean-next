@@ -521,25 +521,54 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
             onLeafClick?.(newId);
           }}
         >
-          <button 
-            onClick={async (e) => {
-              e.stopPropagation();
-              const next = !child.completed;
-              setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
-              await onToggleAction?.(child.id, { completed: next });
-            }}
-            className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 hover:border-emerald-400'}`}
-          >
-            {child.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-          </button>
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <p className={`text-xs sm:text-sm font-bold truncate ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-              {child.name}
-            </p>
-            {child.type === 'milestone' && (
-              <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
-                Entregable Final
-              </span>
+          {child.baseCommitmentTitle ? (
+            <button 
+              onClick={async (e) => {
+                e.stopPropagation();
+                const res = await fetch(`/api/profile/commitments/${child.baseCommitmentId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'complete' })
+                }).then(r => r.json());
+                if (res.success) {
+                  window.dispatchEvent(new CustomEvent('refresh-life-tree'));
+                } else {
+                  alert('Error al registrar la sesión: ' + (res.error || 'Inténtalo de nuevo.'));
+                }
+              }}
+              className="w-12 h-6 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center text-[9px] font-black text-emerald-600 shrink-0 transition-all active:scale-95 shadow-sm"
+              title="Registrar sesión realizada hoy"
+            >
+              🔥 {child.completedCount || 0}/{child.totalSessions || 1}
+            </button>
+          ) : (
+            <button 
+              onClick={async (e) => {
+                e.stopPropagation();
+                const next = !child.completed;
+                setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
+                await onToggleAction?.(child.id, { completed: next });
+              }}
+              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 hover:border-emerald-400'}`}
+            >
+              {child.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            </button>
+          )}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex items-center gap-2">
+              <p className={`text-xs sm:text-sm font-bold truncate ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                {child.name}
+              </p>
+              {child.type === 'milestone' && (
+                <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                  Entregable Final
+                </span>
+              )}
+            </div>
+            {child.baseCommitmentTitle && (
+              <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate flex items-center gap-1">
+                <span>🔄</span> Hábito: <span className="text-slate-600">{child.baseCommitmentTitle}</span>
+              </p>
             )}
           </div>
           {/* Time badge */}

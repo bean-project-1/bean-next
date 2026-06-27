@@ -14,6 +14,14 @@ module.exports = {
         serif: ['var(--font-instrument)', 'Georgia', 'serif'],
       },
       colors: {
+        stone: {
+          50: 'var(--background)',
+          100: 'var(--muted)',
+          200: 'var(--border)',
+          300: '#BFBAB0',
+          400: '#6B6B6B',
+          500: 'var(--muted-foreground)',
+        },
         bean: {
           50: '#f5f0ff',
           100: '#ede0ff',

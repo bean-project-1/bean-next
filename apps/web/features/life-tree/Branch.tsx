@@ -318,39 +318,38 @@ export const Branch = ({
             onMouseEnter={() => onHover(phase.name)}
             onMouseLeave={() => onHover(null)}
           >
-            {/* MASSIVE INVISIBLE HITBOX FOR SUB-BRANCH */}
-            {renderMode !== 'leaves' && (
-              <path 
-                d={sub.path} 
-                stroke="transparent" 
-                strokeWidth="40" 
-                fill="none" 
-                strokeLinecap="round" 
-                style={{ pointerEvents: 'visibleStroke' }}
-              />
-            )}
-            
-            {/* VISUAL SUB-BRANCH */}
-            {renderMode !== 'leaves' && (
-              <path 
-                className="branch-stroke transition-all duration-300 ease-out group-hover/phase:stroke-[6] group-hover/phase:opacity-100" 
-                d={sub.path} 
-                stroke={branchColor} 
-                strokeWidth="3" 
-                fill="none" 
-                strokeLinecap="round" 
-                style={{ 
-                  opacity: (isPhaseFocused || isPhaseCompleted || phase.id === currentPhaseId) ? 1.0 : 0.55,
-                  transition: 'opacity 0.6s ease'
-                }}
-              />
-            )}
-
-            {/* Premium group-hover effect wrapper for all phase leaves and stems */}
+            {/* Premium group-hover effect wrapper for all phase branches, leaves and stems */}
             <g 
               className={!isPhaseFocused ? "transition-all duration-500 ease-out origin-center group-hover/phase:scale-[1.04] group-hover/phase:brightness-105" : "transition-all duration-500 ease-out"}
               style={!isPhaseFocused ? { transformOrigin: `${sub.start.x}px ${sub.start.y}px` } : undefined}
             >
+              {/* MASSIVE INVISIBLE HITBOX FOR SUB-BRANCH */}
+              {renderMode !== 'leaves' && (
+                <path 
+                  d={sub.path} 
+                  stroke="transparent" 
+                  strokeWidth="40" 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  style={{ pointerEvents: 'visibleStroke' }}
+                />
+              )}
+              
+              {/* VISUAL SUB-BRANCH */}
+              {renderMode !== 'leaves' && (
+                <path 
+                  className="branch-stroke transition-all duration-300 ease-out group-hover/phase:stroke-[6] group-hover/phase:opacity-100" 
+                  d={sub.path} 
+                  stroke={branchColor} 
+                  strokeWidth="3" 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  style={{ 
+                    opacity: (isPhaseFocused || isPhaseCompleted || phase.id === currentPhaseId) ? 1.0 : 0.55,
+                    transition: 'opacity 0.6s ease'
+                  }}
+                />
+              )}
               {/* PHASE CULMINATION LEAF (AT THE END) */}
               {renderMode !== 'wood' && (() => {
                 const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');

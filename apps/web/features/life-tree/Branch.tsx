@@ -277,6 +277,7 @@ export const Branch = ({
         // If a phase is zoomed and this is not it: fade completely to 0.15. Otherwise, container remains 1.0 so green leaves stay fully visible.
         const containerOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) ? 0.15 : 1.0;
         const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
+        const isPhaseCompleted = phase.completed || (phase.activities?.every(a => a.completed) ?? true);
         const inactiveElementOpacity = isPhaseFocused ? 1.0 : 0.55;
 
         const handleLeafClick = (leafId: string, leafName: string) => {
@@ -339,7 +340,7 @@ export const Branch = ({
                 fill="none" 
                 strokeLinecap="round" 
                 style={{ 
-                  opacity: isPhaseFocused ? 1.0 : (phase.id === currentPhaseId ? 1.0 : 0.55),
+                  opacity: (isPhaseFocused || isPhaseCompleted || phase.id === currentPhaseId) ? 1.0 : 0.55,
                   transition: 'opacity 0.6s ease'
                 }}
               />
@@ -355,7 +356,7 @@ export const Branch = ({
                 const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
                 const tipLeaf = phaseMilestone || phase;
                 const isTipCurrent = tipLeaf.id === firstIncompleteLeafId;
-                const tipLeafOpacity = (tipLeaf.completed || isTipCurrent) ? 1.0 : (isPhaseFocused ? 1.0 : (phase.id === currentPhaseId ? 1.0 : 0.55));
+                const tipLeafOpacity = (tipLeaf.completed || isTipCurrent || isPhaseCompleted) ? 1.0 : (isPhaseFocused ? 1.0 : (phase.id === currentPhaseId ? 1.0 : 0.55));
                 return (
                   <g style={{ 
                     pointerEvents: (isPhaseFocused || isTipCurrent) ? 'auto' : 'none',
@@ -405,7 +406,7 @@ export const Branch = ({
                   // Determine completion color for task branch
                   const allSubtasksCompleted = leaf.subtaskLeaves.every((st: any) => st.completed);
                   const ssBranchColor = allSubtasksCompleted ? '#059669' : branchColor;
-                  const ssBranchOpacity = allSubtasksCompleted ? 1.0 : inactiveElementOpacity;
+                  const ssBranchOpacity = (allSubtasksCompleted || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
 
                   return (
                     <g 
@@ -445,7 +446,7 @@ export const Branch = ({
 
                       {/* Main/Parent task leaf at the tip of the sub-branch */}
                       {renderMode !== 'wood' && (() => {
-                        const leafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId) ? 1.0 : inactiveElementOpacity;
+                        const leafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
                         return (
                           <g style={{ 
                             pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none',
@@ -483,7 +484,7 @@ export const Branch = ({
                         const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
 
                         const isSubLeafCurrent = subLeaf.id === firstIncompleteLeafId;
-                        const subLeafOpacity = (subLeaf.completed || isSubLeafCurrent) ? 1.0 : inactiveElementOpacity;
+                        const subLeafOpacity = (subLeaf.completed || isSubLeafCurrent || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
 
                         return (
                           <g 
@@ -531,7 +532,7 @@ export const Branch = ({
                   const offsetDist = 12; // Fixed offset
                   const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
                   const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
-                  const simpleLeafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId) ? 1.0 : inactiveElementOpacity;
+                  const simpleLeafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
 
                   return (
                     <g 

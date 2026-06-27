@@ -450,6 +450,10 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
     if (isOpen) {
       loadSession();
       if (existingGoalData) {
+        setSessionId(null);
+        setMessages([]);
+        setAttachedContexts([]);
+        
         // Map existing branch data to the draftPlan structure
         const allLeaves = existingGoalData.leaves || [];
         const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
@@ -459,6 +463,8 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
         const mappedDraft = {
           isExistingRefactor: true,
           goalId: existingGoalData.id,
+          title: existingGoalData.goal || existingGoalData.title || '',
+          description: existingGoalData.description || '',
           phases: phases.map((phase: any) => {
             const phaseTasks = tasks.filter((t: any) => t.parentId === phase.id);
             const phaseMilestone = milestones.find((m: any) => m.parentId === phase.id);

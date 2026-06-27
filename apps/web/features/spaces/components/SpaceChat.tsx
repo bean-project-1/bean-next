@@ -420,15 +420,31 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   useEffect(() => {
     if (isOpen && existingGoalData) {
       try {
+        if (isPersonal) {
+          mutateSession((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              data: {
+                ...prev.data,
+                messages: []
+              }
+            };
+          }, false);
+        } else {
+          mutateSpaceMessages([], false);
+        }
         const allLeaves = existingGoalData.leaves || [];
-      const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
-      const tasks = allLeaves.filter((l: any) => l.type === 'task');
-      const milestones = allLeaves.filter((l: any) => l.type === 'milestone');
+        const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
+        const tasks = allLeaves.filter((l: any) => l.type === 'task');
+        const milestones = allLeaves.filter((l: any) => l.type === 'milestone');
 
-      const mappedDraft = {
-        isExistingRefactor: true,
-        goalId: existingGoalData.id,
-        phases: phases.map((phase: any) => {
+        const mappedDraft = {
+          isExistingRefactor: true,
+          goalId: existingGoalData.id,
+          title: existingGoalData.goal || existingGoalData.title || '',
+          description: existingGoalData.description || '',
+          phases: phases.map((phase: any) => {
           const phaseTasks = tasks.filter((t: any) => t.parentId === phase.id);
           const phaseMilestone = milestones.find((m: any) => m.parentId === phase.id);
           return {

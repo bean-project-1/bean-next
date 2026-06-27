@@ -519,6 +519,7 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isSpaceDropdownOpen, setIsSpaceDropdownOpen] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [pendingBranch, setPendingBranch] = useState<any>(null);
   const [branchCreated, setBranchCreated] = useState(false);
 
@@ -1063,19 +1064,26 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 (draftPlan || isDrafting) ? 'w-full max-w-6xl h-[85vh]' : 'w-full max-w-3xl h-[80vh] md:h-[75vh]'
               }`}
             >
-            {/* Header */}
-            <div className="flex flex-col border-b border-slate-100 bg-white">
-              <div className="flex items-center justify-between px-6 py-4">
-                <div className="flex-1 pr-4">
-                  <div className="relative inline-block w-full max-w-[220px]">
+            
+            {/* Split content */}
+            <div className={`flex-1 flex overflow-hidden ${(draftPlan || isDrafting) ? 'flex-col md:flex-row' : 'flex-col'}`}>
+              
+              {/* Left Column: Chat */}
+              <div className={`flex flex-col h-full border-r border-slate-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${
+                (draftPlan || isDrafting) ? (isChatCollapsed ? 'md:hidden w-full' : 'md:w-[35%] w-full') : 'w-full'
+              } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-slate-50/20`}>
+                
+                {/* Chat Sidebar Header */}
+                <div className="h-[60px] md:h-[72px] px-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+                  <div className="relative inline-block w-full max-w-[200px]">
                     <button
                       onClick={() => setIsSpaceDropdownOpen(!isSpaceDropdownOpen)}
-                      className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer transition-all shadow-sm"
+                      className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer transition-all shadow-sm"
                     >
                       <span className="truncate">
                         {activeSpaceId === 'personal' ? '🌳' : '👥'} {activeSpaceName}
                       </span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isSpaceDropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${isSpaceDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
                     {isSpaceDropdownOpen && (
@@ -1104,53 +1112,32 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                       </>
                     )}
                   </div>
-                </div>
 
-                {(draftPlan || isDrafting) && (
-                  <div className="flex md:hidden bg-slate-100 p-0.5 rounded-full border border-slate-200">
-                    <button
-                      onClick={() => setMobileTab('chat')}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                        mobileTab === 'chat' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
-                      }`}
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <button 
+                      onClick={handleResetChat}
+                      disabled={isResetting}
+                      title="Reiniciar chat"
+                      className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-650 disabled:opacity-50"
                     >
-                      Chat
+                      <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
                     </button>
-                    <button
-                      onClick={() => setMobileTab('draft')}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                        mobileTab === 'draft' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
-                      }`}
-                    >
-                      Borrador
-                    </button>
+                    {(draftPlan || isDrafting) && (
+                      <button 
+                        onClick={() => setIsChatCollapsed(true)} 
+                        className="hidden md:flex p-1.5 text-slate-400 hover:text-slate-750 hover:bg-slate-150 rounded-full transition-colors items-center justify-center"
+                        title="Ocultar Asistente"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    )}
+                    {!draftPlan && !isDrafting && (
+                      <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
-                )}
-
-                <button 
-                  onClick={handleResetChat}
-                  disabled={isResetting}
-                  title="Reiniciar chat"
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600 disabled:opacity-50 mr-1"
-                >
-                  <RotateCcw className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`} />
-                </button>
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Split content */}
-            <div className={`flex-1 flex overflow-hidden ${(draftPlan || isDrafting) ? 'flex-col md:flex-row' : 'flex-col'}`}>
-              
-              {/* Left Column: Chat */}
-              <div className={`flex flex-col h-full border-r border-slate-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${
-                (draftPlan || isDrafting) ? 'md:w-5/12 w-full' : 'w-full'
-              } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-slate-50/20`}>
+                </div>
                 
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
@@ -1485,14 +1472,29 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
 
               {/* Right Column: Mesa de Dibujo */}
               {(draftPlan || isDrafting) && (
-                <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-1 flex-col h-full bg-stone-50 overflow-y-auto`}>
+                <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-stone-50 overflow-y-auto`}>
                   {/* Draft Header */}
-                  <div className="px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm">
-                    <div>
-                      <h3 className="text-lg font-black text-stone-800">Mesa de Dibujo</h3>
-                      <p className="text-xs font-medium text-stone-500">Borrador colaborativo del plan.</p>
+                  <div className="px-4 md:px-6 py-4 border-b border-stone-250 bg-white sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
+                    <div className="flex items-center gap-3">
+                      {isChatCollapsed && (
+                        <button 
+                          onClick={() => setIsChatCollapsed(false)}
+                          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all border border-emerald-100 shadow-xs"
+                        >
+                          <ChevronRight className="w-4 h-4" /> Mostrar Asistente
+                        </button>
+                      )}
+                      <div className="flex md:hidden bg-stone-100 p-0.5 rounded-xl border border-stone-200 shrink-0">
+                        <button type="button" onClick={() => setMobileTab('chat')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
+                        <button type="button" onClick={() => setMobileTab('draft')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>📋 Borrador</button>
+                      </div>
+                      <div className="hidden md:block">
+                        <h3 className="text-sm md:text-base font-black text-stone-850">Mesa de Dibujo</h3>
+                        <p className="text-[10px] md:text-xs font-medium text-stone-500">Borrador colaborativo del plan.</p>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => setDraftPlan(null)}
                         disabled={isDrafting}
@@ -1503,9 +1505,12 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                       <button
                         onClick={handleCreateBranch}
                         disabled={creatingBranch || isDrafting || !draftPlan}
-                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40"
+                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40 animate-in"
                       >
                         {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
+                      </button>
+                      <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600 ml-1">
+                        <X className="w-5 h-5 md:w-6 md:h-6" />
                       </button>
                     </div>
                   </div>

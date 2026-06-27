@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, MessageSquare, ChevronRight, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical } from 'lucide-react';
+import { X, RefreshCw, MessageSquare, ChevronRight, ChevronLeft, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '../../hooks/useUIStore';
 
@@ -385,6 +385,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -860,45 +861,49 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         }`}
         onClick={e => e.stopPropagation()}
       >
-        {/* HEADER SECTION */}
-        <div className="flex flex-col border-b border-stone-200 bg-white z-10 shrink-0">
-          <div className="h-[60px] md:h-[72px] px-4 md:px-6 flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 md:w-5 md:h-5 text-emerald-600" />
+        {/* CONTAINER FOR CHAT AND DRAFT */}
+        <div className={`flex flex-1 overflow-hidden ${draftPlan || isDrafting ? 'flex-col md:flex-row' : 'flex-col'}`}>
+          {/* Lado Izquierdo: Chat */}
+          <div className={`flex flex-col h-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${
+            draftPlan || isDrafting ? (isChatCollapsed ? 'md:hidden w-full' : 'md:w-[35%] w-full') : 'w-full'
+          } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}>
+
+          {/* Chat Sidebar Header */}
+          <div className="h-[60px] md:h-[72px] px-4 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <Bot className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-bold text-sm md:text-base text-stone-800">Coach BEAN</h3>
-                <p className="text-[10px] md:text-xs text-stone-500">Planificador & Guía Estratégica</p>
+                <h3 className="font-bold text-xs md:text-sm text-stone-800">Asistente IA</h3>
+                <p className="text-[10px] text-stone-500">Planificador & Guía</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 md:gap-4">
-              {(draftPlan || isDrafting) && (
-                <div className="flex md:hidden bg-stone-100 p-1 rounded-xl shrink-0 mr-2">
-                  <button onClick={() => setMobileTab('chat')} className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>💬</button>
-                  <button onClick={() => setMobileTab('draft')} className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>📝</button>
-                </div>
-              )}
+            <div className="flex items-center gap-1.5">
               <button 
                 type="button" 
                 onClick={handleReset} 
-                className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors flex items-center justify-center" 
-                title="Nueva Sesión (Reiniciar)"
+                className="p-1.5 text-stone-400 hover:text-stone-750 hover:bg-stone-150 rounded-full transition-colors flex items-center justify-center" 
+                title="Reiniciar chat"
               >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-4 h-4" />
               </button>
-              <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600">
-                <X className="w-5 h-5 md:w-6 md:h-6" />
-              </button>
+              {(draftPlan || isDrafting) && (
+                <button 
+                  onClick={() => setIsChatCollapsed(true)} 
+                  className="hidden md:flex p-1.5 text-stone-400 hover:text-stone-750 hover:bg-stone-150 rounded-full transition-colors items-center justify-center"
+                  title="Ocultar Asistente"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              {!draftPlan && !isDrafting && (
+                <button onClick={onClose} className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-400">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* CONTAINER FOR CHAT AND DRAFT */}
-        <div className={`flex flex-1 overflow-hidden ${draftPlan || isDrafting ? 'flex-col md:flex-row' : 'flex-col'}`}>
-          
-        {/* Lado Izquierdo: Chat */}
-        <div className={`flex flex-col h-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)] z-10 ${draftPlan || isDrafting ? 'md:w-5/12 w-full' : 'w-full'} ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}>
 
         {/* Messages */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-6 space-y-4 bg-stone-50/30">
@@ -1055,20 +1060,39 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         </div>
         {/* Lado Derecho: Borrador del Plan */}
         {(draftPlan || isDrafting) && (
-          <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full md:w-7/12 w-full bg-stone-50 overflow-y-auto`}>
-            <div className="px-4 md:px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10 flex flex-col md:flex-row md:justify-between md:items-center gap-3 shadow-sm">
-              <div>
-                <h3 className="text-lg font-black text-stone-800">Mesa de Dibujo</h3>
-                <p className="text-[11px] md:text-xs font-medium text-stone-500">Arrastra elementos al chat para dar feedback.</p>
+          <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-stone-50 overflow-y-auto`}>
+            <div className="px-4 md:px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
+              <div className="flex items-center gap-3">
+                {isChatCollapsed && (
+                  <button 
+                    onClick={() => setIsChatCollapsed(false)}
+                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all border border-emerald-100 shadow-xs"
+                  >
+                    <ChevronRight className="w-4 h-4" /> Mostrar Asistente
+                  </button>
+                )}
+                <div className="flex md:hidden bg-stone-100 p-0.5 rounded-xl border border-stone-200 shrink-0">
+                  <button type="button" onClick={() => setMobileTab('chat')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
+                  <button type="button" onClick={() => setMobileTab('draft')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'}`}>📋 Borrador</button>
+                </div>
+                <div className="hidden md:block">
+                  <h3 className="text-sm md:text-base font-black text-stone-800 flex items-center gap-1.5">
+                    📋 Mesa de Dibujo
+                  </h3>
+                  <p className="text-[10px] md:text-xs font-medium text-stone-500">Planifica y edita tu borrador aquí.</p>
+                </div>
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={handleCreateBranch}
                   disabled={creatingBranch || isDrafting}
-                  className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] active:scale-[0.98] disabled:opacity-40"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] active:scale-[0.98] disabled:opacity-40"
                 >
-                  {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios a la Meta' : 'Aceptar Plan Definitivo')}
+                  {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios' : 'Aceptar Plan Definitivo')}
+                </button>
+                <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600">
+                  <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </div>
             </div>

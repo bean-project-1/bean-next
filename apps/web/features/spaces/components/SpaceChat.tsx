@@ -106,14 +106,21 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
   const titlePrefix = type === 'phase' ? 'Fase' : 'Tarea';
 
   return (
-    <motion.div 
-      initial={{ y: '100%', opacity: 0 }} 
-      animate={{ y: 0, opacity: 1 }} 
-      exit={{ y: '100%', opacity: 0 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="absolute bottom-0 left-0 right-0 z-50 bg-white md:rounded-t-3xl shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.15)] flex flex-col h-[70vh] border-t border-x border-stone-200"
-    >
-      <div className="flex justify-between items-start p-5 border-b border-stone-100">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6 pointer-events-none">
+      {/* Semi-transparent blur backdrop */}
+      <div 
+        onClick={onClose}
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-xs pointer-events-auto z-0 transition-opacity"
+      />
+      
+      <motion.div 
+        initial={{ y: '100%', opacity: 0 }} 
+        animate={{ y: 0, opacity: 1 }} 
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="w-full bg-white rounded-t-3xl md:rounded-2xl shadow-2xl flex flex-col h-[85vh] md:h-auto md:max-h-[85vh] md:max-w-xl border-t border-stone-200 md:border border-stone-100 pointer-events-auto z-10"
+      >
+        <div className="flex justify-between items-start p-5 border-b border-stone-100">
         <div className="flex-1 pr-4">
           <p className="text-[10px] font-black uppercase text-emerald-600 tracking-wider mb-1">
             Detalle de {titlePrefix}
@@ -237,7 +244,8 @@ const DraftItemDetailSheet = ({ itemData, selection, onClose, updateDraftPlanIte
         </div>
       </div>
     </motion.div>
-  );
+  </div>
+);
 };
 
 function renderFormattedText(text: string, isAI: boolean) {

@@ -474,44 +474,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             </text>
           )}
 
-          {/* Dynamic Branches - Wood Pass (Trunks and Stems) */}
+          {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
             const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
 
             return (
               <Branch
-                key={`wood-${branch.id}`}
-                renderMode="wood"
-                branch={branch}
-                index={i}
-                totalBranches={data.branches.length}
-                clickedLeafId={clickedLeafId}
-                onClick={handleLeafClickHandler}
-                onHover={setHoveredLeafName}
-                onBranchClick={handleBranchClick}
-                onPhaseClick={handlePhaseClick}
-                onEdit={onEditBranch}
-                onDelete={onDeleteBranch}
-                isZoomed={zoomedBranchId === branch.id}
-                opacity={branchOpacity}
-                zoomedPhaseId={zoomedBranchId === branch.id ? zoomedPhaseId : null}
-                activeLeafId={activeLeafId}
-                activePhaseId={activePhaseId}
-                currentRotation={rotation}
-                isInteractive={isInteractive}
-                animate={i >= prevBranchCount.current}
-              />
-            );
-          })}
-
-          {/* Dynamic Branches - Leaves Pass (Tasks & Subtasks on top) */}
-          {data.branches.map((branch, i) => {
-            const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
-
-            return (
-              <Branch
-                key={`leaves-${branch.id}`}
-                renderMode="leaves"
+                key={branch.id}
                 branch={branch}
                 index={i}
                 totalBranches={data.branches.length}

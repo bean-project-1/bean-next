@@ -324,35 +324,130 @@ export const Branch = ({
               className={!isPhaseFocused ? "transition-all duration-500 ease-out origin-center group-hover/phase:scale-[1.04] group-hover/phase:brightness-105" : "transition-all duration-500 ease-out"}
               style={!isPhaseFocused ? { transformOrigin: `${sub.start.x}px ${sub.start.y}px` } : undefined}
             >
-              {/* MASSIVE INVISIBLE HITBOX FOR SUB-BRANCH */}
-              {renderMode !== 'leaves' && (
-                <path 
-                  d={sub.path} 
-                  stroke="transparent" 
-                  strokeWidth="40" 
-                  fill="none" 
-                  strokeLinecap="round" 
-                  style={{ pointerEvents: 'visibleStroke' }}
-                />
-              )}
+              {/* === LAYER 1: WOOD, BRANCHES & STEMS (Rendered first, at the back) === */}
               
-              {/* VISUAL SUB-BRANCH */}
-              {renderMode !== 'leaves' && (
-                <path 
-                  className="branch-stroke transition-all duration-300 ease-out group-hover/phase:stroke-[6] group-hover/phase:opacity-100" 
-                  d={sub.path} 
-                  stroke={branchColor} 
-                  strokeWidth="3" 
-                  fill="none" 
-                  strokeLinecap="round" 
-                  style={{ 
-                    opacity: (isPhaseFocused || isPhaseCompleted || phase.id === currentPhaseId) ? 1.0 : 0.55,
-                    transition: 'opacity 0.6s ease'
-                  }}
-                />
-              )}
-              {/* PHASE CULMINATION LEAF (AT THE END) */}
-              {renderMode !== 'wood' && (() => {
+              {/* Invisible thicker hitbox path for easy clicking of main sub-branch */}
+              <path 
+                d={sub.path} 
+                stroke="transparent" 
+                strokeWidth="40" 
+                fill="none" 
+                strokeLinecap="round" 
+                style={{ pointerEvents: 'visibleStroke' }}
+              />
+              
+              {/* Visual sub-branch path */}
+              <path 
+                className="branch-stroke transition-all duration-300 ease-out group-hover/phase:stroke-[6] group-hover/phase:opacity-100" 
+                d={sub.path} 
+                stroke={branchColor} 
+                strokeWidth="3" 
+                fill="none" 
+                strokeLinecap="round" 
+                style={{ 
+                  opacity: (isPhaseFocused || isPhaseCompleted || phase.id === currentPhaseId) ? 1.0 : 0.55,
+                  transition: 'opacity 0.6s ease'
+                }}
+              />
+
+              {/* Sub-branch wood paths (sub-sub-branches) and leaf stems */}
+              {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
+                const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
+                const mt = 1 - t;
+                const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
+                const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
+                const side = lIdx % 2 === 0 ? 1 : -1;
+
+                if (leaf.subtaskLeaves && leaf.subtaskLeaves.length > 0) {
+                  const ssAngle = sub.rad + (0.45 * side);
+                  const ssLen = 25 + (leaf.subtaskLeaves.length * 8);
+                  const ssEndX = px + Math.cos(ssAngle) * ssLen;
+                  const ssEndY = py + Math.sin(ssAngle) * ssLen;
+                  const ssCpX = px + Math.cos(ssAngle) * ssLen * 0.5 + Math.sin(ssAngle) * (-4 * side);
+                  const ssCpY = py + Math.sin(ssAngle) * ssLen * 0.5 + Math.cos(ssAngle) * (-3 * side);
+                  const ssPath = `M ${px},${py} Q ${ssCpX},${ssCpY} ${ssEndX},${ssEndY}`;
+
+                  const allSubtasksCompleted = leaf.subtaskLeaves.every((st: any) => st.completed);
+                  const ssBranchColor = allSubtasksCompleted ? '#059669' : branchColor;
+                  const ssBranchOpacity = (allSubtasksCompleted || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
+
+                  return (
+                    <g key={`wood-ss-${leaf.id}`}>
+                      {/* Invisible thicker hitbox path for easy clicking of sub-sub-branch */}
+                      <path
+                        d={ssPath}
+                        stroke="transparent"
+                        strokeWidth="15"
+                        fill="none"
+                        strokeLinecap="round"
+                        style={{ pointerEvents: 'visibleStroke' }}
+                      />
+
+                      {/* Visual branch path */}
+                      <path
+                        className="branch-stroke transition-all duration-300 ease-out group-hover/sub-branch:stroke-[3] opacity-85"
+                        d={ssPath}
+                        stroke={ssBranchColor}
+                        strokeWidth="1.5"
+                        fill="none"
+                        strokeLinecap="round"
+                        style={{ 
+                          opacity: ssBranchOpacity,
+                          transition: 'opacity 0.5s ease'
+                        }}
+                      />
+
+                      {/* Subtask stems */}
+                      {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
+                        const st = 0.25 + (subIdx / (leaf.subtaskLeaves!.length || 1)) * 0.6;
+                        const smt = 1 - st;
+                        const spx = smt * smt * px + 2 * smt * st * ssCpX + st * st * ssEndX;
+                        const spy = smt * smt * py + 2 * smt * st * ssCpY + st * st * ssEndY;
+
+                        const subSide = subIdx % 2 === 0 ? 1 : -1;
+                        const subOffsetDist = 8;
+                        const slx = spx + Math.cos(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
+                        const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
+
+                        return (
+                          <path
+                            key={`stem-sub-${subLeaf.id}`}
+                            className="leaf-stem"
+                            d={`M ${spx},${spy} Q ${(spx + slx) / 2 + Math.cos(ssAngle) * 1.5},${(spy + sly) / 2 + Math.sin(ssAngle) * 1.5} ${slx},${sly}`}
+                            stroke={branchColor}
+                            strokeWidth={0.4}
+                            fill="none"
+                            opacity="0.6"
+                          />
+                        );
+                      })}
+                    </g>
+                  );
+                } else {
+                  // Simple leaf stem
+                  const offsetDist = 12;
+                  const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
+                  const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
+
+                  return (
+                    <path 
+                      key={`stem-simple-${leaf.id}`}
+                      className="leaf-stem"
+                      d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
+                      stroke={branchColor} 
+                      strokeWidth={0.5} 
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  );
+                }
+              })}
+
+
+              {/* === LAYER 2: LEAVES (Rendered second, on top of all wood) === */}
+              
+              {/* Culmination Milestone leaf */}
+              {(() => {
                 const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
                 const tipLeaf = phaseMilestone || phase;
                 const isTipCurrent = tipLeaf.id === firstIncompleteLeafId;
@@ -382,98 +477,52 @@ export const Branch = ({
                 );
               })()}
 
-              {/* ACTIVITIES IN THIS PHASE (EXCLUDING MILESTONE) */}
+              {/* Activities, Tasks & Subtasks leaves */}
               {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
                 const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
                 const mt = 1 - t;
                 const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
                 const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
-                
                 const side = lIdx % 2 === 0 ? 1 : -1;
                 const leafInteractive = isInteractive;
 
                 if (leaf.subtaskLeaves && leaf.subtaskLeaves.length > 0) {
-                  // Render as a sub-sub-branch!
-                  const ssAngle = sub.rad + (0.45 * side); // slightly tilted relative to sub-branch
+                  const ssAngle = sub.rad + (0.45 * side);
                   const ssLen = 25 + (leaf.subtaskLeaves.length * 8);
                   const ssEndX = px + Math.cos(ssAngle) * ssLen;
                   const ssEndY = py + Math.sin(ssAngle) * ssLen;
                   
-                  // control point for a nice curved sub-sub-branch
                   const ssCpX = px + Math.cos(ssAngle) * ssLen * 0.5 + Math.sin(ssAngle) * (-4 * side);
                   const ssCpY = py + Math.sin(ssAngle) * ssLen * 0.5 + Math.cos(ssAngle) * (-3 * side);
-                  const ssPath = `M ${px},${py} Q ${ssCpX},${ssCpY} ${ssEndX},${ssEndY}`;
 
-                  // Determine completion color for task branch
-                  const allSubtasksCompleted = leaf.subtaskLeaves.every((st: any) => st.completed);
-                  const ssBranchColor = allSubtasksCompleted ? '#059669' : branchColor;
-                  const ssBranchOpacity = (allSubtasksCompleted || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
+                  const leafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
 
                   return (
-                    <g 
-                      key={leaf.id} 
-                      className="group/sub-branch cursor-pointer"
-                      style={{ 
-                        pointerEvents: 'auto'
-                      }}
-                    >
-                      {/* Invisible thicker hitbox path for easy clicking of sub-sub-branch */}
-                      {renderMode !== 'leaves' && (
-                        <path
-                          d={ssPath}
-                          stroke="transparent"
-                          strokeWidth="15"
-                          fill="none"
-                          strokeLinecap="round"
-                          style={{ pointerEvents: 'visibleStroke' }}
+                    <g key={`leaves-group-${leaf.id}`}>
+                      {/* Parent task leaf at the tip of the sub-branch */}
+                      <g style={{ 
+                        pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none',
+                        opacity: leafOpacity,
+                        transition: 'opacity 0.5s ease'
+                      }}>
+                        <Leaf
+                          leaf={leaf}
+                          x={ssEndX}
+                          y={ssEndY}
+                          angle={(ssAngle * 180) / Math.PI + (10 * side)}
+                          delay={1.2 + index * 0.05 + lIdx * 0.05}
+                          isSelected={clickedLeafId === leaf.id}
+                          isActive={activeLeafId === leaf.id}
+                          isCurrent={leaf.id === firstIncompleteLeafId}
+                          isInteractive={leafInteractive}
+                          animate={animate}
+                          onHover={handleLeafHover}
+                          onClick={handleLeafClick}
+                          className={leafClassName}
                         />
-                      )}
+                      </g>
 
-                      {/* Visual branch path */}
-                      {renderMode !== 'leaves' && (
-                        <path
-                          className="branch-stroke transition-all duration-300 ease-out group-hover/sub-branch:stroke-[3] opacity-85"
-                          d={ssPath}
-                          stroke={ssBranchColor}
-                          strokeWidth="1.5"
-                          fill="none"
-                          strokeLinecap="round"
-                          style={{ 
-                            opacity: ssBranchOpacity,
-                            transition: 'opacity 0.5s ease'
-                          }}
-                        />
-                      )}
-
-                      {/* Main/Parent task leaf at the tip of the sub-branch */}
-                      {renderMode !== 'wood' && (() => {
-                        const leafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
-                        return (
-                          <g style={{ 
-                            pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none',
-                            opacity: leafOpacity,
-                            transition: 'opacity 0.5s ease'
-                          }}>
-                            <Leaf
-                              leaf={leaf}
-                              x={ssEndX}
-                              y={ssEndY}
-                              angle={(ssAngle * 180) / Math.PI + (10 * side)}
-                              delay={1.2 + index * 0.05 + lIdx * 0.05}
-                              isSelected={clickedLeafId === leaf.id}
-                              isActive={activeLeafId === leaf.id}
-                              isCurrent={leaf.id === firstIncompleteLeafId}
-                              isInteractive={leafInteractive}
-                              animate={animate}
-                              onHover={handleLeafHover}
-                              onClick={handleLeafClick}
-                              className={leafClassName}
-                            />
-                          </g>
-                        );
-                      })()}
-
-                      {/* Subtask leaves along the sub-branch */}
+                      {/* Subtask leaves */}
                       {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
                         const st = 0.25 + (subIdx / (leaf.subtaskLeaves!.length || 1)) * 0.6;
                         const smt = 1 - st;
@@ -498,41 +547,29 @@ export const Branch = ({
                               transition: 'opacity 0.5s ease'
                             }}
                           >
-                            {renderMode !== 'leaves' && (
-                              <path
-                                className="leaf-stem"
-                                d={`M ${spx},${spy} Q ${(spx + slx) / 2 + Math.cos(ssAngle) * 1.5},${(spy + sly) / 2 + Math.sin(ssAngle) * 1.5} ${slx},${sly}`}
-                                stroke={branchColor}
-                                strokeWidth={0.4}
-                                fill="none"
-                                opacity="0.6"
-                              />
-                            )}
-                            {renderMode !== 'wood' && (
-                              <Leaf
-                                leaf={subLeaf}
-                                x={slx}
-                                y={sly}
-                                angle={(ssAngle * 180) / Math.PI + (60 * subSide)}
-                                delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
-                                isSelected={clickedLeafId === subLeaf.id}
-                                isActive={activeLeafId === subLeaf.id}
-                                isCurrent={isSubLeafCurrent}
-                                isInteractive={leafInteractive}
-                                animate={animate}
-                                onHover={handleLeafHover}
-                                onClick={handleLeafClick}
-                                className={leafClassName}
-                              />
-                            )}
+                            <Leaf
+                              leaf={subLeaf}
+                              x={slx}
+                              y={sly}
+                              angle={(ssAngle * 180) / Math.PI + (60 * subSide)}
+                              delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
+                              isSelected={clickedLeafId === subLeaf.id}
+                              isActive={activeLeafId === subLeaf.id}
+                              isCurrent={isSubLeafCurrent}
+                              isInteractive={leafInteractive}
+                              animate={animate}
+                              onHover={handleLeafHover}
+                              onClick={handleLeafClick}
+                              className={leafClassName}
+                            />
                           </g>
                         );
                       })}
                     </g>
                   );
                 } else {
-                  // Render as simple leaf
-                  const offsetDist = 12; // Fixed offset
+                  // Simple leaf
+                  const offsetDist = 12;
                   const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
                   const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
                   const simpleLeafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId || isPhaseCompleted) ? 1.0 : inactiveElementOpacity;
@@ -546,33 +583,21 @@ export const Branch = ({
                         transition: 'opacity 0.5s ease' 
                       }}
                     >
-                      {renderMode !== 'leaves' && (
-                        <path 
-                          className="leaf-stem"
-                          d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
-                          stroke={branchColor} 
-                          strokeWidth={0.5} 
-                          fill="none"
-                          opacity="0.6"
-                        />
-                      )}
-                      {renderMode !== 'wood' && (
-                        <Leaf
-                          leaf={leaf}
-                          x={lx}
-                          y={ly}
-                          angle={(sub.rad * 180) / Math.PI + (60 * side)}
-                          delay={1.2 + index * 0.05 + lIdx * 0.05}
-                          isSelected={clickedLeafId === leaf.id}
-                          isActive={activeLeafId === leaf.id}
-                          isCurrent={leaf.id === firstIncompleteLeafId}
-                          isInteractive={leafInteractive}
-                          animate={animate}
-                          onHover={handleLeafHover}
-                          onClick={handleLeafClick}
-                          className={leafClassName}
-                        />
-                      )}
+                      <Leaf
+                        leaf={leaf}
+                        x={lx}
+                        y={ly}
+                        angle={(sub.rad * 180) / Math.PI + (60 * side)}
+                        delay={1.2 + index * 0.05 + lIdx * 0.05}
+                        isSelected={clickedLeafId === leaf.id}
+                        isActive={activeLeafId === leaf.id}
+                        isCurrent={leaf.id === firstIncompleteLeafId}
+                        isInteractive={leafInteractive}
+                        animate={animate}
+                        onHover={handleLeafHover}
+                        onClick={handleLeafClick}
+                        className={leafClassName}
+                      />
                     </g>
                   );
                 }

@@ -18,9 +18,10 @@ interface LeafProps {
   animate?: boolean;
   onHover: (name: string | null) => void;
   onClick: (id: string, name: string) => void;
+  className?: string;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent, isInteractive = true, animate = false, onHover, onClick }: LeafProps) => {
+export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent, isInteractive = true, animate = false, onHover, onClick, className = "" }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
@@ -44,7 +45,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
       <g
         ref={containerRef}
         style={{ transformOrigin: "0 0", cursor: 'pointer' }}
-        className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'}`}
+        className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'} ${className}`}
         onMouseEnter={() => onHover(leaf.name)}
         onMouseLeave={() => onHover(null)}
         onClick={(e) => {

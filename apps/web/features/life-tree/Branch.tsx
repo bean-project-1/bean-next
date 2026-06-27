@@ -279,6 +279,7 @@ export const Branch = ({
         const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
         const isPhaseCompleted = phase.completed || (phase.activities?.every(a => a.completed) ?? true);
         const inactiveElementOpacity = isPhaseFocused ? 1.0 : 0.55;
+        const leafClassName = !isPhaseFocused ? "group-hover/phase:scale-[1.12]" : "";
 
         const handleLeafClick = (leafId: string, leafName: string) => {
           const isCurrentLeaf = leafId === firstIncompleteLeafId;
@@ -375,6 +376,7 @@ export const Branch = ({
                       animate={animate}
                       onHover={handleLeafHover}
                       onClick={handleLeafClick}
+                      className={leafClassName}
                     />
                   </g>
                 );
@@ -465,6 +467,7 @@ export const Branch = ({
                               animate={animate}
                               onHover={handleLeafHover}
                               onClick={handleLeafClick}
+                              className={leafClassName}
                             />
                           </g>
                         );
@@ -519,6 +522,7 @@ export const Branch = ({
                                 animate={animate}
                                 onHover={handleLeafHover}
                                 onClick={handleLeafClick}
+                                className={leafClassName}
                               />
                             )}
                           </g>
@@ -566,6 +570,7 @@ export const Branch = ({
                           animate={animate}
                           onHover={handleLeafHover}
                           onClick={handleLeafClick}
+                          className={leafClassName}
                         />
                       )}
                     </g>

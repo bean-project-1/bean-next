@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Leaf as LeafType } from './types';
@@ -38,26 +38,56 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
         ease: "back.out(1.7)" 
       }
     );
-  }, [delay, animate]); // Only re-run appear if delay changes
+  }, [delay, animate]);
+
+  const swayStyle = useMemo(() => {
+    // Generate stable pseudo-random values based on leaf ID
+    const hash = leaf.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const duration = 4.0 + (hash % 6) * 0.4; // 4.0s to 6.4s
+    const delay = -(hash % 8) * 0.5; // Starts immediately at different phases
+    const swayDeg = 3.5 + (hash % 5) * 1.0; // 3.5deg to 7.5deg
+
+    return {
+      animationName: 'leafSway',
+      animationDuration: `${duration}s`,
+      animationDelay: `${delay}s`,
+      animationIterationCount: 'infinite',
+      animationTimingFunction: 'ease-in-out',
+      '--sway-deg': `${swayDeg}deg`,
+      transformOrigin: '0 0'
+    } as React.CSSProperties;
+  }, [leaf.id]);
 
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
-      <g
-        ref={containerRef}
-        style={{ transformOrigin: "0 0", cursor: 'pointer' }}
-        className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'} ${className}`}
-        onMouseEnter={() => onHover(leaf.name)}
-        onMouseLeave={() => onHover(null)}
-        onClick={(e) => {
-          if (!isInteractive) return;
-          e.stopPropagation();
-          onClick(leaf.originalId || leaf.id, leaf.name);
-        }}
-      >
-        {leaf.type === 'milestone' ? (
-          <>
-            <defs>
-              <linearGradient id={`fruitGrad-${leaf.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+      <style>{`
+        @keyframes leafSway {
+          0%, 100% {
+            transform: rotate(0deg);
+          }
+          50% {
+            transform: rotate(var(--sway-deg, 5deg));
+          }
+        }
+      `}</style>
+      {/* Wind Sway Wrapper */}
+      <g style={swayStyle}>
+        <g
+          ref={containerRef}
+          style={{ transformOrigin: "0 0", cursor: 'pointer' }}
+          className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'} ${className}`}
+          onMouseEnter={() => onHover(leaf.name)}
+          onMouseLeave={() => onHover(null)}
+          onClick={(e) => {
+            if (!isInteractive) return;
+            e.stopPropagation();
+            onClick(leaf.originalId || leaf.id, leaf.name);
+          }}
+        >
+          {leaf.type === 'milestone' ? (
+            <>
+              <defs>
+                <linearGradient id={`fruitGrad-${leaf.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={leaf.completed ? "#fcd34d" : "#cbd5e1"} />
                 <stop offset="100%" stopColor={leaf.completed ? "#d97706" : "#64748b"} />
               </linearGradient>
@@ -167,6 +197,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
                     </g>
           </>
         )}
+      </g>
       </g>
     </g>
   );

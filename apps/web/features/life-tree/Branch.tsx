@@ -221,6 +221,25 @@ export const Branch = ({
         const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
         // Fade out other phases when one is focused
         const phaseOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) ? 0.15 : 1;
+        const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
+
+        const handleLeafClick = (leafId: string, leafName: string) => {
+          if (!isPhaseFocused) {
+            const midX = (sub.start.x + sub.end.x) / 2;
+            const midY = (sub.start.y + sub.end.y) / 2;
+            onPhaseClick(phase.id, midX, midY, sub.rad, sub.start.x, sub.start.y, branch.id, sub.len);
+          } else {
+            onClick(leafId, leafName);
+          }
+        };
+
+        const handleLeafHover = (hoveredName: string | null) => {
+          if (!isPhaseFocused) {
+            onHover(hoveredName ? phase.name : null);
+          } else {
+            onHover(hoveredName);
+          }
+        };
 
         return (
           <g 
@@ -261,165 +280,184 @@ export const Branch = ({
               strokeLinecap="round" 
             />
 
-            {/* PHASE CULMINATION LEAF (AT THE END) */}
-            {(() => {
-              const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
-              const tipLeaf = phaseMilestone || phase;
-              return (
-                <Leaf
-                  leaf={tipLeaf}
-                  x={sub.end.x}
-                  y={sub.end.y}
-                  angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
-                  delay={1.0 + index * 0.05 + pIdx * 0.05}
-                  isSelected={clickedLeafId === tipLeaf.id}
-                  isActive={activeLeafId === tipLeaf.id}
-                  isInteractive={isInteractive}
-                  animate={animate}
-                  onHover={onHover}
-                  onClick={onClick}
-                />
-              );
-            })()}
+            {/* Premium group-hover effect wrapper for all phase leaves and stems */}
+            <g 
+              className={!isPhaseFocused ? "transition-all duration-500 ease-out origin-center group-hover/phase:scale-[1.04] group-hover/phase:brightness-105" : "transition-all duration-500 ease-out"}
+              style={!isPhaseFocused ? { transformOrigin: `${sub.start.x}px ${sub.start.y}px` } : undefined}
+            >
+              {/* PHASE CULMINATION LEAF (AT THE END) */}
+              {(() => {
+                const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
+                const tipLeaf = phaseMilestone || phase;
+                return (
+                  <Leaf
+                    leaf={tipLeaf}
+                    x={sub.end.x}
+                    y={sub.end.y}
+                    angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
+                    delay={1.0 + index * 0.05 + pIdx * 0.05}
+                    isSelected={clickedLeafId === tipLeaf.id}
+                    isActive={activeLeafId === tipLeaf.id}
+                    isInteractive={isInteractive}
+                    animate={animate}
+                    onHover={handleLeafHover}
+                    onClick={handleLeafClick}
+                  />
+                );
+              })()}
 
-            {/* ACTIVITIES IN THIS PHASE (EXCLUDING MILESTONE) */}
-            {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
-              const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
-              const mt = 1 - t;
-              const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
-              const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
-              
-              const side = lIdx % 2 === 0 ? 1 : -1;
-              const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
-              const leafInteractive = isInteractive && isPhaseFocused;
-
-              if (leaf.subtaskLeaves && leaf.subtaskLeaves.length > 0) {
-                // Render as a sub-sub-branch!
-                const ssAngle = sub.rad + (0.45 * side); // slightly tilted relative to sub-branch
-                const ssLen = 25 + (leaf.subtaskLeaves.length * 8);
-                const ssEndX = px + Math.cos(ssAngle) * ssLen;
-                const ssEndY = py + Math.sin(ssAngle) * ssLen;
+              {/* ACTIVITIES IN THIS PHASE (EXCLUDING MILESTONE) */}
+              {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
+                const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
+                const mt = 1 - t;
+                const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
+                const py = mt * mt * sub.start.y + 2 * mt * t * sub.cp.y + t * t * sub.end.y;
                 
-                // control point for a nice curved sub-sub-branch
-                const ssCpX = px + Math.cos(ssAngle) * ssLen * 0.5 + Math.sin(ssAngle) * (-4 * side);
-                const ssCpY = py + Math.sin(ssAngle) * ssLen * 0.5 + Math.cos(ssAngle) * (-3 * side);
-                const ssPath = `M ${px},${py} Q ${ssCpX},${ssCpY} ${ssEndX},${ssEndY}`;
+                const side = lIdx % 2 === 0 ? 1 : -1;
+                const leafInteractive = isInteractive;
 
-                return (
-                  <g 
-                    key={leaf.id} 
-                    className="group/sub-branch cursor-pointer"
-                    style={{ 
-                      opacity: isPhaseFocused ? 1 : 0.4, 
-                      pointerEvents: isPhaseFocused ? 'auto' : 'none', 
-                      transition: 'opacity 0.5s ease' 
-                    }}
-                  >
-                    {/* Visual branch path */}
-                    <path
-                      className="branch-stroke transition-all duration-300 ease-out group-hover/sub-branch:stroke-[3] opacity-85"
-                      d={ssPath}
-                      stroke={branchColor}
-                      strokeWidth="1.5"
-                      fill="none"
-                      strokeLinecap="round"
-                    />
+                if (leaf.subtaskLeaves && leaf.subtaskLeaves.length > 0) {
+                  // Render as a sub-sub-branch!
+                  const ssAngle = sub.rad + (0.45 * side); // slightly tilted relative to sub-branch
+                  const ssLen = 25 + (leaf.subtaskLeaves.length * 8);
+                  const ssEndX = px + Math.cos(ssAngle) * ssLen;
+                  const ssEndY = py + Math.sin(ssAngle) * ssLen;
+                  
+                  // control point for a nice curved sub-sub-branch
+                  const ssCpX = px + Math.cos(ssAngle) * ssLen * 0.5 + Math.sin(ssAngle) * (-4 * side);
+                  const ssCpY = py + Math.sin(ssAngle) * ssLen * 0.5 + Math.cos(ssAngle) * (-3 * side);
+                  const ssPath = `M ${px},${py} Q ${ssCpX},${ssCpY} ${ssEndX},${ssEndY}`;
 
-                    {/* Main/Parent task leaf at the tip of the sub-branch */}
-                    <Leaf
-                      leaf={leaf}
-                      x={ssEndX}
-                      y={ssEndY}
-                      angle={(ssAngle * 180) / Math.PI + (10 * side)}
-                      delay={1.2 + index * 0.05 + lIdx * 0.05}
-                      isSelected={clickedLeafId === leaf.id}
-                      isActive={activeLeafId === leaf.id}
-                      isInteractive={leafInteractive}
-                      animate={animate}
-                      onHover={onHover}
-                      onClick={onClick}
-                    />
+                  // Determine completion color for task branch
+                  const allSubtasksCompleted = leaf.subtaskLeaves.every((st: any) => st.completed);
+                  const ssBranchColor = allSubtasksCompleted ? '#059669' : branchColor;
 
-                    {/* Subtask leaves along the sub-branch */}
-                    {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
-                      const st = 0.25 + (subIdx / (leaf.subtaskLeaves!.length || 1)) * 0.6;
-                      const smt = 1 - st;
-                      const spx = smt * smt * px + 2 * smt * st * ssCpX + st * st * ssEndX;
-                      const spy = smt * smt * py + 2 * smt * st * ssCpY + st * st * ssEndY;
+                  return (
+                    <g 
+                      key={leaf.id} 
+                      className="group/sub-branch cursor-pointer"
+                      style={{ 
+                        opacity: isPhaseFocused ? 1 : 0.4, 
+                        pointerEvents: isPhaseFocused ? 'auto' : 'none', 
+                        transition: 'opacity 0.5s ease' 
+                      }}
+                    >
+                      {/* Invisible thicker hitbox path for easy clicking of sub-sub-branch */}
+                      <path
+                        d={ssPath}
+                        stroke="transparent"
+                        strokeWidth="15"
+                        fill="none"
+                        strokeLinecap="round"
+                        style={{ pointerEvents: 'visibleStroke' }}
+                      />
 
-                      const subSide = subIdx % 2 === 0 ? 1 : -1;
-                      const subOffsetDist = 8;
-                      const slx = spx + Math.cos(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
-                      const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
+                      {/* Visual branch path */}
+                      <path
+                        className="branch-stroke transition-all duration-300 ease-out group-hover/sub-branch:stroke-[3] opacity-85"
+                        d={ssPath}
+                        stroke={ssBranchColor}
+                        strokeWidth="1.5"
+                        fill="none"
+                        strokeLinecap="round"
+                      />
 
-                      return (
-                        <g key={subLeaf.id} transform={`translate(${slx}, ${sly}) scale(0.75) translate(${-slx}, ${-sly})`}>
-                          <path
-                            className="leaf-stem"
-                            d={`M ${spx},${spy} Q ${(spx + slx) / 2 + Math.cos(ssAngle) * 1.5},${(spy + sly) / 2 + Math.sin(ssAngle) * 1.5} ${slx},${sly}`}
-                            stroke={branchColor}
-                            strokeWidth={0.4}
-                            fill="none"
-                            opacity="0.6"
-                          />
-                          <Leaf
-                            leaf={subLeaf}
-                            x={slx}
-                            y={sly}
-                            angle={(ssAngle * 180) / Math.PI + (60 * subSide)}
-                            delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
-                            isSelected={clickedLeafId === subLeaf.id}
-                            isActive={activeLeafId === subLeaf.id}
-                            isInteractive={leafInteractive}
-                            animate={animate}
-                            onHover={onHover}
-                            onClick={onClick}
-                          />
-                        </g>
-                      );
-                    })}
-                  </g>
-                );
-              } else {
-                // Render as simple leaf
-                const offsetDist = 12; // Fixed offset
-                const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
-                const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
+                      {/* Main/Parent task leaf at the tip of the sub-branch */}
+                      <Leaf
+                        leaf={leaf}
+                        x={ssEndX}
+                        y={ssEndY}
+                        angle={(ssAngle * 180) / Math.PI + (10 * side)}
+                        delay={1.2 + index * 0.05 + lIdx * 0.05}
+                        isSelected={clickedLeafId === leaf.id}
+                        isActive={activeLeafId === leaf.id}
+                        isInteractive={leafInteractive}
+                        animate={animate}
+                        onHover={handleLeafHover}
+                        onClick={handleLeafClick}
+                      />
 
-                return (
-                  <g 
-                    key={leaf.id}
-                    style={{ 
-                      opacity: isPhaseFocused ? 1 : 0.4, 
-                      pointerEvents: isPhaseFocused ? 'auto' : 'none', 
-                      transition: 'opacity 0.5s ease' 
-                    }}
-                  >
-                    <path 
-                      className="leaf-stem"
-                      d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
-                      stroke={branchColor} 
-                      strokeWidth={0.5} 
-                      fill="none"
-                      opacity="0.6"
-                    />
-                    <Leaf
-                      leaf={leaf}
-                      x={lx}
-                      y={ly}
-                      angle={(sub.rad * 180) / Math.PI + (60 * side)}
-                      delay={1.2 + index * 0.05 + lIdx * 0.05}
-                      isSelected={clickedLeafId === leaf.id}
-                      isActive={activeLeafId === leaf.id}
-                      isInteractive={leafInteractive}
-                      animate={animate}
-                      onHover={onHover}
-                      onClick={onClick}
-                    />
-                  </g>
-                );
-              }
-            })}
+                      {/* Subtask leaves along the sub-branch */}
+                      {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
+                        const st = 0.25 + (subIdx / (leaf.subtaskLeaves!.length || 1)) * 0.6;
+                        const smt = 1 - st;
+                        const spx = smt * smt * px + 2 * smt * st * ssCpX + st * st * ssEndX;
+                        const spy = smt * smt * py + 2 * smt * st * ssCpY + st * st * ssEndY;
+
+                        const subSide = subIdx % 2 === 0 ? 1 : -1;
+                        const subOffsetDist = 8;
+                        const slx = spx + Math.cos(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
+                        const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
+
+                        return (
+                          <g key={subLeaf.id} transform={`translate(${slx}, ${sly}) scale(0.75) translate(${-slx}, ${-sly})`}>
+                            <path
+                              className="leaf-stem"
+                              d={`M ${spx},${spy} Q ${(spx + slx) / 2 + Math.cos(ssAngle) * 1.5},${(spy + sly) / 2 + Math.sin(ssAngle) * 1.5} ${slx},${sly}`}
+                              stroke={branchColor}
+                              strokeWidth={0.4}
+                              fill="none"
+                              opacity="0.6"
+                            />
+                            <Leaf
+                              leaf={subLeaf}
+                              x={slx}
+                              y={sly}
+                              angle={(ssAngle * 180) / Math.PI + (60 * subSide)}
+                              delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
+                              isSelected={clickedLeafId === subLeaf.id}
+                              isActive={activeLeafId === subLeaf.id}
+                              isInteractive={leafInteractive}
+                              animate={animate}
+                              onHover={handleLeafHover}
+                              onClick={handleLeafClick}
+                            />
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                } else {
+                  // Render as simple leaf
+                  const offsetDist = 12; // Fixed offset
+                  const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
+                  const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
+
+                  return (
+                    <g 
+                      key={leaf.id}
+                      style={{ 
+                        opacity: isPhaseFocused ? 1 : 0.4, 
+                        pointerEvents: isPhaseFocused ? 'auto' : 'none', 
+                        transition: 'opacity 0.5s ease' 
+                      }}
+                    >
+                      <path 
+                        className="leaf-stem"
+                        d={`M ${px},${py} Q ${(px+lx)/2 + Math.cos(sub.rad)*2},${(py+ly)/2 + Math.sin(sub.rad)*2} ${lx},${ly}`}
+                        stroke={branchColor} 
+                        strokeWidth={0.5} 
+                        fill="none"
+                        opacity="0.6"
+                      />
+                      <Leaf
+                        leaf={leaf}
+                        x={lx}
+                        y={ly}
+                        angle={(sub.rad * 180) / Math.PI + (60 * side)}
+                        delay={1.2 + index * 0.05 + lIdx * 0.05}
+                        isSelected={clickedLeafId === leaf.id}
+                        isActive={activeLeafId === leaf.id}
+                        isInteractive={leafInteractive}
+                        animate={animate}
+                        onHover={handleLeafHover}
+                        onClick={handleLeafClick}
+                      />
+                    </g>
+                  );
+                }
+              })}
+            </g>
           </g>
         );
       })}

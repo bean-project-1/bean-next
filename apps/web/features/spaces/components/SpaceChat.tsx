@@ -36,6 +36,7 @@ interface SpaceChatProps {
   onChangeOpenExternal?: (val: boolean) => void;
   initialMessage?: string;
   existingGoalData?: any;
+  hideFloatingButton?: boolean;
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
@@ -313,7 +314,7 @@ function renderFormattedText(text: string, isAI: boolean) {
   });
 }
 
-export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage, existingGoalData }: SpaceChatProps) {
+export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isOpenExternal, onCloseExternal, onChangeOpenExternal, initialMessage, existingGoalData, hideFloatingButton = false }: SpaceChatProps) {
   const [isOpenInternal, setIsOpenInternal] = useState(false);
   const isOpen = isOpenExternal !== undefined ? isOpenExternal : isOpenInternal;
   const setIsOpen = (val: boolean) => {
@@ -1046,8 +1047,8 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
   const content = (
     <>
 
-      {/* Floating Toggle Button */}
-      {!isOpen && (
+      {/* Floating Toggle Button — hidden when the dock handles opening */}
+      {!isOpen && !hideFloatingButton && (
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}

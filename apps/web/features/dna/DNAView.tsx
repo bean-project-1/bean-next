@@ -6,6 +6,7 @@ import { ALL_DIMENSIONS } from '../onboarding/constants';
 import { DNADiagram } from '../onboarding/components/DNADiagram';
 import { useProfile } from '../../hooks/useProfile';
 import { CommitmentModal } from './CommitmentModal';
+import { ProfileView } from '../profile';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = [
@@ -136,7 +137,7 @@ export function DNAView() {
     dbDimensions, loading: profileLoading, error: profileError
   } = useProfile();
 
-  const [activeTab, setActiveTab] = useState<'essence' | 'rhythms'>('essence');
+  const [activeTab, setActiveTab] = useState<'essence' | 'rhythms' | 'config'>('essence');
   const [identity, setIdentity] = useState<any>(null);
   const [loadingIdentity, setLoadingIdentity] = useState(true);
   const [selectedDimKey, setSelectedDimKey] = useState<string | null>(null);
@@ -256,17 +257,29 @@ export function DNAView() {
           <span className="sm:hidden">Esencia</span>
           🧬
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('rhythms')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeTab === 'rhythms' 
-              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+            activeTab === 'rhythms'
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50'
               : 'text-stone-500 hover:text-stone-855'
           }`}
         >
           <span className="hidden sm:inline">Mis Ritmos Diarios</span>
           <span className="sm:hidden">Ritmos</span>
           ⏱️
+        </button>
+        <button
+          onClick={() => setActiveTab('config')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'config'
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50'
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Configuración</span>
+          <span className="sm:hidden">Config</span>
+          ⚙️
         </button>
       </div>
 
@@ -594,6 +607,18 @@ export function DNAView() {
                 );
               })}
             </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'config' && (
+          <motion.div
+            key="config"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+          >
+            <ProfileView />
           </motion.div>
         )}
       </AnimatePresence>

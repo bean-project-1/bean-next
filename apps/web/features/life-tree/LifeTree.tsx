@@ -414,6 +414,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
 
+          {/* Grass gradient for the base mound */}
+          <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="60%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#064e3b" />
+          </linearGradient>
+
           {/* Seed Gradient: Organic Emerald Glow */}
           <radialGradient id="seedGrad" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
             <stop offset="0%" stopColor="#34d399" />
@@ -424,11 +431,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
          </defs>
 
         <g transform={`rotate(${rotation}, 400, 350)`}>
-          {/* 1. Ground / Soil Mound */}
+          {/* 1. Grassy Mound Base */}
           {!zoomedBranchId && (
             <>
-              <ellipse cx="400" cy="454" rx="70" ry="12" fill="#2d1a0e" opacity="0.6" filter="blur(6px)" />
-              <ellipse cx="400" cy="452" rx="50" ry="8" fill="#1a0f08" opacity="0.8" />
+              {/* Soft ground shadow */}
+              <ellipse cx="400" cy="458" rx="80" ry="14" fill="#0f172a" opacity="0.12" filter="blur(5px)" />
+              {/* Grass Mound */}
+              <ellipse cx="400" cy="454" rx="70" ry="12" fill="url(#grassGrad)" />
+              {/* Bright grass mound center glow */}
+              <ellipse cx="400" cy="451" rx="55" ry="7" fill="#34d399" opacity="0.35" filter="blur(1.5px)" />
             </>
           )}
 
@@ -453,10 +464,16 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkGrad)" />
             <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkSheen)" />
             
-            {/* Organic roots branching out into the ground mound */}
+            {/* Organic roots branching out into the grassy mound */}
             <path d="M 370,450 Q 355,453 342,456 Q 355,455 370,450" stroke="#4c270d" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
             <path d="M 430,450 Q 445,453 458,456 Q 445,455 430,450" stroke="#4c270d" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
             <path d="M 400,452 C 400,456 398,458 396,460" stroke="#4c270d" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+            
+            {/* Tiny grass blades sprouting at the base and over roots */}
+            <path d="M 382,451 L 379,446 M 382,451 L 384,447" stroke="#10b981" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path d="M 418,451 L 415,447 M 418,451 L 421,446" stroke="#10b981" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path d="M 346,455 L 344,451 M 346,455 L 348,452" stroke="#34d399" strokeWidth="1.0" fill="none" strokeLinecap="round" opacity="0.85" />
+            <path d="M 454,455 L 452,452 M 454,455 L 456,450" stroke="#34d399" strokeWidth="1.0" fill="none" strokeLinecap="round" opacity="0.85" />
             
             {/* Curving organic bark details */}
             <path d="M 380,450 C 383,425 387,400 392,352" stroke="#4c270d" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />

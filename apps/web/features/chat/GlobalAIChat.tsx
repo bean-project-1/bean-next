@@ -1087,7 +1087,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 <button
                   onClick={handleCreateBranch}
                   disabled={creatingBranch || isDrafting}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-555 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] active:scale-[0.98] disabled:opacity-40"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] active:scale-[0.98] disabled:opacity-40"
                 >
                   {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios' : 'Aceptar Plan Definitivo')}
                 </button>

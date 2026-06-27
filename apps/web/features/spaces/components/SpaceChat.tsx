@@ -1505,7 +1505,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                       <button
                         onClick={handleCreateBranch}
                         disabled={creatingBranch || isDrafting || !draftPlan}
-                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40 animate-in"
+                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40 animate-in"
                       >
                         {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
                       </button>

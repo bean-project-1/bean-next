@@ -274,11 +274,10 @@ export const Branch = ({
       {/* 2. PHASES (SUB-BRANCHES) */}
       {phases.map((phase, pIdx) => {
         const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
-        // Fade out other phases when one is focused, or when zoomed out and it is not the active phase
-        const phaseOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) 
-          ? 0.15 
-          : ((!zoomedPhaseId && currentPhaseId && currentPhaseId !== phase.id) ? 0.55 : 1);
+        // If a phase is zoomed and this is not it: fade completely to 0.15. Otherwise, container remains 1.0 so green leaves stay fully visible.
+        const containerOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) ? 0.15 : 1.0;
         const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
+        const inactiveElementOpacity = isPhaseFocused ? 1.0 : 0.55;
 
         const handleLeafClick = (leafId: string, leafName: string) => {
           const isCurrentLeaf = leafId === firstIncompleteLeafId;
@@ -304,8 +303,8 @@ export const Branch = ({
             key={`phase-${phase.id}`} 
             className="group/phase cursor-pointer"
             style={{ 
-              opacity: phaseOpacity, 
-              pointerEvents: phaseOpacity < 0.2 ? 'none' : 'auto',
+              opacity: containerOpacity, 
+              pointerEvents: containerOpacity < 0.2 ? 'none' : 'auto',
               transition: 'opacity 0.6s ease'
             }}
             onClick={(e) => {
@@ -339,6 +338,10 @@ export const Branch = ({
                 strokeWidth="3" 
                 fill="none" 
                 strokeLinecap="round" 
+                style={{ 
+                  opacity: isPhaseFocused ? 1.0 : (phase.id === currentPhaseId ? 1.0 : 0.55),
+                  transition: 'opacity 0.6s ease'
+                }}
               />
             )}
 
@@ -352,8 +355,13 @@ export const Branch = ({
                 const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
                 const tipLeaf = phaseMilestone || phase;
                 const isTipCurrent = tipLeaf.id === firstIncompleteLeafId;
+                const tipLeafOpacity = (tipLeaf.completed || isTipCurrent) ? 1.0 : (isPhaseFocused ? 1.0 : (phase.id === currentPhaseId ? 1.0 : 0.55));
                 return (
-                  <g style={{ pointerEvents: (isPhaseFocused || isTipCurrent) ? 'auto' : 'none' }}>
+                  <g style={{ 
+                    pointerEvents: (isPhaseFocused || isTipCurrent) ? 'auto' : 'none',
+                    opacity: tipLeafOpacity,
+                    transition: 'opacity 0.5s ease'
+                  }}>
                     <Leaf
                       leaf={tipLeaf}
                       x={sub.end.x}
@@ -397,15 +405,14 @@ export const Branch = ({
                   // Determine completion color for task branch
                   const allSubtasksCompleted = leaf.subtaskLeaves.every((st: any) => st.completed);
                   const ssBranchColor = allSubtasksCompleted ? '#059669' : branchColor;
+                  const ssBranchOpacity = allSubtasksCompleted ? 1.0 : inactiveElementOpacity;
 
                   return (
                     <g 
                       key={leaf.id} 
                       className="group/sub-branch cursor-pointer"
                       style={{ 
-                        opacity: isPhaseFocused ? 1 : 0.4, 
-                        pointerEvents: 'auto', 
-                        transition: 'opacity 0.5s ease' 
+                        pointerEvents: 'auto'
                       }}
                     >
                       {/* Invisible thicker hitbox path for easy clicking of sub-sub-branch */}
@@ -429,28 +436,39 @@ export const Branch = ({
                           strokeWidth="1.5"
                           fill="none"
                           strokeLinecap="round"
+                          style={{ 
+                            opacity: ssBranchOpacity,
+                            transition: 'opacity 0.5s ease'
+                          }}
                         />
                       )}
 
                       {/* Main/Parent task leaf at the tip of the sub-branch */}
-                      {renderMode !== 'wood' && (
-                        <g style={{ pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none' }}>
-                          <Leaf
-                            leaf={leaf}
-                            x={ssEndX}
-                            y={ssEndY}
-                            angle={(ssAngle * 180) / Math.PI + (10 * side)}
-                            delay={1.2 + index * 0.05 + lIdx * 0.05}
-                            isSelected={clickedLeafId === leaf.id}
-                            isActive={activeLeafId === leaf.id}
-                            isCurrent={leaf.id === firstIncompleteLeafId}
-                            isInteractive={leafInteractive}
-                            animate={animate}
-                            onHover={handleLeafHover}
-                            onClick={handleLeafClick}
-                          />
-                        </g>
-                      )}
+                      {renderMode !== 'wood' && (() => {
+                        const leafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId) ? 1.0 : inactiveElementOpacity;
+                        return (
+                          <g style={{ 
+                            pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none',
+                            opacity: leafOpacity,
+                            transition: 'opacity 0.5s ease'
+                          }}>
+                            <Leaf
+                              leaf={leaf}
+                              x={ssEndX}
+                              y={ssEndY}
+                              angle={(ssAngle * 180) / Math.PI + (10 * side)}
+                              delay={1.2 + index * 0.05 + lIdx * 0.05}
+                              isSelected={clickedLeafId === leaf.id}
+                              isActive={activeLeafId === leaf.id}
+                              isCurrent={leaf.id === firstIncompleteLeafId}
+                              isInteractive={leafInteractive}
+                              animate={animate}
+                              onHover={handleLeafHover}
+                              onClick={handleLeafClick}
+                            />
+                          </g>
+                        );
+                      })()}
 
                       {/* Subtask leaves along the sub-branch */}
                       {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
@@ -465,12 +483,17 @@ export const Branch = ({
                         const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
 
                         const isSubLeafCurrent = subLeaf.id === firstIncompleteLeafId;
+                        const subLeafOpacity = (subLeaf.completed || isSubLeafCurrent) ? 1.0 : inactiveElementOpacity;
 
                         return (
                           <g 
                             key={subLeaf.id} 
                             transform={`translate(${slx}, ${sly}) scale(0.75) translate(${-slx}, ${-sly})`}
-                            style={{ pointerEvents: (isPhaseFocused || isSubLeafCurrent) ? 'auto' : 'none' }}
+                            style={{ 
+                              pointerEvents: (isPhaseFocused || isSubLeafCurrent) ? 'auto' : 'none',
+                              opacity: subLeafOpacity,
+                              transition: 'opacity 0.5s ease'
+                            }}
                           >
                             {renderMode !== 'leaves' && (
                               <path
@@ -508,12 +531,13 @@ export const Branch = ({
                   const offsetDist = 12; // Fixed offset
                   const lx = px + Math.cos(sub.rad + Math.PI/2) * offsetDist * side;
                   const ly = py + Math.sin(sub.rad + Math.PI/2) * offsetDist * side;
+                  const simpleLeafOpacity = (leaf.completed || leaf.id === firstIncompleteLeafId) ? 1.0 : inactiveElementOpacity;
 
                   return (
                     <g 
                       key={leaf.id}
                       style={{ 
-                        opacity: isPhaseFocused ? 1 : 0.4, 
+                        opacity: simpleLeafOpacity, 
                         pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none', 
                         transition: 'opacity 0.5s ease' 
                       }}

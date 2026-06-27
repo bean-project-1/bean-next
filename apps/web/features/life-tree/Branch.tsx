@@ -261,10 +261,10 @@ export const Branch = ({
           
           {/* VISUAL MAIN BRANCH */}
           <path 
-            className="branch-stroke transition-all duration-300 ease-out group-hover/main-branch:stroke-[12] group-hover/main-branch:opacity-100" 
+            className="branch-stroke transition-all duration-300 ease-out group-hover/main-branch:stroke-[13] group-hover/main-branch:opacity-100" 
             d={pathContent} 
             stroke={branchColor} 
-            strokeWidth="6" 
+            strokeWidth="8" 
             fill="none" 
             strokeLinecap="round" 
           />

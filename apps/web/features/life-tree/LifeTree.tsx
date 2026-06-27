@@ -450,11 +450,18 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               }
             }}
           >
-            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
-            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
-            <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-            <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
-            <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <path d="M 365,454 C 375,448 385,410 388,360 C 389,345 391,335 396,330 C 398,335 400,342 400,345 C 400,342 402,335 404,330 C 409,335 411,345 412,360 C 415,410 425,448 435,454 Z" fill="url(#trunkGrad)" />
+            <path d="M 365,454 C 375,448 385,410 388,360 C 389,345 391,335 396,330 C 398,335 400,342 400,345 C 400,342 402,335 404,330 C 409,335 411,345 412,360 C 415,410 425,448 435,454 Z" fill="url(#trunkSheen)" />
+            
+            {/* Organic roots branching out into the ground mound */}
+            <path d="M 370,450 Q 355,453 342,456 Q 355,455 370,450" stroke="#45220a" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
+            <path d="M 430,450 Q 445,453 458,456 Q 445,455 430,450" stroke="#2e1505" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
+            <path d="M 400,452 C 400,456 398,458 396,460" stroke="#3d1e09" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
+            
+            {/* Curving organic bark details */}
+            <path d="M 380,450 C 383,425 388,400 393,360" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <path d="M 400,452 C 400,425 400,395 400,348" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
+            <path d="M 420,450 C 417,425 412,400 407,360" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
             <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
             <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
           </g>

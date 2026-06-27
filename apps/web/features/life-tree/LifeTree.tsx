@@ -399,13 +399,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         onPointerLeave={handlePointerUp}
       >
         <defs>
-          {/* Wood gradient: darker edges, light center highlight */}
+          {/* Wood gradient: darker edges, exact branch color #7c4a1e in the center */}
           <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#3b1f0a" />
-            <stop offset="25%" stopColor="#7c4a1e" />
-            <stop offset="50%" stopColor="#a0632e" />
-            <stop offset="75%" stopColor="#7c4a1e" />
-            <stop offset="100%" stopColor="#3b1f0a" />
+            <stop offset="0%" stopColor="#4c270d" />
+            <stop offset="35%" stopColor="#7c4a1e" />
+            <stop offset="65%" stopColor="#7c4a1e" />
+            <stop offset="100%" stopColor="#4c270d" />
           </linearGradient>
           {/* Soft center highlight */}
           <linearGradient id="trunkSheen" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -415,6 +414,13 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
 
+          {/* Grass gradient for the base mound */}
+          <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="60%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#064e3b" />
+          </linearGradient>
+
           {/* Seed Gradient: Organic Emerald Glow */}
           <radialGradient id="seedGrad" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
             <stop offset="0%" stopColor="#34d399" />
@@ -422,14 +428,18 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <stop offset="100%" stopColor="#065f46" />
           </radialGradient>
           
-        </defs>
+         </defs>
 
         <g transform={`rotate(${rotation}, 400, 350)`}>
-          {/* 1. Ground / Soil Mound */}
+          {/* 1. Grassy Mound Base (Background Layer) */}
           {!zoomedBranchId && (
             <>
-              <ellipse cx="400" cy="454" rx="70" ry="12" fill="#2d1a0e" opacity="0.6" filter="blur(6px)" />
-              <ellipse cx="400" cy="452" rx="50" ry="8" fill="#1a0f08" opacity="0.8" />
+              {/* Soft ground shadow */}
+              <ellipse cx="400" cy="458" rx="80" ry="14" fill="#0f172a" opacity="0.1" filter="blur(5px)" />
+              {/* Background Grass Mound - Organic Curve */}
+              <path d="M 310,455 C 340,447 370,443 400,443 C 430,443 460,447 490,455 C 460,463 430,467 400,467 C 370,467 340,463 310,455 Z" fill="url(#grassGrad)" />
+              {/* Highlight on background grass */}
+              <path d="M 330,453 C 355,448 375,445 400,445 C 425,445 445,448 470,453 C 445,458 425,461 400,461 C 375,461 355,458 330,453 Z" fill="#34d399" opacity="0.25" filter="blur(1px)" />
             </>
           )}
 
@@ -450,13 +460,19 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               }
             }}
           >
-            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkGrad)" />
-            <path d="M 382,454 C 380,430 384,400 388,350 L 412,350 C 416,400 420,430 418,454 Z" fill="url(#trunkSheen)" />
-            <path d="M 392,445 C 391,425 390,405 392,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-            <path d="M 400,450 C 399,425 400,400 400,355" stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
-            <path d="M 408,445 C 409,425 410,405 408,362" stroke="#2e1505" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
-            <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#2e1505" opacity="0.25" />
-            <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#1a0d02" opacity="0.3" />
+            {/* Natural dome crown joint centered around (400, 350) */}
+            <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkGrad)" />
+            <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkSheen)" />
+            
+            {/* Foreground Grass Cover (overlaps and buries the trunk base for a natural transition) */}
+            <path d="M 362,454 C 375,451 385,450 400,450 C 415,450 425,451 438,454 C 425,458 415,460 400,460 C 385,460 375,458 362,454 Z" fill="url(#grassGrad)" />
+            
+            {/* Curving organic bark details */}
+            <path d="M 380,450 C 383,425 387,400 392,352" stroke="#4c270d" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <path d="M 400,452 C 400,425 400,395 400,348" stroke="#4c270d" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
+            <path d="M 420,450 C 417,425 413,400 408,352" stroke="#4c270d" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />
+            <ellipse cx="402" cy="408" rx="5" ry="3.5" fill="#4c270d" opacity="0.25" />
+            <ellipse cx="402" cy="408" rx="2.5" ry="1.5" fill="#2d1505" opacity="0.3" />
           </g>
 
 
@@ -476,7 +492,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
           {/* Dynamic Branches */}
           {data.branches.map((branch, i) => {
-            // Fade out other branches smoothly when focused on one
             const branchOpacity = (zoomedBranchId && zoomedBranchId !== branch.id) ? 0 : 1;
 
             return (
@@ -606,7 +621,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               onBackToForest?.();
             }
           }}
-          className="fixed top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-bold transition-all z-[100000] animate-in fade-in slide-in-from-top-4 active:scale-95 text-xs sm:text-sm"
+          className="fixed top-6 left-6 sm:top-8 sm:left-8 flex items-center gap-2 px-5 py-2.5 bg-slate-900/80 hover:bg-slate-800 text-white backdrop-blur-md rounded-full shadow-lg border border-white/10 font-bold transition-all z-40 animate-in fade-in slide-in-from-top-4 active:scale-95 text-xs sm:text-sm"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
             <path d="M19 12H5M12 19l-7-7 7-7"/>

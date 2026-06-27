@@ -254,10 +254,13 @@ export class GoalService {
     const timePerWeek = parsedGoal.constraints?.timePerWeek || 10;
     const targetDate = parsedGoal.constraints?.targetDate || "Unknown";
     const budget = parsedGoal.constraints?.budgetTotal || "Unknown";
+    const now = new Date();
+    const currentDateStr = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' (ISO: ' + now.toISOString().split('T')[0] + ')';
     
     const prompt = `
       Actúa como un Auditor de Viabilidad Realista. Evalúa si la siguiente meta es matemática y físicamente posible de lograr dadas las restricciones de recursos y los acuerdos recientes de la conversación.
       
+      TODAY/FECHA ACTUAL: ${currentDateStr}
       META: "${parsedGoal.title}" - ${parsedGoal.description}
       COMPLEJIDAD: ${parsedGoal.complexityLevel || 'medium'}
       
@@ -318,10 +321,13 @@ export class GoalService {
     const { title, description, startingAssets = [], dnaAnalysisInsight = '' } = parsedGoal;
     const timePerWeek = constraints.timePerWeek || 5;
     const targetDate = constraints.targetDate || 'No definida';
+    const now = new Date();
+    const currentDateStr = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' (ISO: ' + now.toISOString().split('T')[0] + ')';
 
     const prompt = `You are a Goal Feasibility Analyst. Analyze the user's starting point.
 
 GOAL: "${title}" — ${description}
+TODAY/FECHA ACTUAL: ${currentDateStr}
 WEEKLY AVAILABILITY: ${timePerWeek} hours/week
 TARGET DATE: ${targetDate}
 USER DNA (existing skills/attributes): ${JSON.stringify(startingAssets)}

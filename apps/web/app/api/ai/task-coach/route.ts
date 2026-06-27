@@ -34,7 +34,7 @@ REGLAS:
       tags: ["agent:task-coach", `env:${process.env.NODE_ENV || 'development'}`]
     });
 
-    const modelToUse = getDynamicModel(req, 'deepseek-chat');
+    const modelToUse = getDynamicModel(req, 'gpt-4o-mini');
 
     const response = await tracedClient.chat.completions.create({
       model: modelToUse,

@@ -82,11 +82,12 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
       </Suspense>
 
       {!hideGlobalButton && (
-        <SpaceChat 
-          spaceId="personal" 
-          spaceName="Árbol Personal" 
-          members={[]} 
+        <SpaceChat
+          spaceId="personal"
+          spaceName="Árbol Personal"
+          members={[]}
           isOpenExternal={isOpen}
+          hideFloatingButton={true}
           onChangeOpenExternal={(val) => {
             if (val) {
               openChat();
@@ -98,7 +99,7 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('refresh-life-tree'));
             }
-          }} 
+          }}
           initialMessage={initialMsg}
           existingGoalData={existingGoalData}
         />

@@ -77,7 +77,11 @@ export default function HomePage() {
           attributes: act.attributes || [],
           tasks: act.tasks || [],
           itemType: 'action',
-          assignee: act.assignee || null
+          assignee: act.assignee || null,
+          baseCommitmentId: (act as any).baseCommitmentId || null,
+          baseCommitmentTitle: (act as any).baseCommitmentTitle || null,
+          completedCount: (act as any).completedCount || 0,
+          totalSessions: (act as any).totalSessions || null
         };
         setSelectedTaskForModal(event);
         break;
@@ -210,7 +214,7 @@ export default function HomePage() {
               }}
             />
           ) : (
-            <SeedbedDashboard activeSpaceId={activeSpaceId} />
+            <SeedbedDashboard activeSpaceId={activeSpaceId} onPlanted={() => setViewMode('tree')} />
           )}
         </main>
       </div>
@@ -252,7 +256,11 @@ export default function HomePage() {
                 attributes: item.attributes || [],
                 tasks: item.tasks || [],
                 itemType: itemType, // 'action' | 'task'
-                assignee: item.assignee || null
+                assignee: item.assignee || null,
+                baseCommitmentId: (item as any).baseCommitmentId || null,
+                baseCommitmentTitle: (item as any).baseCommitmentTitle || null,
+                completedCount: (item as any).completedCount || 0,
+                totalSessions: (item as any).totalSessions || null
               };
               setSelectedTaskForModal(event);
             }}

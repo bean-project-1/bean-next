@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
 
   try {
@@ -91,6 +93,9 @@ export async function GET(req: NextRequest) {
           let resolvedConsistency = action.consistency;
           let resolvedStreak = action.streak;
           let resolvedFrequency = action.frequency;
+          let baseCommitmentTitle: string | null = null;
+          let completedCount: number | null = null;
+          let totalSessions: number | null = null;
 
           if (action.baseCommitmentId) {
             const bc = commitmentMap.get(action.baseCommitmentId);
@@ -98,8 +103,10 @@ export async function GET(req: NextRequest) {
               resolvedType = 'habit'; // Show as habit in tree
               resolvedStreak = bc.streakCount || 0;
               resolvedFrequency = bc.frequency;
-              const totalSessions = calculateCommitmentSessions(bc);
-              const progressVal = Math.min(100, Math.round(((bc.completedCount || 0) / totalSessions) * 100));
+              baseCommitmentTitle = bc.title;
+              completedCount = bc.completedCount || 0;
+              totalSessions = calculateCommitmentSessions(bc);
+              const progressVal = Math.min(100, Math.round((completedCount / totalSessions) * 100));
               resolvedConsistency = progressVal / 100;
               resolvedCompleted = progressVal >= 100;
 
@@ -129,6 +136,10 @@ export async function GET(req: NextRequest) {
             frequency: resolvedFrequency,
             streak: resolvedStreak,
             consistency: resolvedConsistency,
+            baseCommitmentId: action.baseCommitmentId || null,
+            baseCommitmentTitle,
+            completedCount,
+            totalSessions,
             tasks: action.tasks || [],
             impact: action.impact || null,
             assignee: action.assignee ? {

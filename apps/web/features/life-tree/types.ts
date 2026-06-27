@@ -25,6 +25,8 @@ export type Leaf = {
   description?: string;
   notes?: string;
   tasks?: any[]; // sub-tasks (Task model)
+  subtaskLeaves?: Leaf[];
+
   // milestone evaluation metadata (from GoalAction.impact)
   impact?: {
     evaluationType?: 'text' | 'image' | 'document' | 'questionnaire' | 'none';

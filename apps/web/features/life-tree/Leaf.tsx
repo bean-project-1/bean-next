@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { Leaf as LeafType } from './types';
@@ -13,13 +13,15 @@ interface LeafProps {
   delay: number;
   isSelected?: boolean;
   isActive?: boolean;
+  isCurrent?: boolean;
   isInteractive?: boolean;
   animate?: boolean;
   onHover: (name: string | null) => void;
   onClick: (id: string, name: string) => void;
+  className?: string;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInteractive = true, animate = false, onHover, onClick }: LeafProps) => {
+export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent, isInteractive = true, animate = false, onHover, onClick, className = "" }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
@@ -36,26 +38,56 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
         ease: "back.out(1.7)" 
       }
     );
-  }, [delay, animate]); // Only re-run appear if delay changes
+  }, [delay, animate]);
+
+  const swayStyle = useMemo(() => {
+    // Generate stable pseudo-random values based on leaf ID
+    const hash = leaf.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const duration = 4.0 + (hash % 6) * 0.4; // 4.0s to 6.4s
+    const delay = -(hash % 8) * 0.5; // Starts immediately at different phases
+    const swayDeg = 3.5 + (hash % 5) * 1.0; // 3.5deg to 7.5deg
+
+    return {
+      animationName: 'leafSway',
+      animationDuration: `${duration}s`,
+      animationDelay: `${delay}s`,
+      animationIterationCount: 'infinite',
+      animationTimingFunction: 'ease-in-out',
+      '--sway-deg': `${swayDeg}deg`,
+      transformOrigin: '0 0'
+    } as React.CSSProperties;
+  }, [leaf.id]);
 
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
-      <g
-        ref={containerRef}
-        style={{ transformOrigin: "0 0", cursor: 'pointer' }}
-        className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'}`}
-        onMouseEnter={() => onHover(leaf.name)}
-        onMouseLeave={() => onHover(null)}
-        onClick={(e) => {
-          if (!isInteractive) return;
-          e.stopPropagation();
-          onClick(leaf.originalId || leaf.id, leaf.name);
-        }}
-      >
-        {leaf.type === 'milestone' ? (
-          <>
-            <defs>
-              <linearGradient id={`fruitGrad-${leaf.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+      <style>{`
+        @keyframes leafSway {
+          0%, 100% {
+            transform: rotate(0deg);
+          }
+          50% {
+            transform: rotate(var(--sway-deg, 5deg));
+          }
+        }
+      `}</style>
+      {/* Wind Sway Wrapper */}
+      <g style={swayStyle}>
+        <g
+          ref={containerRef}
+          style={{ transformOrigin: "0 0", cursor: 'pointer' }}
+          className={`group transition-transform duration-300 ease-out ${isSelected ? 'scale-[1.15]' : 'scale-100'} ${className}`}
+          onMouseEnter={() => onHover(leaf.name)}
+          onMouseLeave={() => onHover(null)}
+          onClick={(e) => {
+            if (!isInteractive) return;
+            e.stopPropagation();
+            onClick(leaf.originalId || leaf.id, leaf.name);
+          }}
+        >
+          {leaf.type === 'milestone' ? (
+            <>
+              <defs>
+                <linearGradient id={`fruitGrad-${leaf.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={leaf.completed ? "#fcd34d" : "#cbd5e1"} />
                 <stop offset="100%" stopColor={leaf.completed ? "#d97706" : "#64748b"} />
               </linearGradient>
@@ -115,14 +147,14 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
                     </defs>
             
                     {/* Active Glow/Pulse Overlay */}
-                    {isActive && (
+                    {(isActive || isCurrent) && (
                       <path
                         d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
                         fill="none"
                         stroke={leaf.completed ? "#10b981" : "#f59e0b"} // Emerald or Amber depending on completion
-                        strokeWidth="4"
+                        strokeWidth={isCurrent && !isActive ? "2.5" : "4"}
                         className="animate-pulse"
-                        style={{ filter: 'blur(3px)' }}
+                        style={{ filter: 'blur(2.5px)' }}
                       />
                     )}
             
@@ -130,9 +162,10 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
                     <path
                       ref={pathRef}
                       d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
-                      fill={leaf.completed ? "#22c55e" : "#e2e8f0"}
-                      stroke={isSelected ? "#fff" : "rgba(255,255,255,0.15)"}
-                      strokeWidth={isSelected ? 1 : 0.3}
+                      fill={leaf.completed ? "#22c55e" : (isCurrent ? "#94a3b8" : "#e2e8f0")}
+                      fillOpacity={leaf.completed || isCurrent ? 1.0 : 0.45}
+                      stroke={isSelected ? "#fff" : (isCurrent ? "#f59e0b" : "rgba(255,255,255,0.15)")}
+                      strokeWidth={isSelected ? 1.2 : (isCurrent ? 0.8 : 0.3)}
                       className="transition-all duration-300 group-hover:scale-125 group-hover:stroke-white group-hover:stroke-[0.5px]"
                       style={!isSelected ? { filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' } : undefined}
                     />
@@ -148,7 +181,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
                     {/* Central Vein */}
                     <path
                       d="M 0,0 C 5,0 12,0 19,0"
-                      stroke={leaf.completed ? "#15803d" : "#cbd5e1"}
+                      stroke={leaf.completed ? "#15803d" : (isCurrent ? "#94a3b8" : "#cbd5e1")}
                       strokeWidth="0.3"
                       fill="none"
                       opacity="0.6"
@@ -156,7 +189,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
                       className="transition-colors duration-300 group-hover:stroke-emerald-700"
                     />
             
-                    <g opacity="0.4" pointerEvents="none">
+                    <g opacity={leaf.completed || isCurrent ? 0.4 : 0.15} pointerEvents="none">
                       <path d="M 3.75,0 C 4.5,-1.5 6.25,-2 7.5,-2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
                       <path d="M 3.75,0 C 4.5,1.5 6.25,2 7.5,2.5" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
                       <path d="M 8.75,0 C 9.5,-1.25 11.25,-1.5 12.5,-2" stroke={leaf.completed ? "#15803d" : "#cbd5e1"} strokeWidth="0.2" fill="none" />
@@ -164,6 +197,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isInterac
                     </g>
           </>
         )}
+      </g>
       </g>
     </g>
   );

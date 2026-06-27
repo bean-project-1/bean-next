@@ -17,6 +17,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: updateData
     });
 
+    // Auto-sync parent GoalAction completion when a subtask is toggled
+    if (isCompleted !== undefined && task.goalActionId) {
+      const siblings = await prisma.task.findMany({
+        where: { goalActionId: task.goalActionId },
+        select: { isCompleted: true }
+      });
+      const allDone = siblings.every(s => s.isCompleted);
+      await prisma.goalAction.update({
+        where: { id: task.goalActionId },
+        data: { isCompleted: allDone }
+      });
+    }
+
     return NextResponse.json({ success: true, task });
   } catch (error: any) {
     console.error('[PATCH /api/profile/goals/tasks/[id]] Error:', error);

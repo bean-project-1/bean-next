@@ -92,66 +92,88 @@ const ROOTS = [
   'M 220,383 C 232,392 248,398 264,400',
 ];
 
-// Ramas principales — fórmula idéntica a Branch.tsx (startX=220,startY=290,len=150,angles -155,-100,-65,-15)
-const MB = [
-  { d: 'M 220,290 C 181,298 138,256  84,238', w: 7 },
-  { d: 'M 220,290 C 220,282 194,178 157,152', w: 6 },
-  { d: 'M 220,290 C 262,270 274,168 280,150', w: 6 },
-  { d: 'M 220,290 C 274,268 316,234 362,230', w: 7 },
+// Ramas principales
+const BRANCHES_DATA = [
+  { startX: 220, startY: 290, cp1x: 181, cp1y: 298, cp2x: 138, cp2y: 256, endX: 84, endY: 238, w: 7 },
+  { startX: 220, startY: 290, cp1x: 220, cp1y: 282, cp2x: 194, cp2y: 178, endX: 157, endY: 152, w: 6 },
+  { startX: 220, startY: 290, cp1x: 262, cp1y: 270, cp2x: 274, cp2y: 168, endX: 280, endY: 150, w: 6 },
+  { startX: 220, startY: 290, cp1x: 274, cp1y: 268, cp2x: 316, cp2y: 234, endX: 362, endY: 230, w: 7 },
 ];
 
 // Sub-ramas cuadráticas
-const SB = [
-  'M 165,278 Q 142,260 128,244',
-  'M 128,254 Q 108,242  96,230',
-  'M 204,234 Q 183,213 172,194',
-  'M 188,202 Q 171,183 163,165',
-  'M 258,234 Q 277,212 288,192',
-  'M 274,202 Q 290,182 298,164',
-  'M 308,258 Q 330,242 344,228',
-  'M 340,235 Q 356,222 366,210',
-  'M 100,242 Q  82,232  72,224',
-  'M 362,232 Q 380,220 392,210',
+const SUB_BRANCHES_DEF = [
+  { branchIdx: 0, t: 0.43, endX: 128, endY: 244, cpX: 142, cpY: 260 },
+  { branchIdx: 0, t: 0.73, endX: 96,  endY: 230, cpX: 108, cpY: 242 },
+  { branchIdx: 1, t: 0.45, endX: 172, endY: 194, cpX: 183, cpY: 213 },
+  { branchIdx: 1, t: 0.70, endX: 163, endY: 165, cpX: 171, cpY: 183 },
+  { branchIdx: 2, t: 0.45, endX: 288, endY: 192, cpX: 277, cpY: 212 },
+  { branchIdx: 2, t: 0.70, endX: 298, endY: 164, cpX: 290, cpY: 182 },
+  { branchIdx: 3, t: 0.43, endX: 344, endY: 228, cpX: 330, cpY: 242 },
+  { branchIdx: 3, t: 0.73, endX: 366, endY: 210, cpX: 356, cpY: 222 },
+  { branchIdx: 0, t: 0.92, endX: 72,  endY: 224, cpX: 82,  cpY: 232 },
+  { branchIdx: 3, t: 0.92, endX: 392, endY: 210, cpX: 380, cpY: 220 },
 ];
 
-type LeafDef = { x: number; y: number; a: number; done: boolean; size?: number };
-const LEAVES: LeafDef[] = [
-  /* izquierda grupo 1 */
-  { x: 138, y: 272, a: 125,  done: true  },
-  { x: 118, y: 256, a: -55,  done: true  },
-  { x: 104, y: 242, a: 115,  done: true  },
-  { x: 122, y: 248, a: 105,  done: true  },
-  { x:  90, y: 232, a: -70,  done: true  },
-  /* izquierda punta */
-  { x:  78, y: 225, a: 140,  done: true  },
-  { x:  68, y: 216, a: -50,  done: true  },
-  /* centro-izq */
-  { x: 196, y: 228, a: 152,  done: true  },
-  { x: 180, y: 206, a:   5,  done: true  },
-  { x: 166, y: 182, a: 142,  done: false },
-  { x: 178, y: 188, a: -10,  done: true  },
-  /* centro-der */
-  { x: 260, y: 228, a:  35,  done: true  },
-  { x: 274, y: 206, a: 178,  done: true  },
-  { x: 286, y: 182, a:  28,  done: false },
-  { x: 272, y: 188, a: 190,  done: true  },
-  /* derecha grupo 1 */
-  { x: 316, y: 256, a: -10,  done: false },
-  { x: 336, y: 242, a: 168,  done: false },
-  { x: 352, y: 228, a: -20,  done: false },
-  { x: 372, y: 218, a: 155,  done: false },
-  /* derecha punta */
-  { x: 388, y: 210, a: -30,  done: false },
-  /* punta izq alta */
-  { x: 158, y: 156, a: 130,  done: true  },
-  /* punta der alta */
-  { x: 278, y: 152, a:  50,  done: false },
+const LEAVES_DEF = [
+  // Hojas de ramas principales (MB)
+  { type: 'mb', idx: 0, t: 1.0,  a: 140, done: true },
+  { type: 'mb', idx: 0, t: 0.8,  a: -70, done: true },
+  { type: 'mb', idx: 1, t: 1.0,  a: 130, done: true },
+  { type: 'mb', idx: 1, t: 0.85, a: -10, done: true },
+  { type: 'mb', idx: 2, t: 1.0,  a: 50,  done: false },
+  { type: 'mb', idx: 2, t: 0.85, a: 190, done: true },
+  { type: 'mb', idx: 3, t: 1.0,  a: -30, done: false },
+  { type: 'mb', idx: 3, t: 0.8,  a: 155, done: false },
+
+  // Hojas de sub-ramas (SB)
+  { type: 'sb', idx: 0, t: 1.0,  a: 125, done: true },
+  { type: 'sb', idx: 0, t: 0.75, a: 105, done: true },
+  { type: 'sb', idx: 1, t: 1.0,  a: -55, done: true },
+  { type: 'sb', idx: 1, t: 0.75, a: 115, done: true },
+  
+  { type: 'sb', idx: 2, t: 1.0,  a: 152, done: true },
+  { type: 'sb', idx: 3, t: 1.0,  a: 142, done: false },
+  
+  { type: 'sb', idx: 4, t: 1.0,  a: 35,  done: true },
+  { type: 'sb', idx: 5, t: 1.0,  a: 28,  done: false },
+  
+  { type: 'sb', idx: 6, t: 1.0,  a: -10, done: false },
+  { type: 'sb', idx: 6, t: 0.75, a: 168, done: false },
+  { type: 'sb', idx: 7, t: 1.0,  a: -20, done: false },
+  
+  { type: 'sb', idx: 8, t: 1.0,  a: -50, done: true },
+  { type: 'sb', idx: 9, t: 1.0,  a: -30, done: false },
 ];
 
-const FRUITS = [
-  { x:  84, y: 238, done: true  },   /* hito alcanzado — dorado */
-  { x: 280, y: 150, done: false },   /* pendiente — gris */
+const FRUITS_DEF = [
+  { branchIdx: 0, t: 1.0, done: true },
+  { branchIdx: 2, t: 1.0, done: false },
 ];
+
+const getCubicBezierPoint = (t: number, p0: number, p1: number, p2: number, p3: number) => {
+  const mt = 1 - t;
+  return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
+};
+
+const getQuadraticBezierPoint = (t: number, p0: number, p1: number, p2: number) => {
+  const mt = 1 - t;
+  return mt * mt * p0 + 2 * mt * t * p1 + t * t * p2;
+};
+
+const getPointOnBranch = (b: typeof BRANCHES_DATA[0], t: number) => {
+  return {
+    x: getCubicBezierPoint(t, b.startX, b.cp1x, b.cp2x, b.endX),
+    y: getCubicBezierPoint(t, b.startY, b.cp1y, b.cp2y, b.endY),
+  };
+};
+
+const getSubBranchPoint = (sb: typeof SUB_BRANCHES_DEF[0], t: number) => {
+  const start = getPointOnBranch(BRANCHES_DATA[sb.branchIdx], sb.t);
+  return {
+    x: getQuadraticBezierPoint(t, start.x, sb.cpX, sb.endX),
+    y: getQuadraticBezierPoint(t, start.y, sb.cpY, sb.endY),
+  };
+};
 
 function HeroTree({ svgRef }: { svgRef: React.RefObject<SVGSVGElement | null> }) {
   return (
@@ -173,7 +195,7 @@ function HeroTree({ svgRef }: { svgRef: React.RefObject<SVGSVGElement | null> })
           <stop offset="60%"  stopColor="rgba(255,210,160,0.14)" />
           <stop offset="100%" stopColor="transparent" />
         </linearGradient>
-        {FRUITS.map((f, i) => (
+        {FRUITS_DEF.map((f, i) => (
           <linearGradient key={`hfg${i}`} id={`hfg${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%"   stopColor={f.done ? '#fcd34d' : '#cbd5e1'} />
             <stop offset="100%" stopColor={f.done ? '#d97706' : '#64748b'} />
@@ -188,68 +210,80 @@ function HeroTree({ svgRef }: { svgRef: React.RefObject<SVGSVGElement | null> })
       {/* Raíces */}
       {ROOTS.map((d, i) => (
         <path key={`hr${i}`} data-draw="" data-root=""
-          d={d} stroke={C.branch} strokeWidth="3.5" strokeLinecap="round" fill="none"
-          style={{ opacity: 0 }} />
+          d={d} stroke={C.branch} strokeWidth="3.5" strokeLinecap="round" fill="none" />
       ))}
 
       {/* Tronco trapezoidal — fill con degradado de madera */}
       <path data-draw="" data-trunk=""
-        d={TRUNK_D} fill="url(#htTrunkGrad)"
-        style={{ opacity: 0 }} />
-      <path d={TRUNK_D} fill="url(#htTrunkSheen)" style={{ opacity: 0 }} data-trunk-sheen="" />
+        d={TRUNK_D} fill="url(#htTrunkGrad)" />
+      <path d={TRUNK_D} fill="url(#htTrunkSheen)" data-trunk-sheen="" />
       {/* Vetas del tronco */}
-      <path d={TRUNK_GRAIN1} stroke="#2e1505" strokeWidth="1"   fill="none" opacity="0" style={{ opacity: 0 }} data-trunk-grain="" />
-      <path d={TRUNK_GRAIN2} stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0" style={{ opacity: 0 }} data-trunk-grain="" />
-      <path d={TRUNK_GRAIN3} stroke="#2e1505" strokeWidth="1"   fill="none" opacity="0" style={{ opacity: 0 }} data-trunk-grain="" />
+      <path d={TRUNK_GRAIN1} stroke="#2e1505" strokeWidth="1"   fill="none" opacity="0.3" data-trunk-grain="" />
+      <path d={TRUNK_GRAIN2} stroke="#5a320f" strokeWidth="1.5" fill="none" opacity="0.25" data-trunk-grain="" />
+      <path d={TRUNK_GRAIN3} stroke="#2e1505" strokeWidth="1"   fill="none" opacity="0.3" data-trunk-grain="" />
       {/* Nudo */}
-      <ellipse cx="222" cy="340" rx={TRUNK_KNOT_RX} ry={TRUNK_KNOT_RY} fill="#2e1505" opacity="0" style={{ opacity: 0 }} data-trunk-grain="" />
+      <ellipse cx="222" cy="340" rx={TRUNK_KNOT_RX} ry={TRUNK_KNOT_RY} fill="#2e1505" opacity="0.4" data-trunk-grain="" />
 
       {/* Ramas principales */}
-      {MB.map((b, i) => (
-        <path key={`hmb${i}`} data-draw="" data-main-branch=""
-          d={b.d} stroke={C.branch} strokeWidth={b.w} strokeLinecap="round" fill="none"
-          style={{ opacity: 0 }} />
-      ))}
+      {BRANCHES_DATA.map((b, i) => {
+        const pathD = `M ${b.startX},${b.startY} C ${b.cp1x},${b.cp1y} ${b.cp2x},${b.cp2y} ${b.endX},${b.endY}`;
+        return (
+          <path key={`hmb${i}`} data-draw="" data-main-branch=""
+            d={pathD} stroke={C.branch} strokeWidth={b.w} strokeLinecap="round" fill="none" />
+        );
+      })}
 
       {/* Sub-ramas */}
-      {SB.map((d, i) => (
-        <path key={`hsb${i}`} data-draw="" data-sub-branch=""
-          d={d} stroke={C.branch} strokeWidth="3" strokeLinecap="round" fill="none"
-          style={{ opacity: 0 }} />
-      ))}
+      {SUB_BRANCHES_DEF.map((sb, i) => {
+        const start = getPointOnBranch(BRANCHES_DATA[sb.branchIdx], sb.t);
+        const pathD = `M ${start.x},${start.y} Q ${sb.cpX},${sb.cpY} ${sb.endX},${sb.endY}`;
+        return (
+          <path key={`hsb${i}`} data-draw="" data-sub-branch=""
+            d={pathD} stroke={C.branch} strokeWidth="3" strokeLinecap="round" fill="none" />
+        );
+      })}
 
       {/* Hojas */}
-      {LEAVES.map((l, i) => (
-        <g key={`hl${i}`} transform={`translate(${l.x},${l.y}) rotate(${l.a})`}>
-          <g data-leaf="" data-leaf-done={l.done ? 'true' : 'false'} style={{ opacity: 0 }}>
-            <path d={LEAF} fill={l.done ? '#22c55e' : '#D1D5DB'} transform={`scale(${l.size ?? 1.1})`} />
-            <path d="M 0,0 C 5,0 12,0 19,0"
-              stroke={l.done ? '#15803d' : '#cbd5e1'}
-              strokeWidth="0.4" fill="none" opacity="0.6" pointerEvents="none" />
-            <g opacity="0.4" pointerEvents="none">
-              <path d="M 3.75,0 C 4.5,-1.5 6.25,-2 7.5,-2.5" stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
-              <path d="M 3.75,0 C 4.5,1.5 6.25,2 7.5,2.5"   stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
-              <path d="M 8.75,0 C 9.5,-1.25 11.25,-1.5 12.5,-2" stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
-              <path d="M 8.75,0 C 9.5,1.25 11.25,1.5 12.5,2"    stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
+      {LEAVES_DEF.map((l, i) => {
+        const pt = l.type === 'mb' 
+          ? getPointOnBranch(BRANCHES_DATA[l.idx], l.t)
+          : getSubBranchPoint(SUB_BRANCHES_DEF[l.idx], l.t);
+        
+        return (
+          <g key={`hl${i}`} transform={`translate(${pt.x},${pt.y}) rotate(${l.a})`}>
+            <g data-leaf="" data-leaf-done={l.done ? 'true' : 'false'}>
+              <path d={LEAF} fill={l.done ? '#22c55e' : '#D1D5DB'} transform="scale(1.1)" />
+              <path d="M 0,0 C 5,0 12,0 19,0"
+                stroke={l.done ? '#15803d' : '#cbd5e1'}
+                strokeWidth="0.4" fill="none" opacity="0.6" pointerEvents="none" />
+              <g opacity="0.4" pointerEvents="none">
+                <path d="M 3.75,0 C 4.5,-1.5 6.25,-2 7.5,-2.5" stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
+                <path d="M 3.75,0 C 4.5,1.5 6.25,2 7.5,2.5"   stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
+                <path d="M 8.75,0 C 9.5,-1.25 11.25,-1.5 12.5,-2" stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
+                <path d="M 8.75,0 C 9.5,1.25 11.25,1.5 12.5,2"    stroke={l.done ? '#15803d' : '#cbd5e1'} strokeWidth="0.2" fill="none" />
+              </g>
             </g>
           </g>
-        </g>
-      ))}
+        );
+      })}
 
       {/* Frutos/milestones */}
-      {FRUITS.map((f, i) => (
-        <g key={`hfruit${i}`} transform={`translate(${f.x - 12},${f.y})`}>
-          <g data-fruit="" style={{ opacity: 0 }}>
-            <path d="M 0,0 Q 6,0 12,0" stroke={C.branch} strokeWidth="1.5" fill="none" />
-            <circle cx="12" cy="0" r="9" fill={`url(#hfg${i})`}
-              stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" />
-            {f.done && (
-              <path d="M 9,-5 A 4 4 0 0 1 15,-5"
-                stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-            )}
+      {FRUITS_DEF.map((f, i) => {
+        const pt = getPointOnBranch(BRANCHES_DATA[f.branchIdx], f.t);
+        return (
+          <g key={`hfruit${i}`} transform={`translate(${pt.x - 12},${pt.y})`}>
+            <g data-fruit="">
+              <path d="M 0,0 Q 6,0 12,0" stroke={C.branch} strokeWidth="1.5" fill="none" />
+              <circle cx="12" cy="0" r="9" fill={`url(#hfg${i})`}
+                stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" />
+              {f.done && (
+                <path d="M 9,-5 A 4 4 0 0 1 15,-5"
+                  stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+              )}
+            </g>
           </g>
-        </g>
-      ))}
+        );
+      })}
     </svg>
   );
 }
@@ -397,77 +431,18 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
   const panoRef      = useRef<HTMLElement>(null);
   const dimCardsRef  = useRef<HTMLDivElement>(null);
 
-  /* ── GSAP: hero entrance — árbol florece al cargar, texto entra ── */
+  /* ── GSAP: hero entrance — árbol ya florecido al entrar ── */
   useGSAP(() => {
     const svg = treeSvgRef.current;
     if (!svg) return;
 
-    const sel = gsap.utils.selector(svg);
     const ease = 'power2.out';
 
-    /* Inicializar paths de stroke (raíces y ramas) con dashoffset — evita dots */
-    (sel('[data-root],[data-main-branch],[data-sub-branch]') as unknown as SVGGeometryElement[]).forEach((el) => {
-      const len = el.getTotalLength();
-      gsap.set(el, { strokeDasharray: len, strokeDashoffset: len, opacity: 0 });
-    });
-    /* Tronco trapezoidal (fill) — parte invisible */
-    gsap.set(sel('[data-trunk],[data-trunk-sheen],[data-trunk-grain]'), { opacity: 0 });
-    gsap.set(sel('[data-leaf]'),  { scale: 0, opacity: 0, transformOrigin: '0px 0px' });
-    gsap.set(sel('[data-fruit]'), { scale: 0, opacity: 0, transformOrigin: '0px 0px' });
-
-    /* Timeline de ENTRADA — dibuja el árbol completo inmediatamente */
-    const tl = gsap.timeline({ delay: 0.3 });
-
-    /* Tronco — fade in con clip desde abajo usando scaleY */
-    const trunkEl = sel('[data-trunk]')[0] as Element;
-    if (trunkEl) {
-      tl.fromTo(trunkEl,
-        { opacity: 0, scaleY: 0, transformOrigin: '220px 390px' },
-        { opacity: 1, scaleY: 1, ease, duration: 0.55 }, 0);
-    }
-    /* Sheen y vetas entran con el tronco */
-    tl.to(sel('[data-trunk-sheen],[data-trunk-grain]'), { opacity: 1, ease, duration: 0.4 }, 0.3);
-
-    /* Raíces */
-    (sel('[data-root]') as unknown as SVGGeometryElement[]).forEach((r, i) => {
-      const len = r.getTotalLength();
-      tl.fromTo(r,
-        { strokeDashoffset: len, opacity: 0 },
-        { strokeDashoffset: 0, opacity: 1, ease, duration: 0.4 },
-        0.1 + i * 0.05);
-    });
-    /* Ramas principales */
-    (sel('[data-main-branch]') as unknown as SVGGeometryElement[]).forEach((b, i) => {
-      const len = b.getTotalLength();
-      tl.fromTo(b,
-        { strokeDashoffset: len, opacity: 0 },
-        { strokeDashoffset: 0, opacity: 1, ease, duration: 0.45 },
-        0.3 + i * 0.08);
-    });
-    /* Sub-ramas */
-    (sel('[data-sub-branch]') as unknown as SVGGeometryElement[]).forEach((b, i) => {
-      const len = b.getTotalLength();
-      tl.fromTo(b,
-        { strokeDashoffset: len, opacity: 0 },
-        { strokeDashoffset: 0, opacity: 1, ease, duration: 0.35 },
-        0.55 + i * 0.04);
-    });
-    /* Hojas verdes primero */
-    (sel('[data-leaf-done="true"]') as Element[]).forEach((l, i) => {
-      tl.to(l, { scale: 1, opacity: 1, ease: 'back.out(1.7)', duration: 0.25,
-        transformOrigin: '0px 0px' }, 0.7 + i * 0.025);
-    });
-    (sel('[data-leaf-done="false"]') as Element[]).forEach((l, i) => {
-      tl.to(l, { scale: 1, opacity: 1, ease: 'back.out(1.5)', duration: 0.25,
-        transformOrigin: '0px 0px' }, 0.85 + i * 0.025);
-    });
-    /* Frutos/milestones */
-    (sel('[data-fruit]') as Element[]).forEach((f, i) => {
-      tl.to(f, { scale: 1, opacity: 1, ease: 'back.out(2)', duration: 0.25,
-        transformOrigin: '0px 0px' }, 0.95 + i * 0.04);
-    });
+    // Soft fade-in of the entire fully bloomed tree SVG
+    gsap.fromTo(svg, { opacity: 0 }, { opacity: 1, duration: 0.8, ease });
 
     /* Texto hero entra en paralelo */
+    const tl = gsap.timeline({ delay: 0.1 });
     tl.from('[data-hero-eyebrow]', { opacity: 0, y: 16, duration: 0.6, ease }, 0.1);
     if (headlineRef.current)
       tl.from(headlineRef.current, { opacity: 0, y: 20, duration: 0.7, ease }, 0.2);
@@ -518,46 +493,52 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
     const sel = gsap.utils.selector(section);
 
-    /* inicializar stroke-dashoffset en troncos y ramas */
+    /* inicializar troncos y ramas: invisible + dashoffset */
     (sel('[data-pano-trunk],[data-pano-branch]') as unknown as SVGGeometryElement[]).forEach((el) => {
       const len = el.getTotalLength();
-      gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+      gsap.set(el, { strokeDasharray: len, strokeDashoffset: len, opacity: 0 });
     });
     gsap.set(sel('[data-pano-leaf]'), { scale: 0, opacity: 0 });
 
-    /* Un solo timeline por árbol, dispara al entrar — sin scrub — terminan florecidos */
+    /* Un único timeline para toda la sección */
+    const mainTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: 'top 95%',
+        toggleActions: 'play none none none',
+      }
+    });
+
     ([0, 1, 2, 3] as const).forEach((tIdx) => {
-      const delay = tIdx * 0.18;  /* escalonado entre árboles */
-      const trunkEls = sel(`[data-pano-tree="${tIdx}"][data-pano-trunk]`) as unknown as SVGGeometryElement[];
+      const delayOffset = tIdx * 0.2; // escalonado entre árboles
+      const trunkEls  = sel(`[data-pano-tree="${tIdx}"][data-pano-trunk]`) as unknown as SVGGeometryElement[];
       const branchEls = sel(`[data-pano-tree="${tIdx}"][data-pano-branch]`) as unknown as SVGGeometryElement[];
       const leafEls   = sel(`[data-pano-tree="${tIdx}"][data-pano-leaf]`) as Element[];
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 80%',
-          toggleActions: 'play none none none',
-        },
-        delay,
+      if (trunkEls.length > 0) {
+        const trunkLen = trunkEls[0].getTotalLength();
+        mainTl.fromTo(trunkEls,
+          { strokeDashoffset: trunkLen, opacity: 0 },
+          { strokeDashoffset: 0, opacity: 1, ease: 'power2.out', duration: 0.5 },
+          delayOffset);
+      }
+      
+      branchEls.forEach((b, i) => {
+        const branchLen = (b as SVGGeometryElement).getTotalLength();
+        mainTl.fromTo(b,
+          { strokeDashoffset: branchLen, opacity: 0 },
+          { strokeDashoffset: 0, opacity: 1, ease: 'power2.out', duration: 0.35 },
+          delayOffset + 0.15 + i * 0.04);
       });
 
-      /* tronco */
-      if (trunkEls.length > 0) {
-        tl.fromTo(trunkEls,
-          { opacity: 0 },
-          { strokeDashoffset: 0, opacity: 1, ease: 'power2.out', duration: 0.4 }, 0);
-      }
-      /* ramas — stagger rápido */
-      branchEls.forEach((b, i) => {
-        tl.fromTo(b,
-          { opacity: 0 },
-          { strokeDashoffset: 0, opacity: 1, ease: 'power2.out', duration: 0.3 },
-          0.15 + i * 0.04);
-      });
-      /* hojas — todas aparecen antes de que el usuario vea la sección completa */
       leafEls.forEach((l, i) => {
-        tl.to(l, { scale: 1, opacity: 1, ease: 'back.out(1.4)', duration: 0.25,
-          transformOrigin: '0px 0px' }, 0.3 + i * 0.03);
+        mainTl.to(l, {
+          scale: 1,
+          opacity: 1,
+          ease: 'back.out(1.4)',
+          duration: 0.28,
+          transformOrigin: '0px 0px'
+        }, delayOffset + 0.32 + i * 0.03);
       });
     });
   }, { dependencies: [] });
@@ -659,59 +640,123 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         </div>
       </div>
 
-      {/* ═════ DIMENSIONES ═════ */}
+      {/* ═════ SECCIÓN 2: SPLIT (COACH IA & DIMENSIONES) ═════ */}
       <section className="py-20 px-6" style={{ background: C.creamDk }}>
-        <div className="mx-auto max-w-6xl">
-          <motion.div className="mb-12"
+        <div className="mx-auto max-w-7xl grid lg:grid-cols-2 gap-12 items-start">
+          
+          {/* Columna Izquierda: Coach IA Mockup */}
+          <motion.div className="flex flex-col justify-center text-left"
             variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Tu desarrollo integral</p>
-            <h2 className="font-serif leading-tight" style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', color: C.ink }}>
-              19 dimensiones de{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>lo que eres.</em>
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: C.green }}>Tu coach de vida</p>
+            <h2 className="font-serif mb-4 leading-tight text-left" style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', color: C.ink }}>
+              La IA que te conoce{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>de verdad.</em>
             </h2>
+            <p className="mb-8 text-sm leading-relaxed text-left" style={{ color: C.muted, maxWidth: 500 }}>
+              No respuestas genéricas. El coach recuerda tus metas, hábitos y estado anímico para guiarte con precisión — como si llevara días caminando contigo.
+            </p>
+            
+            {/* Tarjeta de Chat Mockup */}
+            <div className="rounded-3xl p-6 flex flex-col gap-4 text-left shadow-lg max-w-md w-full"
+              style={{ background: '#161616', border: '1px solid #2A2A2A' }}>
+              {/* header */}
+              <div className="flex items-center gap-2 pb-3" style={{ borderBottom: '1px solid #2A2A2A' }}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: C.green }}>
+                  <SeedIcon size={15} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold" style={{ color: '#fff' }}>BEAN Coach</p>
+                  <p className="text-[10px]" style={{ color: C.green }}>Activo • en línea</p>
+                </div>
+              </div>
+              {/* messages */}
+              <div className="flex flex-col gap-3">
+                {[
+                  { from: 'bean', text: 'Hola 👋 Vi que cerraste el curso de diseño. ¿Cómo te sientes con eso?' },
+                  { from: 'user', text: 'Muy bien! Aunque siento que me falta practicar más.' },
+                  { from: 'bean', text: 'Perfecto — ¿lo agregamos como meta de práctica a tu árbol? Puedo ayudarte a definir los pasos concretos.' },
+                ].map((msg, i) => (
+                  <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'items-start gap-2'}`}>
+                    {msg.from === 'bean' && (
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
+                        style={{ background: C.green }}>
+                        <SeedIcon size={13} />
+                      </div>
+                    )}
+                    <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed" style={{
+                      maxWidth: 280,
+                      background: msg.from === 'bean' ? '#2A2A2A' : C.green,
+                      color: msg.from === 'bean' ? '#E5E5E5' : '#fff',
+                      borderRadius: msg.from === 'bean' ? '4px 18px 18px 18px' : '18px 4px 18px 18px',
+                    }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* input simulado */}
+              <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5 mt-1"
+                style={{ background: '#2A2A2A' }}>
+                <span className="text-sm flex-1" style={{ color: '#555' }}>Escribe tu respuesta…</span>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: C.green, opacity: 0.7 }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
-          <div className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
-            {/* dim cards — GSAP stagger */}
-            <div ref={dimCardsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Columna Derecha: Dimensiones de Vida */}
+          <motion.div className="flex flex-col justify-center text-left"
+            variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} custom={0.15}>
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-left" style={{ color: C.muted }}>Tu desarrollo integral</p>
+            <h2 className="font-serif mb-8 leading-tight text-left" style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', color: C.ink }}>
+              19 dimensiones de{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>lo que eres.</em>
+            </h2>
+
+            {/* dim cards */}
+            <div ref={dimCardsRef} className="grid grid-cols-2 gap-4 mb-6">
               {DIMS.map((d) => (
                 <div key={d.name} data-dim-card
-                  className="flex flex-col gap-1.5 rounded-2xl p-5"
+                  className="flex flex-col gap-1.5 rounded-2xl p-4 text-left shadow-sm"
                   style={{ background: 'rgba(255,255,255,0.7)', border: `1px solid ${C.border}` }}>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl">{d.icon}</span>
+                    <span className="text-xl">{d.icon}</span>
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: C.green }}>
                       {d.status}
                     </span>
                   </div>
-                  <span className="text-sm font-bold mt-2" style={{ color: C.ink }}>{d.name}</span>
-                  <span className="font-serif text-2xl font-bold leading-none" style={{ color: C.green }}>{d.count}</span>
-                  <p className="text-[11px] leading-normal mt-1" style={{ color: C.muted }}>{d.desc}</p>
+                  <span className="text-xs font-bold mt-1" style={{ color: C.ink }}>{d.name}</span>
+                  <span className="font-serif text-lg font-bold leading-none" style={{ color: C.green }}>{d.count}</span>
+                  <p className="text-[10px] leading-normal mt-0.5" style={{ color: C.muted }}>{d.desc}</p>
                 </div>
               ))}
             </div>
 
             {/* value proposition card */}
-            <motion.div className="rounded-2xl px-6 py-6 text-left h-full flex flex-col justify-center" style={{ background: C.ink }}
-              variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} custom={0.2}>
-              <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.green }}>Lo que BEAN activa en ti</p>
-              <div className="flex flex-col gap-4">
+            <div className="rounded-2xl px-5 py-4 text-left shadow-sm" style={{ background: C.ink }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.green }}>Lo que BEAN activa en ti</p>
+              <div className="flex flex-col gap-2.5">
                 {[
-                  { icon: '🌱', label: 'Coach IA personalizado', detail: 'Que recuerda quién eres y te guía con precisión en cada etapa' },
+                  { icon: '🌱', label: 'Coach IA personalizado', detail: 'Que recuerda quién eres y te guía con precisión' },
                   { icon: '🌿', label: 'Metas con propósito real', detail: 'Conectadas a tus dimensiones y compromisos base' },
                   { icon: '🌳', label: 'Tu bosque personal', detail: 'Una metáfora visual de todo tu crecimiento en la vida' },
                   { icon: '✦', label: 'Identidad, Capital y Experiencia', detail: 'Los tres pilares que cubren todo lo que eres' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-3">
-                    <span className="text-lg mt-0.5 shrink-0">{item.icon}</span>
+                    <span className="text-base mt-0.5 shrink-0">{item.icon}</span>
                     <div>
-                      <p className="text-sm font-bold leading-tight" style={{ color: '#fff' }}>{item.label}</p>
-                      <p className="text-xs mt-0.5 leading-relaxed" style={{ color: C.ghost }}>{item.detail}</p>
+                      <p className="text-xs font-bold leading-none" style={{ color: '#fff' }}>{item.label}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: C.ghost }}>{item.detail}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
@@ -720,8 +765,11 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         <motion.div className="text-center mb-16"
           variants={revealVariant} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}>
           <h2 className="font-serif" style={{ fontSize: 'clamp(32px, 4vw, 52px)', color: C.ink }}>
-            Tu vida,{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>visualizada.</em>
+            Metas{' '}<em style={{ color: C.green, fontStyle: 'italic' }}>compartidas.</em>
           </h2>
+          <p className="mt-3 text-sm max-w-md mx-auto leading-relaxed" style={{ color: C.muted }}>
+            El crecimiento no ocurre en aislamiento. Conecta con otros, comparte tus propósitos y ve cómo vuestro bosque crece en comunidad.
+          </p>
           <div className="mt-6 flex items-center justify-center gap-6 flex-wrap">
             {[{ color: '#22c55e', label: 'Meta completada' }, { color: '#D1D5DB', label: 'Meta pendiente' }, { color: '#fcd34d', label: 'Hito alcanzado' }]
               .map((leg) => (

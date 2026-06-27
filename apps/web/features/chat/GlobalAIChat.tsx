@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, MessageSquare, ChevronRight, ChevronDown, Trash2, Bot, BrainCircuit } from 'lucide-react';
+import { X, RefreshCw, MessageSquare, ChevronRight, ChevronLeft, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '../../hooks/useUIStore';
 
@@ -152,14 +152,21 @@ const DraftItemDetailSheet = ({ itemData, selection, parentPhase, parentTask, on
   const breadcrumb = type === 'task' ? `en Fase: ${parentPhase?.title}` : type === 'subTask' ? `de la Tarea: ${parentTask?.name}` : '';
 
   return (
-    <motion.div 
-      initial={{ y: '100%', opacity: 0 }} 
-      animate={{ y: 0, opacity: 1 }} 
-      exit={{ y: '100%', opacity: 0 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="absolute bottom-0 left-0 right-0 z-50 bg-white md:rounded-t-3xl shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.15)] flex flex-col h-[85vh] md:h-[70vh] border-t border-x border-stone-200"
-    >
-      <div className="flex justify-between items-start p-5 border-b border-stone-100">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6 pointer-events-none">
+      {/* Semi-transparent blur backdrop */}
+      <div 
+        onClick={onClose}
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-xs pointer-events-auto z-0 transition-opacity"
+      />
+      
+      <motion.div 
+        initial={{ y: '100%', opacity: 0 }} 
+        animate={{ y: 0, opacity: 1 }} 
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="w-full bg-white rounded-t-3xl md:rounded-2xl shadow-2xl flex flex-col h-[85vh] md:h-auto md:max-h-[85vh] md:max-w-xl border-t border-stone-200 md:border border-stone-100 pointer-events-auto z-10"
+      >
+        <div className="flex justify-between items-start p-5 border-b border-stone-100">
         <div className="flex-1 pr-4">
           <p className="text-[10px] font-black uppercase text-emerald-600 tracking-wider mb-1 flex items-center gap-1">
             {titlePrefix} <span className="text-stone-400 font-medium normal-case">{breadcrumb}</span>
@@ -368,7 +375,8 @@ const DraftItemDetailSheet = ({ itemData, selection, parentPhase, parentTask, on
         </div>
       </div>
     </motion.div>
-  );
+  </div>
+);
 };
 
 export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'global', existingGoalData }: GlobalAIChatProps) {
@@ -376,6 +384,8 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -440,6 +450,10 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
     if (isOpen) {
       loadSession();
       if (existingGoalData) {
+        setSessionId(null);
+        setMessages([]);
+        setAttachedContexts([]);
+        
         // Map existing branch data to the draftPlan structure
         const allLeaves = existingGoalData.leaves || [];
         const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
@@ -449,6 +463,8 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
         const mappedDraft = {
           isExistingRefactor: true,
           goalId: existingGoalData.id,
+          title: existingGoalData.goal || existingGoalData.title || '',
+          description: existingGoalData.description || '',
           phases: phases.map((phase: any) => {
             const phaseTasks = tasks.filter((t: any) => t.parentId === phase.id);
             const phaseMilestone = milestones.find((m: any) => m.parentId === phase.id);
@@ -846,50 +862,54 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`w-full h-full bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-stone-200 transition-all duration-500 ease-in-out ${
-          draftPlan || isDrafting ? 'w-full md:max-w-6xl' : 'max-w-md'
-        }`}
+        className="w-full h-full bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-stone-200 transition-all duration-500 ease-in-out md:max-w-5xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* HEADER SECTION */}
-        <div className="flex flex-col border-b border-stone-200 bg-white z-10 shrink-0">
-          <div className="h-[60px] md:h-[72px] px-4 md:px-6 flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 md:w-5 md:h-5 text-emerald-600" />
+        {/* CONTAINER FOR CHAT AND DRAFT */}
+        <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+          {/* Lado Izquierdo: Chat */}
+          <div className={`flex flex-col h-full z-10 ${
+            isChatCollapsed
+              ? 'md:hidden w-full'
+              : (draftPlan || isDrafting)
+                ? 'md:w-[35%] w-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)]'
+                : 'w-full'
+          } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}>
+
+          {/* Chat Sidebar Header */}
+          <div className="h-[60px] md:h-[72px] px-4 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <Bot className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-bold text-sm md:text-base text-stone-800">Coach BEAN</h3>
-                <p className="text-[10px] md:text-xs text-stone-500">Planificador & Guía Estratégica</p>
+                <h3 className="font-bold text-xs md:text-sm text-stone-800">Asistente IA</h3>
+                <p className="text-[10px] text-stone-500">Planificador & Guía</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 md:gap-4">
-              {(draftPlan || isDrafting) && (
-                <div className="flex md:hidden bg-stone-100 p-1 rounded-xl shrink-0 mr-2">
-                  <button onClick={() => setMobileTab('chat')} className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>💬</button>
-                  <button onClick={() => setMobileTab('draft')} className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>📝</button>
-                </div>
-              )}
+            <div className="flex items-center gap-1.5">
               <button 
                 type="button" 
                 onClick={handleReset} 
-                className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors flex items-center justify-center" 
-                title="Nueva Sesión (Reiniciar)"
+                className="p-1.5 text-stone-400 hover:text-stone-750 hover:bg-stone-150 rounded-full transition-colors flex items-center justify-center" 
+                title="Reiniciar chat"
               >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-4 h-4" />
               </button>
-              <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600">
-                <X className="w-5 h-5 md:w-6 md:h-6" />
+              {(draftPlan || isDrafting) && (
+                <button 
+                  onClick={() => setIsChatCollapsed(true)} 
+                  className="hidden md:flex p-1.5 text-stone-400 hover:text-stone-750 hover:bg-stone-150 rounded-full transition-colors items-center justify-center"
+                  title="Ocultar Asistente"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              <button onClick={onClose} className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-400" title="Cerrar Asistente">
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
-        </div>
-
-        {/* CONTAINER FOR CHAT AND DRAFT */}
-        <div className={`flex flex-1 overflow-hidden ${draftPlan || isDrafting ? 'flex-col md:flex-row' : 'flex-col'}`}>
-          
-        {/* Lado Izquierdo: Chat */}
-        <div className={`flex flex-col h-full border-r border-stone-100 ${draftPlan || isDrafting ? 'md:w-5/12 w-full' : 'w-full'} ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'}`}>
 
         {/* Messages */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-5 py-6 space-y-4 bg-stone-50/30">
@@ -911,12 +931,12 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
             messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
                 )}
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-emerald-600 text-white rounded-br-none shadow-sm'
-                    : 'bg-white border border-stone-200/50 text-stone-800 rounded-bl-none shadow-sm'
+                    ? 'bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] text-white rounded-br-none shadow-sm font-medium'
+                    : 'bg-white/80 backdrop-blur-md border border-stone-200/40 text-stone-850 rounded-bl-none shadow-sm'
                 }`}>
                   {renderFormattedText(msg.content)}
                 </div>
@@ -926,19 +946,19 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
 
           {isSending && (
             <div className="flex justify-start">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs mr-2 mt-1 flex-shrink-0">💡</div>
-              <div className="bg-white border border-stone-200/50 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1 items-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce delay-75" />
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce delay-150" />
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] flex items-center justify-center text-white text-xs mr-2 mt-1 flex-shrink-0">💡</div>
+              <div className="bg-white/80 backdrop-blur-md border border-stone-200/40 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex gap-1 items-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-bounce" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-bounce delay-75" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-bounce delay-150" />
               </div>
             </div>
           )}
 
           {isDrafting && (
             <div className="flex justify-start animate-in fade-in duration-200">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
-              <div className="bg-stone-50 border border-stone-200/50 rounded-2xl rounded-bl-none px-4 py-3.5 shadow-sm flex flex-col gap-2.5 max-w-[85%] min-w-[240px]">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] flex items-center justify-center text-white text-[10px] mr-2 mt-1 flex-shrink-0">💡</div>
+              <div className="bg-white/80 backdrop-blur-md border border-[#EAD4C5] rounded-2xl rounded-bl-none px-4 py-3.5 shadow-sm flex flex-col gap-2.5 max-w-[85%] min-w-[240px]">
                 <div className="space-y-1.5">
                   {draftSteps.map((s) => (
                     <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
@@ -990,17 +1010,26 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         ) : (
           <form 
             onSubmit={handleSubmit} 
-            className="p-3 border-t border-stone-100 bg-white flex flex-col gap-2 shrink-0"
-            onDragOver={(e) => e.preventDefault()}
+            className={`p-3 border-t transition-all duration-300 bg-white flex flex-col gap-2 shrink-0 ${
+              isDraggingOver ? 'border-dashed border-2 border-emerald-500 bg-emerald-50/40 rounded-2xl m-2' : 'border-stone-100'
+            }`}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+            onDragLeave={() => setIsDraggingOver(false)}
             onDrop={(e) => {
               e.preventDefault();
+              setIsDraggingOver(false);
               const text = e.dataTransfer.getData('text/plain');
               if (text && !attachedContexts.includes(text)) {
                 setAttachedContexts(prev => [...prev, text]);
               }
             }}
           >
-            {attachedContexts.length > 0 && (
+            {isDraggingOver && (
+              <div className="flex items-center justify-center py-3 text-emerald-800 font-bold text-xs gap-1.5 animate-pulse bg-emerald-100/30 rounded-xl">
+                <span>📥</span> Suelta el elemento aquí para añadirlo como contexto
+              </div>
+            )}
+            {!isDraggingOver && attachedContexts.length > 0 && (
               <div className="flex flex-wrap gap-2 px-1">
                 {attachedContexts.map((ctx, i) => (
                   <div key={i} className="flex items-center gap-1 bg-stone-100 border border-stone-200 text-[11px] font-medium text-stone-600 px-2 py-1 rounded-md">
@@ -1035,30 +1064,52 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
           </form>
         )}
         </div>
-        {/* Lado Derecho: Borrador del Plan */}
-        {(draftPlan || isDrafting) && (
-          <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full md:w-7/12 w-full bg-stone-50 overflow-y-auto`}>
-            <div className="px-4 md:px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10 flex flex-col md:flex-row md:justify-between md:items-center gap-3 shadow-sm">
-              <div>
-                <h3 className="text-lg font-black text-stone-800">Mesa de Dibujo</h3>
-                <p className="text-[11px] md:text-xs font-medium text-stone-500">Arrastra elementos al chat para dar feedback.</p>
+        {/* Lado Derecho: Mesa de Dibujo — solo se monta cuando hay draft o se está generando */}
+        {(draftPlan || isDrafting) && <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
+          <div className="px-4 md:px-6 py-4 border-b border-[#E6E1D6] bg-[#FAF9F6] sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
+            <div className="flex items-center gap-3">
+              {isChatCollapsed && (
+                <button 
+                  onClick={() => setIsChatCollapsed(false)}
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all border border-emerald-100 shadow-xs"
+                >
+                  <ChevronRight className="w-4 h-4" /> Mostrar Asistente
+                </button>
+              )}
+              {(draftPlan || isDrafting) && (
+                <div className="flex md:hidden bg-stone-100 p-0.5 rounded-xl border border-stone-200 shrink-0">
+                  <button type="button" onClick={() => setMobileTab('chat')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
+                  <button type="button" onClick={() => setMobileTab('draft')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>📋 Borrador</button>
+                </div>
+              )}
+              <div className="hidden md:block">
+                <h3 className="text-sm md:text-base font-black text-stone-800 flex items-center gap-1.5">
+                  📋 Mesa de Dibujo
+                </h3>
+                <p className="text-[10px] md:text-xs font-medium text-stone-500">Planifica y edita tu borrador aquí.</p>
               </div>
-              
-              <div className="flex justify-end">
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {draftPlan && (
                 <button
                   onClick={handleCreateBranch}
                   disabled={creatingBranch || isDrafting}
-                  className="w-full md:w-auto px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 shadow-sm"
+                  className="px-4 py-2 bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] hover:from-[#083622] hover:to-[#145D3B] text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(27,122,78,0.25)] hover:shadow-[0_6px_20px_rgba(27,122,78,0.35)] active:scale-[0.98] disabled:opacity-40"
                 >
-                  {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios a la Meta' : 'Aceptar Plan Definitivo')}
+                  {creatingBranch ? 'Guardando...' : (draftPlan?.isExistingRefactor ? 'Aplicar Cambios' : 'Aceptar Plan Definitivo')}
                 </button>
-              </div>
+              )}
+              <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600">
+                <X className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
             </div>
+          </div>
 
-            <div className="p-6">
+          <div className="p-6 flex-1 flex flex-col justify-start">
               {isDrafting ? (
                 <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto">
-                  <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
+                  <div className="text-5xl animate-bounce mb-6 select-none animate-pulse-slow">🌱</div>
                   <h4 className="text-sm font-bold text-stone-850 text-stone-800 mb-4 text-center">Construyendo borrador con IA...</h4>
                   <div className="w-full space-y-3 bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
                     {draftSteps.map((s) => (
@@ -1081,11 +1132,15 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
               ) : draftPlan ? (
                 <div className="space-y-6">
                   {draftDiagnosis && (
-                    <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 shadow-sm space-y-3 text-stone-850">
-                      <div className="flex items-center gap-2 border-b border-emerald-100/60 pb-2">
-                        <span className="text-emerald-700 text-sm">🧠</span>
-                        <h5 className="font-bold text-xs text-emerald-800">Diagnóstico de Viabilidad (Agente 1)</h5>
-                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-black uppercase px-2 py-0.5 rounded ml-auto">
+                    <div className="bg-[#FDF5F0]/90 border border-[#EAD4C5] rounded-2xl p-4 shadow-xs space-y-3 text-stone-800">
+                      <div className="flex items-center gap-2 border-b border-[#EAD4C5]/60 pb-2">
+                        <span className="text-[#A0522D] text-sm">🧠</span>
+                        <h5 className="font-black text-xs text-[#8B4513]">Diagnóstico de Viabilidad (Agente IA)</h5>
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ml-auto border ${
+                          draftDiagnosis.feasibility === 'possible' 
+                            ? 'bg-[#EAF5EC] text-[#1B7A4E] border-[#CDE5D2]' 
+                            : 'bg-[#FDF5F0] text-[#A0522D] border-[#EAD4C5]'
+                        }`}>
                           {draftDiagnosis.feasibility === 'possible' ? 'Viable' : 'Desafiante'}
                         </span>
                       </div>
@@ -1103,15 +1158,15 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                         )}
                         
                         {draftDiagnosis.warnings && draftDiagnosis.warnings.length > 0 && (
-                          <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-2.5 mt-1.5 text-amber-900">
-                            <span className="font-bold text-amber-800 block mb-0.5">⚠️ Advertencias / Recomendaciones:</span>
-                            <ul className="list-disc pl-4 space-y-0.5 text-amber-800">
+                          <div className="bg-[#FAF0E6] border border-[#EAD4C5]/60 rounded-xl p-2.5 mt-1.5 text-[#A0522D]">
+                            <span className="font-bold text-[#8B4513] block mb-0.5">⚠️ Advertencias / Recomendaciones:</span>
+                            <ul className="list-disc pl-4 space-y-0.5 text-[#A0522D]/90">
                               {draftDiagnosis.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
                             </ul>
                           </div>
                         )}
 
-                        <div className="text-stone-500 text-[9px] flex justify-between items-center mt-1.5 pt-1.5 border-t border-stone-100">
+                        <div className="text-stone-500 text-[9px] flex justify-between items-center mt-1.5 pt-1.5 border-t border-[#EAD4C5]/40">
                           <span>Duración sugerida: {draftDiagnosis.estimatedMonths} meses</span>
                         </div>
                       </div>
@@ -1121,7 +1176,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                   {draftPlan.phases?.map((phase: any, pIdx: number) => (
                     <div 
                       key={pIdx} 
-                      className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors cursor-grab active:cursor-grabbing relative group"
+                      className="bg-white border border-[#E6E1D6] rounded-2xl p-5 shadow-xs hover:border-[#1B7A4E]/50 hover:shadow-md transition-all duration-300 cursor-grab active:cursor-grabbing relative group"
                       draggable
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', `[Fase: ${phase.title}]`);
@@ -1135,20 +1190,25 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                         + Chat
                       </button>
 
-                      <div className="pr-12 pointer-events-none">
-                        <span className="font-black text-stone-800 text-base mb-1 block">
-                          {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
-                        </span>
-                        {phase.description && (
-                          <p className="text-xs text-stone-500 mb-4 line-clamp-2">{phase.description}</p>
-                        )}
+                      <div className="flex gap-2 items-start">
+                        <div className="mt-1 text-stone-300 group-hover:text-[#1B7A4E]/70 transition-colors shrink-0">
+                          <GripVertical className="w-4 h-4 cursor-grab" />
+                        </div>
+                        <div className="flex-1 pr-12 pointer-events-none">
+                          <span className="font-black text-stone-800 text-base mb-1 block">
+                            {phase.title || <span className="text-stone-300 italic">Sin título...</span>}
+                          </span>
+                          {phase.description && (
+                            <p className="text-xs text-stone-500 mb-4 line-clamp-2">{phase.description}</p>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-2 mt-4" onClick={(e) => e.stopPropagation()}>
                         {phase.tasks?.map((task: any, tIdx: number) => (
                           <div 
                             key={tIdx} 
-                            className="bg-stone-50 border border-stone-100 rounded-xl p-3 flex flex-col gap-1 hover:bg-stone-100 cursor-grab relative"
+                            className="bg-[#FAF9F6] border border-[#E6E1D6]/70 rounded-xl p-3 flex flex-col gap-1 hover:bg-white hover:border-[#1B7A4E]/30 hover:shadow-xs transition-all duration-200 cursor-grab active:cursor-grabbing relative"
                             draggable
                             onDragStart={(e) => {
                               e.stopPropagation();
@@ -1157,21 +1217,22 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                             onClick={() => !task.isCompleted && setSelectedDraftItem({type: 'task', pIdx, tIdx})}
                           >
                             <div className="flex justify-between items-start pr-14 pointer-events-none">
-                              <div className="flex items-center gap-1 flex-1">
-                                <button onClick={(e) => { e.stopPropagation(); toggleCollapse(`task-${pIdx}-${tIdx}`); }} className="text-stone-400 hover:text-stone-600 p-0.5 rounded-md hover:bg-stone-200 transition-colors pointer-events-auto">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <GripVertical className="w-3.5 h-3.5 text-stone-300 shrink-0 pointer-events-auto" />
+                                <button onClick={(e) => { e.stopPropagation(); toggleCollapse(`task-${pIdx}-${tIdx}`); }} className="text-stone-400 hover:text-stone-600 p-0.5 rounded-md hover:bg-stone-200 transition-colors pointer-events-auto shrink-0">
                                   {collapsedTasks[`task-${pIdx}-${tIdx}`] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 </button>
-                                <span className="text-sm font-bold text-stone-700 flex-1 block">
-                                  {task.name || <span className="text-stone-300 italic">Sin título...</span>}
-                                </span>
-                              </div>
-                              <div className="flex items-center ml-2 shrink-0">
-                                <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
-                                  {task.estimatedHours || '0'}
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
-                              </div>
-                            </div>
+                                <span className="text-sm font-bold text-stone-700 flex-1 truncate block">
+                                   {task.name || <span className="text-stone-300 italic">Sin título...</span>}
+                                 </span>
+                               </div>
+                               <div className="flex items-center ml-2 shrink-0">
+                                 <span className="text-[10px] font-black uppercase text-stone-400 bg-stone-200/50 px-1.5 py-0.5 rounded text-center min-w-[1.5rem] inline-block">
+                                   {task.estimatedHours || '0'}
+                                 </span>
+                                 <span className="text-[10px] font-black uppercase text-stone-400 ml-0.5">h</span>
+                               </div>
+                             </div>
                             
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleAddContextToChat(`[Tarea: ${task.name} (en Fase: ${phase.title})]`); }}
@@ -1207,9 +1268,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                                     }}
                                     onClick={(e) => { e.stopPropagation(); !sub.isCompleted && setSelectedDraftItem({type: 'subTask', pIdx, tIdx, sIdx}); }}
                                   >
-                                    <div className="flex-1 flex items-start pointer-events-none">
-                                      <span className="text-emerald-500 mr-1 shrink-0 mt-[2px]">•</span>
-                                      <span className="w-full flex-1 block">
+                                    <div className="flex-1 flex items-center gap-1.5 pointer-events-none min-w-0">
+                                      <GripVertical className="w-3 h-3 text-stone-300 shrink-0 pointer-events-auto" />
+                                      <span className="w-full flex-1 truncate block">
                                         {sub.name || <span className="text-stone-300 italic">Sin título...</span>}
                                       </span>
                                     </div>
@@ -1254,7 +1315,22 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                     </div>
                   )}
                 </div>
-              ) : null}
+              ) : (
+                <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto text-center space-y-4 animate-fade-in">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] flex items-center justify-center text-white text-3xl mx-auto shadow-md">
+                    🌱
+                  </div>
+                  <h3 className="font-display font-black text-base text-stone-800">Sembrando tu Meta</h3>
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Conversa con el Asistente IA a la izquierda para diseñar tu camino de vida y estructurar tu plan paso a paso aquí.
+                  </p>
+                  <div className="pt-2">
+                    <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#1B7A4E] bg-emerald-100/60 px-3.5 py-1 rounded-full border border-emerald-250/20">
+                      Mesa de Dibujo Lista
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             
             <AnimatePresence>
@@ -1278,9 +1354,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 />
               )}
             </AnimatePresence>
-            
+
           </div>
-        )}
+        }
         </div>
       </motion.div>
     </div>

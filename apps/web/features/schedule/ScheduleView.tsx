@@ -38,20 +38,19 @@ export interface ScheduledEvent {
 function BottomSheet({
   isOpen,
   onClose,
-  title,
-  subtitle,
+  selectedDay,
+  hoursLeft,
   children,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
-  subtitle: string;
+  selectedDay: Date;
+  hoursLeft: number;
   children: React.ReactNode;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const dragControls = useDragControls();
 
-  // Reset expansion when closed
   useEffect(() => {
     if (!isOpen) setIsExpanded(false);
   }, [isOpen]);
@@ -65,7 +64,7 @@ function BottomSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -75,49 +74,67 @@ function BottomSheet({
             dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.1}
-            onDragEnd={(e, info) => {
+            onDragEnd={(_, info) => {
               if (info.offset.y > 100 && !isExpanded) onClose();
               else if (info.offset.y > 150 && isExpanded) setIsExpanded(false);
               else if (info.offset.y < -50 && !isExpanded) setIsExpanded(true);
             }}
             initial={{ y: '100%' }}
-            animate={{ y: 0, height: isExpanded ? '100dvh' : '85dvh' }}
+            animate={{ y: 0, height: isExpanded ? '100dvh' : '88dvh' }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
-            className={`relative w-full bg-white flex flex-col shadow-2xl overflow-hidden ${
-              isExpanded ? 'rounded-none' : 'rounded-t-[32px]'
+            transition={{ type: 'spring', damping: 28, stiffness: 380, mass: 0.8 }}
+            className={`relative w-full bg-[#FAF9F6] flex flex-col shadow-2xl overflow-hidden ${
+              isExpanded ? 'rounded-none' : 'rounded-t-[28px]'
             }`}
           >
-            {/* Drag Handle Indicator */}
+            {/* Drag Handle */}
             <div
-              className="w-full flex justify-center pt-3 pb-3 bg-white shrink-0 cursor-grab active:cursor-grabbing touch-none border-b border-stone-100"
+              className="w-full flex justify-center pt-3 pb-2 shrink-0 cursor-grab active:cursor-grabbing touch-none"
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="w-12 h-1.5 bg-stone-200 rounded-full pointer-events-none" />
+              <div className="w-10 h-1 bg-[#D4CFC6] rounded-full pointer-events-none" />
             </div>
 
-            {/* Sheet Header */}
-            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between shrink-0">
-              <div>
-                <h2 className="text-base font-black text-stone-900 tracking-tight">{title}</h2>
-                <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">{subtitle}</p>
+            {/* Header */}
+            <div className="px-5 pt-3 pb-4 border-b border-[#E6E1D6] flex items-center justify-between shrink-0 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Date callout */}
+                <div className="shrink-0 w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1B7A4E] to-[#0B462C] flex flex-col items-center justify-center text-white shadow-md">
+                  <span className="text-[8px] font-black uppercase leading-none opacity-70 tracking-wider">
+                    {format(selectedDay, 'MMM', { locale: es })}
+                  </span>
+                  <span className="text-lg font-black leading-none">
+                    {format(selectedDay, 'd')}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-black text-stone-900 tracking-tight leading-tight">
+                    {isToday(selectedDay) ? 'Hoy' : format(selectedDay, 'EEEE', { locale: es })}
+                  </h2>
+                  <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-0.5 truncate">
+                    {format(selectedDay, "d 'de' MMMM, yyyy", { locale: es })}
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={onClose}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 font-bold text-lg transition-colors active:scale-95"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-black px-2.5 py-1.5 rounded-xl bg-[#EAF5EC] text-[#1B7A4E] border border-emerald-100 whitespace-nowrap">
+                  {hoursLeft}h libres
+                </span>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100/80 hover:bg-stone-200 text-stone-500 transition-colors active:scale-95"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Content */}
-            <div 
-              className="flex-1 overflow-y-auto px-6 py-5 bg-stone-50/50 space-y-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            <div
+              className="flex-1 overflow-y-auto px-5 py-5 bg-[#FAF9F6] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
               onPointerDown={(e) => e.stopPropagation()}
               onScroll={(e) => {
-                if (!isExpanded && e.currentTarget.scrollTop > 5) {
-                  setIsExpanded(true);
-                }
+                if (!isExpanded && e.currentTarget.scrollTop > 5) setIsExpanded(true);
               }}
             >
               {children}
@@ -252,79 +269,76 @@ function AgendaContent({
 
     const style = styles[event.type] || styles.routine;
 
+    const accentColor = event.type === 'work' ? 'border-indigo-400' : event.type === 'study' ? 'border-amber-400' : 'border-[#1B7A4E]';
+
     return (
       <div
         key={event.id}
         onClick={() => handleClick(event)}
-        className={`group p-4 rounded-2xl border ${style.bg} ${style.border} cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-start gap-3 shadow-sm hover:shadow-md`}
+        className="group bg-white rounded-2xl border border-[#E6E1D6] shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] overflow-hidden"
       >
-        <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center text-sm shrink-0 shadow-sm font-bold`}>
-          {style.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+        <div className={`flex items-center gap-3 p-4 border-l-[3px] ${accentColor}`}>
+          <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center text-sm shrink-0 shadow-sm`}>
+            {style.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+              <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border ${
                 isHabit ? 'bg-amber-50 text-amber-600 border-amber-100' :
                 isProject ? 'bg-violet-50 text-violet-600 border-violet-100' :
-                'bg-slate-50 text-slate-500 border-slate-200'
+                'bg-stone-50 text-stone-500 border-stone-200'
               }`}>
                 {isHabit ? 'Hábito' : isProject ? 'Proyecto' : 'Fijo'}
               </span>
               {hasGoal && (
-                <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]" title={event.goalTitle}>
+                <span className="text-[9px] font-bold text-stone-400 truncate max-w-[120px]">
                   🎯 {event.goalTitle}
                 </span>
               )}
             </div>
-            <span className="text-[8px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase shrink-0">
-              Detalle
-            </span>
+            <h3 className="text-xs font-black text-stone-800 leading-tight truncate">{event.title}</h3>
+            {event.startTime && event.endTime && (
+              <p className="text-[9px] text-stone-400 font-semibold mt-0.5">{event.startTime} – {event.endTime}</p>
+            )}
           </div>
-          
-          <h3 className={`text-xs font-black leading-tight ${style.text} truncate`}>
-            {event.title}
-          </h3>
-          {event.description && (
-            <p className="text-[10px] text-slate-500/85 line-clamp-2 mt-1 leading-normal font-bold">
-              {event.description}
-            </p>
+          {event.estimatedHours > 0 && (
+            <span className="shrink-0 text-[9px] font-black text-stone-400 bg-stone-100 px-2 py-1 rounded-lg ml-auto">
+              {event.estimatedHours}h
+            </span>
           )}
-          
-          <p className="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1 font-semibold">
-            <span>⏱️</span>
-            {event.startTime && event.endTime ? `${event.startTime} - ${event.endTime}` : ''}
-            {event.estimatedHours > 0 && ` (${event.estimatedHours}h)`}
-          </p>
         </div>
       </div>
     );
   };
 
+  const SectionHeader = ({ label, dot }: { label: string; dot: string }) => (
+    <div className="flex items-center gap-2 mb-3">
+      <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      <h2 className="text-[10px] font-black text-stone-400 uppercase tracking-widest">{label}</h2>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+
       {/* Anchored Notes */}
       {anchoredNotes && anchoredNotes.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-4">Notas Ancladas</h2>
-          <div className="flex gap-2 overflow-x-auto pb-2 snap-x">
+          <SectionHeader label="Notas Ancladas" dot="bg-yellow-400" />
+          <div className="flex gap-2.5 overflow-x-auto pb-1 snap-x -mx-1 px-1">
             {anchoredNotes.map(note => (
-              <div 
+              <div
                 key={note.id}
                 onClick={() => handleClick(note)}
-                className={`snap-start shrink-0 w-32 p-3 rounded shadow-sm border rotate-[-1deg] cursor-pointer hover:-translate-y-1 transition-transform 
-                  ${note.originalPostIt?.color === 'emerald' ? 'bg-emerald-100/90 text-emerald-900 border-emerald-200/50' :
-                  note.originalPostIt?.color === 'rose' ? 'bg-rose-100/90 text-rose-900 border-rose-200/50' :
-                  note.originalPostIt?.color === 'blue' ? 'bg-blue-100/90 text-blue-900 border-blue-200/50' :
-                  note.originalPostIt?.color === 'violet' ? 'bg-violet-100/90 text-violet-900 border-violet-200/50' :
-                  'bg-yellow-100/90 text-yellow-900 border-yellow-200/50'}`}
+                className={`snap-start shrink-0 w-28 p-3 rounded-2xl shadow-sm border cursor-pointer hover:-translate-y-1 active:scale-95 transition-all
+                  ${note.originalPostIt?.color === 'emerald' ? 'bg-emerald-100/90 text-emerald-900 border-emerald-200/60' :
+                  note.originalPostIt?.color === 'rose' ? 'bg-rose-100/90 text-rose-900 border-rose-200/60' :
+                  note.originalPostIt?.color === 'blue' ? 'bg-blue-100/90 text-blue-900 border-blue-200/60' :
+                  note.originalPostIt?.color === 'violet' ? 'bg-violet-100/90 text-violet-900 border-violet-200/60' :
+                  'bg-yellow-100/90 text-yellow-900 border-yellow-200/60'}`}
               >
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="text-[12px]">📌</span>
-                </div>
-                <p className="text-[10px] font-medium leading-tight overflow-hidden text-ellipsis line-clamp-3">
-                  {note.title}
-                </p>
+                <span className="text-sm block mb-1">📌</span>
+                <p className="text-[10px] font-semibold leading-tight line-clamp-3">{note.title}</p>
               </div>
             ))}
           </div>
@@ -333,76 +347,92 @@ function AgendaContent({
 
       {/* Daily Tasks */}
       <div>
-        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Tareas de Hoy</h2>
-        <div className="space-y-4">
+        <SectionHeader label="Tareas del Día" dot="bg-[#1B7A4E]" />
+        <div className="space-y-2.5">
           {loading ? (
-            <div className="space-y-3">
+            <>
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-20 bg-slate-100 animate-pulse rounded-2xl" />
+                <div key={i} className="h-16 bg-stone-100/80 animate-pulse rounded-2xl" />
               ))}
-            </div>
+            </>
           ) : dailyTasks.length === 0 ? (
-            <p className="text-[10px] text-slate-300 font-bold text-center py-4">Sin tareas cortas hoy.</p>
+            <div className="flex flex-col items-center py-6 gap-2 text-center">
+              <span className="text-2xl">☀️</span>
+              <p className="text-[11px] text-stone-400 font-bold">Sin tareas para hoy.<br/>Añade una debajo.</p>
+            </div>
           ) : (
-            dailyTasks.map(event => (
-              <div
-                key={event.id}
-                onClick={() => handleClick(event)}
-                className={`group bg-white p-4 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] ${event.status === 'completed' ? 'border-slate-100 opacity-60' : (event as any).isOverdue ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100'}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border flex items-center gap-1
-                    ${event.status === 'completed' ? 'bg-slate-50 text-slate-400 border-slate-200' : 'bg-green-50 text-green-700 border-green-100'}`}>
-                    {event.status === 'completed' ? '✓' : '○'} {event.type}
+            dailyTasks.map(event => {
+              const isDone = event.status === 'completed';
+              const isOverdue = (event as any).isOverdue && !isDone;
+              return (
+                <div
+                  key={event.id}
+                  onClick={() => handleClick(event)}
+                  className={`group bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] overflow-hidden ${
+                    isDone ? 'border-[#E6E1D6] opacity-55' : isOverdue ? 'border-amber-200' : 'border-[#E6E1D6]'
+                  }`}
+                >
+                  <div className={`flex items-center gap-3 p-4 border-l-[3px] ${isDone ? 'border-stone-200' : isOverdue ? 'border-amber-400' : 'border-[#1B7A4E]'}`}>
+                    {/* Status circle */}
+                    <div className={`w-4 h-4 rounded-full shrink-0 border-2 flex items-center justify-center transition-colors ${
+                      isDone ? 'bg-[#1B7A4E] border-[#1B7A4E]' : 'border-stone-300 group-hover:border-[#1B7A4E]'
+                    }`}>
+                      {isDone && (
+                        <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="2 6 5 9 10 3"/></svg>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-xs font-black text-stone-800 leading-tight ${isDone ? 'line-through opacity-40' : ''}`}>
+                        {event.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {event.goalTitle && (
+                          <span className="text-[9px] font-bold text-stone-400 truncate max-w-[140px]">🎯 {event.goalTitle}</span>
+                        )}
+                        {isOverdue && (
+                          <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Atrasada</span>
+                        )}
+                      </div>
+                    </div>
                     {event.estimatedHours > 0 && (
-                      <>
-                        <span className="opacity-40">•</span>
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        {event.estimatedHours < 1
-                          ? `${Math.round(event.estimatedHours * 60)} min`
-                          : `${event.estimatedHours}h`}
-                      </>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {(event as any).isOverdue && !event.status.includes('completed') && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold" title="Atrasada">
-                        ⚠️ Ayer
+                      <span className="shrink-0 text-[9px] font-black text-stone-400 bg-stone-100 px-2 py-1 rounded-lg">
+                        {event.estimatedHours < 1 ? `${Math.round(event.estimatedHours * 60)}m` : `${event.estimatedHours}h`}
                       </span>
                     )}
-                    <span className="text-[9px] font-bold text-slate-300 group-hover:text-slate-400 transition-colors uppercase">
-                      {event.goalTitle || 'Rápida'}
-                    </span>
                   </div>
                 </div>
-                <h3 className={`text-xs font-black text-slate-800 leading-tight ${event.status === 'completed' ? 'line-through opacity-50' : ''}`}>
-                  {event.title}
-                </h3>
-              </div>
-            ))
+              );
+            })
           )}
 
-          {/* Create Daily Task Form */}
-          <form onSubmit={handleCreateDailyTask} className="mt-4 flex gap-2 items-center bg-white p-2 rounded-2xl border border-stone-200 shadow-sm focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
-            <button type="submit" disabled={isCreatingTask || !newTaskTitle.trim()} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-xl bg-stone-100 text-stone-400 hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50">
+          {/* Quick-add form */}
+          <form
+            onSubmit={handleCreateDailyTask}
+            className="mt-2 flex gap-2 items-center bg-white p-2.5 rounded-2xl border border-[#E6E1D6] shadow-sm focus-within:border-[#1B7A4E] focus-within:ring-1 focus-within:ring-[#1B7A4E]/20 transition-all"
+          >
+            <button
+              type="submit"
+              disabled={isCreatingTask || !newTaskTitle.trim()}
+              className="w-8 h-8 flex items-center justify-center shrink-0 rounded-xl bg-stone-100 text-stone-400 hover:bg-[#1B7A4E] hover:text-white transition-colors disabled:opacity-40 text-lg font-black leading-none"
+            >
               +
             </button>
-            <input 
-              type="text" 
-              placeholder="Añadir tarea..." 
+            <input
+              type="text"
+              placeholder="Añadir tarea rápida..."
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-stone-700 placeholder-stone-400"
+              className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-stone-700 placeholder-stone-300"
             />
-            <input 
-              type="number" 
-              placeholder="Horas" 
-              step="0.1"
+            <input
+              type="number"
+              placeholder="h"
+              step="0.5"
               min="0"
               value={newTaskHours}
               onChange={e => setNewTaskHours(e.target.value)}
-              className="w-14 bg-stone-50 border border-stone-100 rounded-lg p-1.5 text-center text-[10px] font-bold text-stone-600 outline-none focus:border-emerald-500"
-              title="Horas estimadas (opcional)"
+              className="w-10 bg-stone-50 border border-[#E6E1D6] rounded-lg p-1 text-center text-[10px] font-bold text-stone-600 outline-none focus:border-[#1B7A4E]"
+              title="Horas estimadas"
             />
           </form>
         </div>
@@ -411,8 +441,8 @@ function AgendaContent({
       {/* Trabajo */}
       {workEvents.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-4">💼 Trabajo</h2>
-          <div className="space-y-3">
+          <SectionHeader label="💼 Trabajo" dot="bg-indigo-400" />
+          <div className="space-y-2.5">
             {workEvents.map(renderRecurrentEvent)}
           </div>
         </div>
@@ -421,8 +451,8 @@ function AgendaContent({
       {/* Estudio */}
       {studyEvents.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-amber-650 uppercase tracking-widest mb-4">🎓 Estudio</h2>
-          <div className="space-y-3">
+          <SectionHeader label="🎓 Estudio" dot="bg-amber-400" />
+          <div className="space-y-2.5">
             {studyEvents.map(renderRecurrentEvent)}
           </div>
         </div>
@@ -431,10 +461,18 @@ function AgendaContent({
       {/* Rutinas */}
       {routineEvents.length > 0 && (
         <div>
-          <h2 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">🔄 Rutinas</h2>
-          <div className="space-y-3">
+          <SectionHeader label="🔄 Rutinas" dot="bg-[#1B7A4E]" />
+          <div className="space-y-2.5">
             {routineEvents.map(renderRecurrentEvent)}
           </div>
+        </div>
+      )}
+
+      {/* Empty day state */}
+      {!loading && dailyTasks.length === 0 && workEvents.length === 0 && studyEvents.length === 0 && routineEvents.length === 0 && anchoredNotes.length === 0 && (
+        <div className="flex flex-col items-center py-10 gap-3 text-center">
+          <span className="text-4xl">🌿</span>
+          <p className="text-xs font-black text-stone-400">Día libre o sin actividades.<br/>Disfruta el descanso.</p>
         </div>
       )}
     </div>
@@ -471,11 +509,18 @@ export function ScheduleView() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchEvents();
     const handleRefresh = () => fetchEvents();
     window.addEventListener('refresh-schedule', handleRefresh);
     return () => window.removeEventListener('refresh-schedule', handleRefresh);
+  }, []);
+
+  // Auto-open bottom sheet on mobile when entering the schedule view
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsBottomSheetOpen(true);
+    }
   }, []);
 
   // Observers for infinite scroll
@@ -1170,14 +1215,9 @@ export function ScheduleView() {
         <BottomSheet
           isOpen={isBottomSheetOpen}
           onClose={() => setIsBottomSheetOpen(false)}
-          title="Agenda del Día"
-          subtitle={format(selectedDay, "eeee d 'de' MMMM", { locale: es })}
+          selectedDay={selectedDay}
+          hoursLeft={Math.max(0, 24 - Math.round(totalDailyHours))}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 text-emerald-600 border border-emerald-100">
-              ✨ {Math.max(0, 24 - Math.round(totalDailyHours))}h libres
-            </span>
-          </div>
           <AgendaContent
             {...agendaProps}
             onItemClick={() => setIsBottomSheetOpen(false)}

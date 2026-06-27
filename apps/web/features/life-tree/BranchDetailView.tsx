@@ -512,9 +512,9 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   const renderActionCard = (child: any) => {
     const isExpandedLeaf = expandedLeafId === child.id;
     return (
-      <div key={child.id} id={`leaf-${child.id}`} className="border border-slate-100 rounded-[20px] sm:rounded-3xl overflow-hidden bg-white shadow-sm transition-all duration-300">
+      <div key={child.id} id={`leaf-${child.id}`} className="border border-[#E6E1D6]/70 rounded-[20px] sm:rounded-3xl overflow-hidden bg-[#FAF9F6] shadow-xs hover:border-[#1B7A4E]/30 hover:shadow-sm transition-all duration-300">
         <div 
-          className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 cursor-pointer transition-colors ${isExpandedLeaf ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}
+          className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 cursor-pointer transition-colors ${isExpandedLeaf ? 'bg-white' : 'hover:bg-white/80'}`}
           onClick={() => {
             const newId = isExpandedLeaf ? null : child.id;
             setExpandedLeafId(newId);
@@ -536,24 +536,41 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                   alert('Error al registrar la sesión: ' + (res.error || 'Inténtalo de nuevo.'));
                 }
               }}
-              className="w-12 h-6 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center justify-center text-[9px] font-black text-emerald-600 shrink-0 transition-all active:scale-95 shadow-sm"
+              className="w-12 h-6 rounded-full bg-emerald-50 hover:bg-[#1B7A4E]/10 border border-[#1B7A4E]/20 flex items-center justify-center text-[9px] font-black text-[#1B7A4E] shrink-0 transition-all active:scale-95 shadow-sm"
               title="Registrar sesión realizada hoy"
             >
               🔥 {child.completedCount || 0}/{child.totalSessions || 1}
             </button>
-          ) : (
-            <button 
-              onClick={async (e) => {
-                e.stopPropagation();
-                const next = !child.completed;
-                setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
-                await onToggleAction?.(child.id, { completed: next });
-              }}
-              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${child.completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-200 hover:border-emerald-400'}`}
-            >
-              {child.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-            </button>
-          )}
+          ) : (() => {
+            const childTasks = (child as any).tasks as any[] | undefined;
+            if (childTasks && childTasks.length > 0) {
+              const done = childTasks.filter(t => t.isCompleted).length;
+              const total = childTasks.length;
+              return (
+                <span
+                  onClick={e => e.stopPropagation()}
+                  className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full border select-none ${
+                    done === total ? 'bg-[#EAF5EC] text-[#1B7A4E] border-[#CDE5D2]' : 'bg-[#F4F1EA] text-stone-500 border-[#E6E1D6]'
+                  }`}
+                >
+                  {done}/{total}
+                </span>
+              );
+            }
+            return (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const next = !child.completed;
+                  setLocalLeaves(prev => prev.map(l => l.id === child.id ? { ...l, completed: next } : l));
+                  await onToggleAction?.(child.id, { completed: next });
+                }}
+                className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${child.completed ? 'bg-[#1B7A4E] border-[#1B7A4E]' : 'bg-white border-stone-250 hover:border-[#1B7A4E]'}`}
+              >
+                {child.completed && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </button>
+            );
+          })()}
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <div className="flex items-center gap-2">
               <p className={`text-xs sm:text-sm font-bold truncate ${child.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
@@ -676,7 +693,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                                 e.stopPropagation();
                                 openChat(`Necesito ayuda con la Tarea: "${task.title}". ¿Me puedes dar contexto o sugerencias de cómo abordarla?`, 'tree', branch);
                               }}
-                              className="text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                              className="text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-white bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] hover:from-[#083622] hover:to-[#145D3B]"
                             >
                               🤖 Mesa de Dibujo
                             </button>
@@ -693,13 +710,13 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
             <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-2">
               <button
                 onClick={() => onOpenTaskModal?.(child, 'action')}
-                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white border border-[#E6E1D6] text-stone-700 hover:bg-[#FAF9F6]"
               >
                 📝 Ver detalles y notas
               </button>
               <button
                 onClick={() => openChat(`Necesito consejos generales para abordar la Fase completa: "${child.name}".`, 'tree', branch)}
-                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] hover:from-[#083622] hover:to-[#145D3B] text-white shadow-xs"
               >
                 🤖 Consultar en Mesa de Dibujo
               </button>
@@ -802,7 +819,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   };
 
   return (
-    <div className={`fixed inset-x-0 bottom-0 w-full z-[9999] block sm:flex sm:items-center sm:p-6 sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[100dvh]' : 'h-[calc(65vh-72px)]'}`}>
+    <div className={`fixed inset-x-0 bottom-0 w-full z-[9999] block sm:flex sm:items-center sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[100dvh] sm:p-0' : 'h-[calc(65vh-72px)] sm:p-6'}`}>
       <motion.div 
         drag={isDesktop}
         dragControls={dragControls}
@@ -811,22 +828,22 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
         initial={isDesktop ? { x: 50, opacity: 0 } : { y: 50, opacity: 0 }}
         animate={{ x: 0, y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className={`w-full h-full flex-1 sm:flex-none sm:w-[450px] bg-white sm:rounded-[32px] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] sm:shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t sm:border border-slate-100 m-0 ${isFullScreen ? 'rounded-none' : 'rounded-t-[32px]'}`}
+        className={`w-full h-full flex-1 sm:flex-none bg-white shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] sm:shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t sm:border border-[#E6E1D6] m-0 transition-all duration-300 ${isFullScreen ? 'rounded-none sm:w-full sm:rounded-none' : 'rounded-t-[32px] sm:w-[450px] sm:rounded-[32px]'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Mobile Drag Handle */}
         <div 
-          className="w-full flex items-center justify-center pt-4 pb-2 sm:hidden cursor-pointer"
+          className="w-full flex items-center justify-center pt-4 pb-2 sm:hidden cursor-pointer bg-[#FAF9F6]"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onClick={() => setIsFullScreen(!isFullScreen)}
         >
-          <div className="w-12 h-1.5 bg-slate-200 hover:bg-slate-300 transition-colors rounded-full" />
+          <div className="w-12 h-1.5 bg-[#E6E1D6] hover:bg-stone-300 transition-colors rounded-full" />
         </div>
 
         {/* ── Header ── */}
         <div 
-          className="shrink-0 px-5 sm:px-8 pb-5 sm:pb-6 pt-2 sm:pt-6 bg-white border-b border-slate-100 flex items-center justify-between sm:cursor-move"
+          className="shrink-0 px-5 sm:px-8 pb-5 sm:pb-6 pt-2 sm:pt-6 bg-[#FAF9F6] border-b border-[#E6E1D6] flex items-center justify-between sm:cursor-move"
           onPointerDown={(e) => {
             if (isDesktop) dragControls.start(e);
           }}
@@ -835,7 +852,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#A0522D] border border-[#EAD4C5] text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
                 Gestión de Meta
               </span>
               {branch.status === 'paused' && (
@@ -879,6 +896,24 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           </div>
 
           {/* ── Action Menu ── */}
+          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsFullScreen(v => !v)}
+            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+            title={isFullScreen ? 'Reducir' : 'Expandir'}
+          >
+            {isFullScreen ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+                <path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+                <path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+              </svg>
+            )}
+          </button>
           <div className="relative" ref={menuRef}>
             {/* Trigger */}
             <button
@@ -946,49 +981,50 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
               </div>
             )}
           </div>
+          </div>
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-slate-50/30 custom-scrollbar">
-          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-[#F4F1EA] custom-scrollbar">
+          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm">
             <div className="mb-2">
-              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción del Proyecto</p>
+              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Descripción del Proyecto</p>
             </div>
-            <p className="text-sm font-medium text-slate-600 leading-relaxed">
+            <p className="text-sm font-medium text-stone-600 leading-relaxed">
               {branch.description || 'Sin descripción detallada.'}
             </p>
           </section>
 
           {/* Ritmos y Rutinas vinculados */}
-          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-sm space-y-4">
+          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
-              <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
+              <span className="text-[10px] font-black text-stone-500 bg-[#F4F1EA] px-2.5 py-0.5 rounded-full border border-[#E6E1D6]/60">
                 {commitments.length}
               </span>
             </div>
             {loadingCommitments ? (
-              <div className="h-10 bg-slate-50 animate-pulse rounded-xl" />
+              <div className="h-10 bg-[#FAF9F6] animate-pulse rounded-xl" />
             ) : commitments.length === 0 ? (
-              <p className="text-xs text-slate-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
+              <p className="text-xs text-stone-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
             ) : (
               <div className="space-y-2">
                 {commitments.map((c) => {
                   const icons: Record<string, string> = { work: '💼', study: '🎓', routine: '🔄' };
                   const labels: Record<string, string> = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
                   return (
-                    <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                    <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E6E1D6]/70 bg-[#FAF9F6]/80 hover:bg-[#FAF9F6] transition-colors">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="text-sm">{icons[c.type] || '🔄'}</span>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">{c.title}</p>
-                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
+                          <p className="text-xs font-bold text-stone-850 truncate">{c.title}</p>
+                          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-tighter mt-0.5">
                             {labels[c.type] || 'Rutina'} • {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h/día`}
                           </p>
                         </div>
                       </div>
                       {c.streakCount > 0 && (
-                        <span className="shrink-0 text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                        <span className="shrink-0 text-[9px] font-extrabold text-[#A0522D] bg-[#FDF5F0] border border-[#EAD4C5] px-2 py-0.5 rounded-full">
                           🔥 {c.streakCount}
                         </span>
                       )}
@@ -1001,7 +1037,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
 
           <section className="space-y-3">
             <div className="mb-3 sm:mb-4">
-              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Planificación por Fases</p>
+              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Planificación por Fases</p>
             </div>
 
             <div className="space-y-3">
@@ -1017,7 +1053,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                   <div 
                     key={phase.id} 
                     id={`phase-${phase.id}`}
-                    className={`rounded-[24px] sm:rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-emerald-100 shadow-xl' : 'bg-white border-slate-100 shadow-sm hover:border-slate-200'}`}
+                    className={`rounded-[24px] sm:rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-[#1B7A4E]/30 shadow-md' : 'bg-white border-[#E6E1D6] shadow-xs hover:border-stone-300'}`}
                   >
                     <div 
                       className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4 cursor-pointer"
@@ -1027,7 +1063,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
                         onPhaseSelect?.(newId);
                       }}
                     >
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-[#1B7A4E] text-white' : 'bg-[#F4F1EA] text-[#A0522D] border border-[#EAD4C5]/40'}`}>
                         {phase.completed ? '✓' : '⏳'}
                       </div>
                       <div className="flex-1 min-w-0 flex items-center gap-2">
@@ -1080,9 +1116,9 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           {(() => {
             const independentLeaves = localLeaves.filter(l => !l.parentId && l.type !== 'phase');
             return independentLeaves.length > 0 && (
-              <section className="space-y-3 mt-8 pt-6 border-t border-slate-100">
+              <section className="space-y-3 mt-8 pt-6 border-t border-[#E6E1D6]">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Hitos y Tareas Sueltas</p>
+                  <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Hitos y Tareas Sueltas</p>
                 </div>
                 <div className="space-y-3">
                   {independentLeaves.map(child => renderActionCard(child))}
@@ -1093,8 +1129,8 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
         </div>
 
         {/* Footer Area */}
-        <div className="shrink-0 px-8 py-4 bg-white border-t border-slate-100 text-center">
-          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+        <div className="shrink-0 px-8 py-4 bg-[#FAF9F6] border-t border-[#E6E1D6] text-center">
+          <p className="text-[10px] font-bold text-[#A0522D] uppercase tracking-widest">
             Usa el Coach en cada tarea para obtener ayuda detallada
           </p>
         </div>

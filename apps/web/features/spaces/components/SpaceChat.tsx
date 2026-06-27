@@ -854,9 +854,6 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
   const [isResetting, setIsResetting] = useState(false);
 
   const handleResetChat = async () => {
-    if (!confirm('¿Estás seguro de que deseas reiniciar esta conversación? Se borrarán todos los mensajes.')) {
-      return;
-    }
     setIsResetting(true);
     try {
       const url = isPersonal 
@@ -1056,7 +1053,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+          className="fixed bottom-44 right-4 sm:bottom-6 sm:right-6 z-[9990] w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
           <MessageSquare className="w-6 h-6" />
           {unreadCount > 0 && (
@@ -1147,11 +1144,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                     )}
-                    {!draftPlan && !isDrafting && (
-                      <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
-                        <X className="w-5 h-5" />
-                      </button>
-                    )}
+                    <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-450" title="Cerrar Asistente">
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
                 
@@ -1175,7 +1170,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                     return (
                       <div key={msg.id} className={`flex gap-3 ${isAI ? '' : 'flex-row-reverse'}`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
-                          isAI ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-600'
+                          isAI ? 'bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] text-white' : 'bg-slate-200 text-slate-600'
                         }`}>
                           {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
@@ -1185,8 +1180,8 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                           </span>
                           <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
                             isAI 
-                              ? 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm' 
-                              : 'bg-emerald-600 text-white rounded-tr-sm'
+                              ? 'bg-white/80 backdrop-blur-md border border-stone-200/40 text-stone-850 rounded-tl-sm' 
+                              : 'bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] text-white rounded-tr-sm font-medium'
                           }`}>
                             {renderFormattedText(msg.content, isAI)}
                           </div>
@@ -1197,15 +1192,15 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
 
                   {isAiTyping && (
                     <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-emerald-100 text-emerald-600">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] text-white">
                         <Bot className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col max-w-[85%] items-start">
                         <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">BEAN</span>
-                        <div className="px-4 py-3.5 rounded-2xl bg-white border border-slate-100 rounded-tl-sm flex items-center gap-1.5 shadow-sm min-h-[44px]">
-                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.15, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.3, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                        <div className="px-4 py-3.5 rounded-2xl bg-white/80 backdrop-blur-md border border-stone-200/40 rounded-tl-sm flex items-center gap-1.5 shadow-sm min-h-[44px]">
+                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.15, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+                          <motion.div animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.3, ease: "easeInOut" }} className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
                         </div>
                       </div>
                     </div>
@@ -1213,12 +1208,12 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
 
                   {isDrafting && (
                     <div className="flex gap-3 animate-in fade-in duration-200">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-stone-100 text-stone-600 border border-stone-200">
-                        <Bot className="w-4 h-4 text-emerald-600 animate-pulse" />
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] text-white">
+                        <Bot className="w-4 h-4 text-white animate-pulse" />
                       </div>
                       <div className="flex flex-col max-w-[85%] items-start">
                         <span className="text-[10px] text-slate-400 font-medium mb-1 px-1">Planificador BEAN</span>
-                        <div className="px-4 py-3.5 rounded-2xl bg-stone-50 border border-stone-200 rounded-tl-sm flex flex-col gap-2.5 shadow-sm min-w-[240px]">
+                        <div className="px-4 py-3.5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#EAD4C5] rounded-tl-sm flex flex-col gap-2.5 shadow-sm min-w-[240px]">
                           <div className="space-y-1.5">
                             {draftSteps.map((s) => (
                               <div key={s.step} className="flex items-center justify-between gap-3 text-xs">
@@ -1236,7 +1231,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                               </div>
                             ))}
                           </div>
-                          <span className="text-[9px] text-stone-450 border-t border-stone-200/60 pt-1.5 mt-0.5 text-stone-500 block">
+                          <span className="text-[9px] text-stone-450 border-t border-[#EAD4C5]/60 pt-1.5 mt-0.5 text-stone-500 block">
                             Puedes ver el avance en tiempo real en la **Mesa de Dibujo** al lado derecho.
                           </span>
                         </div>
@@ -1486,56 +1481,63 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 </div>
               </div>
 
-              {/* Right Column: Mesa de Dibujo */}
-              {(draftPlan || isDrafting) && (
-                <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-stone-50 overflow-y-auto`}>
-                  {/* Draft Header */}
-                  <div className="px-4 md:px-6 py-4 border-b border-stone-250 bg-white sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
-                    <div className="flex items-center gap-3">
-                      {isChatCollapsed && (
-                        <button 
-                          onClick={() => setIsChatCollapsed(false)}
-                          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all border border-emerald-100 shadow-xs"
-                        >
-                          <ChevronRight className="w-4 h-4" /> Mostrar Asistente
-                        </button>
-                      )}
+              {/* Right Column: Mesa de Dibujo — solo se monta cuando hay draft o se está generando */}
+              {(draftPlan || isDrafting) && <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
+                {/* Draft Header */}
+                <div className="px-4 md:px-6 py-4 border-b border-[#E6E1D6] bg-[#FAF9F6] sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
+                  <div className="flex items-center gap-3">
+                    {isChatCollapsed && (
+                      <button 
+                        onClick={() => setIsChatCollapsed(false)}
+                        className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all border border-emerald-100 shadow-xs"
+                      >
+                        <ChevronRight className="w-4 h-4" /> Mostrar Asistente
+                      </button>
+                    )}
+                    {(draftPlan || isDrafting) && (
                       <div className="flex md:hidden bg-stone-100 p-0.5 rounded-xl border border-stone-200 shrink-0">
                         <button type="button" onClick={() => setMobileTab('chat')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'chat' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
                         <button type="button" onClick={() => setMobileTab('draft')} className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${mobileTab === 'draft' ? 'bg-white text-stone-850 shadow-sm' : 'text-stone-500'}`}>📋 Borrador</button>
                       </div>
-                      <div className="hidden md:block">
-                        <h3 className="text-sm md:text-base font-black text-stone-850">Mesa de Dibujo</h3>
-                        <p className="text-[10px] md:text-xs font-medium text-stone-500">Borrador colaborativo del plan.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setDraftPlan(null)}
-                        disabled={isDrafting}
-                        className="px-4 py-2.5 border border-stone-200 text-stone-600 hover:text-stone-850 hover:border-stone-300 text-xs font-bold rounded-xl bg-white hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-40"
-                      >
-                        Descartar
-                      </button>
-                      <button
-                        onClick={handleCreateBranch}
-                        disabled={creatingBranch || isDrafting || !draftPlan}
-                        className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(16,185,129,0.2)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.3)] active:scale-[0.98] disabled:opacity-40 animate-in"
-                      >
-                        {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
-                      </button>
-                      <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600 ml-1">
-                        <X className="w-5 h-5 md:w-6 md:h-6" />
-                      </button>
+                    )}
+                    <div className="hidden md:block">
+                      <h3 className="text-sm md:text-base font-black text-stone-800 flex items-center gap-1.5">
+                        📋 Mesa de Dibujo
+                      </h3>
+                      <p className="text-[10px] md:text-xs font-medium text-stone-500">Borrador colaborativo del plan.</p>
                     </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {draftPlan && (
+                      <>
+                        <button
+                          onClick={() => setDraftPlan(null)}
+                          disabled={isDrafting}
+                          className="px-4 py-2.5 border border-stone-200 text-stone-600 hover:text-stone-850 hover:border-stone-300 text-xs font-bold rounded-xl bg-white hover:bg-stone-50 transition-all active:scale-[0.98] disabled:opacity-40"
+                        >
+                          Descartar
+                        </button>
+                        <button
+                          onClick={handleCreateBranch}
+                          disabled={creatingBranch || isDrafting || !draftPlan}
+                          className="px-5 py-2.5 bg-gradient-to-r from-[#0B462C] to-[#1B7A4E] hover:from-[#083622] hover:to-[#145D3B] text-white text-xs font-black rounded-xl transition-all shadow-[0_4px_14px_rgba(27,122,78,0.25)] hover:shadow-[0_6px_20px_rgba(27,122,78,0.35)] active:scale-[0.98] disabled:opacity-40 animate-in"
+                        >
+                          {creatingBranch ? 'Plantando...' : 'Plantar Árbol'}
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-600 ml-1">
+                      <X className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                  </div>
+                </div>
 
-                  {/* Draft Content */}
-                  <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
+                {/* Draft Content */}
+                <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
                     {isDrafting ? (
                       <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto">
-                        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
+                        <div className="text-5xl animate-bounce mb-6 select-none animate-pulse-slow">🌱</div>
                         <h4 className="text-sm font-bold text-stone-850 text-stone-800 mb-4 text-center">Construyendo borrador con IA...</h4>
                         <div className="w-full space-y-3 bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
                           {draftSteps.map((s) => (
@@ -1711,11 +1713,25 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                           ))}
                         </div>
                       </>
-                    ) : null}
+                    ) : (
+                      <div className="flex flex-col items-center justify-center my-auto py-12 px-6 max-w-sm mx-auto text-center space-y-4 animate-fade-in">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0B462C] to-[#1B7A4E] flex items-center justify-center text-white text-3xl mx-auto shadow-md">
+                          🌱
+                        </div>
+                        <h3 className="font-display font-black text-base text-stone-800">Sembrando tu Meta</h3>
+                        <p className="text-xs text-stone-600 leading-relaxed">
+                          Conversa con el Asistente IA a la izquierda para diseñar tu camino de vida y estructurar tu plan paso a paso aquí.
+                        </p>
+                        <div className="pt-2">
+                          <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#1B7A4E] bg-emerald-100/60 px-3.5 py-1 rounded-full border border-emerald-250/20">
+                            Mesa de Dibujo Lista
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-                  
+                </div>}
+
               {/* Draft Detail Modal Sheet */}
               <AnimatePresence>
                 {selectedDraftItem && draftPlan && (

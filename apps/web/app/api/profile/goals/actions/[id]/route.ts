@@ -105,11 +105,20 @@ export async function PATCH(
       }
     }
 
-    // 2. Update the action
+    // 2. If action has subtasks, completion is derived — ignore manual toggle
+    const subtasks = await prisma.task.findMany({
+      where: { goalActionId: id },
+      select: { isCompleted: true }
+    });
+    const resolvedIsCompleted = subtasks.length > 0
+      ? subtasks.every(t => t.isCompleted)
+      : (typeof isCompleted === 'boolean' ? isCompleted : action.isCompleted);
+
+    // 3. Update the action
     const updated = await prisma.goalAction.update({
       where: { id },
       data: {
-        isCompleted: typeof isCompleted === 'boolean' ? isCompleted : action.isCompleted,
+        isCompleted: resolvedIsCompleted,
         title: title || action.title,
         description: description !== undefined ? description : action.description,
         notes: notes !== undefined ? notes : action.notes,

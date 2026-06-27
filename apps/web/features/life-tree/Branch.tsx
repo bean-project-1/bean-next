@@ -81,6 +81,53 @@ export const Branch = ({
     return { phases: p, orphans: o };
   }, [branch.leaves]);
 
+  // Find the first phase that is not completed
+  const currentPhaseId = useMemo(() => {
+    const incompletePhase = phases.find(p => {
+      const allActivitiesCompleted = p.activities?.every(a => a.completed) ?? true;
+      const isMilestoneCompleted = p.completed;
+      return !allActivitiesCompleted || !isMilestoneCompleted;
+    });
+    return incompletePhase?.id;
+  }, [phases]);
+
+  // Find the first uncompleted leaf in the branch
+  const firstIncompleteLeafId = useMemo(() => {
+    // Check activities in each phase
+    for (const phase of phases) {
+      for (const activity of phase.activities || []) {
+        if (!activity.completed) {
+          return activity.id;
+        }
+        if (activity.subtaskLeaves) {
+          for (const sub of activity.subtaskLeaves) {
+            if (!sub.completed) {
+              return sub.id;
+            }
+          }
+        }
+      }
+      if (!phase.completed) {
+        return phase.id;
+      }
+    }
+    // Check orphans
+    for (const orphan of orphans) {
+      if (!orphan.completed) {
+        return orphan.id;
+      }
+      if (orphan.subtaskLeaves) {
+        for (const sub of orphan.subtaskLeaves) {
+          if (!sub.completed) {
+            return sub.id;
+          }
+        }
+      }
+    }
+    return null;
+  }, [phases, orphans]);
+
+
   const length = 180 + (branch.progress / 100) * 100;
   const rad = (angle * Math.PI) / 180;
 
@@ -219,8 +266,10 @@ export const Branch = ({
       {/* 2. PHASES (SUB-BRANCHES) */}
       {phases.map((phase, pIdx) => {
         const sub = getSubBranchData(pIdx, phases.length, phase.activities?.length || 0);
-        // Fade out other phases when one is focused
-        const phaseOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) ? 0.15 : 1;
+        // Fade out other phases when one is focused, or when zoomed out and it is not the active phase
+        const phaseOpacity = (zoomedPhaseId && zoomedPhaseId !== phase.id) 
+          ? 0.15 
+          : ((!zoomedPhaseId && currentPhaseId && currentPhaseId !== phase.id) ? 0.55 : 1);
         const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
 
         const handleLeafClick = (leafId: string, leafName: string) => {
@@ -298,6 +347,7 @@ export const Branch = ({
                     delay={1.0 + index * 0.05 + pIdx * 0.05}
                     isSelected={clickedLeafId === tipLeaf.id}
                     isActive={activeLeafId === tipLeaf.id}
+                    isCurrent={tipLeaf.id === firstIncompleteLeafId}
                     isInteractive={isInteractive}
                     animate={animate}
                     onHover={handleLeafHover}
@@ -371,6 +421,7 @@ export const Branch = ({
                         delay={1.2 + index * 0.05 + lIdx * 0.05}
                         isSelected={clickedLeafId === leaf.id}
                         isActive={activeLeafId === leaf.id}
+                        isCurrent={leaf.id === firstIncompleteLeafId}
                         isInteractive={leafInteractive}
                         animate={animate}
                         onHover={handleLeafHover}
@@ -407,6 +458,7 @@ export const Branch = ({
                               delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
                               isSelected={clickedLeafId === subLeaf.id}
                               isActive={activeLeafId === subLeaf.id}
+                              isCurrent={subLeaf.id === firstIncompleteLeafId}
                               isInteractive={leafInteractive}
                               animate={animate}
                               onHover={handleLeafHover}
@@ -448,6 +500,7 @@ export const Branch = ({
                         delay={1.2 + index * 0.05 + lIdx * 0.05}
                         isSelected={clickedLeafId === leaf.id}
                         isActive={activeLeafId === leaf.id}
+                        isCurrent={leaf.id === firstIncompleteLeafId}
                         isInteractive={leafInteractive}
                         animate={animate}
                         onHover={handleLeafHover}
@@ -508,6 +561,7 @@ export const Branch = ({
                   delay={1.0 + index * 0.05 + oIdx * 0.05}
                   isSelected={clickedLeafId === leaf.id}
                   isActive={activeLeafId === leaf.id}
+                  isCurrent={leaf.id === firstIncompleteLeafId}
                   isInteractive={leafInteractive}
                   animate={animate}
                   onHover={onHover}
@@ -542,6 +596,7 @@ export const Branch = ({
                         delay={1.1 + index * 0.05 + oIdx * 0.05 + subIdx * 0.03}
                         isSelected={clickedLeafId === subLeaf.id}
                         isActive={activeLeafId === subLeaf.id}
+                        isCurrent={subLeaf.id === firstIncompleteLeafId}
                         isInteractive={leafInteractive}
                         animate={animate}
                         onHover={onHover}
@@ -582,6 +637,7 @@ export const Branch = ({
                   delay={1.0 + index * 0.05 + oIdx * 0.05}
                   isSelected={clickedLeafId === leaf.id}
                   isActive={activeLeafId === leaf.id}
+                  isCurrent={leaf.id === firstIncompleteLeafId}
                   isInteractive={leafInteractive}
                   animate={animate}
                   onHover={onHover}

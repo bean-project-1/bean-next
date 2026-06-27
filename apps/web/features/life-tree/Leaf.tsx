@@ -162,7 +162,7 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
                     <path
                       ref={pathRef}
                       d="M 0,0 C 1.25,-3.75 6.25,-5.5 11.25,-3.75 C 16.25,-2 18.75,0 20,0 C 18.75,1.25 16.25,3.75 11.25,5.5 C 6.25,5.5 1.25,3.75 0,0 Z"
-                      fill={leaf.completed ? "#22c55e" : (isCurrent ? "#475569" : "#e2e8f0")}
+                      fill={leaf.completed ? "#22c55e" : (isCurrent ? "#94a3b8" : "#e2e8f0")}
                       fillOpacity={leaf.completed || isCurrent ? 1.0 : 0.45}
                       stroke={isSelected ? "#fff" : (isCurrent ? "#f59e0b" : "rgba(255,255,255,0.15)")}
                       strokeWidth={isSelected ? 1.2 : (isCurrent ? 0.8 : 0.3)}

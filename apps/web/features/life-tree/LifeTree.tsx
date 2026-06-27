@@ -431,15 +431,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
          </defs>
 
         <g transform={`rotate(${rotation}, 400, 350)`}>
-          {/* 1. Grassy Mound Base */}
+          {/* 1. Grassy Mound Base (Background Layer) */}
           {!zoomedBranchId && (
             <>
               {/* Soft ground shadow */}
-              <ellipse cx="400" cy="458" rx="80" ry="14" fill="#0f172a" opacity="0.12" filter="blur(5px)" />
-              {/* Grass Mound */}
-              <ellipse cx="400" cy="454" rx="70" ry="12" fill="url(#grassGrad)" />
-              {/* Bright grass mound center glow */}
-              <ellipse cx="400" cy="451" rx="55" ry="7" fill="#34d399" opacity="0.35" filter="blur(1.5px)" />
+              <ellipse cx="400" cy="458" rx="80" ry="14" fill="#0f172a" opacity="0.1" filter="blur(5px)" />
+              {/* Background Grass Mound - Organic Curve */}
+              <path d="M 310,455 C 340,447 370,443 400,443 C 430,443 460,447 490,455 C 460,463 430,467 400,467 C 370,467 340,463 310,455 Z" fill="url(#grassGrad)" />
+              {/* Highlight on background grass */}
+              <path d="M 330,453 C 355,448 375,445 400,445 C 425,445 445,448 470,453 C 445,458 425,461 400,461 C 375,461 355,458 330,453 Z" fill="#34d399" opacity="0.25" filter="blur(1px)" />
             </>
           )}
 
@@ -464,16 +464,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkGrad)" />
             <path d="M 370,454 C 380,446 385,410 390,350 C 395,348 405,348 410,350 C 415,410 420,446 430,454 Z" fill="url(#trunkSheen)" />
             
-            {/* Organic roots branching out into the grassy mound */}
-            <path d="M 370,450 Q 355,453 342,456 Q 355,455 370,450" stroke="#4c270d" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
-            <path d="M 430,450 Q 445,453 458,456 Q 445,455 430,450" stroke="#4c270d" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.9" />
-            <path d="M 400,452 C 400,456 398,458 396,460" stroke="#4c270d" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.8" />
-            
-            {/* Tiny grass blades sprouting at the base and over roots */}
-            <path d="M 382,451 L 379,446 M 382,451 L 384,447" stroke="#10b981" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-            <path d="M 418,451 L 415,447 M 418,451 L 421,446" stroke="#10b981" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-            <path d="M 346,455 L 344,451 M 346,455 L 348,452" stroke="#34d399" strokeWidth="1.0" fill="none" strokeLinecap="round" opacity="0.85" />
-            <path d="M 454,455 L 452,452 M 454,455 L 456,450" stroke="#34d399" strokeWidth="1.0" fill="none" strokeLinecap="round" opacity="0.85" />
+            {/* Foreground Grass Cover (overlaps and buries the trunk base for a natural transition) */}
+            <path d="M 362,454 C 375,451 385,450 400,450 C 415,450 425,451 438,454 C 425,458 415,460 400,460 C 385,460 375,458 362,454 Z" fill="url(#grassGrad)" />
             
             {/* Curving organic bark details */}
             <path d="M 380,450 C 383,425 387,400 392,352" stroke="#4c270d" strokeWidth="1" fill="none" opacity="0.35" strokeLinecap="round" />

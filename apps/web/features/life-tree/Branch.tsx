@@ -277,7 +277,8 @@ export const Branch = ({
         const isPhaseFocused = isZoomed && zoomedPhaseId === phase.id;
 
         const handleLeafClick = (leafId: string, leafName: string) => {
-          if (!isPhaseFocused) {
+          const isCurrentLeaf = leafId === firstIncompleteLeafId;
+          if (!isPhaseFocused && !isCurrentLeaf) {
             const midX = (sub.start.x + sub.end.x) / 2;
             const midY = (sub.start.y + sub.end.y) / 2;
             onPhaseClick(phase.id, midX, midY, sub.rad, sub.start.x, sub.start.y, branch.id, sub.len);
@@ -342,21 +343,24 @@ export const Branch = ({
               {(() => {
                 const phaseMilestone = phase.activities?.find(a => a.type === 'milestone');
                 const tipLeaf = phaseMilestone || phase;
+                const isTipCurrent = tipLeaf.id === firstIncompleteLeafId;
                 return (
-                  <Leaf
-                    leaf={tipLeaf}
-                    x={sub.end.x}
-                    y={sub.end.y}
-                    angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
-                    delay={1.0 + index * 0.05 + pIdx * 0.05}
-                    isSelected={clickedLeafId === tipLeaf.id}
-                    isActive={activeLeafId === tipLeaf.id}
-                    isCurrent={tipLeaf.id === firstIncompleteLeafId}
-                    isInteractive={isInteractive}
-                    animate={animate}
-                    onHover={handleLeafHover}
-                    onClick={handleLeafClick}
-                  />
+                  <g style={{ pointerEvents: (isPhaseFocused || isTipCurrent) ? 'auto' : 'none' }}>
+                    <Leaf
+                      leaf={tipLeaf}
+                      x={sub.end.x}
+                      y={sub.end.y}
+                      angle={tipLeaf.type === 'milestone' ? (80 + (pIdx % 3) * 10) : ((sub.rad * 180) / Math.PI + (60 * (pIdx % 2 === 0 ? 1 : -1)))}
+                      delay={1.0 + index * 0.05 + pIdx * 0.05}
+                      isSelected={clickedLeafId === tipLeaf.id}
+                      isActive={activeLeafId === tipLeaf.id}
+                      isCurrent={isTipCurrent}
+                      isInteractive={isInteractive}
+                      animate={animate}
+                      onHover={handleLeafHover}
+                      onClick={handleLeafClick}
+                    />
+                  </g>
                 );
               })()}
 
@@ -392,7 +396,7 @@ export const Branch = ({
                       className="group/sub-branch cursor-pointer"
                       style={{ 
                         opacity: isPhaseFocused ? 1 : 0.4, 
-                        pointerEvents: isPhaseFocused ? 'auto' : 'none', 
+                        pointerEvents: 'auto', 
                         transition: 'opacity 0.5s ease' 
                       }}
                     >
@@ -417,20 +421,22 @@ export const Branch = ({
                       />
 
                       {/* Main/Parent task leaf at the tip of the sub-branch */}
-                      <Leaf
-                        leaf={leaf}
-                        x={ssEndX}
-                        y={ssEndY}
-                        angle={(ssAngle * 180) / Math.PI + (10 * side)}
-                        delay={1.2 + index * 0.05 + lIdx * 0.05}
-                        isSelected={clickedLeafId === leaf.id}
-                        isActive={activeLeafId === leaf.id}
-                        isCurrent={leaf.id === firstIncompleteLeafId}
-                        isInteractive={leafInteractive}
-                        animate={animate}
-                        onHover={handleLeafHover}
-                        onClick={handleLeafClick}
-                      />
+                      <g style={{ pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none' }}>
+                        <Leaf
+                          leaf={leaf}
+                          x={ssEndX}
+                          y={ssEndY}
+                          angle={(ssAngle * 180) / Math.PI + (10 * side)}
+                          delay={1.2 + index * 0.05 + lIdx * 0.05}
+                          isSelected={clickedLeafId === leaf.id}
+                          isActive={activeLeafId === leaf.id}
+                          isCurrent={leaf.id === firstIncompleteLeafId}
+                          isInteractive={leafInteractive}
+                          animate={animate}
+                          onHover={handleLeafHover}
+                          onClick={handleLeafClick}
+                        />
+                      </g>
 
                       {/* Subtask leaves along the sub-branch */}
                       {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
@@ -444,8 +450,14 @@ export const Branch = ({
                         const slx = spx + Math.cos(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
                         const sly = spy + Math.sin(ssAngle + Math.PI / 2) * subOffsetDist * subSide;
 
+                        const isSubLeafCurrent = subLeaf.id === firstIncompleteLeafId;
+
                         return (
-                          <g key={subLeaf.id} transform={`translate(${slx}, ${sly}) scale(0.75) translate(${-slx}, ${-sly})`}>
+                          <g 
+                            key={subLeaf.id} 
+                            transform={`translate(${slx}, ${sly}) scale(0.75) translate(${-slx}, ${-sly})`}
+                            style={{ pointerEvents: (isPhaseFocused || isSubLeafCurrent) ? 'auto' : 'none' }}
+                          >
                             <path
                               className="leaf-stem"
                               d={`M ${spx},${spy} Q ${(spx + slx) / 2 + Math.cos(ssAngle) * 1.5},${(spy + sly) / 2 + Math.sin(ssAngle) * 1.5} ${slx},${sly}`}
@@ -462,7 +474,7 @@ export const Branch = ({
                               delay={1.3 + index * 0.05 + lIdx * 0.05 + subIdx * 0.03}
                               isSelected={clickedLeafId === subLeaf.id}
                               isActive={activeLeafId === subLeaf.id}
-                              isCurrent={subLeaf.id === firstIncompleteLeafId}
+                              isCurrent={isSubLeafCurrent}
                               isInteractive={leafInteractive}
                               animate={animate}
                               onHover={handleLeafHover}
@@ -484,7 +496,7 @@ export const Branch = ({
                       key={leaf.id}
                       style={{ 
                         opacity: isPhaseFocused ? 1 : 0.4, 
-                        pointerEvents: isPhaseFocused ? 'auto' : 'none', 
+                        pointerEvents: (isPhaseFocused || leaf.id === firstIncompleteLeafId) ? 'auto' : 'none', 
                         transition: 'opacity 0.5s ease' 
                       }}
                     >

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Calendar, Dna, Lightbulb, Bot } from 'lucide-react';
+import { LayoutDashboard, Calendar, Dna, Lightbulb, Bot, MessageSquare, PenTool, Flame, Timer, X } from 'lucide-react';
 import { DailyWarmup } from '@/features/schedule/DailyWarmup';
 import { PomodoroModal } from '@/features/schedule/PomodoroModal';
 import { NotesModal } from '@/features/schedule/NotesModal';
@@ -53,10 +53,10 @@ function NavLink({ href, icon: Icon, label, path }: { href: string; icon: any; l
 
 // ─── Tool definitions (order = grid left-to-right, top-to-bottom) ────────────
 const TOOL_DEFS = [
-  { id: 'chat',     icon: '💬', label: 'Chat',    gradient: 'from-[#1B7A4E] to-[#0B462C]',    disabled: false },
-  { id: 'notas',    icon: '📝', label: 'Notas',   gradient: 'from-amber-400 to-amber-600',     disabled: false },
-  { id: 'enfoque',  icon: '🔥', label: 'Enfoque', gradient: 'from-emerald-400 to-emerald-600', disabled: false },
-  { id: 'pomodoro', icon: '🍅', label: 'Pomo',    gradient: 'from-rose-400 to-red-500',        disabled: false },
+  { id: 'chat',     icon: MessageSquare, label: 'Chat',    gradient: 'from-emerald-700 to-emerald-900',  disabled: false },
+  { id: 'notas',    icon: PenTool,       label: 'Notas',   gradient: 'from-amber-600 to-amber-800',      disabled: false },
+  { id: 'enfoque',  icon: Flame,         label: 'Enfoque', gradient: 'from-orange-500 to-amber-600',     disabled: false },
+  { id: 'pomodoro', icon: Timer,         label: 'Pomo',    gradient: 'from-rose-600 to-red-800',         disabled: false },
 ];
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
@@ -121,12 +121,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       key={tool.id}
                       onClick={toolActions[tool.id]}
                       disabled={tool.disabled}
-                      className={`w-[76px] h-[76px] rounded-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br ${tool.gradient} border border-white/20 shadow-[0_6px_22px_rgba(0,0,0,0.20)] transition-transform ${
+                      className={`w-[76px] h-[76px] rounded-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br ${tool.gradient} border border-white/20 shadow-[0_6px_22px_rgba(0,0,0,0.20)] transition-transform ${
                         tool.disabled ? 'opacity-40 cursor-default' : 'active:scale-95 hover:scale-105'
                       }`}
                     >
-                      <span className="text-[24px] leading-none">{tool.icon}</span>
-                      <span className="text-[9px] font-black text-white/90 uppercase tracking-wider leading-none">
+                      <tool.icon className="w-5 h-5 text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)]" />
+                      <span className="text-[9px] font-black text-white/95 uppercase tracking-wider leading-none">
                         {tool.label}
                       </span>
                       {tool.disabled && (
@@ -166,10 +166,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 : 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_6px_22px_rgba(52,211,153,0.50)] group-hover:scale-110 group-hover:shadow-[0_8px_28px_rgba(52,211,153,0.60)]'
             }`}>
               <motion.div
-                animate={{ rotate: isToolMenuOpen ? 45 : 0 }}
+                animate={{ rotate: isToolMenuOpen ? 90 : 0 }}
                 transition={{ type: 'spring', damping: 18, stiffness: 280 }}
               >
-                <Bot className="w-6 h-6 text-white" />
+                {isToolMenuOpen ? (
+                  <X className="w-6 h-6 text-white" />
+                ) : (
+                  <Bot className="w-6 h-6 text-white" />
+                )}
               </motion.div>
             </div>
           </button>

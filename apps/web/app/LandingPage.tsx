@@ -844,9 +844,15 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         style={{ borderTop: `1px solid ${C.border}` }}>
         <p className="text-xs" style={{ color: C.ghost }}>© {new Date().getFullYear()} BEAN — Inteligencia de Vida.</p>
         <div className="flex gap-8">
-          {['Privacidad', 'Términos', 'Contacto'].map((l) => (
-            <span key={l} className="text-xs cursor-pointer transition-opacity hover:opacity-60" style={{ color: C.ghost }}>{l}</span>
-          ))}
+          <Link href="/privacy" className="text-xs transition-opacity hover:opacity-60" style={{ color: C.ghost }}>
+            Privacidad
+          </Link>
+          <Link href="/terms" className="text-xs transition-opacity hover:opacity-60" style={{ color: C.ghost }}>
+            Términos
+          </Link>
+          <a href="mailto:soporte@bean.co" className="text-xs transition-opacity hover:opacity-60" style={{ color: C.ghost }}>
+            Contacto
+          </a>
         </div>
       </footer>
     </div>

@@ -182,6 +182,17 @@ export default function RegisterPage() {
             </>
           )}
         </button>
+
+        <p className="text-center text-xs text-neutral-400 mt-4 leading-relaxed px-2">
+          Al registrarte, aceptas nuestros{" "}
+          <Link href="/terms" className="text-white hover:text-blue-400 underline transition-colors">
+            Términos y Condiciones
+          </Link>{" "}
+          y nuestra{" "}
+          <Link href="/privacy" className="text-white hover:text-blue-400 underline transition-colors">
+            Política de Privacidad
+          </Link>.
+        </p>
       </form>
 
       <p className="text-center text-neutral-400 text-sm mt-8">

@@ -41,6 +41,12 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
   }, [delay, animate]);
 
   const swayStyle = useMemo(() => {
+    // Disable swaying entirely on mobile screens (performance) or if the tree is not interactive
+    const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (!isInteractive || isMobileDevice) {
+      return { transformOrigin: '0 0' } as React.CSSProperties;
+    }
+
     // Generate stable pseudo-random values based on leaf ID
     const hash = leaf.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const duration = 4.0 + (hash % 6) * 0.4; // 4.0s to 6.4s
@@ -56,22 +62,12 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
       '--sway-deg': `${swayDeg}deg`,
       transformOrigin: '0 0'
     } as React.CSSProperties;
-  }, [leaf.id]);
+  }, [leaf.id, isInteractive]);
 
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
-      <style>{`
-        @keyframes leafSway {
-          0%, 100% {
-            transform: rotate(0deg);
-          }
-          50% {
-            transform: rotate(var(--sway-deg, 5deg));
-          }
-        }
-      `}</style>
       {/* Wind Sway Wrapper */}
-      <g style={swayStyle}>
+      <g style={swayStyle} className="sway-leaf">
         <g
           ref={containerRef}
           style={{ transformOrigin: "0 0", cursor: 'pointer' }}

@@ -72,84 +72,104 @@ export async function GET(req: NextRequest) {
       return count === 0 ? 1 : count;
     };
 
-    // Calculate organic growthScore based on goal progress
-    const totalProgress = goals.reduce((acc: number, g: any) => acc + (g.progress || 0), 0);
-    const growthScore = goals.length > 0 ? Math.round(totalProgress / goals.length) : 0;
-
     // 3. Map to TreeData structure (Branches = Goals)
-    const treeData = {
-      growthScore,
-      branches: goals.map((goal: any) => ({
+    const branches = goals.map((goal: any) => {
+      const leaves = (goal.actions || []).map((action: any) => {
+        let resolvedType = action.type;
+        let resolvedCompleted = action.isCompleted;
+        let resolvedConsistency = action.consistency;
+        let resolvedStreak = action.streak;
+        let resolvedFrequency = action.frequency;
+        let baseCommitmentTitle: string | null = null;
+        let completedCount: number | null = null;
+        let totalSessions: number | null = null;
+
+        if (action.baseCommitmentId) {
+          const bc = commitmentMap.get(action.baseCommitmentId);
+          if (bc) {
+            resolvedType = 'habit'; // Show as habit in tree
+            resolvedStreak = bc.streakCount || 0;
+            resolvedFrequency = bc.frequency;
+            baseCommitmentTitle = bc.title;
+            completedCount = bc.completedCount || 0;
+            totalSessions = calculateCommitmentSessions(bc);
+            const progressVal = Math.min(100, Math.round((completedCount / totalSessions) * 100));
+            resolvedConsistency = progressVal / 100;
+            resolvedCompleted = progressVal >= 100;
+
+            // Self-healing check: Update GoalAction isCompleted in background if needed
+            if (resolvedCompleted !== action.isCompleted) {
+              prisma.goalAction.update({
+                where: { id: action.id },
+                data: { isCompleted: resolvedCompleted }
+              }).catch(err => console.error("Error updating goalaction in background:", err));
+            }
+          }
+        }
+
+        return {
+          id: action.id,
+          name: action.title,
+          type: resolvedType,
+          parentId: action.parentId,
+          completed: resolvedCompleted,
+          startDate: action.startDate,
+          targetDate: action.targetDate,
+          estimatedHours: action.estimatedHours || 0,
+          dimensions: action.dimensions || [],
+          attributes: action.attributes || [],
+          description: action.description,
+          notes: action.notes,
+          frequency: resolvedFrequency,
+          streak: resolvedStreak,
+          consistency: resolvedConsistency,
+          baseCommitmentId: action.baseCommitmentId || null,
+          baseCommitmentTitle,
+          completedCount,
+          totalSessions,
+          tasks: action.tasks || [],
+          impact: action.impact || null,
+          assignee: action.assignee ? {
+            name: action.assignee.name,
+            email: action.assignee.email,
+            image: action.assignee.image
+          } : null
+        };
+      });
+
+      // Calculate dynamic progress of this branch based on completed leaves (non-phases)
+      const nonPhaseLeaves = leaves.filter((l: any) => l.type !== 'phase');
+      const totalNonPhases = nonPhaseLeaves.length;
+      const completedNonPhases = nonPhaseLeaves.filter((l: any) => l.completed).length;
+      const progress = totalNonPhases > 0 ? Math.round((completedNonPhases / totalNonPhases) * 100) : 0;
+
+      // Self-healing check: Sync with Goal progress in database in background if it differs
+      if (progress !== goal.progress) {
+        prisma.goal.update({
+          where: { id: goal.id },
+          data: { progress }
+        }).catch(err => console.error("Error updating goal progress in database:", err));
+      }
+
+      return {
         id: goal.id,
         goal: goal.title,
         description: goal.description,
         deadline: goal.deadline,
-        progress: goal.progress || 0,
+        progress,
         status: goal.status || 'active',
         resumeDate: goal.resumeDate || null,
-        leaves: (goal.actions || []).map((action: any) => {
-          let resolvedType = action.type;
-          let resolvedCompleted = action.isCompleted;
-          let resolvedConsistency = action.consistency;
-          let resolvedStreak = action.streak;
-          let resolvedFrequency = action.frequency;
-          let baseCommitmentTitle: string | null = null;
-          let completedCount: number | null = null;
-          let totalSessions: number | null = null;
+        leaves
+      };
+    });
 
-          if (action.baseCommitmentId) {
-            const bc = commitmentMap.get(action.baseCommitmentId);
-            if (bc) {
-              resolvedType = 'habit'; // Show as habit in tree
-              resolvedStreak = bc.streakCount || 0;
-              resolvedFrequency = bc.frequency;
-              baseCommitmentTitle = bc.title;
-              completedCount = bc.completedCount || 0;
-              totalSessions = calculateCommitmentSessions(bc);
-              const progressVal = Math.min(100, Math.round((completedCount / totalSessions) * 100));
-              resolvedConsistency = progressVal / 100;
-              resolvedCompleted = progressVal >= 100;
+    // Calculate dynamic growthScore based on dynamic goal progress
+    const totalProgress = branches.reduce((acc: number, b: any) => acc + b.progress, 0);
+    const growthScore = branches.length > 0 ? Math.round(totalProgress / branches.length) : 0;
 
-              // Self-healing check: Update GoalAction isCompleted in background if needed
-              if (resolvedCompleted !== action.isCompleted) {
-                prisma.goalAction.update({
-                  where: { id: action.id },
-                  data: { isCompleted: resolvedCompleted }
-                }).catch(err => console.error("Error updating goalaction in background:", err));
-              }
-            }
-          }
-
-          return {
-            id: action.id,
-            name: action.title,
-            type: resolvedType,
-            parentId: action.parentId,
-            completed: resolvedCompleted,
-            startDate: action.startDate,
-            targetDate: action.targetDate,
-            estimatedHours: action.estimatedHours || 0,
-            dimensions: action.dimensions || [],
-            attributes: action.attributes || [],
-            description: action.description,
-            notes: action.notes,
-            frequency: resolvedFrequency,
-            streak: resolvedStreak,
-            consistency: resolvedConsistency,
-            baseCommitmentId: action.baseCommitmentId || null,
-            baseCommitmentTitle,
-            completedCount,
-            totalSessions,
-            tasks: action.tasks || [],
-            impact: action.impact || null,
-            assignee: action.assignee ? {
-              name: action.assignee.name,
-              email: action.assignee.email,
-              image: action.assignee.image
-            } : null
-          };
-        })
-      }))
+    const treeData = {
+      growthScore,
+      branches
     };
 
     console.log(`[GET /api/life-tree] Found ${goals.length} goals for user ${userId}`);

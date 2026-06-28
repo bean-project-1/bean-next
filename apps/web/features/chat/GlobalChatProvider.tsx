@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, ReactNode, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { SpaceChat } from '../spaces/components/SpaceChat';
-import { useUIStore } from '../../hooks/useUIStore';
 
 interface GlobalChatContextType {
   isOpen: boolean;
@@ -42,12 +41,8 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const [chatContext, setChatContext] = useState<string>('global');
   const [existingGoalData, setExistingGoalData] = useState<any>(undefined);
 
-  const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
   const pathname = usePathname();
-  
-  // Hide global chat if zoomed into any space (since that space will render its own chat)
-  // Also hide on the public landing page — chat is an in-app feature
-  const hideGlobalButton = isSpaceZoomed || pathname === '/';
+  const hideGlobalButton = pathname === '/';
 
   const openChat = (msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);

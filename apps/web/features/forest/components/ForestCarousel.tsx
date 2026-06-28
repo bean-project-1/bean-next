@@ -5,9 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LifeTree } from '../../life-tree/LifeTree';
 import { useLifeTree } from '../../../hooks/useLifeTree';
 import { useUIStore } from '../../../hooks/useUIStore';
-import { SpaceOptionsModal } from './SpaceOptionsModal';
-import { SpaceChat } from '../../spaces/components/SpaceChat';
-import { useGlobalChat } from '../../chat/GlobalChatProvider';
 import { generateInviteLink, createSpace } from '../../spaces/actions/spaces';
 
 interface Space {
@@ -27,7 +24,6 @@ interface ForestCarouselProps {
 }
 
 export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCreated, onActionHooks }: ForestCarouselProps) {
-  const [spaceOptionsModalSpace, setSpaceOptionsModalSpace] = useState<Space | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -129,7 +125,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
           {spaces.map((space, index) => {
             const offset = index - activeIndex;
             
-            if (Math.abs(offset) > 2) return null;
+            // Render only 3 trees on mobile (current, left, right) to reduce DOM size, and 5 trees on desktop
+            const maxOffset = isMobile ? 1 : 2;
+            if (Math.abs(offset) > maxOffset) return null;
 
             const isActive = offset === 0;
             const isZoomed = zoomedSpaceId === space.id && offset === 0;
@@ -137,11 +135,12 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
 
             // Positioning logic
             const xOffset = isZoomed ? 0 : offset * (isMobile ? 145 : 250);
-            const yOffset = isZoomed ? 80 : 0; // Shift down slightly when zoomed to center the tree better
-            const zOffset = isZoomed ? 250 : Math.abs(offset) * (isMobile ? -120 : -200);
-            const scale = isZoomed ? 1.4 : (isActive ? 1 : (isMobile ? 0.65 : 0.8));
+            const yOffset = 0; // Let the viewBox handle all zoomed centering
+            const zOffset = isZoomed ? 0 : Math.abs(offset) * (isMobile ? -120 : -200);
+            const scale = isZoomed ? 1.0 : (isActive ? 1 : (isMobile ? 0.65 : 0.8));
             const opacity = isZoomed ? 1 : (isOtherZoomed ? 0 : (isActive ? 1 : 0.6));
-            const blur = isZoomed ? 0 : (isOtherZoomed ? 0 : Math.min(Math.abs(offset) * (isMobile ? 1.5 : 3), 6));
+            // Disable dynamic blur filters on mobile to avoid heavy GPU paint cycles, and drop blur instantly on background trees during zoom transitions
+            const blur = isMobile ? 0 : (zoomedSpaceId !== null ? 0 : Math.min(Math.abs(offset) * 3, 6));
 
             return (
               <motion.div
@@ -170,12 +169,12 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                   mass: 0.8
                 }}
                 style={{ transformOrigin: 'center 55.4%' }}
-                className={`absolute w-full max-w-[800px] h-full flex items-center justify-center ${
-                  isActive ? 'z-10' : 'z-0'
-                } ${isOtherZoomed ? 'pointer-events-none' : ''}`}
+                className={`absolute w-full h-full flex items-center justify-center transition-[max-width] duration-500 ease-out ${
+                  isZoomed ? 'max-w-none z-10' : 'max-w-[800px]'
+                } ${isActive ? 'z-10' : 'z-0'} ${isOtherZoomed ? 'pointer-events-none' : ''}`}
               >
                 <div 
-                  className={`w-full h-full relative transition-transform duration-300 ${isActive && !isZoomed ? 'cursor-pointer' : ''}`}
+                  className={`w-full h-full relative ${isActive && !isZoomed ? 'transition-transform duration-300 cursor-pointer' : ''}`}
                   onClick={() => {
                     if (isActive && !isZoomed) {
                       setZoomedSpaceId(space.id);
@@ -188,11 +187,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
                     space={space} 
                     isActive={isActive} 
                     isZoomed={isZoomed}
-                    onTrunkClick={() => {
-                      // Only show options for non-personal spaces
-                      if (space.id !== 'personal') {
-                        setSpaceOptionsModalSpace(space);
-                      }
+                    onSpaceDeleted={() => {
+                      setZoomedSpaceId(null);
+                      onIndexChange(0); // Return to personal tree
                     }}
                     onActionHooks={onActionHooks}
                     onZoomIn={() => setZoomedSpaceId(space.id)}
@@ -321,27 +318,13 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {/* Space Options Modal */}
-      {spaceOptionsModalSpace && (
-        <SpaceOptionsModal 
-          space={spaceOptionsModalSpace}
-          onClose={() => setSpaceOptionsModalSpace(null)} 
-          onDeleted={() => {
-            setSpaceOptionsModalSpace(null);
-            setZoomedSpaceId(null);
-            onIndexChange(0); // Return to personal tree
-          }}
-        />
-      )}
     </div>
   );
 }
 
 // Separate component to handle individual tree data fetching
-function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks, onZoomIn, onBackToForest, isMobile }: { space: Space, isActive: boolean, isZoomed: boolean, onTrunkClick: () => void, onActionHooks: any, onZoomIn: () => void, onBackToForest: () => void, isMobile: boolean }) {
+function TreeContainer({ space, isActive, isZoomed, onSpaceDeleted, onActionHooks, onZoomIn, onBackToForest, isMobile }: { space: Space, isActive: boolean, isZoomed: boolean, onSpaceDeleted: () => void, onActionHooks: any, onZoomIn: () => void, onBackToForest: () => void, isMobile: boolean }) {
   const { treeData, loading } = useLifeTree(space.id);
-  const { isOpen: isChatOpen, existingGoalData, closeChat, openChat } = useGlobalChat();
 
   if (loading || !treeData) {
     return (
@@ -377,27 +360,14 @@ function TreeContainer({ space, isActive, isZoomed, onTrunkClick, onActionHooks,
     <>
       <LifeTree 
         data={treeData} 
-        onTrunkClick={isZoomed ? onTrunkClick : undefined}
         isInteractive={isInteractive}
         spaceName={space.name}
         isZoomed={isZoomed}
         onBackToForest={onBackToForest}
+        space={space}
+        onSpaceDeleted={onSpaceDeleted}
         {...finalHooks}
       />
-      {isZoomed && (
-        <SpaceChat 
-          spaceId={space.id} 
-          spaceName={space.name} 
-          members={space.membersList || []}
-          onRefreshTree={() => onActionHooks?.onRefresh?.()}
-          isOpenExternal={isChatOpen}
-          onChangeOpenExternal={(val) => {
-            if (!val) closeChat();
-            else openChat();
-          }}
-          existingGoalData={existingGoalData}
-        />
-      )}
     </>
   );
 }

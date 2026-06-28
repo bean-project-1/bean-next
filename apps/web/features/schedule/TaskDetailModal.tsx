@@ -34,13 +34,24 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate, o
   const [activeTab, setActiveTab] = useState<'steps' | 'notes' | 'coach'>('steps');
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return false;
+  });
   const dragControls = useDragControls();
 
   // Subtasks/steps states
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [chatOpenTaskId, setChatOpenTaskId] = useState<string | null>(null);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     setEditTitle(task.title);
@@ -72,7 +83,11 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate, o
   };
 
   const content = (
-    <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
+    <div className={`fixed inset-0 z-[99999] flex items-end justify-center overflow-hidden transition-all duration-300 ${
+      isExpanded 
+        ? 'p-0 md:p-0 md:items-stretch md:justify-stretch' 
+        : 'p-0 md:p-6 md:items-center md:justify-center'
+    }`}>
       {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -96,12 +111,12 @@ export function TaskDetailModal({ task, onClose, onDelete, onToggle, onUpdate, o
           else if (info.offset.y < -50 && !isExpanded) setIsExpanded(true);
         }}
         initial={{ y: '100%' }}
-        animate={{ y: 0, height: isExpanded ? '100dvh' : '80dvh' }}
+        animate={{ y: 0, height: isExpanded ? (isDesktop ? '100vh' : '100dvh') : (isDesktop ? '80vh' : '80dvh') }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
         className={`relative w-full bg-[#FAF9F6] overflow-hidden shadow-2xl flex flex-col md:!translate-y-0 transition-[border-radius] duration-300 ${
           isExpanded
-            ? 'rounded-none md:max-w-full md:rounded-none'
+            ? 'rounded-none md:w-screen md:h-screen md:max-w-none md:rounded-none'
             : 'rounded-t-[32px] md:max-w-4xl md:h-[80vh] md:!rounded-[32px]'
         }`}
       >

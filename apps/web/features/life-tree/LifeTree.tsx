@@ -8,6 +8,9 @@ import { useGSAP } from '@gsap/react';
 import { TreeData, Branch as BranchData } from './types';
 import { Branch } from './Branch';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { LogOut, Trash2, Shield, User } from 'lucide-react';
+import { deleteSpace, leaveSpace, updateMemberRole, generateInviteLink } from '../spaces/actions/spaces';
 
 interface LifeTreeProps {
   data: TreeData;
@@ -26,16 +29,107 @@ interface LifeTreeProps {
   spaceName?: string;
   isZoomed?: boolean;
   onBackToForest?: () => void;
+  space?: any;
+  onSpaceDeleted?: () => void;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, activeBranchId, isInteractive = true, spaceName, isZoomed = false, onBackToForest }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, activeBranchId, isInteractive = true, spaceName, isZoomed = false, onBackToForest, space, onSpaceDeleted }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
   const [zoomedBranchId, setZoomedBranchId] = useState<string | null>(null);
   const [zoomedPhaseId, setZoomedPhaseId] = useState<string | null>(null);
+  const [isCameraMoving, setIsCameraMoving] = useState(false);
   const [isGoalListOpen, setIsGoalListOpen] = useState(false);
   const [activeTrunkTab, setActiveTrunkTab] = useState<'metas' | 'compartir'>('metas');
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingInvite, setLoadingInvite] = useState(false);
+
+  useEffect(() => {
+    if (!isGoalListOpen) {
+      setInviteLink(null);
+      setCopied(false);
+      setShowConfirm(false);
+      setActionLoading(false);
+      setLoadingInvite(false);
+    }
+  }, [isGoalListOpen]);
+
+  const handleGenerate = async () => {
+    if (!space?.id) return;
+    setLoadingInvite(true);
+    try {
+      const token = await generateInviteLink(space.id);
+      const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : '';
+      setInviteLink(`${origin}/join/${token}`);
+    } catch (e) {
+      console.error(e);
+      alert('Error al generar la invitación');
+    } finally {
+      setLoadingInvite(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && inviteLink) {
+      try {
+        await navigator.share({
+          title: `Únete a mi árbol: ${spaceName}`,
+          text: `Te invito a colaborar en "${spaceName}" dentro de Bean.`,
+          url: inviteLink,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  const handleLeaveOrDelete = async () => {
+    if (!space?.id) return;
+    setActionLoading(true);
+    try {
+      const role = space.role;
+      const isOwner = role === 'owner';
+      if (isOwner) {
+        await deleteSpace(space.id);
+      } else {
+        await leaveSpace(space.id);
+      }
+      onSpaceDeleted?.();
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+      setActionLoading(false);
+    }
+  };
+
+  const handleChangeRole = async (targetUserId: string, currentRole: string) => {
+    if (!space?.id) return;
+    const role = space.role;
+    const isOwner = role === 'owner';
+    if (!isOwner) return;
+    const newRole = currentRole === 'owner' ? 'member' : 'owner';
+    try {
+      await updateMemberRole(space.id, targetUserId, newRole);
+      alert('Rol actualizado con éxito. El cambio se reflejará al recargar.');
+    } catch (e: any) {
+      alert('Error al cambiar rol: ' + e.message);
+    }
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -43,18 +137,23 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const scoreRef = useRef<HTMLDivElement>(null);
 
   // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
-  const [viewBox, setViewBox] = useState({ x: -100, y: -100, w: 1000, h: 1000 });
+  const [viewBox, setViewBox] = useState({ x: -50, y: -100, w: 900, h: 900 });
   const [rotation, setRotation] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
+  const panDistance = useRef(0);
   
   const prevBranchCount = useRef<number>(data?.branches?.length || 0);
   const hasInitialDataRef = useRef<boolean>(!!data?.branches);
 
   useEffect(() => {
     setMounted(true);
+    setIsDesktop(window.innerWidth >= 768);
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -78,16 +177,24 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     if (!isZoomed) {
       resetZoom();
     } else {
-      // Zoom in slightly on mobile when entering the tree
+      // Zoom in slightly on mobile/desktop when entering the tree
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-      if (isMobile && !zoomedBranchId && !zoomedPhaseId) {
+      
+      const targetX = isMobile ? 100 : 50;
+      const targetY = isMobile ? 80 : -50;
+      const targetSize = isMobile ? 600 : 700;
+
+      if (!zoomedBranchId && !zoomedPhaseId) {
+        setIsCameraMoving(true); // Set synchronously to hide labels immediately
         gsap.to(viewBox, {
-          x: 100,
-          y: 80,
-          w: 600,
-          h: 600,
-          duration: 1.0,
+          x: targetX,
+          y: targetY,
+          w: targetSize,
+          h: targetSize,
+          duration: 0.5,
           ease: "power2.out",
+          onStart: () => setIsCameraMoving(true),
+          onComplete: () => setIsCameraMoving(false),
           onUpdate: () => setViewBox({ ...viewBox })
         });
       }
@@ -140,37 +247,84 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       // Sync with Branch.tsx lengths
       const length = 180 + (branch.progress / 100) * 100;
       
+      // Calculate the maximum extension of any sub-branch (phase) including its activities and subtask leaves
+      const phases = branch.leaves.filter(l => l.type === 'phase');
+      let maxPhaseExtension = 0;
+      
+      phases.forEach(phase => {
+        const activities = branch.leaves.filter(l => l.parentId === phase.id);
+        const activityCount = activities.length;
+        const subLen = 40 + activityCount * 8; // Sync with Branch.tsx
+        
+        let maxSsLen = 0;
+        activities.forEach(act => {
+          if (act.tasks && act.tasks.length > 0) {
+            const ssLen = 25 + act.tasks.length * 8; // Sync with Branch.tsx
+            if (ssLen > maxSsLen) {
+              maxSsLen = ssLen;
+            }
+          }
+        });
+        
+        const phaseExtension = subLen + maxSsLen;
+        if (phaseExtension > maxPhaseExtension) {
+          maxPhaseExtension = phaseExtension;
+        }
+      });
+      
+      // Also check orphan activities that grow directly from the branch
+      const orphans = branch.leaves.filter(l => l.type !== 'phase' && !l.parentId);
+      let maxOrphanSsLen = 0;
+      orphans.forEach(orphan => {
+        if (orphan.tasks && orphan.tasks.length > 0) {
+          const ssLen = 25 + orphan.tasks.length * 8;
+          if (ssLen > maxOrphanSsLen) {
+            maxOrphanSsLen = ssLen;
+          }
+        }
+      });
+      
+      const maxSubLen = Math.max(maxPhaseExtension, maxOrphanSsLen);
+      
+      // Compute the effective height of the branch structure including nested sub-activities
+      const leafMargin = 75; // Increased margin for leaves and hover effects
+      const mainHeight = length + leafMargin;
+      const subHeight = length * 0.85 + maxSubLen * 0.96 + leafMargin;
+      const branchHeight = Math.max(mainHeight, subHeight);
+      
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
       
       let targetX, targetY, zoomSize, targetRot;
       
       if (isMobile) {
         targetRot = 0;
-        zoomSize = length * 1.6;
+        zoomSize = branchHeight * 1.55;
         const rad = (angle * Math.PI) / 180;
-        const midX = 400 + Math.cos(rad) * (length * 0.5);
-        const midY = 350 + Math.sin(rad) * (length * 0.5);
+        const midX = 400 + Math.cos(rad) * (branchHeight * 0.5);
+        const midY = 350 + Math.sin(rad) * (branchHeight * 0.5);
         targetX = midX - zoomSize / 2;
-        targetY = midY - zoomSize * 0.22; // Shift up slightly to avoid bottom sheet overlap
+        targetY = midY - zoomSize * 0.15; // Shift up slightly to avoid bottom sheet overlap
       } else {
         targetRot = -90 - angle;
         // Pivot is (400, 350). Since we rotate around it, the pivot's position doesn't change relative to the SVG.
         // We want (400, 350) to be at the bottom-center of the zoomed view.
-        // Dynamic zoom based on branch length
-        zoomSize = length * 1.5; // Increased slightly for better view
+        zoomSize = branchHeight * 1.45;
         // Desktop: Shift camera right by 20% (branch moves left).
         targetX = (400 - zoomSize / 2) + (zoomSize * 0.2);
-        // Desktop: Center Y.
-        targetY = 350 - zoomSize * 0.85;
+        // Desktop: Center Y by placing the base pivot at 78% height
+        targetY = 350 - zoomSize * 0.78;
       }
 
+      setIsCameraMoving(true); // Set synchronously to hide labels immediately
       gsap.to(viewBox, {
         x: targetX,
         y: targetY,
         w: zoomSize,
         h: zoomSize,
-        duration: 0.6,
-        ease: "power3.out",
+        duration: 0.45,
+        ease: "power2.out",
+        onStart: () => setIsCameraMoving(true),
+        onComplete: () => setIsCameraMoving(false),
         onUpdate: () => setViewBox({ ...viewBox })
       });
 
@@ -182,8 +336,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       const rotObj = { r: currentRot };
       gsap.to(rotObj, {
         r: targetRot,
-        duration: 0.6,
-        ease: "power3.out",
+        duration: 0.45,
+        ease: "power2.out",
         onUpdate: () => setRotation(rotObj.r)
       });
     }
@@ -212,44 +366,69 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       if (angle !== undefined && startX !== undefined && startY !== undefined) {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
         
+        // Calculate dynamic height of this phase including its nested activities and subtask leaves
+        let phaseHeight = len || 100;
+        if (branchId && phaseId) {
+          const branch = data.branches.find(b => b.id === branchId);
+          if (branch) {
+            const phase = branch.leaves.find(l => l.id === phaseId);
+            if (phase) {
+              const activities = branch.leaves.filter(l => l.parentId === phase.id);
+              const activityCount = activities.length;
+              const subLen = 40 + activityCount * 8; // Sync with Branch.tsx
+              
+              let maxSsLen = 0;
+              activities.forEach(act => {
+                if (act.tasks && act.tasks.length > 0) {
+                  const ssLen = 25 + act.tasks.length * 8; // Sync with Branch.tsx
+                  if (ssLen > maxSsLen) {
+                    maxSsLen = ssLen;
+                  }
+                }
+              });
+              phaseHeight = subLen + maxSsLen;
+            }
+          }
+        }
+        
         let targetX, targetY, zoomSize, targetRot;
         
         if (isMobile) {
           targetRot = 0;
-          zoomSize = len ? (len * 2.2) : 420;
+          zoomSize = phaseHeight * 2.7; // Generous height for mobile view
           const midX = (startX + x) / 2;
           const midY = (startY + y) / 2;
           targetX = midX - zoomSize / 2;
-          targetY = midY - zoomSize * 0.22;
+          targetY = midY - zoomSize * 0.15;
         } else {
           const angleDeg = (angle * 180) / Math.PI;
           targetRot = -90 - angleDeg;
           
-          // Target zoom area centered around the rotated start point
-          zoomSize = len ? (len * 2.5) : 420;
+          // Focus area
+          zoomSize = phaseHeight * 2.4; // Increased from 1.9 / 2.3 to give plenty of room for all subtask leaves
           
-          // To keep the point centered after rotation, we must focus the viewBox 
-          // on where the point WILL BE after rotating around (400, 350).
           const targetRad = (targetRot * Math.PI) / 180;
           const px = 400, py = 350;
           
-          // Target rotated position of (startX, startY)
           const rx = Math.cos(targetRad) * (startX - px) - Math.sin(targetRad) * (startY - py) + px;
           const ry = Math.sin(targetRad) * (startX - px) + Math.cos(targetRad) * (startY - py) + py;
 
           // Desktop: Shift camera right by 20% (phase moves left).
           targetX = (rx - zoomSize / 2) + (zoomSize * 0.2);
-          // Desktop: Center Y.
-          targetY = ry - zoomSize * 0.9;
+          // Desktop: Center Y by placing the base of the phase branch at 78% height
+          targetY = ry - zoomSize * 0.78;
         }
 
+        setIsCameraMoving(true); // Set synchronously to hide labels immediately
         gsap.to(viewBox, {
           x: targetX,
           y: targetY,
           w: zoomSize,
           h: zoomSize,
-          duration: 0.6,
-          ease: "power3.out",
+          duration: 0.45,
+          ease: "power2.out",
+          onStart: () => setIsCameraMoving(true),
+          onComplete: () => setIsCameraMoving(false),
           onUpdate: () => setViewBox({ ...viewBox })
         });
 
@@ -260,8 +439,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         const rotObj = { r: currentRot };
         gsap.to(rotObj, {
           r: targetRot,
-          duration: 0.6,
-          ease: "power3.out",
+          duration: 0.45,
+          ease: "power2.out",
           onUpdate: () => setRotation(rotObj.r)
         });
       }
@@ -277,17 +456,28 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
-    const targetX = (isMobile && isZoomed) ? 100 : -100;
-    const targetY = (isMobile && isZoomed) ? 80 : -100;
-    const targetSize = (isMobile && isZoomed) ? 600 : 1000;
+    const targetX = isMobile 
+      ? (isZoomed ? 100 : 0) 
+      : (isZoomed ? 50 : -50);
+      
+    const targetY = isMobile 
+      ? (isZoomed ? 80 : -75) 
+      : (isZoomed ? -50 : -100);
+      
+    const targetSize = isMobile 
+      ? (isZoomed ? 600 : 800) 
+      : (isZoomed ? 700 : 900);
 
+    setIsCameraMoving(true); // Set synchronously to hide labels immediately
     gsap.to(viewBox, {
       x: targetX,
       y: targetY,
       w: targetSize,
       h: targetSize,
-      duration: 1.2,
-      ease: "power2.inOut",
+      duration: 0.5,
+      ease: "power2.out",
+      onStart: () => setIsCameraMoving(true),
+      onComplete: () => setIsCameraMoving(false),
       onUpdate: () => setViewBox({ ...viewBox })
     });
 
@@ -300,8 +490,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
     gsap.to(rotObj, {
       r: targetRot,
-      duration: 1.2,
-      ease: "power2.inOut",
+      duration: 0.5,
+      ease: "power2.out",
       onUpdate: () => setRotation(rotObj.r)
     });
   };
@@ -347,6 +537,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     if (e.pointerType === 'touch' && !e.isPrimary) return; // Ignore secondary touch points during pinch zoom
     setIsPanning(true);
     panStart.current = { x: e.clientX, y: e.clientY };
+    panDistance.current = 0;
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -354,8 +545,12 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     if (!isPanning || !isZoomed) return;
     if (e.pointerType === 'touch' && !e.isPrimary) return; // Only track primary touch pointer
     
-    const dx = (e.clientX - panStart.current.x) * (viewBox.w / (svgRef.current?.clientWidth || 800));
-    const dy = (e.clientY - panStart.current.y) * (viewBox.h / (svgRef.current?.clientHeight || 800));
+    const rawDx = e.clientX - panStart.current.x;
+    const rawDy = e.clientY - panStart.current.y;
+    panDistance.current += Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+
+    const dx = rawDx * (viewBox.w / (svgRef.current?.clientWidth || 800));
+    const dy = rawDy * (viewBox.h / (svgRef.current?.clientHeight || 800));
 
     setViewBox({
       ...viewBox,
@@ -366,7 +561,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
     panStart.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handlePointerUp = () => setIsPanning(false);
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const wasPanning = isPanning;
+    setIsPanning(false);
+    if (wasPanning && isZoomed && panDistance.current < 5) {
+      if (e.target === svgRef.current) {
+        resetZoom();
+      }
+    }
+  };
 
   const handleLeafClickHandler = (id: string, name: string) => {
     setClickedLeafId(id === clickedLeafId ? null : id);
@@ -389,7 +592,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       <svg
         ref={svgRef}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
-        className={`w-full h-full ${isInteractive ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-auto'} transition-all duration-300`}
+        className={`w-full h-full ${isInteractive ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-auto'} ${(isCameraMoving || isPanning) ? 'no-sway' : ''}`}
         style={{ touchAction: 'none' }}
         xmlns="http://www.w3.org/2000/svg"
         onWheel={handleWheel}
@@ -399,6 +602,19 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         onPointerLeave={handlePointerUp}
       >
         <defs>
+          <style>{`
+            @keyframes leafSway {
+              0%, 100% {
+                transform: rotate(0deg);
+              }
+              50% {
+                transform: rotate(var(--sway-deg, 5deg));
+              }
+            }
+            .no-sway .sway-leaf {
+              animation: none !important;
+            }
+          `}</style>
           {/* Wood gradient: darker edges, exact branch color #7c4a1e in the center */}
           <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#4c270d" />
@@ -484,7 +700,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
               y="540" 
               textAnchor="middle" 
               className={`text-[42px] font-black uppercase tracking-widest transition-opacity duration-500`}
-              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: zoomedBranchId ? 0 : 1 }}
+              style={{ fill: '#1e293b', textShadow: '0px 2px 15px rgba(255,255,255,0.9), 0px -2px 15px rgba(255,255,255,0.9)', opacity: (zoomedBranchId || isCameraMoving) ? 0 : 1 }}
             >
               {spaceName}
             </text>
@@ -531,7 +747,9 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             const endY = 350 + Math.sin(rad) * length;
             
             let labelOpacity = 1;
-            if (zoomedBranchId !== null) {
+            if (!isZoomed || isCameraMoving) {
+              labelOpacity = 0;
+            } else if (zoomedBranchId !== null) {
               const threshold = 600;
               const range = 800 - threshold;
               labelOpacity = Math.max(0, Math.min(1, (viewBox.w - threshold) / range));
@@ -634,34 +852,59 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       {mounted && isZoomed && createPortal(
         <AnimatePresence>
           {isGoalListOpen && (
-            <>
+            <div className="fixed inset-0 z-[99990] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden pointer-events-auto">
               {/* Backdrop */}
-              <div 
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99990]"
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm pointer-events-auto"
                 onClick={() => setIsGoalListOpen(false)}
               />
-              {/* Drawer */}
+              {/* Modal Container */}
               <motion.div 
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 inset-x-0 bg-slate-950 text-white rounded-t-[2rem] border-t border-white/10 z-[99991] shadow-2xl flex flex-col"
-                style={{ maxHeight: '65vh' }}
+                initial={isDesktop ? { scale: 0.95, opacity: 0 } : { y: '100%' }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={isDesktop ? { scale: 0.95, opacity: 0 } : { y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className={`relative w-full flex flex-col overflow-hidden bg-[#FAF9F6] text-stone-850 shadow-2xl border-t md:border border-[#E6E1D6] transition-all duration-300 ${
+                  isDesktop ? 'md:max-w-xl md:h-[65vh] md:rounded-[32px] md:self-center' : 'h-[75dvh] rounded-t-[32px]'
+                }`}
+                onClick={e => e.stopPropagation()}
               >
-                {/* Handle */}
-                <div className="shrink-0 flex flex-col items-center pt-4 pb-2">
-                  <div className="w-12 h-1 bg-white/20 rounded-full" />
+                {/* Accent line at the very top representing the trunk */}
+                <div className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#A0522D] to-[#8B5A2B]" />
+
+                {/* Handle for mobile */}
+                <div className="shrink-0 flex justify-center pt-3 pb-1 md:hidden">
+                  <div className="w-12 h-1.5 bg-[#E6E1D6] hover:bg-stone-300 transition-colors rounded-full" />
+                </div>
+
+                {/* Title and close button bar */}
+                <div className="shrink-0 px-5 pt-4 pb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-black text-[#5C4033] uppercase tracking-wider">
+                    Tronco Principal
+                  </h3>
+                  <button
+                    onClick={() => setIsGoalListOpen(false)}
+                    className="w-8 h-8 rounded-full bg-[#E6E1D6]/40 hover:bg-[#E6E1D6]/70 text-[#5c4033] flex items-center justify-center transition-colors"
+                    title="Cerrar"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
 
                 {/* Tab switcher */}
-                <div className="shrink-0 flex gap-2 mx-5 mb-4 bg-white/10 p-1 rounded-2xl">
+                <div className="shrink-0 flex gap-2 mx-5 mb-4 bg-[#F4F1EA] border border-[#E6E1D6] p-1 rounded-2xl">
                   <button
                     onClick={() => setActiveTrunkTab('metas')}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
                       activeTrunkTab === 'metas'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-white/50 hover:text-white/80'
+                        ? 'bg-white text-[#A0522D] shadow-sm border border-[#EAD4C5]'
+                        : 'text-stone-500 hover:text-stone-700'
                     }`}
                   >
                     🌿 Metas
@@ -670,8 +913,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                     onClick={() => setActiveTrunkTab('compartir')}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
                       activeTrunkTab === 'compartir'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-white/50 hover:text-white/80'
+                        ? 'bg-white text-[#A0522D] shadow-sm border border-[#EAD4C5]'
+                        : 'text-stone-500 hover:text-stone-700'
                     }`}
                   >
                     🤝 Compartir
@@ -679,16 +922,16 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 </div>
 
                 {/* Tab content */}
-                <div className="flex-1 overflow-y-auto px-5 pb-8">
+                <div className="flex-1 overflow-y-auto px-5 pb-8 custom-scrollbar">
                   {activeTrunkTab === 'metas' && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                      <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-3">
                         {data.branches.length} Meta{data.branches.length !== 1 ? 's' : ''} · {spaceName || 'Mi Árbol'}
                       </p>
                       {data.branches.length === 0 ? (
                         <div className="flex flex-col items-center py-10 gap-3 text-center">
                           <span className="text-4xl">🌱</span>
-                          <p className="text-slate-400 text-sm font-medium">Este árbol no tiene metas plantadas aún.</p>
+                          <p className="text-stone-500 text-sm font-medium">Este árbol no tiene metas plantadas aún.</p>
                         </div>
                       ) : (
                         data.branches.map((branch) => {
@@ -703,30 +946,30 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                               }}
                               className={`w-full flex items-center gap-3 p-4 rounded-2xl border text-left transition-all active:scale-[0.98] ${
                                 isActive
-                                  ? 'border-emerald-500 bg-emerald-500/10'
-                                  : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                  ? 'border-[#1B7A4E] bg-emerald-50 text-emerald-950 shadow-xs'
+                                  : 'bg-white border-[#E6E1D6]/70 hover:border-[#1B7A4E]/30 hover:bg-[#FAF9F6] text-stone-800'
                               }`}
                             >
                               {/* Progress ring */}
                               <div className="relative shrink-0 w-10 h-10">
                                 <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
-                                  <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3"/>
+                                  <circle cx="18" cy="18" r="15" fill="none" stroke="#E6E1D6" strokeWidth="3"/>
                                   <circle cx="18" cy="18" r="15" fill="none"
-                                    stroke={isActive ? '#34d399' : '#6ee7b7'}
+                                    stroke={isActive ? '#1B7A4E' : '#22c55e'}
                                     strokeWidth="3"
                                     strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
                                     strokeLinecap="round"
                                   />
                                 </svg>
-                                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">{pct}%</span>
+                                <span className={`absolute inset-0 flex items-center justify-center text-[9px] font-black ${isActive ? 'text-emerald-900' : 'text-stone-700'}`}>{pct}%</span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-100 line-clamp-2 leading-snug">{branch.goal}</p>
-                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">
+                                <p className={`text-sm font-bold line-clamp-2 leading-snug ${isActive ? 'text-emerald-950' : 'text-stone-850'}`}>{branch.goal}</p>
+                                <p className={`text-[10px] font-semibold mt-0.5 uppercase tracking-wide ${isActive ? 'text-emerald-700' : 'text-stone-500'}`}>
                                   {branch.leaves?.length || 0} fase{(branch.leaves?.length || 0) !== 1 ? 's' : ''}
                                 </p>
                               </div>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-500 shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`shrink-0 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`}>
                                 <path d="M9 18l6-6-6-6"/>
                               </svg>
                             </button>
@@ -737,42 +980,143 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                   )}
 
                   {activeTrunkTab === 'compartir' && (
-                    <div className="flex flex-col gap-3">
-                      {onTrunkClick ? (
-                        <>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Opciones del Espacio</p>
-                          <button
-                            onClick={() => {
-                              setIsGoalListOpen(false);
-                              setTimeout(() => onTrunkClick(), 300);
-                            }}
-                            className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-left transition-all active:scale-[0.98]"
-                          >
-                            <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-xl shrink-0">⚙️</div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-100">Gestionar Espacio</p>
-                              <p className="text-xs text-slate-400 mt-0.5">Miembros, permisos y más</p>
+                    <div className="flex flex-col gap-4 text-stone-850">
+                      {space && space.id !== 'personal' ? (
+                        <div className="space-y-4">
+                          <p className="text-xs text-stone-600 leading-relaxed">
+                            Haz crecer este árbol acompañado. Comparte este enlace con tus amigos, socios o pareja para que puedan ver y editar las metas de este espacio.
+                          </p>
+
+                          {!inviteLink ? (
+                            <button
+                              onClick={handleGenerate}
+                              disabled={loadingInvite}
+                              className="w-full py-3 bg-[#1B7A4E] hover:bg-[#145D3B] text-white font-bold rounded-2xl transition-all disabled:opacity-50 active:scale-95 shadow-sm text-xs sm:text-sm font-sans"
+                            >
+                              {loadingInvite ? 'Generando...' : 'Generar enlace de invitación'}
+                            </button>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="bg-[#F4F1EA] p-3 rounded-xl border border-[#E6E1D6] flex items-center justify-between gap-2">
+                                <span className="text-[#1B7A4E] truncate text-xs font-mono flex-1">{inviteLink}</span>
+                                <button
+                                  onClick={handleCopy}
+                                  className="shrink-0 bg-white hover:bg-stone-50 border border-[#E6E1D6] px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-700"
+                                >
+                                  {copied ? '¡Copiado!' : 'Copiar'}
+                                </button>
+                              </div>
+                              <button
+                                onClick={handleShare}
+                                className="w-full py-3 bg-[#1B7A4E] hover:bg-[#145D3B] text-white font-bold rounded-2xl transition-all flex justify-center items-center gap-2 active:scale-95 text-xs sm:text-sm"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="18" cy="5" r="3"/>
+                                  <circle cx="6" cy="12" r="3"/>
+                                  <circle cx="18" cy="19" r="3"/>
+                                  <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/>
+                                  <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>
+                                </svg>
+                                Compartir enlace
+                              </button>
                             </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-500 ml-auto shrink-0">
-                              <path d="M9 18l6-6-6-6"/>
-                            </svg>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mi Árbol Personal</p>
-                          <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center gap-3 text-center">
-                            <span className="text-4xl">🌳</span>
-                            <p className="text-sm font-bold text-slate-200">Este es tu árbol privado</p>
-                            <p className="text-xs text-slate-400 leading-relaxed">Puedes crear espacios compartidos para colaborar con otras personas en metas en común.</p>
+                          )}
+
+                          <div className="pt-4 border-t border-[#E6E1D6]">
+                            <h4 className="text-xs font-bold text-stone-750 mb-3 flex items-center gap-2">
+                              <User className="w-4 h-4 text-[#8B5A2B]" />
+                              Miembros del Árbol ({space.membersList?.length || 0})
+                            </h4>
+                            <div className="space-y-2 mb-4 max-h-[22vh] overflow-y-auto pr-2 custom-scrollbar">
+                              {(space.membersList || []).map((member: any) => {
+                                const isOwner = space.role === 'owner';
+                                return (
+                                  <div key={member.userId} className="flex items-center justify-between p-3 rounded-xl bg-white border border-[#E6E1D6]/70">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      {member.avatarUrl ? (
+                                        <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+                                          <Image src={member.avatarUrl} alt={member.name} fill className="object-cover" />
+                                        </div>
+                                      ) : (
+                                        <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm shrink-0">
+                                          {member.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                      )}
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-stone-800 truncate">{member.name}</p>
+                                        <p className="text-[9px] text-[#A0522D] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                          {member.role === 'owner' ? <Shield className="w-2.5 h-2.5 text-[#A0522D]" /> : null}
+                                          {member.role === 'owner' ? 'Creador' : 'Miembro'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {isOwner && member.role !== 'owner' && (
+                                      <button 
+                                        onClick={() => handleChangeRole(member.userId, member.role)}
+                                        className="text-[10px] text-stone-600 hover:text-stone-850 px-2 py-1 rounded-md bg-stone-100 hover:bg-[#E6E1D6]/50 transition-colors"
+                                      >
+                                        Hacer Creador
+                                      </button>
+                                    )}
+                                    {isOwner && member.role === 'owner' && (space.membersList || []).filter((m: any) => m.role === 'owner').length > 1 && (
+                                      <button 
+                                        onClick={() => handleChangeRole(member.userId, member.role)}
+                                        className="text-[10px] text-stone-600 hover:text-stone-855 px-2 py-1 rounded-md bg-stone-100 hover:bg-[#E6E1D6]/50 transition-colors"
+                                      >
+                                        Hacer Miembro
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {showConfirm ? (
+                              <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center">
+                                <p className="text-red-800 text-xs mb-3 font-medium">
+                                  {space.role === 'owner'
+                                    ? '¿Estás seguro de eliminar este árbol? Se borrarán todas las ramas, metas y chats para todos los miembros.' 
+                                    : '¿Estás seguro de que quieres salir de este árbol? Perderás el acceso a todas sus ramas y chat.'}
+                                </p>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setShowConfirm(false)}
+                                    className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl transition-colors font-bold text-xs"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    onClick={handleLeaveOrDelete}
+                                    disabled={actionLoading}
+                                    className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors font-bold text-xs"
+                                  >
+                                    {actionLoading ? 'Procesando...' : 'Sí, confirmar'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setShowConfirm(true)}
+                                className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-2xl transition-colors flex justify-center items-center gap-2 border border-red-200/50 text-xs sm:text-sm active:scale-95"
+                              >
+                                {space.role === 'owner' ? <Trash2 className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
+                                {space.role === 'owner' ? 'Eliminar Árbol (para todos)' : 'Salir del Árbol'}
+                              </button>
+                            )}
                           </div>
-                        </>
+                        </div>
+                      ) : (
+                        <div className="p-5 rounded-2xl bg-stone-50 border border-[#E6E1D6]/70 flex flex-col items-center gap-3 text-center">
+                          <span className="text-4xl">🌳</span>
+                          <p className="text-sm font-bold text-stone-700">Este es tu árbol privado</p>
+                          <p className="text-xs text-stone-500 leading-relaxed">Puedes crear espacios compartidos para colaborar con otras personas en metas en común.</p>
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
               </motion.div>
-            </>
+            </div>
           )}
         </AnimatePresence>,
         document.body

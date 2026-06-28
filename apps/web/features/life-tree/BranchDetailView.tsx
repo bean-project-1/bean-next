@@ -732,8 +732,13 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   // Inline Leaf state
   const [expandedLeafId, setExpandedLeafId] = useState<string | null>(activeLeafId || null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [drawerState, setDrawerState] = useState<'peek' | 'half' | 'full'>('half');
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return false;
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
@@ -752,11 +757,26 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
   }, [isMenuOpen]);
 
   useEffect(() => {
-    setIsDesktop(window.innerWidth >= 640);
-    const handleResize = () => setIsDesktop(window.innerWidth >= 640);
+    setIsDesktop(window.innerWidth >= 768);
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  // Force expand when phase or leaf is clicked only if currently collapsed (in peek state)
+  useEffect(() => {
+    if ((zoomedPhaseId || activeLeafId) && drawerState === 'peek') {
+      setDrawerState('half');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomedPhaseId, activeLeafId]);
+
+  // Reset drawer when branch changes
+  useEffect(() => {
+    if (branch.id) {
+      setDrawerState('half');
+    }
+  }, [branch.id]);
+
   const touchStartY = useRef(0);
   
   // Local copy of leaves — persists task state across panel open/close
@@ -809,323 +829,385 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY.current - touchEndY;
+    const diff = touchStartY.current - touchEndY; // Positive = swipe up, Negative = swipe down
     if (diff > 50) {
-      setIsFullScreen(true); // swiped up
+      if (drawerState === 'peek') setDrawerState('half');
+      else if (drawerState === 'half') setDrawerState('full');
     } else if (diff < -50) {
-      if (isFullScreen) setIsFullScreen(false); // swiped down
-      else onClose(); // close if already half
+      if (drawerState === 'full') setDrawerState('half');
+      else if (drawerState === 'half') setDrawerState('peek');
+      else if (drawerState === 'peek') onClose();
     }
   };
 
+  const isFullScreen = drawerState === 'full';
+
   return (
-    <div className={`fixed inset-x-0 bottom-0 w-full z-[9999] block sm:flex sm:items-center sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-auto sm:h-full pointer-events-none m-0 p-0 transition-all duration-300 ${isFullScreen ? 'h-[100dvh] sm:p-0' : 'h-[calc(65vh-72px)] sm:p-6'}`}>
+    <div className={`fixed inset-0 z-[9999] flex items-end overflow-hidden transition-all duration-300 ${
+      isDesktop 
+        ? (drawerState === 'full' 
+            ? 'md:items-stretch md:justify-stretch p-0 md:p-0 pointer-events-auto' 
+            : 'md:items-stretch md:justify-end p-0 md:p-6 pointer-events-none') 
+        : 'p-0 pointer-events-none'
+    }`}>
+      {/* Backdrop: Visible on both mobile and desktop when drawer is in 'full' state. */}
+      {drawerState === 'full' && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm pointer-events-auto z-0"
+          onClick={() => setDrawerState('half')}
+        />
+      )}
+
       <motion.div 
-        drag={isDesktop}
-        dragControls={dragControls}
-        dragListener={false}
-        dragMomentum={false}
-        initial={isDesktop ? { x: 50, opacity: 0 } : { y: 50, opacity: 0 }}
-        animate={{ x: 0, y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className={`w-full h-full flex-1 sm:flex-none bg-white shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] sm:shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t sm:border border-[#E6E1D6] m-0 transition-all duration-300 ${isFullScreen ? 'rounded-none sm:w-full sm:rounded-none' : 'rounded-t-[32px] sm:w-[450px] sm:rounded-[32px]'}`}
+        initial={isDesktop ? { x: '100%', opacity: 0 } : { y: '100%' }}
+        animate={{ x: 0, opacity: 1, y: 0 }}
+        transition={{ 
+          type: 'tween', 
+          ease: [0.16, 1, 0.3, 1], // premium cubic-bezier easeOut
+          duration: 0.3 
+        }}
+        className={`relative w-full bg-white shadow-2xl flex flex-col overflow-hidden pointer-events-auto border-t md:border border-[#E6E1D6] transition-[width,height,max-width,max-height] duration-300 ease-out z-10 ${
+          isDesktop 
+            ? (drawerState === 'full'
+                ? 'md:w-screen md:h-screen md:max-w-none md:rounded-none'
+                : 'md:w-[500px] md:h-[calc(100vh-48px)] md:rounded-[32px] md:self-center md:mr-6')
+            : (drawerState === 'full' 
+                ? 'h-[95dvh] rounded-t-[32px]' 
+                : drawerState === 'half' 
+                  ? 'h-[50dvh] rounded-t-[32px]' 
+                  : 'h-[110px] rounded-t-[32px]')
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Mobile Drag Handle */}
         <div 
-          className="w-full flex items-center justify-center pt-4 pb-2 sm:hidden cursor-pointer bg-[#FAF9F6]"
+          className="w-full flex items-center justify-center pt-4 pb-2 md:hidden cursor-pointer bg-[#FAF9F6] select-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          onClick={() => setIsFullScreen(!isFullScreen)}
+          onClick={() => {
+            if (drawerState === 'peek') setDrawerState('half');
+            else if (drawerState === 'half') setDrawerState('full');
+            else setDrawerState('half');
+          }}
         >
           <div className="w-12 h-1.5 bg-[#E6E1D6] hover:bg-stone-300 transition-colors rounded-full" />
         </div>
 
+        {/* Accent line at the very top of the modal representing the trunk */}
+        <div className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#A0522D] to-[#8B5A2B]" />
+
         {/* ── Header ── */}
         <div 
-          className="shrink-0 px-5 sm:px-8 pb-5 sm:pb-6 pt-2 sm:pt-6 bg-[#FAF9F6] border-b border-[#E6E1D6] flex items-center justify-between sm:cursor-move"
-          onPointerDown={(e) => {
-            if (isDesktop) dragControls.start(e);
-          }}
+          className="shrink-0 px-5 sm:px-8 pb-5 sm:pb-6 pt-3 sm:pt-6 bg-[#FAF9F6] border-b border-[#E6E1D6] flex flex-col gap-3"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#A0522D] border border-[#EAD4C5] text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+          {/* Row 1: Badges / Info on the left, Buttons on the right */}
+          <div className="flex items-center justify-between w-full gap-4">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#FAF0E6] text-[#A0522D] border border-[#EAD4C5] text-[9px] sm:text-[10px] font-black uppercase tracking-widest shrink-0">
                 Gestión de Meta
               </span>
               {branch.status === 'paused' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0">
                   ⏸ Pausada
                 </span>
               )}
-              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums ml-auto">
-                {completed}/{phases.length} Fases
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums truncate">
+                • {completed}/{phases.length} Fases
               </span>
             </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 truncate">
-                {branch.goal}
-              </h2>
-                {(() => {
-                  let dateStr = branch.deadline;
-                  if (!dateStr) {
-                    const phasesWithDates = branch.leaves.filter(l => l.type === 'phase' && l.targetDate);
-                    if (phasesWithDates.length > 0) {
-                      const maxDate = new Date(Math.max(...phasesWithDates.map(p => new Date(p.targetDate!).getTime())));
-                      dateStr = maxDate.toISOString();
-                    }
-                  }
-                  return (
-                    <div className="flex flex-col gap-0.5 mt-1">
-                      {dateStr && (
-                        <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
-                          <span className="text-[10px]">📅</span> Estimado para: {new Date(dateStr).toLocaleDateString()}
-                        </p>
-                      )}
-                      {branch.status === 'paused' && branch.resumeDate && (
-                        <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                          <span className="text-[10px]">⏳</span> Retomar el: {new Date(branch.resumeDate).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })()}
+
+            {/* Actions: Expand, Menu, Close */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => {
+                  if (drawerState === 'full') setDrawerState('half');
+                  else setDrawerState('full');
+                }}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0"
+                title={drawerState === 'full' ? 'Reducir' : 'Expandir'}
+              >
+                {drawerState === 'full' ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+                    <path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+                    <path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+                  </svg>
+                )}
+              </button>
+              
+              <div className="relative" ref={menuRef}>
+                {/* Trigger */}
+                <button
+                  onClick={() => setIsMenuOpen(v => !v)}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0"
+                  title="Opciones"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="19" cy="12" r="2" />
+                  </svg>
+                </button>
+
+                {/* Dropdown */}
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-10 z-50 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                    {/* Edit */}
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        openDraft(branch);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-[#FAF0E6] hover:text-[#A0522D] transition-colors"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      Editar plan
+                    </button>
+
+                    <div className="mx-4 border-t border-slate-100" />
+
+                    {/* Close */}
+                    <button
+                      onClick={() => { setIsMenuOpen(false); onClose(); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                      Cerrar
+                    </button>
+
+                    <div className="mx-4 border-t border-slate-100" />
+
+                    {/* Delete — destructive, at bottom */}
+                    <button
+                      onClick={async () => {
+                        setIsMenuOpen(false);
+                        if (confirm('¿Eliminar esta meta completa? Esta acción no se puede deshacer.')) {
+                          await onDelete?.(branch.id);
+                          onClose();
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-colors"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                      Eliminar meta
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Direct Close Button */}
+              <button
+                onClick={onClose}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#E6E1D6]/40 hover:bg-[#E6E1D6]/70 text-[#5c4033] flex items-center justify-center transition-colors shrink-0"
+                title="Cerrar"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* ── Action Menu ── */}
-          <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsFullScreen(v => !v)}
-            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-            title={isFullScreen ? 'Reducir' : 'Expandir'}
-          >
-            {isFullScreen ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
-                <path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/>
-                <path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
-              </svg>
-            )}
-          </button>
-          <div className="relative" ref={menuRef}>
-            {/* Trigger */}
-            <button
-              onClick={() => setIsMenuOpen(v => !v)}
-              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors text-lg font-bold leading-none"
-              title="Opciones"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="12" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="19" cy="12" r="2" />
-              </svg>
-            </button>
-
-            {/* Dropdown */}
-            {isMenuOpen && (
-              <div className="absolute right-0 top-12 z-50 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                {/* Edit */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    openDraft(branch);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                  Editar plan
-                </button>
-
-                <div className="mx-4 border-t border-slate-100" />
-
-                {/* Close */}
-                <button
-                  onClick={() => { setIsMenuOpen(false); onClose(); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                  Cerrar
-                </button>
-
-                <div className="mx-4 border-t border-slate-100" />
-
-                {/* Delete — destructive, at bottom */}
-                <button
-                  onClick={async () => {
-                    setIsMenuOpen(false);
-                    if (confirm('¿Eliminar esta meta completa? Esta acción no se puede deshacer.')) {
-                      await onDelete?.(branch.id);
-                      onClose();
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-rose-500 hover:bg-rose-50 transition-colors"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                  </svg>
-                  Eliminar meta
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Row 2: Title and Dates (Spanning full width) */}
+          <div className="w-full mt-1 flex flex-col gap-1.5">
+            <h2 className="text-lg sm:text-xl font-black text-[#5c4033] leading-snug whitespace-normal break-words" title={branch.goal}>
+              {branch.goal}
+            </h2>
+            {(() => {
+              let dateStr = branch.deadline;
+              if (!dateStr) {
+                const phasesWithDates = branch.leaves.filter(l => l.type === 'phase' && l.targetDate);
+                if (phasesWithDates.length > 0) {
+                  const maxDate = new Date(Math.max(...phasesWithDates.map(p => new Date(p.targetDate!).getTime())));
+                  dateStr = maxDate.toISOString();
+                }
+              }
+              return (
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                  {dateStr && (
+                    <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                      <span className="text-[10px]">📅</span> Estimado para: {new Date(dateStr).toLocaleDateString()}
+                    </p>
+                  )}
+                  {branch.status === 'paused' && branch.resumeDate && (
+                    <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                      <span className="text-[10px]">⏳</span> Retomar el: {new Date(branch.resumeDate).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
         {/* ── Content ── */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-[#F4F1EA] custom-scrollbar">
-          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm">
-            <div className="mb-2">
-              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Descripción del Proyecto</p>
-            </div>
-            <p className="text-sm font-medium text-stone-600 leading-relaxed">
-              {branch.description || 'Sin descripción detallada.'}
-            </p>
-          </section>
-
-          {/* Ritmos y Rutinas vinculados */}
-          <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
-              <span className="text-[10px] font-black text-stone-500 bg-[#F4F1EA] px-2.5 py-0.5 rounded-full border border-[#E6E1D6]/60">
-                {commitments.length}
-              </span>
-            </div>
-            {loadingCommitments ? (
-              <div className="h-10 bg-[#FAF9F6] animate-pulse rounded-xl" />
-            ) : commitments.length === 0 ? (
-              <p className="text-xs text-stone-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
-            ) : (
-              <div className="space-y-2">
-                {commitments.map((c) => {
-                  const icons: Record<string, string> = { work: '💼', study: '🎓', routine: '🔄' };
-                  const labels: Record<string, string> = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
-                  return (
-                    <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E6E1D6]/70 bg-[#FAF9F6]/80 hover:bg-[#FAF9F6] transition-colors">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-sm">{icons[c.type] || '🔄'}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-stone-850 truncate">{c.title}</p>
-                          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-tighter mt-0.5">
-                            {labels[c.type] || 'Rutina'} • {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h/día`}
-                          </p>
-                        </div>
-                      </div>
-                      {c.streakCount > 0 && (
-                        <span className="shrink-0 text-[9px] font-extrabold text-[#A0522D] bg-[#FDF5F0] border border-[#EAD4C5] px-2 py-0.5 rounded-full">
-                          🔥 {c.streakCount}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-3">
-            <div className="mb-3 sm:mb-4">
-              <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Planificación por Fases</p>
-            </div>
-
-            <div className="space-y-3">
-              {phases.map((phase) => {
-                const isExpanded = expandedPhaseId === phase.id;
-                const children = localLeaves.filter(l => l.parentId === phase.id).sort((a, b) => {
-                  if (a.type === 'milestone' && b.type !== 'milestone') return 1;
-                  if (b.type === 'milestone' && a.type !== 'milestone') return -1;
-                  return 0;
-                });
-                
-                return (
-                  <div 
-                    key={phase.id} 
-                    id={`phase-${phase.id}`}
-                    className={`rounded-[24px] sm:rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-[#1B7A4E]/30 shadow-md' : 'bg-white border-[#E6E1D6] shadow-xs hover:border-stone-300'}`}
-                  >
-                    <div 
-                      className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4 cursor-pointer"
-                      onClick={() => {
-                        const newId = isExpanded ? null : phase.id;
-                        setExpandedPhaseId(newId);
-                        onPhaseSelect?.(newId);
-                      }}
-                    >
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-[#1B7A4E] text-white' : 'bg-[#F4F1EA] text-[#A0522D] border border-[#EAD4C5]/40'}`}>
-                        {phase.completed ? '✓' : '⏳'}
-                      </div>
-                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'} truncate`}>
-                            {phase.name}
-                          </h4>
-                          {phase.targetDate && (
-                            <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-1">
-                              <span className="text-[8px]">📅</span> {new Date(phase.targetDate).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenTaskModal?.(phase, 'action');
-                          }}
-                          className="shrink-0 p-1.5 text-stone-400 hover:text-stone-600 transition-colors text-xs hover:bg-stone-50 rounded-lg"
-                          title="Detalles y notas de la fase"
-                        >
-                          📝
-                        </button>
-                      </div>
-                      <svg 
-                        width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
-                        className={`text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                      >
-                        <path d="m6 9 6 6 6-6"/>
-                      </svg>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="px-4 sm:px-5 pb-5 sm:pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="border-t border-slate-50 pt-4 sm:pt-5 space-y-3">
-                          {children.length > 0 ? (
-                            children.map(child => renderActionCard(child))
-                          ) : (
-                            <p className="text-xs text-slate-400 italic text-center py-4">Sin actividades registradas.</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {(() => {
-            const independentLeaves = localLeaves.filter(l => !l.parentId && l.type !== 'phase');
-            return independentLeaves.length > 0 && (
-              <section className="space-y-3 mt-8 pt-6 border-t border-[#E6E1D6]">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Hitos y Tareas Sueltas</p>
+        <div className={`flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-[#F4F1EA] custom-scrollbar ${(!isDesktop && drawerState === 'peek') ? 'hidden' : 'block'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start space-y-0">
+            {/* Columna Izquierda: Descripción y Ritmos */}
+            <div className={`${isDesktop && drawerState === 'full' ? 'md:col-span-5' : 'md:col-span-12'} space-y-6`}>
+              <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm">
+                <div className="mb-2">
+                  <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Descripción del Proyecto</p>
                 </div>
+                <p className="text-sm font-medium text-stone-600 leading-relaxed">
+                  {branch.description || 'Sin descripción detallada.'}
+                </p>
+              </section>
+
+              {/* Ritmos y Rutinas vinculados */}
+              <section className="bg-white p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-[#E6E1D6] shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Ritmos y Rutinas de la Meta</p>
+                  <span className="text-[10px] font-black text-stone-500 bg-[#F4F1EA] px-2.5 py-0.5 rounded-full border border-[#E6E1D6]/60">
+                    {commitments.length}
+                  </span>
+                </div>
+                {loadingCommitments ? (
+                  <div className="h-10 bg-[#FAF9F6] animate-pulse rounded-xl" />
+                ) : commitments.length === 0 ? (
+                  <p className="text-xs text-stone-400 italic font-bold">Sin rutinas o hábitos fijos programados para esta meta.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {commitments.map((c) => {
+                      const icons: Record<string, string> = { work: '💼', study: '🎓', routine: '🔄' };
+                      const labels: Record<string, string> = { work: 'Trabajo', study: 'Estudio', routine: 'Rutina' };
+                      return (
+                        <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E6E1D6]/70 bg-[#FAF9F6]/80 hover:bg-[#FAF9F6] transition-colors">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-sm">{icons[c.type] || '🔄'}</span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-stone-850 truncate">{c.title}</p>
+                              <p className="text-[9px] text-stone-400 font-bold uppercase tracking-tighter mt-0.5">
+                                {labels[c.type] || 'Rutina'} • {c.startTime && c.endTime ? `${c.startTime} - ${c.endTime} (${c.hoursPerDay}h)` : `${c.hoursPerDay}h/día`}
+                              </p>
+                            </div>
+                          </div>
+                          {c.streakCount > 0 && (
+                            <span className="shrink-0 text-[9px] font-extrabold text-[#A0522D] bg-[#FDF5F0] border border-[#EAD4C5] px-2 py-0.5 rounded-full">
+                              🔥 {c.streakCount}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/* Columna Derecha: Planificación por Fases */}
+            <div className={`${isDesktop && drawerState === 'full' ? 'md:col-span-7' : 'md:col-span-12'} space-y-6`}>
+              <section className="space-y-3">
+                <div className="mb-2">
+                  <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Planificación por Fases</p>
+                </div>
+
                 <div className="space-y-3">
-                  {independentLeaves.map(child => renderActionCard(child))}
+                  {phases.map((phase) => {
+                    const isExpanded = expandedPhaseId === phase.id;
+                    const children = localLeaves.filter(l => l.parentId === phase.id).sort((a, b) => {
+                      if (a.type === 'milestone' && b.type !== 'milestone') return 1;
+                      if (b.type === 'milestone' && a.type !== 'milestone') return -1;
+                      return 0;
+                    });
+                    
+                    return (
+                      <div 
+                        key={phase.id} 
+                        id={`phase-${phase.id}`}
+                        className={`rounded-[24px] sm:rounded-[28px] border transition-all duration-300 ${isExpanded ? 'bg-white border-[#1B7A4E]/30 shadow-md' : 'bg-white border-[#E6E1D6] shadow-xs hover:border-stone-300'}`}
+                      >
+                        <div 
+                          className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4 cursor-pointer"
+                          onClick={() => {
+                            const newId = isExpanded ? null : phase.id;
+                            setExpandedPhaseId(newId);
+                            onPhaseSelect?.(newId);
+                          }}
+                        >
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-colors ${phase.completed ? 'bg-[#1B7A4E] text-white' : 'bg-[#F4F1EA] text-[#A0522D] border border-[#EAD4C5]/40'}`}>
+                            {phase.completed ? '✓' : '⏳'}
+                          </div>
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h4 className={`text-sm sm:text-base font-bold leading-tight ${phase.completed ? 'text-slate-400 line-through' : 'text-slate-800'} truncate`}>
+                                {phase.name}
+                              </h4>
+                              {phase.targetDate && (
+                                <p className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-1">
+                                  <span className="text-[8px]">📅</span> {new Date(phase.targetDate).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenTaskModal?.(phase, 'action');
+                              }}
+                              className="shrink-0 p-1.5 text-stone-400 hover:text-stone-600 transition-colors text-xs hover:bg-stone-50 rounded-lg"
+                              title="Detalles y notas de la fase"
+                            >
+                              📝
+                            </button>
+                          </div>
+                          <svg 
+                            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" 
+                            className={`text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                          >
+                            <path d="m6 9 6 6 6-6"/>
+                          </svg>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="px-4 sm:px-5 pb-5 sm:pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="border-t border-slate-50 pt-4 sm:pt-5 space-y-3">
+                              {children.length > 0 ? (
+                                children.map(child => renderActionCard(child))
+                              ) : (
+                                <p className="text-xs text-slate-400 italic text-center py-4">Sin actividades registradas.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
-            );
-          })()}
+
+              {(() => {
+                const independentLeaves = localLeaves.filter(l => !l.parentId && l.type !== 'phase');
+                return independentLeaves.length > 0 && (
+                  <section className="space-y-3 mt-8 pt-6 border-t border-[#E6E1D6]">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <p className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-widest">Hitos y Tareas Sueltas</p>
+                    </div>
+                    <div className="space-y-3">
+                      {independentLeaves.map(child => renderActionCard(child))}
+                    </div>
+                  </section>
+                );
+              })()}
+            </div>
+          </div>
         </div>
 
         {/* Footer Area */}
@@ -1135,6 +1217,22 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
           </p>
         </div>
       </motion.div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #F4F1EA;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #E6E1D6;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #BFBAB0;
+        }
+      `}</style>
     </div>
   );
 }

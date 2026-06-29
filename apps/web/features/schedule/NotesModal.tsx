@@ -25,15 +25,23 @@ function scatter(i: number) {
 }
 
 // ─── New note form ────────────────────────────────────────────────────────────
-function NewNoteForm({ onSave, onCancel }: {
+function NewNoteForm({ initialContent = '', initialColor = PALETTE[0].value, onSave, onCancel }: {
+  initialContent?: string;
+  initialColor?:  string;
   onSave:   (content: string, color: string) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [content, setContent] = useState('');
-  const [color,   setColor]   = useState(PALETTE[0].value);
+  const [content, setContent] = useState(initialContent);
+  const [color,   setColor]   = useState(initialColor);
   const [saving,  setSaving]  = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => { textRef.current?.focus(); }, []);
+  useEffect(() => { 
+    textRef.current?.focus(); 
+    if (textRef.current) {
+      const len = textRef.current.value.length;
+      textRef.current.setSelectionRange(len, len);
+    }
+  }, []);
 
   const save = async () => {
     if (!content.trim()) return;
@@ -80,12 +88,13 @@ function NewNoteForm({ onSave, onCancel }: {
 }
 
 // ─── Draggable note card ──────────────────────────────────────────────────────
-function DraggableNote({ note, index, containerRef, onPin, onDelete }: {
+function DraggableNote({ note, index, containerRef, onPin, onDelete, onEdit }: {
   note:         PostIt;
   index:        number;
   containerRef: React.RefObject<HTMLDivElement | null>;
   onPin:        (id: string, v: boolean) => void;
   onDelete:     (id: string) => void;
+  onEdit:       (note: PostIt) => void;
 }) {
   const pos           = scatter(index);
   const nx            = useMotionValue(pos.x);
@@ -101,6 +110,7 @@ function DraggableNote({ note, index, containerRef, onPin, onDelete }: {
       style={{ x: nx, y: ny, rotate: pos.rot, position: 'absolute', width: 148, zIndex: raised ? 50 : note.zIndex }}
       onDragStart={() => setRaised(true)}
       onDragEnd={()  => setRaised(false)}
+      onDoubleClick={() => onEdit(note)}
       whileDrag={{ scale: 1.06, zIndex: 50 }}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1   }}
@@ -140,10 +150,11 @@ function DraggableNote({ note, index, containerRef, onPin, onDelete }: {
 }
 
 // ─── Box note card (grid view) ────────────────────────────────────────────────
-function BoxNote({ note, onPin, onDelete }: {
+function BoxNote({ note, onPin, onDelete, onEdit }: {
   note:     PostIt;
   onPin:    (id: string, v: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit:   (note: PostIt) => void;
 }) {
   const [confirm, setConfirm] = useState(false);
 
@@ -154,7 +165,8 @@ function BoxNote({ note, onPin, onDelete }: {
       animate={{ opacity: 1, scale: 1    }}
       exit={{    opacity: 0, scale: 0.88  }}
       transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-      className={`rounded-2xl border p-4 shadow-sm flex flex-col gap-2 ${colorClasses(note.color)}`}
+      onClick={() => onEdit(note)}
+      className={`rounded-2xl border p-4 shadow-sm flex flex-col gap-2 ${colorClasses(note.color)} cursor-pointer hover:shadow-md transition-shadow`}
     >
       {note.isPinned && (
         <div className="flex items-center gap-1 opacity-60">
@@ -165,7 +177,7 @@ function BoxNote({ note, onPin, onDelete }: {
       <p className="text-xs font-medium leading-relaxed whitespace-pre-wrap break-words flex-1">
         {note.content}
       </p>
-      <div className="flex justify-end gap-1.5 mt-1">
+      <div className="flex justify-end gap-1.5 mt-1" onClick={e => e.stopPropagation()}>
         <button onClick={() => onPin(note.id, !note.isPinned)}
           className="w-7 h-7 rounded-full bg-black/8 hover:bg-black/14 flex items-center justify-center transition-colors">
           <Pin className={`w-3 h-3 ${note.isPinned ? 'text-stone-700' : 'text-stone-400'}`} fill={note.isPinned ? 'currentColor' : 'none'} />
@@ -200,6 +212,8 @@ export function NotesModal() {
   const [showForm,  setShowForm]  = useState(false);
   const [viewMode,  setViewMode]  = useState<'postits' | 'boxes'>('postits');
   const [size,      setSize]      = useState({ w: DEFAULT_W, h: DEFAULT_H });
+  const [isMobile,  setIsMobile]  = useState(false);
+  const [editingNote, setEditingNote] = useState<PostIt | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeData   = useRef<{ sx: number; sy: number; sw: number; sh: number } | null>(null);
@@ -208,14 +222,29 @@ export function NotesModal() {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Center on open
+  // Handle mobile detection
   useEffect(() => {
-    if (isOpen) {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Force boxes view on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode('boxes');
+    }
+  }, [isMobile]);
+
+  // Center on open (desktop only)
+  useEffect(() => {
+    if (isOpen && !isMobile) {
       x.set((window.innerWidth  - DEFAULT_W) / 2);
       y.set((window.innerHeight - DEFAULT_H) / 2);
       setSize({ w: DEFAULT_W, h: DEFAULT_H });
     }
-  }, [isOpen, x, y]);
+  }, [isOpen, isMobile, x, y]);
 
   // Open via custom event
   useEffect(() => {
@@ -235,7 +264,7 @@ export function NotesModal() {
       .finally(() => setLoading(false));
   }, [isOpen]);
 
-  // ── Resize via bottom-right corner drag ───────────────────────────────────
+  // ── Resize via bottom-right corner drag (desktop only) ───────────────────
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -259,19 +288,36 @@ export function NotesModal() {
 
   // ── Data handlers ─────────────────────────────────────────────────────────
   const handleSave = async (content: string, color: string) => {
-    const res  = await fetch('/api/schedule/post-its', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, color, x: 8, y: 12, rotation: 0, zIndex: 1 }),
-    });
-    const data = await res.json();
-    if (data.postIt) { setNotes(prev => [data.postIt, ...prev]); setShowForm(false); }
+    if (editingNote) {
+      const id = editingNote.id;
+      setNotes(prev => prev.map(n => n.id === id ? { ...n, content, color } : n));
+      await fetch(`/api/schedule/post-its/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, color }),
+      });
+      setEditingNote(null);
+      setShowForm(false);
+    } else {
+      const res  = await fetch('/api/schedule/post-its', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, color, x: 8, y: 12, rotation: 0, zIndex: 1 }),
+      });
+      const data = await res.json();
+      if (data.postIt) { setNotes(prev => [data.postIt, ...prev]); setShowForm(false); }
+    }
+  };
+
+  const handleStartEdit = (note: PostIt) => {
+    setEditingNote(note);
+    setShowForm(true);
   };
 
   const handlePin = async (id: string, isPinned: boolean) => {
     setNotes(prev => prev.map(n => n.id === id ? { ...n, isPinned } : n));
     await fetch(`/api/schedule/post-its/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPinned }),
     });
@@ -279,6 +325,10 @@ export function NotesModal() {
 
   const handleDelete = async (id: string) => {
     setNotes(prev => prev.filter(n => n.id !== id));
+    if (editingNote?.id === id) {
+      setEditingNote(null);
+      setShowForm(false);
+    }
     await fetch(`/api/schedule/post-its/${id}`, { method: 'DELETE' });
   };
 
@@ -293,67 +343,102 @@ export function NotesModal() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="fixed inset-0 bg-stone-950/25 backdrop-blur-[2px] z-[202]"
-            onClick={() => { setIsOpen(false); setShowForm(false); }}
+            onClick={() => { setIsOpen(false); setShowForm(false); setEditingNote(null); }}
           />
 
-          {/* ── Floating window ──────────────────────────────────────────── */}
-          {/* Position: fixed left:0 top:0, then x/y from motion values center it */}
+          {/* ── Modal Window / Bottom Sheet ──────────────────────────────── */}
           <motion.div
-            drag
-            dragMomentum={false}
-            dragElastic={0.04}
-            style={{ x, y, width: size.w, height: size.h }}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1    }}
-            exit={{    opacity: 0, scale: 0.88  }}
+            {...(isMobile ? {
+              drag: 'y',
+              dragConstraints: { top: 0, bottom: 0 },
+              dragElastic: 0.15,
+              onDragEnd: (e, info) => {
+                if (info.offset.y > 120) {
+                  setIsOpen(false);
+                  setShowForm(false);
+                  setEditingNote(null);
+                }
+              },
+              initial: { y: '100%' },
+              animate: { y: 0 },
+              exit: { y: '100%' },
+              style: { height: '82vh', width: '100%' }
+            } : {
+              drag: true,
+              dragMomentum: false,
+              dragElastic: 0.04,
+              style: { x, y, width: size.w, height: size.h },
+              initial: { opacity: 0, scale: 0.92 },
+              animate: { opacity: 1, scale: 1    },
+              exit: {    opacity: 0, scale: 0.88  }
+            })}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed left-0 top-0 z-[203] bg-[#FAF9F6] rounded-3xl shadow-2xl border border-[#E6E1D6] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing"
+            className={
+              isMobile
+                ? "fixed bottom-0 left-0 w-full z-[203] bg-[#FAF9F6] rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] border-t border-[#E6E1D6] flex flex-col overflow-hidden"
+                : "fixed left-0 top-0 z-[203] bg-[#FAF9F6] rounded-3xl shadow-2xl border border-[#E6E1D6] flex flex-col overflow-hidden cursor-grab active:cursor-grabbing"
+            }
             onClick={e => e.stopPropagation()}
           >
-            {/* ── Header (draggable zone) ──────────────────────────────── */}
-            <div className="shrink-0 flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#E6E1D6] bg-[#FAF9F6]">
+            {/* Mobile swipe indicator */}
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+            )}
+
+            {/* ── Header ──────────────────────────────── */}
+            <div className="shrink-0 flex items-center justify-between px-5 pt-3 pb-4 border-b border-[#E6E1D6] bg-[#FAF9F6]">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-stone-400">Tablero</p>
                 <h2 className="text-base font-black text-stone-900 mt-0.5">📝 Mis Notas</h2>
               </div>
 
-              {/* Grip dots */}
-              <div className="flex flex-col gap-[3px] mx-auto opacity-20 pointer-events-none select-none">
-                {[0, 1].map(r => (
-                  <div key={r} className="flex gap-[3px]">
-                    {[0, 1, 2].map(c => <div key={c} className="w-1 h-1 rounded-full bg-stone-600" />)}
-                  </div>
-                ))}
-              </div>
+              {/* Grip dots (desktop only) */}
+              {!isMobile && (
+                <div className="flex flex-col gap-[3px] mx-auto opacity-20 pointer-events-none select-none">
+                  {[0, 1].map(r => (
+                    <div key={r} className="flex gap-[3px]">
+                      {[0, 1, 2].map(c => <div key={c} className="w-1 h-1 rounded-full bg-stone-600" />)}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
-                {/* View toggle pill */}
-                <div className="flex items-center bg-stone-100 rounded-full p-0.5 gap-0.5" onPointerDown={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => setViewMode('postits')}
-                    title="Vista post-its"
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${viewMode === 'postits' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400 hover:text-stone-600'}`}
-                  >
-                    <StickyNote className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('boxes')}
-                    title="Vista cajas"
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${viewMode === 'boxes' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400 hover:text-stone-600'}`}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* View toggle pill (desktop only) */}
+                {!isMobile && (
+                  <div className="flex items-center bg-stone-100 rounded-full p-0.5 gap-0.5" onPointerDown={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setViewMode('postits')}
+                      title="Vista post-its"
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${viewMode === 'postits' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      <StickyNote className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('boxes')}
+                      title="Vista cajas"
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${viewMode === 'boxes' ? 'bg-white shadow-sm text-stone-700' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
                 <button
                   onPointerDown={e => e.stopPropagation()}
-                  onClick={() => setShowForm(v => !v)}
+                  onClick={() => {
+                    if (showForm && editingNote) {
+                      setEditingNote(null);
+                    } else {
+                      setShowForm(v => !v);
+                    }
+                  }}
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 ${showForm ? 'bg-stone-200 text-stone-700' : 'bg-[#1B7A4E] text-white shadow-[0_3px_12px_rgba(27,122,78,0.35)]'}`}
                 >
                   <Plus className="w-5 h-5" style={{ transform: showForm ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
                 <button
                   onPointerDown={e => e.stopPropagation()}
-                  onClick={() => { setIsOpen(false); setShowForm(false); }}
+                  onClick={() => { setIsOpen(false); setShowForm(false); setEditingNote(null); }}
                   className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-500 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -361,12 +446,24 @@ export function NotesModal() {
               </div>
             </div>
 
-            {/* ── New note form ────────────────────────────────────────── */}
-            <AnimatePresence>
+            {/* ── New / Edit note form ──────────────────────────────────── */}
+            <AnimatePresence mode="wait">
               {showForm && (
-                <div className="px-5 pt-4 shrink-0">
-                  <NewNoteForm onSave={handleSave} onCancel={() => setShowForm(false)} />
-                </div>
+                <motion.div 
+                  key={editingNote ? `edit-${editingNote.id}` : 'new-note'}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="px-5 pt-4 shrink-0 overflow-hidden"
+                >
+                  <NewNoteForm 
+                    key={editingNote ? `form-${editingNote.id}` : 'new-form'}
+                    initialContent={editingNote?.content}
+                    initialColor={editingNote?.color}
+                    onSave={handleSave} 
+                    onCancel={() => { setShowForm(false); setEditingNote(null); }} 
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
 
@@ -389,22 +486,22 @@ export function NotesModal() {
                   <p className="text-xs text-stone-400 text-center">Toca <strong>+</strong> para crear tu primera nota</p>
                 </motion.div>
               ) : viewMode === 'postits' ? (
-                /* ── Post-its: free-drag scattered board ── */
+                /* ── Post-its: free-drag scattered board (desktop only) ── */
                 <div ref={containerRef} className="absolute inset-0 overflow-hidden">
                   <AnimatePresence>
                     {sorted.map((note, i) => (
                       <DraggableNote key={note.id} note={note} index={i}
-                        containerRef={containerRef} onPin={handlePin} onDelete={handleDelete} />
+                        containerRef={containerRef} onPin={handlePin} onDelete={handleDelete} onEdit={handleStartEdit} />
                     ))}
                   </AnimatePresence>
                 </div>
               ) : (
-                /* ── Boxes: scrollable 2-column grid ── */
+                /* ── Boxes: scrollable grid ── */
                 <div className="absolute inset-0 overflow-y-auto p-4">
-                  <motion.div layout className="grid grid-cols-2 gap-3">
+                  <motion.div layout className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                     <AnimatePresence>
                       {sorted.map(note => (
-                        <BoxNote key={note.id} note={note} onPin={handlePin} onDelete={handleDelete} />
+                        <BoxNote key={note.id} note={note} onPin={handlePin} onDelete={handleDelete} onEdit={handleStartEdit} />
                       ))}
                     </AnimatePresence>
                   </motion.div>
@@ -412,20 +509,22 @@ export function NotesModal() {
               )}
             </div>
 
-            {/* ── Resize handle — bottom-right corner ─────────────────── */}
-            <div
-              onPointerDown={startResize}
-              className="absolute bottom-0 right-0 w-9 h-9 z-10 flex items-end justify-end p-2.5 cursor-se-resize group"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" className="opacity-25 group-hover:opacity-55 transition-opacity">
-                <circle cx="10" cy="10" r="1.5" fill="#78716c" />
-                <circle cx="6"  cy="10" r="1.5" fill="#78716c" />
-                <circle cx="10" cy="6"  r="1.5" fill="#78716c" />
-                <circle cx="2"  cy="10" r="1.5" fill="#78716c" />
-                <circle cx="6"  cy="6"  r="1.5" fill="#78716c" />
-                <circle cx="10" cy="2"  r="1.5" fill="#78716c" />
-              </svg>
-            </div>
+            {/* ── Resize handle — bottom-right corner (desktop only) ── */}
+            {!isMobile && (
+              <div
+                onPointerDown={startResize}
+                className="absolute bottom-0 right-0 w-9 h-9 z-10 flex items-end justify-end p-2.5 cursor-se-resize group"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" className="opacity-25 group-hover:opacity-55 transition-opacity">
+                  <circle cx="10" cy="10" r="1.5" fill="#78716c" />
+                  <circle cx="6"  cy="10" r="1.5" fill="#78716c" />
+                  <circle cx="10" cy="6"  r="1.5" fill="#78716c" />
+                  <circle cx="2"  cy="10" r="1.5" fill="#78716c" />
+                  <circle cx="6"  cy="6"  r="1.5" fill="#78716c" />
+                  <circle cx="10" cy="2"  r="1.5" fill="#78716c" />
+                </svg>
+              </div>
+            )}
           </motion.div>
         </>
       )}

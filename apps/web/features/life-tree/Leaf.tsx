@@ -22,7 +22,7 @@ interface LeafProps {
   isMobile?: boolean;
 }
 
-export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent, isInteractive = true, animate = false, onHover, onClick, className = "", isMobile = false }: LeafProps) => {
+const LeafComponent = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent, isInteractive = true, animate = false, onHover, onClick, className = "", isMobile = false }: LeafProps) => {
   const containerRef = useRef<SVGGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
 
@@ -186,3 +186,20 @@ export const Leaf = ({ leaf, x, y, angle, delay, isSelected, isActive, isCurrent
     </g>
   );
 };
+
+export const Leaf = React.memo(LeafComponent, (prev, next) => {
+  return (
+    prev.leaf.id === next.leaf.id &&
+    prev.leaf.completed === next.leaf.completed &&
+    prev.leaf.name === next.leaf.name &&
+    prev.x === next.x &&
+    prev.y === next.y &&
+    prev.angle === next.angle &&
+    prev.isSelected === next.isSelected &&
+    prev.isActive === next.isActive &&
+    prev.isCurrent === next.isCurrent &&
+    prev.isInteractive === next.isInteractive &&
+    prev.animate === next.animate &&
+    prev.isMobile === next.isMobile
+  );
+});

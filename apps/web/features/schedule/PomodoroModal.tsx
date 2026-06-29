@@ -235,6 +235,7 @@ export function PomodoroModal() {
   const [sessions,   setSessions]   = useState(0);
   const [showConfig, setShowConfig] = useState(false);
   const [toast,      setToast]      = useState<Toast | null>(null);
+  const [isMobile,   setIsMobile]   = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drag positions — persist within session
@@ -242,6 +243,14 @@ export function PomodoroModal() {
   const miniY  = useMotionValue(0);
   const modalX = useMotionValue(0);
   const modalY = useMotionValue(0);
+
+  // Handle mobile detection
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fresh refs for interval callbacks
   const stateRef = useRef({ phase, sessions, config });
@@ -392,20 +401,43 @@ export function PomodoroModal() {
       <AnimatePresence>
         {modalState === 'normal' && (
           <motion.div key="pomo-normal"
-            drag
-            dragMomentum={false}
-            dragElastic={0.08}
-            style={{ x: modalX, y: modalY }}
-            initial={{ opacity: 0, scale: 0.90, y: 32 }}
-            animate={{ opacity: 1, scale: 1,    y: 0  }}
-            exit={{    opacity: 0, scale: 0.90, y: 32 }}
+            {...(isMobile ? {
+              drag: 'y',
+              dragConstraints: { top: 0, bottom: 0 },
+              dragElastic: 0.15,
+              onDragEnd: (e, info) => {
+                if (info.offset.y > 120) {
+                  setModalState('mini');
+                }
+              },
+              initial: { y: '100%' },
+              animate: { y: 0 },
+              exit: { y: '100%' }
+            } : {
+              drag: true,
+              dragMomentum: false,
+              dragElastic: 0.08,
+              style: { x: modalX, y: modalY },
+              initial: { opacity: 0, scale: 0.90, y: 32 },
+              animate: { opacity: 1, scale: 1,    y: 0  },
+              exit: {    opacity: 0, scale: 0.90, y: 32 }
+            })}
             transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-            className="fixed inset-x-4 bottom-6 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-10 sm:w-[370px] z-[201] bg-[#FAF9F6] rounded-3xl shadow-2xl border border-[#E6E1D6] overflow-hidden cursor-default"
+            className={
+              isMobile
+                ? "fixed bottom-0 left-0 w-full z-[201] bg-[#FAF9F6] rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] border-t border-[#E6E1D6] overflow-hidden flex flex-col"
+                : "fixed inset-x-4 bottom-6 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-10 sm:w-[370px] z-[201] bg-[#FAF9F6] rounded-3xl shadow-2xl border border-[#E6E1D6] overflow-hidden cursor-default"
+            }
             onClick={e => e.stopPropagation()}
           >
+            {/* Mobile swipe indicator */}
+            {isMobile && (
+              <div className="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+            )}
+
             {/* Header — drag handle zone */}
             <div
-              className={`${phaseBg} px-5 pt-5 pb-4 flex items-center justify-between border-b border-[#E6E1D6] cursor-grab active:cursor-grabbing`}
+              className={`${phaseBg} px-5 pt-3 pb-4 flex items-center justify-between border-b border-[#E6E1D6] ${isMobile ? '' : 'cursor-grab active:cursor-grabbing'}`}
             >
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-stone-400">Pomodoro</p>
@@ -415,14 +447,16 @@ export function PomodoroModal() {
                 </motion.p>
               </div>
 
-              {/* Drag grip indicator */}
-              <div className="flex flex-col gap-[3px] mx-auto opacity-30">
-                {[0,1].map(r => (
-                  <div key={r} className="flex gap-[3px]">
-                    {[0,1,2].map(c => <div key={c} className="w-1 h-1 rounded-full bg-stone-500" />)}
-                  </div>
-                ))}
-              </div>
+              {/* Drag grip indicator (desktop only) */}
+              {!isMobile && (
+                <div className="flex flex-col gap-[3px] mx-auto opacity-30">
+                  {[0,1].map(r => (
+                    <div key={r} className="flex gap-[3px]">
+                      {[0,1,2].map(c => <div key={c} className="w-1 h-1 rounded-full bg-stone-500" />)}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 {/* Minimize */}
                 <button onClick={() => setModalState('mini')}

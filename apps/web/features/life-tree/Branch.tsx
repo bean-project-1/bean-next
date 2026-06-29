@@ -26,13 +26,15 @@ interface BranchProps {
   isInteractive?: boolean;
   animate?: boolean;
   renderMode?: 'wood' | 'leaves' | 'both';
+  simplified?: boolean;
+  isMobile?: boolean;
 }
 
 export const Branch = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
   onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
   activeLeafId, activePhaseId, currentRotation = 0, isInteractive = true, animate = false,
-  renderMode = 'both'
+  renderMode = 'both', simplified = false, isMobile = false
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
 
@@ -351,7 +353,7 @@ export const Branch = ({
               />
 
               {/* Sub-branch wood paths (sub-sub-branches) and leaf stems */}
-              {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
+              {!simplified && phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
                 const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
                 const mt = 1 - t;
                 const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
@@ -472,13 +474,14 @@ export const Branch = ({
                       onHover={handleLeafHover}
                       onClick={handleLeafClick}
                       className={leafClassName}
+                      isMobile={isMobile}
                     />
                   </g>
                 );
               })()}
 
               {/* Activities, Tasks & Subtasks leaves */}
-              {phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
+              {!simplified && phase.activities?.filter(a => a.type !== 'milestone').map((leaf, lIdx, filteredArr) => {
                 const t = 0.1 + (lIdx / (filteredArr.length || 1)) * 0.85;
                 const mt = 1 - t;
                 const px = mt * mt * sub.start.x + 2 * mt * t * sub.cp.x + t * t * sub.end.x;
@@ -519,6 +522,7 @@ export const Branch = ({
                           onHover={handleLeafHover}
                           onClick={handleLeafClick}
                           className={leafClassName}
+                          isMobile={isMobile}
                         />
                       </g>
 
@@ -561,6 +565,7 @@ export const Branch = ({
                               onHover={handleLeafHover}
                               onClick={handleLeafClick}
                               className={leafClassName}
+                              isMobile={isMobile}
                             />
                           </g>
                         );
@@ -597,6 +602,7 @@ export const Branch = ({
                         onHover={handleLeafHover}
                         onClick={handleLeafClick}
                         className={leafClassName}
+                        isMobile={isMobile}
                       />
                     </g>
                   );
@@ -608,8 +614,9 @@ export const Branch = ({
       })}
 
       {/* 3. ORPHANS (LEAVES ON MAIN BRANCH) */}
-      <g style={{ opacity: zoomedPhaseId ? 0.15 : 1, pointerEvents: zoomedPhaseId ? 'none' : 'auto', transition: 'opacity 0.6s ease' }}>
-        {orphans.map((leaf, oIdx) => {
+      {!simplified && (
+        <g style={{ opacity: zoomedPhaseId ? 0.15 : 1, pointerEvents: zoomedPhaseId ? 'none' : 'auto', transition: 'opacity 0.6s ease' }}>
+          {orphans.map((leaf, oIdx) => {
           const t = 0.4 + (oIdx / orphans.length) * 0.5;
           const pos = getBezierPoint(t);
           const side = oIdx % 2 === 0 ? 1 : -1;
@@ -661,6 +668,7 @@ export const Branch = ({
                     animate={animate}
                     onHover={onHover}
                     onClick={onClick}
+                    isMobile={isMobile}
                   />
                 )}
                 {leaf.subtaskLeaves.map((subLeaf, subIdx) => {
@@ -700,6 +708,7 @@ export const Branch = ({
                           animate={animate}
                           onHover={onHover}
                           onClick={onClick}
+                          isMobile={isMobile}
                         />
                       )}
                     </g>
@@ -745,6 +754,7 @@ export const Branch = ({
                     animate={animate}
                     onHover={onHover}
                     onClick={onClick}
+                    isMobile={isMobile}
                   />
                 )}
               </g>
@@ -752,6 +762,7 @@ export const Branch = ({
           }
         })}
       </g>
+      )}
     </g>
   );
 };

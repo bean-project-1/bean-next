@@ -129,6 +129,9 @@ export function ForestCarousel({ spaces, activeIndex, onIndexChange, onSpaceCrea
             const maxOffset = isMobile ? 1 : 2;
             if (Math.abs(offset) > maxOffset) return null;
 
+            // If any tree is zoomed, don't render the other trees to save DOM size and rendering time!
+            if (zoomedSpaceId !== null && offset !== 0) return null;
+
             const isActive = offset === 0;
             const isZoomed = zoomedSpaceId === space.id && offset === 0;
             const isOtherZoomed = zoomedSpaceId !== null && !isZoomed;
@@ -361,6 +364,7 @@ function TreeContainer({ space, isActive, isZoomed, onSpaceDeleted, onActionHook
       <LifeTree 
         data={treeData} 
         isInteractive={isInteractive}
+        isActive={isActive}
         spaceName={space.name}
         isZoomed={isZoomed}
         onBackToForest={onBackToForest}

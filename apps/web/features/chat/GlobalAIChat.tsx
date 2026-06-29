@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, MessageSquare, ChevronRight, ChevronLeft, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical } from 'lucide-react';
+import { X, RefreshCw, MessageSquare, ChevronRight, ChevronLeft, ChevronDown, Trash2, Bot, BrainCircuit, GripVertical, PenTool, Flame, Timer, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '../../hooks/useUIStore';
 
@@ -406,6 +406,7 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
   const [mobileTab, setMobileTab] = useState<'chat' | 'draft'>('chat');
   const [selectedDraftItem, setSelectedDraftItem] = useState<{type: 'phase'|'task'|'subTask', pIdx: number, tIdx?: number, sIdx?: number} | null>(null);
   const [collapsedTasks, setCollapsedTasks] = useState<Record<string, boolean>>({});
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
   
   const activeSpaceId = useUIStore(state => state.activeSpaceId);
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
@@ -1041,7 +1042,90 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center relative">
+              {/* Menu Plus Button */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowToolsMenu(v => !v)}
+                  disabled={isSending || creatingBranch}
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                    showToolsMenu
+                      ? 'bg-stone-200 border-stone-300 text-stone-700 rotate-45'
+                      : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-700'
+                  }`}
+                  aria-label="Acciones rápidas"
+                >
+                  <Plus className="w-5 h-5 transition-transform" />
+                </button>
+
+                {/* Popover Menu */}
+                <AnimatePresence>
+                  {showToolsMenu && (
+                    <>
+                      {/* Transparent overlay clickaway blocker */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowToolsMenu(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute bottom-14 left-0 w-44 bg-white/95 backdrop-blur-md border border-stone-200/80 shadow-xl rounded-2xl p-1.5 flex flex-col gap-1 z-50 origin-bottom-left"
+                      >
+                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2.5 py-1.5 border-b border-stone-100">
+                          Herramientas
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-notes-modal'));
+                            setShowToolsMenu(false);
+                            onClose(); // Cerrar el chat al abrir la herramienta
+                          }}
+                          className="flex items-center gap-2.5 w-full text-left px-2.5 py-2 hover:bg-stone-50 rounded-xl text-stone-700 hover:text-stone-900 transition-colors text-xs font-bold"
+                        >
+                          <span className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center text-amber-650 shrink-0">
+                            <PenTool className="w-3.5 h-3.5" />
+                          </span>
+                          Bloc de Notas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-pomodoro'));
+                            setShowToolsMenu(false);
+                            onClose(); // Cerrar el chat al abrir la herramienta
+                          }}
+                          className="flex items-center gap-2.5 w-full text-left px-2.5 py-2 hover:bg-stone-50 rounded-xl text-stone-700 hover:text-stone-900 transition-colors text-xs font-bold"
+                        >
+                          <span className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                            <Timer className="w-3.5 h-3.5" />
+                          </span>
+                          Temporizador
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-daily-warmup'));
+                            setShowToolsMenu(false);
+                            onClose(); // Cerrar el chat al abrir la herramienta
+                          }}
+                          className="flex items-center gap-2.5 w-full text-left px-2.5 py-2 hover:bg-stone-50 rounded-xl text-stone-700 hover:text-stone-900 transition-colors text-xs font-bold"
+                        >
+                          <span className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                            <Flame className="w-3.5 h-3.5" />
+                          </span>
+                          Calentar Enfoque
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <input
                 type="text"
                 value={input}

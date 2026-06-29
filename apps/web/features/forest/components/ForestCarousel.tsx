@@ -337,40 +337,18 @@ function TreeContainer({ space, isActive, isZoomed, onSpaceDeleted, onActionHook
     );
   }
 
-  // On mobile, if the tree is active in the carousel, we allow it to be interactive
-  // so that clicking a branch zooms in automatically.
-  const isInteractive = isZoomed || (isMobile && isActive);
-
-  // Intercept hooks to auto-zoom the tree on mobile if clicked when zoomed-out
-  const activeHooks = { ...onActionHooks };
-  if (isInteractive && !isZoomed) {
-    const wrapAction = (fn: any) => (...args: any[]) => {
-      const isClearing = args.length === 0 || args[0] === null || args[0] === undefined;
-      if (!isClearing) {
-        onZoomIn();
-      }
-      fn?.(...args);
-    };
-    if (activeHooks.onLeafClick) activeHooks.onLeafClick = wrapAction(activeHooks.onLeafClick);
-    if (activeHooks.onBranchClick) activeHooks.onBranchClick = wrapAction(activeHooks.onBranchClick);
-    if (activeHooks.onPhaseClick) activeHooks.onPhaseClick = wrapAction(activeHooks.onPhaseClick);
-    if (activeHooks.onEditBranch) activeHooks.onEditBranch = wrapAction(activeHooks.onEditBranch);
-  }
-
-  const finalHooks = isInteractive ? activeHooks : {};
-
   return (
     <>
       <LifeTree 
         data={treeData} 
-        isInteractive={isInteractive}
+        isInteractive={isZoomed}
         isActive={isActive}
         spaceName={space.name}
         isZoomed={isZoomed}
         onBackToForest={onBackToForest}
         space={space}
         onSpaceDeleted={onSpaceDeleted}
-        {...finalHooks}
+        {...onActionHooks}
       />
     </>
   );

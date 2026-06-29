@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus, RotateCcw, Search, Target, CheckSquare, ChevronLeft, GripVertical } from 'lucide-react';
+import { Send, Bot, User, X, MessageSquare, ChevronRight, ChevronDown, Trash2, Plus, RotateCcw, Search, Target, CheckSquare, ChevronLeft, GripVertical, Timer, PenTool, Flame } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import { useLifeTree } from '../../../hooks/useLifeTree';
@@ -1128,6 +1128,42 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
                   </div>
 
                   <div className="flex items-center gap-1.5 ml-2">
+                    {/* Bloc de Notas */}
+                    <button 
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-notes-modal'));
+                        setIsOpen(false);
+                      }}
+                      title="Bloc de Notas"
+                      className="p-1.5 hover:bg-amber-50 rounded-full transition-colors text-slate-400 hover:text-amber-600"
+                    >
+                      <PenTool className="w-4 h-4" />
+                    </button>
+                    {/* Pomodoro */}
+                    <button 
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-pomodoro'));
+                        setIsOpen(false);
+                      }}
+                      title="Temporizador Pomodoro"
+                      className="p-1.5 hover:bg-rose-50 rounded-full transition-colors text-slate-400 hover:text-rose-600"
+                    >
+                      <Timer className="w-4 h-4" />
+                    </button>
+                    {/* Calentar Enfoque */}
+                    <button 
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-daily-warmup'));
+                        setIsOpen(false);
+                      }}
+                      title="Calentar Enfoque"
+                      className="p-1.5 hover:bg-emerald-50 rounded-full transition-colors text-slate-400 hover:text-emerald-600"
+                    >
+                      <Flame className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+
                     <button 
                       onClick={handleResetChat}
                       disabled={isResetting}

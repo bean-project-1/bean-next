@@ -12,7 +12,6 @@ import { LayoutDashboard, Calendar, Dna, Lightbulb, Bot, X, Timer, PenTool, Flam
 import { DailyWarmup } from '@/features/schedule/DailyWarmup';
 import { PomodoroModal } from '@/features/schedule/PomodoroModal';
 import { NotesModal } from '@/features/schedule/NotesModal';
-import { HollyChatModal } from '@/features/hollychat/HollyChatModal';
 import { useGlobalChat } from '@/features/chat/GlobalChatProvider';
 import { AppTour } from '@/components/AppTour';
 
@@ -121,7 +120,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       color: 'bg-[#EBF2EB] hover:bg-[#DCE9DC] text-emerald-700 ring-emerald-200/50',
       angle: 0,
       action: () => {
-        window.dispatchEvent(new CustomEvent('open-hollychat'));
+        window.open('https://hollychat.org', '_blank', 'noopener,noreferrer');
         setShowRadialMenu(false);
       },
     },
@@ -288,7 +287,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <DailyWarmup />
       <PomodoroModal />
       <NotesModal />
-      <HollyChatModal />
       <TourLoader />
     </div>
   );

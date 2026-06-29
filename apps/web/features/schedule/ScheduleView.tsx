@@ -854,16 +854,18 @@ export function ScheduleView() {
             
             <div className="flex-1 flex flex-col bg-[#fffcf8] rounded shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-stone-200/60 overflow-hidden w-full h-full">
             {/* Sticky Day Headers */}
-            <div className="grid grid-cols-7 border-b border-stone-200/60 bg-[#fffcf8]/90 backdrop-blur-md overflow-hidden z-10 shrink-0">
-            {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((dayShort, i) => (
-              <div key={i} className="py-2 sm:py-4 border-b border-r border-stone-200/50 text-center">
-                <span className="sm:hidden text-[9px] font-black text-stone-400 uppercase">{dayShort}</span>
-                <span className="hidden sm:inline text-[10px] font-black text-stone-500 uppercase tracking-tighter">
-                  {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}
-                </span>
+            {viewMode === 'month' && (
+              <div className="grid grid-cols-7 border-b border-stone-200/60 bg-[#fffcf8]/90 backdrop-blur-md overflow-hidden z-10 shrink-0">
+                {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((dayShort, i) => (
+                  <div key={i} className="py-2 sm:py-4 border-b border-r border-stone-200/50 text-center">
+                    <span className="sm:hidden text-[9px] font-black text-stone-400 uppercase">{dayShort}</span>
+                    <span className="hidden sm:inline text-[10px] font-black text-stone-500 uppercase tracking-tighter">
+                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
 
           {/* Scrollable Container */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative rounded-b-2xl sm:rounded-b-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" style={{ overflowAnchor: 'auto' }}>
@@ -886,7 +888,7 @@ export function ScheduleView() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 border-l border-r border-stone-200/50 flex-1">
+                <div className="flex flex-col border-l border-r border-stone-200/50 divide-y divide-stone-200/40 bg-white/10 backdrop-blur-md flex-1">
                   {eachDayOfInterval({ start: startOfWeek(selectedDay, { weekStartsOn: 1 }), end: endOfWeek(selectedDay, { weekStartsOn: 1 }) }).map((day, i) => {
                     const dayEvents = getEventsForDay(day);
                     const isSelected = isSameDay(day, selectedDay);
@@ -903,35 +905,55 @@ export function ScheduleView() {
                           setIsBottomSheetOpen(true);
                         }}
                         className={`
-                          min-h-[300px] p-2 sm:p-4
-                          border-r border-stone-200/50 transition-all cursor-pointer group relative
+                          flex flex-col sm:flex-row sm:items-center min-h-[90px] p-4 sm:p-5
+                          transition-all cursor-pointer group relative gap-3 sm:gap-6
                           bg-transparent
                           ${isSelected ? 'ring-2 ring-inset ring-emerald-500 bg-emerald-50/40' : 'hover:bg-white/90'}
                           active:bg-emerald-50/50
                         `}
                       >
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        {/* Day Identifier Badge & Title */}
+                        <div className="flex items-center gap-3 w-full sm:w-40 shrink-0">
                           <span className={`
                             text-xs sm:text-sm font-black
-                            w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg sm:rounded-xl
-                            transition-colors
+                            w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl
+                            transition-all duration-300 group-hover:scale-105
                             ${today ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                               : isSelected ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-stone-100 text-stone-500'}
                           `}>
                             {format(day, 'd')}
                           </span>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-stone-700 uppercase tracking-tighter">
+                              {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i]}
+                            </span>
+                            {today && (
+                              <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mt-0.5 animate-pulse">
+                                Hoy
+                              </span>
+                            )}
+                          </div>
                           {hasPostIt && (
-                            <span className="text-[14px] sm:text-[16px] drop-shadow-md z-10 animate-in fade-in zoom-in duration-300" title="Contiene nota anclada">
+                            <span className="text-[14px] sm:text-[16px] drop-shadow-md z-10 animate-in fade-in zoom-in duration-300 ml-auto sm:ml-2" title="Contiene nota anclada">
                               📌
                             </span>
                           )}
                         </div>
 
-                        <div className="space-y-1.5 sm:space-y-2">
+                        {/* Events List */}
+                        <div className="flex-1 flex flex-wrap gap-2 items-center min-h-[40px]">
                           {(() => {
                             const regularEvents = dayEvents.filter(e => e.itemType !== 'commitment');
                             
+                            if (regularEvents.length === 0) {
+                              return (
+                                <span className="text-[10px] font-bold text-stone-300 italic group-hover:text-stone-400 transition-colors">
+                                  Sin actividades para hoy
+                                </span>
+                              );
+                            }
+
                             return (
                               <>
                                 {regularEvents.map(e => {
@@ -953,7 +975,7 @@ export function ScheduleView() {
                                           ev.stopPropagation();
                                           window.dispatchEvent(new CustomEvent('open-postit-modal', { detail: e.originalPostIt }));
                                         }}
-                                        className={`text-[10px] sm:text-[11px] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg truncate font-bold shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform border ${colorClass} rotate-[-1deg]`}
+                                        className={`text-[10px] sm:text-[11px] px-3 py-1.5 rounded-lg truncate font-bold shadow-sm cursor-pointer hover:-translate-y-0.5 transition-transform border ${colorClass} rotate-[-1deg] max-w-[200px]`}
                                       >
                                         📌 {e.title}
                                       </div>
@@ -967,7 +989,7 @@ export function ScheduleView() {
                                         ev.stopPropagation();
                                         handleOpenActivity(e);
                                       }}
-                                      className={`text-[10px] sm:text-[11px] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80 transition-opacity
+                                      className={`text-[10px] sm:text-[11px] px-3 py-1.5 rounded-lg sm:rounded-xl truncate font-bold border-l-2 shadow-sm cursor-pointer hover:opacity-80 transition-opacity max-w-[220px]
                                         ${e.status === 'completed'
                                           ? 'bg-stone-100 text-stone-400 border-stone-300'
                                           : isLongRange

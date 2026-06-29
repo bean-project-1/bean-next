@@ -147,6 +147,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const panStart = useRef({ x: 0, y: 0 });
   const panDistance = useRef(0);
   
+  const viewBoxRef = useRef({ x: -50, y: -100, w: 900, h: 900 });
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchViewBoxRef = useRef<any>(null);
+
+  useEffect(() => {
+    viewBoxRef.current = viewBox;
+  }, [viewBox]);
+
   const prevBranchCount = useRef<number>(data?.branches?.length || 0);
   const hasInitialDataRef = useRef<boolean>(!!data?.branches);
 
@@ -573,41 +582,149 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isInteractive || !isZoomed) return;
+    
+    // Add pointer to active pointers map
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    
     if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for pan if using mouse
-    if (e.pointerType === 'touch' && !e.isPrimary) return; // Ignore secondary touch points during pinch zoom
-    setIsPanning(true);
-    panStart.current = { x: e.clientX, y: e.clientY };
-    panDistance.current = 0;
+
+    if (activePointersRef.current.size === 1) {
+      setIsPanning(true);
+      panStart.current = { x: e.clientX, y: e.clientY };
+      panDistance.current = 0;
+    } else if (activePointersRef.current.size === 2) {
+      // Pinch to zoom starts, stop panning
+      setIsPanning(false);
+      const keys = Array.from(activePointersRef.current.keys());
+      const p1 = activePointersRef.current.get(keys[0])!;
+      const p2 = activePointersRef.current.get(keys[1])!;
+      
+      const dist = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+      initialPinchDistRef.current = dist;
+      initialPinchViewBoxRef.current = { ...viewBoxRef.current };
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    setMousePos({ x: e.clientX, y: e.clientY });
-    if (!isPanning || !isZoomed) return;
-    if (e.pointerType === 'touch' && !e.isPrimary) return; // Only track primary touch pointer
-    
-    const rawDx = e.clientX - panStart.current.x;
-    const rawDy = e.clientY - panStart.current.y;
-    panDistance.current += Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+    // Update pointer position in map
+    if (activePointersRef.current.has(e.pointerId)) {
+      activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
 
-    const dx = rawDx * (viewBox.w / (svgRef.current?.clientWidth || 800));
-    const dy = rawDy * (viewBox.h / (svgRef.current?.clientHeight || 800));
+    if (e.pointerType === 'mouse') {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    }
 
-    setViewBox({
-      ...viewBox,
-      x: viewBox.x - dx,
-      y: viewBox.y - dy
-    });
-    
-    panStart.current = { x: e.clientX, y: e.clientY };
+    if (!isZoomed || !isInteractive) return;
+
+    if (activePointersRef.current.size === 1 && isPanning) {
+      const rawDx = e.clientX - panStart.current.x;
+      const rawDy = e.clientY - panStart.current.y;
+      panDistance.current += Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      let dx = 0;
+      let dy = 0;
+      if (rect) {
+        const scaleX = rect.width / viewBoxRef.current.w;
+        const scaleY = rect.height / viewBoxRef.current.h;
+        const scale = Math.min(scaleX, scaleY);
+        
+        dx = rawDx / scale;
+        dy = rawDy / scale;
+      } else {
+        dx = rawDx * (viewBoxRef.current.w / 800);
+        dy = rawDy * (viewBoxRef.current.h / 800);
+      }
+
+      const nextX = viewBoxRef.current.x - dx;
+      const nextY = viewBoxRef.current.y - dy;
+
+      viewBoxRef.current = {
+        ...viewBoxRef.current,
+        x: nextX,
+        y: nextY
+      };
+
+      if (svgRef.current) {
+        svgRef.current.setAttribute('viewBox', `${nextX} ${nextY} ${viewBoxRef.current.w} ${viewBoxRef.current.h}`);
+      }
+
+      panStart.current = { x: e.clientX, y: e.clientY };
+
+    } else if (activePointersRef.current.size === 2 && initialPinchDistRef.current && initialPinchViewBoxRef.current) {
+      const keys = Array.from(activePointersRef.current.keys());
+      const p1 = activePointersRef.current.get(keys[0])!;
+      const p2 = activePointersRef.current.get(keys[1])!;
+      
+      const currentDist = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+      if (currentDist === 0 || initialPinchDistRef.current === 0) return;
+
+      const factor = initialPinchDistRef.current / currentDist;
+      
+      const initVB = initialPinchViewBoxRef.current;
+      const newW = Math.max(100, Math.min(2000, initVB.w * factor));
+      const newH = Math.max(100, Math.min(2000, initVB.h * factor));
+
+      const midScreenX = (p1.x + p2.x) / 2;
+      const midScreenY = (p1.y + p2.y) / 2;
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (rect) {
+        const svgScaleX = rect.width / initVB.w;
+        const svgScaleY = rect.height / initVB.h;
+        const svgScale = Math.min(svgScaleX, svgScaleY);
+
+        const midSvgX = initVB.x + (midScreenX - rect.left) / svgScale;
+        const midSvgY = initVB.y + (midScreenY - rect.top) / svgScale;
+
+        const nextScaleX = rect.width / newW;
+        const nextScaleY = rect.height / newH;
+
+        const nextX = midSvgX - (midScreenX - rect.left) / nextScaleX;
+        const nextY = midSvgY - (midScreenY - rect.top) / nextScaleY;
+
+        viewBoxRef.current = {
+          x: nextX,
+          y: nextY,
+          w: newW,
+          h: newH
+        };
+
+        if (svgRef.current) {
+          svgRef.current.setAttribute('viewBox', `${nextX} ${nextY} ${newW} ${newH}`);
+        }
+      }
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    const wasPanning = isPanning;
-    setIsPanning(false);
-    if (wasPanning && isZoomed && panDistance.current < 5) {
-      if (e.target === svgRef.current) {
-        resetZoom();
+    activePointersRef.current.delete(e.pointerId);
+
+    if (activePointersRef.current.size === 0) {
+      const wasPanning = isPanning;
+      setIsPanning(false);
+      initialPinchDistRef.current = null;
+      initialPinchViewBoxRef.current = null;
+
+      // Sync React state on final release
+      setViewBox(viewBoxRef.current);
+
+      if (wasPanning && isZoomed && panDistance.current < 5) {
+        if (e.target === svgRef.current) {
+          resetZoom();
+        }
       }
+    } else if (activePointersRef.current.size === 1) {
+      // Re-initialize panning with remaining finger
+      const remainingId = Array.from(activePointersRef.current.keys())[0];
+      const remainingPos = activePointersRef.current.get(remainingId)!;
+      
+      setIsPanning(true);
+      panStart.current = { x: remainingPos.x, y: remainingPos.y };
+      panDistance.current = 0;
+      initialPinchDistRef.current = null;
+      initialPinchViewBoxRef.current = null;
     }
   };
 
@@ -640,6 +757,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
         <defs>
           <style>{`
@@ -787,7 +905,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 zoomedPhaseId={zoomedBranchId === branch.id ? zoomedPhaseId : null}
                 activeLeafId={activeLeafId}
                 activePhaseId={activePhaseId}
-                currentRotation={rotation}
                 isInteractive={isInteractive}
                 animate={i >= prevBranchCount.current}
                 simplified={!isActive && !isZoomed}

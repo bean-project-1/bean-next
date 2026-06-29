@@ -21,7 +21,6 @@ interface BranchProps {
   zoomedPhaseId?: string | null;
   activeLeafId?: string | null;
   activePhaseId?: string | null;
-  currentRotation?: number;
   opacity?: number;
   isInteractive?: boolean;
   animate?: boolean;
@@ -30,10 +29,10 @@ interface BranchProps {
   isMobile?: boolean;
 }
 
-export const Branch = ({ 
+const BranchComponent = ({ 
   branch, index, totalBranches, clickedLeafId, onClick, onHover, 
   onBranchClick, onPhaseClick, onEdit, onDelete, isZoomed, opacity, zoomedPhaseId,
-  activeLeafId, activePhaseId, currentRotation = 0, isInteractive = true, animate = false,
+  activeLeafId, activePhaseId, isInteractive = true, animate = false,
   renderMode = 'both', simplified = false, isMobile = false
 }: BranchProps) => {
   const groupRef = useRef<SVGGElement>(null);
@@ -766,3 +765,28 @@ export const Branch = ({
     </g>
   );
 };
+
+export const Branch = React.memo(BranchComponent, (prev, next) => {
+  return (
+    prev.branch.id === next.branch.id &&
+    prev.branch.progress === next.branch.progress &&
+    prev.branch.goal === next.branch.goal &&
+    prev.branch.leaves.length === next.branch.leaves.length &&
+    prev.branch.leaves.every((l, idx) => {
+      const nextLeaf = next.branch.leaves[idx];
+      return nextLeaf && l.id === nextLeaf.id && l.completed === nextLeaf.completed && l.name === nextLeaf.name;
+    }) &&
+    prev.index === next.index &&
+    prev.totalBranches === next.totalBranches &&
+    prev.clickedLeafId === next.clickedLeafId &&
+    prev.isZoomed === next.isZoomed &&
+    prev.opacity === next.opacity &&
+    prev.zoomedPhaseId === next.zoomedPhaseId &&
+    prev.activeLeafId === next.activeLeafId &&
+    prev.activePhaseId === next.activePhaseId &&
+    prev.isInteractive === next.isInteractive &&
+    prev.animate === next.animate &&
+    prev.simplified === next.simplified &&
+    prev.isMobile === next.isMobile
+  );
+});

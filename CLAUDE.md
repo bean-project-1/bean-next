@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What this is 
+## What this is
 
 BEAN is an AI-powered "life intelligence" platform that scores a user's life across pillars (Identity, Capital, Wellbeing), generates AI insights, and plans goals/habits via agentic features (branch planner, idea incubator, career coach, shared-goal "spaces").
 

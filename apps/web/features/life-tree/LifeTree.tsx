@@ -31,9 +31,10 @@ interface LifeTreeProps {
   onBackToForest?: () => void;
   space?: any;
   onSpaceDeleted?: () => void;
+  isActive?: boolean;
 }
 
-export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, activeBranchId, isInteractive = true, spaceName, isZoomed = false, onBackToForest, space, onSpaceDeleted }: LifeTreeProps) => {
+export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRefresh, onDeleteBranch, onEditBranch, onPhaseClick, onTrunkClick, activePhaseId, activeLeafId, activeBranchId, isInteractive = true, spaceName, isZoomed = false, onBackToForest, space, onSpaceDeleted, isActive = true }: LifeTreeProps) => {
   const router = useRouter();
   const [hoveredLeafName, setHoveredLeafName] = useState<string | null>(null);
   const [clickedLeafId, setClickedLeafId] = useState<string | null>(null);
@@ -135,6 +136,7 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
   const svgRef = useRef<SVGSVGElement>(null);
   const trunkRef = useRef<SVGGElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
+  const treeGroupRef = useRef<SVGGElement>(null);
 
   // We adjust the initial viewBox to 1000x1000 to ensure wide branches and labels are never cut off by SVG boundaries.
   const [viewBox, setViewBox] = useState({ x: -50, y: -100, w: 900, h: 900 });
@@ -185,8 +187,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       const targetSize = isMobile ? 600 : 700;
 
       if (!zoomedBranchId && !zoomedPhaseId) {
+        const stateObj = {
+          x: viewBox.x,
+          y: viewBox.y,
+          w: viewBox.w,
+          h: viewBox.h
+        };
+
         setIsCameraMoving(true); // Set synchronously to hide labels immediately
-        gsap.to(viewBox, {
+        gsap.to(stateObj, {
           x: targetX,
           y: targetY,
           w: targetSize,
@@ -194,8 +203,15 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           duration: 0.5,
           ease: "power2.out",
           onStart: () => setIsCameraMoving(true),
-          onComplete: () => setIsCameraMoving(false),
-          onUpdate: () => setViewBox({ ...viewBox })
+          onComplete: () => {
+            setIsCameraMoving(false);
+            setViewBox({ x: targetX, y: targetY, w: targetSize, h: targetSize });
+          },
+          onUpdate: () => {
+            if (svgRef.current) {
+              svgRef.current.setAttribute('viewBox', `${stateObj.x} ${stateObj.y} ${stateObj.w} ${stateObj.h}`);
+            }
+          }
         });
       }
     }
@@ -220,17 +236,6 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
       );
     }
-
-    // 3. Trunk growth from root upward
-    if (trunkRef.current) {
-      tl.fromTo(trunkRef.current,
-        { scaleY: 0, transformOrigin: "400px 452px", opacity: 0 },
-        { scaleY: 1, opacity: 1, duration: 1.5, ease: "power2.out" },
-        "-=0.5"
-      );
-    }
-
-
   }, { scope: containerRef });
   const handleBranchClick = (branch: BranchData) => {
     onEditBranch?.(branch); // Always trigger the UI to open the panel
@@ -315,30 +320,42 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
         targetY = 350 - zoomSize * 0.78;
       }
 
-      setIsCameraMoving(true); // Set synchronously to hide labels immediately
-      gsap.to(viewBox, {
-        x: targetX,
-        y: targetY,
-        w: zoomSize,
-        h: zoomSize,
-        duration: 0.45,
-        ease: "power2.out",
-        onStart: () => setIsCameraMoving(true),
-        onComplete: () => setIsCameraMoving(false),
-        onUpdate: () => setViewBox({ ...viewBox })
-      });
+      const stateObj = {
+        x: viewBox.x,
+        y: viewBox.y,
+        w: viewBox.w,
+        h: viewBox.h,
+        r: rotation
+      };
 
       // Normalize target rotation to shortest path
       const currentRot = rotation;
       const diff = ((targetRot - currentRot + 180) % 360 + 360) % 360 - 180;
       targetRot = currentRot + diff;
 
-      const rotObj = { r: currentRot };
-      gsap.to(rotObj, {
+      setIsCameraMoving(true);
+      gsap.to(stateObj, {
+        x: targetX,
+        y: targetY,
+        w: zoomSize,
+        h: zoomSize,
         r: targetRot,
         duration: 0.45,
         ease: "power2.out",
-        onUpdate: () => setRotation(rotObj.r)
+        onStart: () => setIsCameraMoving(true),
+        onComplete: () => {
+          setIsCameraMoving(false);
+          setViewBox({ x: targetX, y: targetY, w: zoomSize, h: zoomSize });
+          setRotation(targetRot);
+        },
+        onUpdate: () => {
+          if (svgRef.current) {
+            svgRef.current.setAttribute('viewBox', `${stateObj.x} ${stateObj.y} ${stateObj.w} ${stateObj.h}`);
+          }
+          if (treeGroupRef.current) {
+            treeGroupRef.current.setAttribute('transform', `rotate(${stateObj.r}, 400, 350)`);
+          }
+        }
       });
     }
     onBranchClick?.(branch);
@@ -419,29 +436,41 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
           targetY = ry - zoomSize * 0.78;
         }
 
-        setIsCameraMoving(true); // Set synchronously to hide labels immediately
-        gsap.to(viewBox, {
-          x: targetX,
-          y: targetY,
-          w: zoomSize,
-          h: zoomSize,
-          duration: 0.45,
-          ease: "power2.out",
-          onStart: () => setIsCameraMoving(true),
-          onComplete: () => setIsCameraMoving(false),
-          onUpdate: () => setViewBox({ ...viewBox })
-        });
+        const stateObj = {
+          x: viewBox.x,
+          y: viewBox.y,
+          w: viewBox.w,
+          h: viewBox.h,
+          r: rotation
+        };
 
         const currentRot = rotation;
         const diff = ((targetRot - currentRot + 180) % 360 + 360) % 360 - 180;
         targetRot = currentRot + diff;
 
-        const rotObj = { r: currentRot };
-        gsap.to(rotObj, {
+        setIsCameraMoving(true);
+        gsap.to(stateObj, {
+          x: targetX,
+          y: targetY,
+          w: zoomSize,
+          h: zoomSize,
           r: targetRot,
           duration: 0.45,
           ease: "power2.out",
-          onUpdate: () => setRotation(rotObj.r)
+          onStart: () => setIsCameraMoving(true),
+          onComplete: () => {
+            setIsCameraMoving(false);
+            setViewBox({ x: targetX, y: targetY, w: zoomSize, h: zoomSize });
+            setRotation(targetRot);
+          },
+          onUpdate: () => {
+            if (svgRef.current) {
+              svgRef.current.setAttribute('viewBox', `${stateObj.x} ${stateObj.y} ${stateObj.w} ${stateObj.h}`);
+            }
+            if (treeGroupRef.current) {
+              treeGroupRef.current.setAttribute('transform', `rotate(${stateObj.r}, 400, 350)`);
+            }
+          }
         });
       }
     }
@@ -468,31 +497,42 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
       ? (isZoomed ? 600 : 800) 
       : (isZoomed ? 700 : 900);
 
-    setIsCameraMoving(true); // Set synchronously to hide labels immediately
-    gsap.to(viewBox, {
-      x: targetX,
-      y: targetY,
-      w: targetSize,
-      h: targetSize,
-      duration: 0.5,
-      ease: "power2.out",
-      onStart: () => setIsCameraMoving(true),
-      onComplete: () => setIsCameraMoving(false),
-      onUpdate: () => setViewBox({ ...viewBox })
-    });
+    const stateObj = {
+      x: viewBox.x,
+      y: viewBox.y,
+      w: viewBox.w,
+      h: viewBox.h,
+      r: rotation
+    };
 
-    const rotObj = { r: rotation };
-    
     // Normalize current rotation so it always takes the shortest path to 0
     let currentRot = rotation;
     const diff = ((0 - currentRot + 180) % 360 + 360) % 360 - 180;
     const targetRot = currentRot + diff;
 
-    gsap.to(rotObj, {
+    setIsCameraMoving(true);
+    gsap.to(stateObj, {
+      x: targetX,
+      y: targetY,
+      w: targetSize,
+      h: targetSize,
       r: targetRot,
       duration: 0.5,
       ease: "power2.out",
-      onUpdate: () => setRotation(rotObj.r)
+      onStart: () => setIsCameraMoving(true),
+      onComplete: () => {
+        setIsCameraMoving(false);
+        setViewBox({ x: targetX, y: targetY, w: targetSize, h: targetSize });
+        setRotation(0);
+      },
+      onUpdate: () => {
+        if (svgRef.current) {
+          svgRef.current.setAttribute('viewBox', `${stateObj.x} ${stateObj.y} ${stateObj.w} ${stateObj.h}`);
+        }
+        if (treeGroupRef.current) {
+          treeGroupRef.current.setAttribute('transform', `rotate(${stateObj.r}, 400, 350)`);
+        }
+      }
     });
   };
 
@@ -643,10 +683,29 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
             <stop offset="70%" stopColor="#10b981" />
             <stop offset="100%" stopColor="#065f46" />
           </radialGradient>
+
+          {/* Standard Leaf Gradient */}
+          <linearGradient id="leafGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+            <stop offset="50%" stopColor="transparent" stopOpacity="0" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.1" />
+          </linearGradient>
+
+          {/* Fruit Gradient: Completed (Gold/Orange) */}
+          <linearGradient id="fruitGrad-completed" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fcd34d" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+
+          {/* Fruit Gradient: Incomplete (Gray) */}
+          <linearGradient id="fruitGrad-incomplete" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#cbd5e1" />
+            <stop offset="100%" stopColor="#64748b" />
+          </linearGradient>
           
          </defs>
 
-        <g transform={`rotate(${rotation}, 400, 350)`}>
+        <g ref={treeGroupRef} transform={`rotate(${rotation}, 400, 350)`}>
           {/* 1. Grassy Mound Base (Background Layer) */}
           {!zoomedBranchId && (
             <>
@@ -731,6 +790,8 @@ export const LifeTree = ({ data, onLeafClick, onScoreClick, onBranchClick, onRef
                 currentRotation={rotation}
                 isInteractive={isInteractive}
                 animate={i >= prevBranchCount.current}
+                simplified={!isActive && !isZoomed}
+                isMobile={!isDesktop}
               />
             );
           })}

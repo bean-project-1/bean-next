@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, Suspense, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, Suspense, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { SpaceChat } from '../spaces/components/SpaceChat';
 
@@ -44,29 +44,29 @@ export function GlobalChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hideGlobalButton = pathname === '/';
 
-  const openChat = (msg?: string, context?: string, goalData?: any) => {
+  const openChat = useCallback((msg?: string, context?: string, goalData?: any) => {
     setInitialMsg(msg);
     setChatContext(context || 'global');
     setExistingGoalData(goalData);
     setIsOpen(true);
-  };
+  }, []);
 
   // Open the chat directly on the draft tab with the given goal data pre-loaded
-  const openDraft = (goalData: any) => {
+  const openDraft = useCallback((goalData: any) => {
     setExistingGoalData(goalData);
     setInitialMsg(undefined);
     setChatContext('refactor_goal');
     setIsOpen(true);
-  };
+  }, []);
 
-  const closeChat = () => {
+  const closeChat = useCallback(() => {
     setIsOpen(false);
     setTimeout(() => {
       setInitialMsg(undefined);
       setChatContext('global');
       setExistingGoalData(undefined);
     }, 300);
-  };
+  }, []);
 
   return (
     <GlobalChatContext.Provider value={{ isOpen, existingGoalData, openChat, openDraft, closeChat }}>

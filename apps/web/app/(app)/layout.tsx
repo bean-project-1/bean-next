@@ -6,9 +6,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Calendar, Dna, Lightbulb, Bot } from 'lucide-react';
+import { LayoutDashboard, Calendar, Dna, Lightbulb, Bot, X } from 'lucide-react';
 import { DailyWarmup } from '@/features/schedule/DailyWarmup';
 import { PomodoroModal } from '@/features/schedule/PomodoroModal';
 import { NotesModal } from '@/features/schedule/NotesModal';
@@ -51,31 +51,31 @@ function NavLink({ href, icon: Icon, label, path }: { href: string; icon: any; l
   );
 }
 
-// ─── Tool definitions (order = grid left-to-right, top-to-bottom) ────────────
-const TOOL_DEFS = [
-  { id: 'chat',     icon: '💬', label: 'Chat',    gradient: 'from-[#1B7A4E] to-[#0B462C]',    disabled: false },
-  { id: 'notas',    icon: '📝', label: 'Notas',   gradient: 'from-amber-400 to-amber-600',     disabled: false },
-  { id: 'enfoque',  icon: '🔥', label: 'Enfoque', gradient: 'from-emerald-400 to-emerald-600', disabled: false },
-  { id: 'pomodoro', icon: '🍅', label: 'Pomo',    gradient: 'from-rose-400 to-red-500',        disabled: false },
-];
-
 // ─── AppLayout ────────────────────────────────────────────────────────────────
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const path   = usePathname();
   const router = useRouter();
-  const { isOpen: isChatOpen, openChat } = useGlobalChat();
-  const [isToolMenuOpen, setIsToolMenuOpen] = useState(false);
+  const { isOpen: isChatOpen, openChat, closeChat } = useGlobalChat();
 
   const isFullscreenApp = path === '/schedule' || path.startsWith('/schedule/') || path === '/home';
 
-  // Close tool menu on route change
-  useEffect(() => { setIsToolMenuOpen(false); }, [path]);
+  // Close chat on route change
+  const lastPathRef = useRef(path);
+  useEffect(() => { 
+    if (lastPathRef.current !== path) {
+      closeChat(); 
+      lastPathRef.current = path;
+    }
+  }, [path, closeChat]);
 
-  const toolActions: Record<string, () => void> = {
-    chat:     () => { openChat(); setIsToolMenuOpen(false); },
-    notas:    () => { window.dispatchEvent(new CustomEvent('open-notes-modal')); setIsToolMenuOpen(false); },
-    pomodoro: () => { window.dispatchEvent(new CustomEvent('open-pomodoro')); setIsToolMenuOpen(false); },
-    enfoque:  () => { window.dispatchEvent(new CustomEvent('open-daily-warmup')); setIsToolMenuOpen(false); },
+  const toggleChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isChatOpen) {
+      closeChat();
+    } else {
+      openChat();
+    }
   };
 
   return (
@@ -87,59 +87,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }`}>
         <div className="w-full h-full">{children}</div>
       </main>
-
-      {/* ── BEAN Speed Dial ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {isToolMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="tool-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="fixed inset-0 bg-stone-950/20 backdrop-blur-[2px] z-40"
-              onClick={() => setIsToolMenuOpen(false)}
-            />
-
-            {/* 2×2 circle grid — outer div owns centering, motion.div owns animation */}
-            <div
-              key="tool-menu-anchor"
-              className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[60]"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.72, y: 16 }}
-                animate={{ opacity: 1, scale: 1,    y: 0  }}
-                exit={{    opacity: 0, scale: 0.72, y: 16 }}
-                transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-                style={{ transformOrigin: 'bottom center' }}
-              >
-                <div className="grid grid-cols-2 gap-3">
-                  {TOOL_DEFS.map((tool) => (
-                    <button
-                      key={tool.id}
-                      onClick={toolActions[tool.id]}
-                      disabled={tool.disabled}
-                      className={`w-[76px] h-[76px] rounded-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br ${tool.gradient} border border-white/20 shadow-[0_6px_22px_rgba(0,0,0,0.20)] transition-transform ${
-                        tool.disabled ? 'opacity-40 cursor-default' : 'active:scale-95 hover:scale-105'
-                      }`}
-                    >
-                      <span className="text-[24px] leading-none">{tool.icon}</span>
-                      <span className="text-[9px] font-black text-white/90 uppercase tracking-wider leading-none">
-                        {tool.label}
-                      </span>
-                      {tool.disabled && (
-                        <span className="text-[7px] font-black text-white/40 uppercase tracking-wider -mt-0.5">pronto</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* ── Floating Dock ──────────────────────────────────────────────── */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
@@ -155,21 +102,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* BEAN button — absolute, floats above the center of the pill */}
           <button
-            onClick={() => setIsToolMenuOpen(v => !v)}
+            onClick={toggleChat}
             id="tour-nav-bean"
             aria-label="Herramientas BEAN"
             className="absolute left-1/2 -translate-x-1/2 -top-5 group outline-none"
           >
             <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-[3px] ring-stone-100 transition-all duration-300 ${
-              isToolMenuOpen
+              isChatOpen
                 ? 'bg-gradient-to-br from-stone-400 to-stone-600 shadow-[0_4px_18px_rgba(0,0,0,0.22)] scale-95'
                 : 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_6px_22px_rgba(52,211,153,0.50)] group-hover:scale-110 group-hover:shadow-[0_8px_28px_rgba(52,211,153,0.60)]'
             }`}>
               <motion.div
-                animate={{ rotate: isToolMenuOpen ? 45 : 0 }}
+                animate={{ rotate: isChatOpen ? 90 : 0 }}
                 transition={{ type: 'spring', damping: 18, stiffness: 280 }}
               >
-                <Bot className="w-6 h-6 text-white" />
+                {isChatOpen ? (
+                  <X className="w-6 h-6 text-white" />
+                ) : (
+                  <Bot className="w-6 h-6 text-white" />
+                )}
               </motion.div>
             </div>
           </button>

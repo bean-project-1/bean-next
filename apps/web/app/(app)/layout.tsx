@@ -70,16 +70,45 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [path, closeChat]);
 
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Only left click or touch
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      if (!isChatOpen) {
+        setShowRadialMenu(true);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }
+    }, 500);
+  };
+
+  const handlePointerUpOrLeave = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const handleCentralButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    if (isLongPressRef.current) {
+      // It was a long press, do nothing on click
+      return;
+    }
+
     if (isChatOpen) {
       closeChat();
-    } else if (showRadialMenu) {
-      openChat();
-      setShowRadialMenu(false);
     } else {
-      setShowRadialMenu(true);
+      openChat();
+      if (showRadialMenu) setShowRadialMenu(false);
     }
   };
 
@@ -216,6 +245,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* Central BEAN button replica (inside container context, stacks above dome) */}
               <button
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUpOrLeave}
+                onPointerLeave={handlePointerUpOrLeave}
                 onClick={handleCentralButtonClick}
                 className="pointer-events-auto group outline-none w-14 h-14 z-20"
                 style={{
@@ -257,6 +289,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* BEAN button — absolute, floats above the center of the pill */}
           <button
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUpOrLeave}
+            onPointerLeave={handlePointerUpOrLeave}
             onClick={handleCentralButtonClick}
             id="tour-nav-bean"
             aria-label="Herramientas BEAN"

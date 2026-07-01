@@ -8,14 +8,13 @@ import { TaskDetailModal } from '../../../features/schedule/TaskDetailModal';
 import { BranchDetailView } from '../../../features/life-tree/BranchDetailView';
 import { TreeData } from '../../../features/life-tree/types';
 import { useLifeTree } from '../../../hooks/useLifeTree';
-import { SeedbedDashboard } from '../../../features/idea-incubator/SeedbedDashboard';
 import { ForestCarousel } from '../../../features/forest/components/ForestCarousel';
 import { getSpaces } from '../../../features/spaces/actions/spaces';
 import { useUIStore } from '../../../hooks/useUIStore';
+import { useGlobalChat } from '../../../features/chat/GlobalChatProvider';
 
 export default function HomePage() {
   const isSpaceZoomed = useUIStore(state => state.isSpaceZoomed);
-  const [viewMode, setViewMode] = useState<'tree' | 'incubator'>('tree');
   const [isDnaOpen, setIsDnaOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -45,6 +44,51 @@ export default function HomePage() {
   const safeSpaceIndex = spaces.length > 0 ? ((activeSpaceIndex % spaces.length) + spaces.length) % spaces.length : 0;
   const activeSpaceId = spaces[safeSpaceIndex]?.id || 'personal';
   const { treeData, loading, deleteGoal, deleteAction, updateAction, addAction, updateGoal, updateTask, refresh, error } = useLifeTree(activeSpaceId);
+
+  const { openChat } = useGlobalChat();
+
+  useEffect(() => {
+    if (loading) return;
+
+    // A. Handle value-first onboarding flow (unseeded goal text)
+    const pendingGoal = sessionStorage.getItem('just_onboarded_goal');
+    if (pendingGoal) {
+      sessionStorage.removeItem('just_onboarded_goal');
+      sessionStorage.setItem('first_tour_active', 'true');
+      
+      setTimeout(() => {
+        openChat(undefined, 'refactor_goal', {
+          isNewDraftFromOnboarding: true,
+          goalText: pendingGoal
+        });
+        
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('start-onboarding-tour'));
+        }, 1500);
+      }, 800);
+      return;
+    }
+
+    // B. Fallback: Already seeded goal tree onboarding
+    if (treeData && treeData.branches && treeData.branches.length > 0) {
+      if (sessionStorage.getItem('just_onboarded') === 'true') {
+        sessionStorage.removeItem('just_onboarded');
+        const firstBranch = treeData.branches[0];
+        setSelectedBranchId(firstBranch.id);
+        
+        setTimeout(() => {
+          openChat(
+            `¡Hola! Estoy listo para guiarte en tu meta: "${firstBranch.goal}". ¿Quieres afinar algún detalle, o empezamos de una vez con las primeras tareas?`,
+            'tree',
+            firstBranch
+          );
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('start-onboarding-tour'));
+          }, 500);
+        }, 800);
+      }
+    }
+  }, [loading, treeData, openChat]);
 
   const handleLeafClick = (id: string | null) => {
     if (!id) {
@@ -165,34 +209,8 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-transparent flex-col relative">
-      {/* View Toggle */}
-      {!isSpaceZoomed && (
-        <div className="fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[100]" id="tour-top-toggle">
-          <div className="flex bg-white/90 backdrop-blur-md p-1 rounded-full shadow-lg border border-slate-200">
-            <button
-              onClick={() => setViewMode('tree')}
-              className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ${
-                viewMode === 'tree' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              El Bosque
-            </button>
-            <button
-              onClick={() => setViewMode('incubator')}
-              className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-1.5 ${
-                viewMode === 'incubator' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span>Semillero</span>
-              <span className={`text-[9px] leading-none px-1.5 py-0.5 rounded-full uppercase tracking-widest ${viewMode === 'incubator' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'}`}>Beta</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <main className="flex-1 relative">
-          {viewMode === 'tree' ? (
             <ForestCarousel 
               spaces={spaces}
               activeIndex={activeSpaceIndex}
@@ -213,9 +231,6 @@ export default function HomePage() {
                 onDeleteBranch: (b: any) => handleDeleteGoal(b.id)
               }}
             />
-          ) : (
-            <SeedbedDashboard activeSpaceId={activeSpaceId} onPlanted={() => setViewMode('tree')} />
-          )}
         </main>
       </div>
 

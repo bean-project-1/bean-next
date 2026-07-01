@@ -2,7 +2,7 @@
 
 export function OnboardingCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 backdrop-blur-md shadow-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    <div suppressHydrationWarning={true} className="glass rounded-[2rem] p-8 border border-stone-200/50 bg-white/70 shadow-2xl backdrop-blur-xl shadow-stone-200/30">
       {children}
     </div>
   );

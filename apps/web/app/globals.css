@@ -150,3 +150,72 @@ body {
   background-color: rgba(139, 92, 246, 0.3);
   color: white;
 }
+
+/* ----- Driver.js Custom Styling (BEAN Theme) ----- */
+.driver-popover.bean-driver-popover {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(220, 215, 205, 0.6) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  padding: 20px !important;
+  max-width: 320px !important;
+}
+
+.driver-popover.bean-driver-popover .driver-popover-title {
+  font-family: var(--font-instrument), Georgia, serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #1c1917 !important; /* stone-900 */
+  margin-bottom: 8px !important;
+}
+
+.driver-popover.bean-driver-popover .driver-popover-description {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
+  color: #44403c !important; /* stone-700 */
+}
+
+.driver-popover.bean-driver-popover .driver-popover-footer {
+  margin-top: 16px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.driver-popover.bean-driver-popover .driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  color: #a8a29e !important; /* stone-400 */
+  font-weight: 600 !important;
+}
+
+.driver-popover.bean-driver-popover button {
+  background: #f5f5f4 !important; /* stone-100 */
+  color: #44403c !important; /* stone-700 */
+  border: 1px solid #e7e5e4 !important; /* stone-200 */
+  border-radius: 12px !important;
+  padding: 6px 12px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.driver-popover.bean-driver-popover button:hover {
+  background: #e7e5e4 !important;
+  color: #1c1917 !important;
+}
+
+.driver-popover.bean-driver-popover .driver-popover-next-btn {
+  background: #10b981 !important; /* emerald-500 */
+  color: white !important;
+  border: 1px solid #059669 !important;
+}
+
+.driver-popover.bean-driver-popover .driver-popover-next-btn:hover {
+  background: #059669 !important;
+  color: white !important;
+}

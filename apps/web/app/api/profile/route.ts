@@ -487,15 +487,74 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // This will cascade delete most relations (goals, attributes, spaces via owner relation if setup correctly)
-    await prisma.user.delete({
-      where: { id: userId }
+    console.log(`[DELETE /api/profile] Deleting all data cascades for user ${userId}`);
+
+    // Perform manual cascade deletes in transaction to avoid relation violations
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete incubator seeds
+      await tx.incubatorSeed.deleteMany({ where: { userId } });
+      
+      // 2. Delete dimension inputs
+      await tx.dimensionInput.deleteMany({ where: { userId } });
+
+      // 3. Delete push subscriptions
+      await tx.pushSubscription.deleteMany({ where: { userId } });
+
+      // 4. Delete chat sessions (cascades to chat messages)
+      await tx.chatSession.deleteMany({ where: { userId } });
+
+      // 5. Delete resumes
+      await tx.userResume.deleteMany({ where: { userId } });
+
+      // 6. Delete base commitments
+      await tx.baseCommitment.deleteMany({ where: { userId } });
+
+      // 7. Delete goals and goal actions (delete child sub-actions first to avoid self-relation violations)
+      const userGoals = await tx.goal.findMany({ where: { userId } });
+      const goalIds = userGoals.map(g => g.id);
+      await tx.goalAction.deleteMany({ where: { goalId: { in: goalIds }, parentId: { not: null } } });
+      await tx.goalAction.deleteMany({ where: { goalId: { in: goalIds } } });
+      await tx.goal.deleteMany({ where: { userId } });
+
+      // 8. Find and delete spaces owned by the user, and their memberships
+      const spacesOwned = await tx.space.findMany({
+        where: {
+          members: {
+            some: { userId, role: 'owner' }
+          }
+        }
+      });
+      const spaceIds = spacesOwned.map(s => s.id);
+      await tx.spaceMember.deleteMany({ where: { spaceId: { in: spaceIds } } });
+      await tx.space.deleteMany({ where: { id: { in: spaceIds } } });
+      await tx.spaceMember.deleteMany({ where: { userId } });
+
+      // 9. Delete user attributes
+      await tx.userAttribute.deleteMany({ where: { userId } });
+
+      // 10. Delete other user-related models
+      await tx.notificationLog.deleteMany({ where: { userId } });
+      await tx.suggestedPath.deleteMany({ where: { userId } });
+      await tx.lifeEvent.deleteMany({ where: { userId } });
+      await tx.postIt.deleteMany({ where: { userId } });
+      await tx.dailyTask.deleteMany({ where: { userId } });
+      await tx.spaceMessage.deleteMany({ where: { userId } });
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.account.deleteMany({ where: { userId } });
+
+      // 11. Finally, delete the User record
+      await tx.user.delete({
+        where: { id: userId }
+      });
+    }, {
+      timeout: 15000
     });
 
+    console.log(`[DELETE /api/profile] Successfully deleted user account ${userId}`);
     return NextResponse.json({ success: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[DELETE /api/profile]', msg);
+    console.error('[DELETE /api/profile] Error:', msg);
     return NextResponse.json(
       { success: false, error: 'Failed to delete account', detail: msg },
       { status: 500 }

@@ -420,6 +420,19 @@ export function SpaceChat({ spaceId, spaceName, members = [], onRefreshTree, isO
   // When opened with an existing goal, pre-load it as a draft plan and go to draft tab
   useEffect(() => {
     if (isOpen && existingGoalData) {
+      if (existingGoalData.isNewDraftFromOnboarding && existingGoalData.goalText) {
+        const goalText = existingGoalData.goalText;
+        const mockGoalData = {
+          goalTitle: goalText,
+          dimensionName: 'skills',
+          hoursPerWeek: 10,
+          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        };
+        setPendingBranch(mockGoalData);
+        setBranchCreated(false);
+        generateDraft(mockGoalData);
+        return;
+      }
       try {
         if (isPersonal) {
           mutateSession((prev: any) => {
@@ -943,7 +956,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
     try {
       let res;
       if (isPersonal) {
-        res = await fetch('/api/ai/chat', {
+        res = await fetch('/api/ai/smart-planner', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -975,55 +988,90 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         });
       }
 
-      const data = await res.json();
-      
-      if (data.success) {
-        setAttachedContext(null);
-        const aiResponse = isPersonal ? data : data.aiResponse;
-        
-        if (aiResponse) {
-          if (aiResponse.triggerRevision && draftPlan) {
-            const branchToUse = pendingBranch || {
-              goalTitle: draftPlan.title || 'Meta',
-              dimensionName: 'skills',
-              hoursPerWeek: 10,
-              targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            };
-            setPendingBranch(branchToUse);
-            generateDraft(branchToUse, aiResponse.triggerRevision);
-          } else if (aiResponse.branchData) {
-            setPendingBranch(aiResponse.branchData);
-            setBranchCreated(false);
-            generateDraft(aiResponse.branchData);
-          } else if (aiResponse.saveNote && draftPlan) {
-            const newDraft = { ...draftPlan };
-            const targetId = String(aiResponse.saveNote.taskNameOrId).toLowerCase();
-            let found = false;
-            newDraft.phases.forEach((p: any, pIdx: number) => {
-              p.tasks?.forEach((t: any, tIdx: number) => {
-                if (t.id === targetId || t.name.toLowerCase().includes(targetId)) {
-                  if (!found) {
-                    updateDraftPlanItem('task', pIdx, tIdx, undefined, 'notes', aiResponse.saveNote.content);
-                    found = true;
-                  }
-                }
-              });
-            });
-            setMobileTab('draft');
+      if (!res.body) throw new Error('Response body is empty');
+
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success) {
+          setAttachedContext(null);
+          setIsSending(false);
+          setIsAiTyping(false);
+          if (isPersonal) {
+            mutateSession();
+          } else {
+            mutateSpaceMessages();
           }
         }
+        return;
+      }
 
-        if (isPersonal) {
-          mutateSession();
-        } else {
-          mutateSpaceMessages();
+      if (isAiTarget) {
+        setIsDrafting(true);
+        setDraftSteps([
+          { step: 1, label: 'Procesando mensaje...', status: 'active' },
+          { step: 2, label: 'Aplicando estrategia...', status: 'pending' },
+          { step: 3, label: 'Finalizando plan...', status: 'pending' }
+        ]);
+        if (isPersonal) setMobileTab('draft');
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              try {
+                const event = JSON.parse(trimmed);
+                if (event.type === 'step') {
+                  setDraftSteps(prev => prev.map(s => {
+                    if (s.step === event.step) {
+                      return { ...s, label: event.label || s.label, status: event.status as any };
+                    }
+                    if (event.status === 'active' && s.step < event.step) {
+                      return { ...s, status: 'done' as any };
+                    }
+                    return s;
+                  }));
+                  if (event.status === 'active') {
+                    setDraftStep(event.label || 'Procesando...');
+                  }
+                } else if (event.type === 'complete') {
+                  if (event.reply) {
+                    if (isPersonal) {
+                      mutateSession();
+                    } else {
+                      mutateSpaceMessages();
+                    }
+                  }
+                  if (event.actionPlan) {
+                    setDraftPlan(event.actionPlan);
+                  }
+                  setDraftStep('');
+                  setIsDrafting(false);
+                  setAttachedContext(null);
+                } else if (event.type === 'error') {
+                  setIsDrafting(false);
+                }
+              } catch (err) {
+                console.error('Error parsing NDJSON line:', err);
+              }
+            }
+          }
+          if (done) break;
         }
 
-        if (isAiTarget) {
-          setTimeout(() => {
-            onRefreshTree();
-          }, 1500);
-        }
+        setTimeout(() => {
+          onRefreshTree();
+        }, 1500);
       }
     } catch (err) {
       console.error(err);
@@ -1074,6 +1122,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
           >
             <div
               onClick={(e) => e.stopPropagation()}
+              id="tour-coach-chat"
               className={`bg-white shadow-2xl flex flex-col border border-slate-100 overflow-hidden rounded-3xl transition-all duration-300 max-h-[85vh] ${
                 (draftPlan || isDrafting) ? 'w-full max-w-6xl h-[85vh]' : 'w-full max-w-3xl h-[80vh] md:h-[75vh]'
               }`}
@@ -1519,7 +1568,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
               </div>
 
               {/* Right Column: Mesa de Dibujo — solo se monta cuando hay draft o se está generando */}
-              {(draftPlan || isDrafting) && <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
+              {(draftPlan || isDrafting) && <div id="tour-goal-roadmap" className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
                 {/* Draft Header */}
                 <div className="px-4 md:px-6 py-4 border-b border-[#E6E1D6] bg-[#FAF9F6] sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
                   <div className="flex items-center gap-3">

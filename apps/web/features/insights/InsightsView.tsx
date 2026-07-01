@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useGlobalChat } from '@/features/chat/GlobalChatProvider';
 import { CareerDashboard } from '../career/CareerDashboard';
+import { SeedbedDashboard } from '../idea-incubator/SeedbedDashboard';
 
 interface LifePath {
   id?: string;
@@ -342,7 +343,7 @@ function PathDetailPanel({
 export function InsightsView() {
   const { openChat } = useGlobalChat();
   const [paths, setPaths] = useState<LifePath[]>([]);
-  const [activeTab, setActiveTab] = useState<'paths' | 'career'>('paths');
+  const [activeTab, setActiveTab] = useState<'paths' | 'career' | 'semillero'>('paths');
   const [pathsLoading, setPathsLoading] = useState(true);
   const [pathsError, setPathsError] = useState(false);
   const [attributes, setAttributes] = useState<UserAttribute[]>([]);
@@ -427,7 +428,7 @@ export function InsightsView() {
 
   return (
     <div className="min-h-screen bg-transparent pb-32 sm:pb-32 mesh-gradient p-4 sm:p-8 animate-fade-in">
-      <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-xl mx-auto mb-10 relative z-10">
+      <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-2xl mx-auto mb-10 relative z-10">
         <button 
           onClick={() => setActiveTab('paths')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
@@ -451,6 +452,18 @@ export function InsightsView() {
           <span className="hidden sm:inline">Brújula de Carrera</span>
           <span className="sm:hidden">Brújula</span>
           💼
+        </button>
+        <button 
+          onClick={() => setActiveTab('semillero')}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeTab === 'semillero' 
+              ? 'bg-white text-amber-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+              : 'text-stone-500 hover:text-stone-855'
+          }`}
+        >
+          <span className="hidden sm:inline">Semillero</span>
+          <span className="sm:hidden">Semillero</span>
+          🌱
         </button>
       </div>
 
@@ -595,6 +608,19 @@ export function InsightsView() {
             className="max-w-6xl mx-auto"
           >
             <CareerDashboard isSubComponent={true} />
+          </motion.div>
+        )}
+
+        {activeTab === 'semillero' && (
+          <motion.div
+            key="semillero"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-6xl mx-auto h-[75vh] relative"
+          >
+            <SeedbedDashboard activeSpaceId="personal" onPlanted={() => setActiveTab('paths')} />
           </motion.div>
         )}
       </AnimatePresence>

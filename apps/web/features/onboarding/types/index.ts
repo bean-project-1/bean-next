@@ -1,5 +1,5 @@
-export type Method = 'llm' | 'cv' | 'quiz' | 'coach';
-export type Phase = 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'ideas' | 'routine' | 'generating';
+export type Method = 'cv' | 'quiz';
+export type Phase = 'method' | 'quiz' | 'llm' | 'cv' | 'coach' | 'review' | 'ideas' | 'routine' | 'generating' | 'express-goal' | 'express-routine' | 'express-draft';
 
 export interface FormData {
   name: string;

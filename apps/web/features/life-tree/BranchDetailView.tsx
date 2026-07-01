@@ -862,6 +862,7 @@ export function BranchDetailView({ branch, zoomedPhaseId, activeLeafId, onClose,
       )}
 
       <motion.div 
+        id="tour-goal-roadmap"
         initial={isDesktop ? { x: '100%', opacity: 0 } : { y: '100%' }}
         animate={{ x: 0, opacity: 1, y: 0 }}
         transition={{ 

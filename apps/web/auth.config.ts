@@ -26,13 +26,9 @@ export const authConfig = {
 
       const isProtectedRoute = nextUrl.pathname.startsWith("/dashboard") || 
                                nextUrl.pathname.startsWith("/home") || 
-                               nextUrl.pathname.startsWith("/profile") ||
-                               nextUrl.pathname.startsWith("/onboarding");
+                               nextUrl.pathname.startsWith("/profile");
 
       if (isProtectedRoute && !isLoggedIn) {
-        if (nextUrl.pathname.startsWith("/onboarding")) {
-          return Response.redirect(new URL("/register", nextUrl));
-        }
         return false; // Redirects to signIn page
       }
 

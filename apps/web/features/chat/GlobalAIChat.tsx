@@ -688,62 +688,83 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
     setIsSending(true);
 
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetch('/api/ai/smart-planner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
           context,
           message: finalMsgToSend,
-          draftPlan // Send the current draft so the AI knows what we are looking at
+          draftPlan, // Send the current draft so the AI knows what we are looking at
+          attachedContext: attachedContexts.length > 0 ? attachedContexts[0] : null // Send context for Revisor
         })
       });
 
-      const data = await res.json();
-      if (data.success) {
-        if (!sessionId && data.sessionId) setSessionId(data.sessionId);
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        
-        if (data.triggerRevision && draftPlan) {
-          const branchToUse: BranchData = pendingBranch || {
-            goalTitle: draftPlan.title || 'Meta',
-            dimensionName: 'skills',
-            hoursPerWeek: 10,
-            targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          };
-          setPendingBranch(branchToUse);
-          generateDraft(branchToUse, data.triggerRevision);
-        } else if (data.branchData) {
-          setPendingBranch(data.branchData);
-          setBranchCreated(false);
-          generateDraft(data.branchData);
-        } else if (data.saveNote && draftPlan) {
-          const newDraft = { ...draftPlan };
-          // Localizar la tarea y actualizar la nota
-          const targetId = String(data.saveNote.taskNameOrId).toLowerCase();
-          
-          let found = false;
-          newDraft.phases.forEach((p: any, pIdx: number) => {
-            p.tasks?.forEach((t: any, tIdx: number) => {
-              if (t.id === targetId || t.name.toLowerCase().includes(targetId)) {
-                if (!found) {
-                  updateDraftPlanItem('task', pIdx, tIdx, undefined, 'notes', data.saveNote.content);
-                  found = true;
-                }
-              }
-            });
-          });
-          setMobileTab('draft');
-        }
-      } else {
-        const errorMsg = data.error === 'Not authenticated'
-          ? 'Tu sesión ha expirado. Por favor recarga la página.'
-          : `Error: ${data.detail ?? data.error ?? 'Intenta de nuevo.'}`;
-        setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+      if (!res.body) {
+        throw new Error('Response body is empty');
       }
-    } catch {
+
+      setIsDrafting(true); // Activar vista de drafting para pasos
+      setDraftSteps([
+        { step: 1, label: 'Procesando mensaje...', status: 'active' },
+        { step: 2, label: 'Aplicando estrategia...', status: 'pending' },
+        { step: 3, label: 'Finalizando plan...', status: 'pending' }
+      ]);
+      setMobileTab('draft');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const event = JSON.parse(trimmed);
+              if (event.type === 'step') {
+                setDraftSteps(prev => prev.map(s => {
+                  if (s.step === event.step) {
+                    return { ...s, label: event.label || s.label, status: event.status };
+                  }
+                  if (event.status === 'active' && s.step < event.step) {
+                    return { ...s, status: 'done' };
+                  }
+                  return s;
+                }));
+                if (event.status === 'active') {
+                  setDraftStep(event.label || 'Procesando...');
+                }
+              } else if (event.type === 'complete') {
+                if (!sessionId && event.sessionId) setSessionId(event.sessionId);
+                if (event.reply) {
+                  setMessages(prev => [...prev, { role: 'assistant', content: event.reply }]);
+                }
+                if (event.actionPlan) {
+                  setDraftPlan(event.actionPlan);
+                }
+                setDraftStep('');
+                setIsDrafting(false);
+              } else if (event.type === 'error') {
+                setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${event.error}` }]);
+                setIsDrafting(false);
+              }
+            } catch (err) {
+              console.error('Error parsing NDJSON line:', err);
+            }
+          }
+        }
+        if (done) break;
+      }
+    } catch (e: any) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error de red. Intenta de nuevo.' }]);
-    } finally {
+      setIsDrafting(false);
       setIsSending(false);
     }
   };
@@ -869,13 +890,38 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         {/* CONTAINER FOR CHAT AND DRAFT */}
         <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
           {/* Lado Izquierdo: Chat */}
-          <div className={`flex flex-col h-full z-10 ${
-            isChatCollapsed
-              ? 'md:hidden w-full'
-              : (draftPlan || isDrafting)
-                ? 'md:w-[35%] w-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)]'
-                : 'w-full'
-          } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}>
+          <div 
+            id="tour-coach-chat"
+            className={`relative flex flex-col h-full z-10 ${
+              isChatCollapsed
+                ? 'md:hidden w-full'
+                : (draftPlan || isDrafting)
+                  ? 'md:w-[35%] w-full border-r border-stone-200/80 shadow-[3px_0_12px_rgba(0,0,0,0.015)]'
+                  : 'w-full'
+            } ${mobileTab === 'draft' && (draftPlan || isDrafting) ? 'hidden md:flex' : 'flex'} bg-stone-50/20`}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setIsDraggingOver(false);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingOver(false);
+              const text = e.dataTransfer.getData('text/plain');
+              if (text && !attachedContexts.includes(text)) {
+                setAttachedContexts(prev => [...prev, text]);
+              }
+            }}
+          >
+            {isDraggingOver && (
+              <div className="absolute inset-0 z-50 bg-emerald-50/90 backdrop-blur-sm border-4 border-dashed border-emerald-500 rounded-xl m-2 flex flex-col items-center justify-center pointer-events-none">
+                <div className="text-6xl animate-bounce mb-4">📥</div>
+                <div className="text-emerald-800 font-black text-xl text-center px-4 uppercase tracking-wider">
+                  Suelta aquí para añadir contexto
+                </div>
+              </div>
+            )}
 
           {/* Chat Sidebar Header */}
           <div className="h-[60px] md:h-[72px] px-4 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
@@ -1011,26 +1057,9 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         ) : (
           <form 
             onSubmit={handleSubmit} 
-            className={`p-3 border-t transition-all duration-300 bg-white flex flex-col gap-2 shrink-0 ${
-              isDraggingOver ? 'border-dashed border-2 border-emerald-500 bg-emerald-50/40 rounded-2xl m-2' : 'border-stone-100'
-            }`}
-            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
-            onDragLeave={() => setIsDraggingOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDraggingOver(false);
-              const text = e.dataTransfer.getData('text/plain');
-              if (text && !attachedContexts.includes(text)) {
-                setAttachedContexts(prev => [...prev, text]);
-              }
-            }}
+            className="p-3 border-t transition-all duration-300 bg-white flex flex-col gap-2 shrink-0 border-stone-100"
           >
-            {isDraggingOver && (
-              <div className="flex items-center justify-center py-3 text-emerald-800 font-bold text-xs gap-1.5 animate-pulse bg-emerald-100/30 rounded-xl">
-                <span>📥</span> Suelta el elemento aquí para añadirlo como contexto
-              </div>
-            )}
-            {!isDraggingOver && attachedContexts.length > 0 && (
+            {attachedContexts.length > 0 && (
               <div className="flex flex-wrap gap-2 px-1">
                 {attachedContexts.map((ctx, i) => (
                   <div key={i} className="flex items-center gap-1 bg-stone-100 border border-stone-200 text-[11px] font-medium text-stone-600 px-2 py-1 rounded-md">
@@ -1149,7 +1178,7 @@ El plan no es viable actualmente con la disponibilidad de horas o el presupuesto
         )}
         </div>
         {/* Lado Derecho: Mesa de Dibujo — solo se monta cuando hay draft o se está generando */}
-        {(draftPlan || isDrafting) && <div className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
+        {(draftPlan || isDrafting) && <div id="tour-goal-roadmap" className={`${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'} flex-col h-full ${isChatCollapsed ? 'w-full' : 'md:w-[65%] w-full'} bg-[#F4F1EA] overflow-y-auto border-l border-stone-200`}>
           <div className="px-4 md:px-6 py-4 border-b border-[#E6E1D6] bg-[#FAF9F6] sticky top-0 z-10 flex items-center justify-between gap-3 shadow-sm min-h-[60px] md:min-h-[72px]">
             <div className="flex items-center gap-3">
               {isChatCollapsed && (

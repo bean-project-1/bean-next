@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
 
       // Helper function for fallback days
       const getFallbackDaysOfWeek = (days: any[], freq: any) => {
-        if (Array.isArray(days) && days.length > 0) return days.map(Number);
+        if (Array.isArray(days) && days.length > 0) {
+          const parsed = days.map(Number).filter(n => !isNaN(n) && n !== null && n !== undefined);
+          if (parsed.length > 0) return parsed;
+        }
         if (!freq) return [1, 2, 3, 4, 5];
         if (freq.type === 'daily') return [1, 2, 3, 4, 5, 6, 0];
         const val = freq.value || 1;
@@ -176,11 +179,20 @@ export async function POST(req: NextRequest) {
 
         // Create Milestone for this phase
         if (phaseData.milestone) {
+          const mTitle = typeof phaseData.milestone === 'object' && phaseData.milestone !== null
+            ? (phaseData.milestone.title || phaseData.milestone.name || 'Hito')
+            : String(phaseData.milestone);
+
+          const mDesc = typeof phaseData.milestone === 'object' && phaseData.milestone !== null
+            ? (phaseData.milestone.description || phaseData.milestone.evaluationInstructions || null)
+            : null;
+
           await tx.goalAction.create({
             data: {
               goalId: goal.id,
               parentId: phase.id,
-              title: phaseData.milestone,
+              title: mTitle,
+              description: mDesc,
               type: 'milestone'
             }
           });

@@ -1,12 +1,11 @@
 // =======================================================
-// BEAN — API Route: GET + POST /api/ai/chat
-// Permanent AI Coach chat with DB persistence
+// BEAN — API Route: GET + DELETE /api/ai/chat
+// Retrieves or deletes chat sessions. (POST moved to smart-planner)
 // =======================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { ChatCoachService } from '@/services/chat-coach-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,50 +19,36 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const context = searchParams.get('context') ?? 'insights';
+    const sessionId = searchParams.get('sessionId');
 
-    const chatCoachService = new ChatCoachService();
-    const session = await chatCoachService.getOrCreateSession(userId, undefined, context);
+    let session = null;
+    
+    if (sessionId) {
+      session = await prisma.chatSession.findUnique({
+        where: { id: sessionId },
+        include: { messages: { orderBy: { createdAt: 'asc' } } }
+      });
+    }
+
+    if (!session) {
+      session = await prisma.chatSession.findFirst({
+        where: { userId, context },
+        orderBy: { updatedAt: 'desc' },
+        include: { messages: { orderBy: { createdAt: 'asc' } } }
+      });
+    }
+
+    if (!session) {
+      session = await prisma.chatSession.create({
+        data: { userId, context },
+        include: { messages: true }
+      });
+    }
 
     return NextResponse.json({ success: true, data: session });
   } catch (error) {
     console.error('GET /api/ai/chat Error:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const authSession = await auth();
-    const userId = authSession?.user?.id;
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const { sessionId, message, context, draftPlan, attachedContext } = await req.json();
-    if (!message?.trim()) {
-      return NextResponse.json({ success: false, error: 'Missing message' }, { status: 400 });
-    }
-
-    const chatCoachService = new ChatCoachService();
-    const byokKey = req.cookies.get('bean_byok_key')?.value;
-    const byokProvider = req.cookies.get('bean_byok_provider')?.value;
-    const result = await chatCoachService.generateResponse(userId, sessionId, message, context, draftPlan, byokKey, byokProvider, attachedContext);
-
-    return NextResponse.json({
-      success: true,
-      reply: result.reply,
-      branchData: result.branchData,
-      triggerRevision: result.triggerRevision,
-      saveNote: result.saveNote,
-      sessionId: result.sessionId
-    });
-  } catch (error: any) {
-    console.error('POST /api/ai/chat Error:', error?.message ?? error);
-    return NextResponse.json({
-      success: false,
-      error: 'Internal Server Error',
-      detail: process.env.NODE_ENV !== 'production' ? (error?.message ?? String(error)) : undefined
-    }, { status: 500 });
   }
 }
 

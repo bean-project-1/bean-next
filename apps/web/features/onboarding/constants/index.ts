@@ -123,10 +123,8 @@ export const COACH_QUESTIONS = [
 ];
 
 export const METHODS: { id: Method; emoji: string; title: string; subtitle: string; tag: string }[] = [
-  { id: 'llm',   emoji: '🤖', title: 'Trae tu perfil de IA',  subtitle: 'Pega el resumen de ChatGPT, Claude o Gemini',     tag: 'Más rápido'  },
-  { id: 'cv',    emoji: '📄', title: 'Importa tu CV',          subtitle: 'Sube tu currículum en PDF o Word',                 tag: 'Profesional' },
   { id: 'quiz',  emoji: '🎮', title: 'Quiz interactivo',       subtitle: 'Responde preguntas cortas para armar tu perfil',   tag: 'Recomendado' },
-  { id: 'coach', emoji: '🎙️', title: 'Entrevista con BEAN',    subtitle: 'Nuestro coach te hace preguntas abiertas',         tag: 'Más profundo'},
+  { id: 'cv',    emoji: '📄', title: 'Importa tu CV',          subtitle: 'Sube tu currículum en PDF o Word',                 tag: 'Profesional' },
 ];
 
 export const ALL_DIMENSIONS = [

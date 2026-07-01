@@ -8,3 +8,7 @@ export * from './GeneratingScreen';
 export * from './IdeaPhase';
 export * from './RoutinePhase';
 export * from './DNADiagram';
+export * from './ExpressGoalPhase';
+export * from './ExpressRoutinePhase';
+export * from './ExpressDraftPhase';
+

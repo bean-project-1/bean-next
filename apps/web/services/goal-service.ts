@@ -86,13 +86,16 @@ export class GoalService {
 
 
   async parseGoalWithAI(text: string, userId?: string, byokKey?: string, byokProvider?: string) {
-    let dnaContext = "No user DNA attributes specified.";
+    let hasDNA = false;
+    let dnaContext = "USER DNA ATTRIBUTES: NONE. **CRITICAL INSTRUCTION**: The user has NO previous knowledge, NO registered skills, and NO assets. You MUST assume they are starting from absolute scratch (desde cero). Do not assume they have discipline, money, english skills, or anything else unless they explicitly mention it in their goal intention.";
+    
     if (userId) {
       const attributes = await prisma.userAttribute.findMany({
         where: { userId },
         include: { dimension: true }
       });
       if (attributes.length > 0) {
+        hasDNA = true;
         dnaContext = "USER DNA ATTRIBUTES (Current starting assets/skills):\n" + 
           attributes.map(a => `- ${a.dimension.label} (${a.category}): ${a.name}`).join('\n');
       }
@@ -116,8 +119,8 @@ export class GoalService {
       6. "estimatedDurationMonths": (number) A highly realistic estimate of how many months this goal typically takes to achieve in the real world (e.g., becoming a General Doctor = 72 to 84 months; becoming a Neurosurgeon or medical specialist = 120 to 144 months; climbing Everest = 24 to 36 months; obtaining a cloud certification = 3 to 6 months). If the user provided a targetDate or savingsPerMonth, use those to calculate the exact duration (e.g., Cost / savingsPerMonth).
       7. "complexityLevel": (string) "low", "medium", "high", or "extreme".
       8. "domainExpertiseNeeded": (string) A comma-separated list of technical/domain knowledge needed.
-      9. "startingAssets": (array of strings) The user's DNA attributes/skills that are relevant to this goal and can serve as a base (from USER DNA ATTRIBUTES). If none are relevant, return an empty array.
-      10. "dnaAnalysisInsight": (string) A short explanation in Spanish of what the user already has as a base according to their DNA, and where they are starting from (e.g., "Dado que ya tienes conocimientos en React, no iniciaremos desde cero. El plan se enfocará en...").
+      9. "startingAssets": (array of strings) The user's DNA attributes/skills that are relevant to this goal and can serve as a base (from USER DNA ATTRIBUTES). If none are relevant or dnaContext implies no attributes, return an empty array.
+      10. "dnaAnalysisInsight": (string) A short explanation in Spanish of what the user already has as a base according to their DNA. CRITICAL: If the user has no DNA attributes (as stated above), you MUST return EXACTLY: "Iniciaremos desde cero, ya que no cuentas con conocimientos previos registrados en esta área." Do NOT invent any skills, personality traits, or knowledge.
     `;
 
     const model = this.pickModel(byokKey, byokProvider, 'gpt-4o-mini');
@@ -275,7 +278,7 @@ export class GoalService {
       
       IMPORTANTE:
       - Si en el chat el usuario y el coach ya acordaron explícitamente esta disponibilidad y plazo para esta meta (o para una versión acotada de la misma, como por ejemplo hacer un portafolio básico de 3 proyectos en lugar de ser un profesional senior de inmediato), debes considerarlo VIABLE ("isViable": true) para no contradecir lo pactado y evitar ciclos infinitos de rechazo.
-      - Si la matemática de verdad NO da y NO se ha discutido en el chat, o si es absurdamente imposible bajo cualquier supuesto (ej. ser neurocirujano o aprender medicina en 1 mes), entonces recházalo.
+      - Si la matemática NO da por falta de tiempo semanal, PERO el usuario no ha puesto una fecha límite inamovible de vida o muerte (o si acaba de iniciar y no hay chat previo), NO lo rechaces. Considerarlo VIABLE ("isViable": true) y delega la responsabilidad al arquitecto para que simplemente extienda la fecha objetivo (targetDate) hacia el futuro hasta que la matemática cuadre. Recházalo SOLO si la meta es inherentemente imposible (ej. viajar en el tiempo) o si es de vida o muerte cumplirla en un plazo irreal.
       
       Si debes rechazarlo, redacta un "renegotiationMessage" dirigiéndote al usuario en primera persona del plural (como si fueras el equipo del coach). Ofrece opciones conversacionales. Ejemplo: "Analicé nuestra meta con el equipo de planificación y los números no dan para lograrlo en 2 meses con 5 horas a la semana. Toma unas 300 horas en total. ¿Qué te parece si extendemos la fecha a Diciembre, o subimos a 15 horas semanales?"
       
@@ -336,7 +339,7 @@ ${teamContext ? `TEAM MEMBERS:\n${teamContext}` : ''}
 ${chatContext ? `CONVERSATION CONTEXT (what was agreed):\n${chatContext.slice(0, 2000)}` : ''}
 
 Analyze strictly and realistically:
-1. What does the user ALREADY HAVE from their DNA that's relevant? (list it as startingAssets)
+1. What does the user ALREADY HAVE from their DNA that's relevant? (list it as startingAssets). CRITICAL: ONLY extract assets that are EXACTLY listed in the "USER DNA" array above. If the "USER DNA" array is empty [], you MUST return an empty array [] for startingAssets. DO NOT invent or assume skills based on the goal description.
 2. What are the GAPS they must develop?
 3. Given ${timePerWeek}h/week and the target date, is this FEASIBLE?
    - "ok": achievable with the given time
@@ -673,7 +676,7 @@ Return ONLY valid JSON:
               description: task.description || '',
               type: validType,
               frequency: task.frequency || { type: 'daily', value: 1 },
-              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number) : [],
+              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number).filter(d => !isNaN(d) && d !== null && d !== undefined) : [],
               estimatedHours: Math.min(4, parseFloat(task.estimatedHours) || 1.0),
               startDate: task.startDate || null,
               endDate: task.targetDate || task.endDate || null,
@@ -684,7 +687,7 @@ Return ONLY valid JSON:
               title: task.name || task.title || 'Proyecto Continuo',
               description: task.description || '',
               type: validType,
-              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number) : [1, 2, 3, 4, 5],
+              daysOfWeek: Array.isArray(task.daysOfWeek) ? task.daysOfWeek.map(Number).filter(d => !isNaN(d) && d !== null && d !== undefined) : [1, 2, 3, 4, 5],
               estimatedHours: Math.min(8, parseFloat(task.estimatedHours) || 2.0),
               startDate: task.startDate || null,
               endDate: task.targetDate || task.endDate || null,

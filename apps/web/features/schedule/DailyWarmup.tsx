@@ -44,11 +44,22 @@ export function DailyWarmup() {
 
   useEffect(() => {
     setMounted(true);
-    // Check if we already did warmup today in this session
-    const hasDone = sessionStorage.getItem('warmup_done_today');
-    if (!hasDone) {
-      setIsVisible(true);
-    }
+    
+    // Check user profile hasSeenTour first to avoid opening on top of the tour
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.user) {
+          const hasSeen = data.data.user.hasSeenTour;
+          if (hasSeen) {
+            const hasDone = sessionStorage.getItem('warmup_done_today');
+            if (!hasDone) {
+              setIsVisible(true);
+            }
+          }
+        }
+      })
+      .catch(console.error);
 
     // Listen for manual triggers (e.g. from the mobile floating button)
     const handleOpenManual = () => {

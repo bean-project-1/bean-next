@@ -3,16 +3,16 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { 
-  Sparkles, 
-  ArrowRight, 
-  RefreshCw, 
-  Compass, 
-  GitMerge, 
-  CheckCircle2, 
-  MessageSquare, 
-  X, 
-  TrendingUp, 
+import {
+  Sparkles,
+  ArrowRight,
+  RefreshCw,
+  Compass,
+  GitMerge,
+  CheckCircle2,
+  MessageSquare,
+  X,
+  TrendingUp,
   Dna,
   ChevronRight,
   Gamepad2
@@ -31,7 +31,7 @@ interface LifePath {
   dimensionName?: string;
   reasons: string[];
   starterQuestion: string;
-  type?: string; 
+  type?: string;
 }
 
 interface UserAttribute {
@@ -108,8 +108,8 @@ function PathCard({
     <div
       onClick={() => onExplore(path, index)}
       className={`relative w-full min-w-[85vw] md:min-w-0 snap-center rounded-[32px] overflow-hidden border transition-all duration-300 cursor-pointer select-none flex flex-col justify-between p-6 h-[320px]
-        ${active 
-          ? `border-stone-300 bg-white shadow-2xl ${g.glow} -translate-y-2 scale-[1.02]` 
+        ${active
+          ? `border-stone-300 bg-white shadow-2xl ${g.glow} -translate-y-2 scale-[1.02]`
           : `border-black/5 bg-white/75 backdrop-blur-md shadow-md hover:shadow-xl hover:-translate-y-1 ${g.glow}`
         }
         group`}
@@ -156,12 +156,12 @@ function PathCard({
           <span className={`text-xs font-black ${g.text}`}>{path.alignment} XP</span>
         </div>
         <div className="h-2 rounded-full bg-stone-100 overflow-hidden shadow-inner">
-          <div 
-            className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to} transition-all duration-1000 ease-out`} 
-            style={{ width: `${path.alignment}%` }} 
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to} transition-all duration-1000 ease-out`}
+            style={{ width: `${path.alignment}%` }}
           />
         </div>
-        
+
         <div className="h-4 mt-3 flex items-center justify-center overflow-hidden">
           <span className={`text-[10px] font-black ${g.text} flex items-center gap-1 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300`}>
             Explorar Misión <ArrowRight className="w-3 h-3" />
@@ -199,12 +199,12 @@ function PathDetailPanel({
   const content = (
     <div className="fixed inset-0 z-[99999] flex items-end md:items-center justify-center p-0 md:p-6 overflow-hidden">
       {/* Backdrop */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" 
-        onClick={onClose} 
+        className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+        onClick={onClose}
       />
 
       {/* Modal Container: Draggable Bottom Sheet on Mobile, Centered Modal on Desktop */}
@@ -226,9 +226,9 @@ function PathDetailPanel({
         transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.8 }}
         className={`relative w-full md:max-w-5xl md:h-[80vh] bg-stone-50 overflow-hidden shadow-2xl flex flex-col md:flex-row md:!h-[80vh] md:!rounded-[32px] md:!translate-y-0 ${isExpanded ? 'rounded-none' : 'rounded-t-[32px]'}`}
       >
-        
+
         {/* Mobile Drag Handle Indicator */}
-        <div 
+        <div
           className="w-full flex justify-center pt-3 pb-3 md:hidden bg-white shrink-0 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={(e) => dragControls.start(e)}
         >
@@ -244,7 +244,7 @@ function PathDetailPanel({
         </div>
 
         {/* Left Side (Details) */}
-        <div 
+        <div
           className={`flex-1 overflow-y-auto bg-white border-r border-stone-200/50 relative min-h-0 block`}
           onPointerDown={(e) => e.stopPropagation()}
           onScroll={(e) => {
@@ -300,9 +300,9 @@ function PathDetailPanel({
                   <span className={`text-sm font-black ${g.text}`}>{path.alignment} XP</span>
                 </div>
                 <div className="h-2.5 rounded-full bg-stone-200 overflow-hidden shadow-inner">
-                  <div 
-                    className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to}`} 
-                    style={{ width: `${path.alignment}%` }} 
+                  <div
+                    className={`h-full rounded-full bg-gradient-to-r ${g.from} ${g.to}`}
+                    style={{ width: `${path.alignment}%` }}
                   />
                 </div>
               </div>
@@ -316,7 +316,7 @@ function PathDetailPanel({
                 <RefreshCw className="w-4 h-4 text-stone-400" />
                 Pedir otra Misión
               </button>
-              
+
               <button
                 onClick={() => { openChat(starterMsg); onClose(); }}
                 className={`w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md`}
@@ -338,9 +338,9 @@ function PathDetailPanel({
 }
 
 // ─────────────────────────────────────────────────────────
-// InsightsView (Main)
+// DescubreView (Main)
 // ─────────────────────────────────────────────────────────
-export function InsightsView() {
+export function DescubreView() {
   const { openChat } = useGlobalChat();
   const [paths, setPaths] = useState<LifePath[]>([]);
   const [activeTab, setActiveTab] = useState<'paths' | 'career' | 'semillero'>('paths');
@@ -355,7 +355,7 @@ export function InsightsView() {
   useEffect(() => {
     Promise.all([
       fetch('/api/profile').then(r => r.json()),
-      fetch('/api/ai/insights/paths').then(r => r.json())
+      fetch('/api/ai/descubre/paths').then(r => r.json())
     ]).then(([profileJson, pathsJson]) => {
       if (profileJson.success) {
         setUserName(profileJson.data.user.name?.split(' ')[0] ?? '');
@@ -372,12 +372,12 @@ export function InsightsView() {
 
   const handleReplacePath = async (pathToReplace: LifePath) => {
     if (!pathToReplace.id) return;
-    
+
     setSelectedPath(null);
     setReplacingId(pathToReplace.id);
-    
+
     try {
-      const res = await fetch('/api/ai/insights/paths', {
+      const res = await fetch('/api/ai/descubre/paths', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ replaceId: pathToReplace.id })
@@ -396,7 +396,7 @@ export function InsightsView() {
   const handleRegeneratePaths = () => {
     setPathsLoading(true);
     setPathsError(false);
-    fetch('/api/ai/insights/paths?regenerate=true').then(r => r.json())
+    fetch('/api/ai/descubre/paths?regenerate=true').then(r => r.json())
       .then(d => { if (d.success && d.paths?.length) setPaths(d.paths); else setPathsError(true); })
       .catch(() => setPathsError(true))
       .finally(() => setPathsLoading(false));
@@ -429,37 +429,34 @@ export function InsightsView() {
   return (
     <div className="min-h-screen bg-transparent pb-32 sm:pb-32 mesh-gradient p-4 sm:p-8 animate-fade-in">
       <div className="flex bg-stone-100 p-1.5 rounded-[1.75rem] border border-stone-200/50 shadow-sm w-full max-w-2xl mx-auto mb-10 relative z-10">
-        <button 
+        <button
           onClick={() => setActiveTab('paths')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeTab === 'paths' 
-              ? 'bg-white text-emerald-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'paths'
+              ? 'bg-white text-emerald-700 shadow-md shadow-stone-200/40 border border-stone-100/50'
               : 'text-stone-500 hover:text-stone-850'
-          }`}
+            }`}
         >
           <span className="hidden sm:inline">Explorador de Caminos</span>
           <span className="sm:hidden">Caminos</span>
           🗺️
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('career')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeTab === 'career' 
-              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'career'
+              ? 'bg-white text-indigo-700 shadow-md shadow-stone-200/40 border border-stone-100/50'
               : 'text-stone-500 hover:text-stone-855'
-          }`}
+            }`}
         >
           <span className="hidden sm:inline">Brújula de Carrera</span>
           <span className="sm:hidden">Brújula</span>
           💼
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('semillero')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeTab === 'semillero' 
-              ? 'bg-white text-amber-700 shadow-md shadow-stone-200/40 border border-stone-100/50' 
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-[1.35rem] text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${activeTab === 'semillero'
+              ? 'bg-white text-amber-700 shadow-md shadow-stone-200/40 border border-stone-100/50'
               : 'text-stone-500 hover:text-stone-855'
-          }`}
+            }`}
         >
           <span className="hidden sm:inline">Semillero</span>
           <span className="sm:hidden">Semillero</span>
@@ -477,123 +474,123 @@ export function InsightsView() {
             transition={{ duration: 0.25 }}
             className="max-w-6xl mx-auto space-y-8"
           >
-        
-        <div className="glass rounded-[32px] p-6 sm:p-8 border border-black/5 relative overflow-hidden shadow-lg">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gradient-to-tr from-amber-500/10 to-orange-500/10 rounded-full blur-2xl pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-[16px] bg-emerald-50 border-2 border-emerald-100 text-emerald-600 shadow-sm rotate-3">
-                  <Gamepad2 className="w-6 h-6" />
+
+            <div className="glass rounded-[32px] p-6 sm:p-8 border border-black/5 relative overflow-hidden shadow-lg">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gradient-to-tr from-amber-500/10 to-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-[16px] bg-emerald-50 border-2 border-emerald-100 text-emerald-600 shadow-sm rotate-3">
+                      <Gamepad2 className="w-6 h-6" />
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-stone-850 tracking-tight">
+                      Hola, {userName || 'Jugador'} ✨
+                    </h1>
+                  </div>
+                  <p className="text-xs sm:text-sm text-stone-500 font-bold max-w-xl leading-relaxed">
+                    BEAN Descubre analiza tu ADN y metas activas para generar <span className="text-emerald-600 font-black">misiones evolutivas</span> hechas a tu medida.
+                  </p>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-stone-850 tracking-tight">
-                  Hola, {userName || 'Jugador'} ✨
-                </h1>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-500 font-bold max-w-xl leading-relaxed">
-                BEAN Insights analiza tu ADN y metas activas para generar <span className="text-emerald-600 font-black">misiones evolutivas</span> hechas a tu medida.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-6 divide-x divide-stone-200 border border-stone-200 bg-white/80 backdrop-blur-md rounded-[20px] px-6 py-4 shadow-sm self-start md:self-auto">
-              <div className="flex flex-col items-center">
-                <span className="text-2xl font-black text-stone-800 leading-tight">{attributes.length}</span>
-                <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mt-1 flex items-center gap-1">
-                  <Dna className="w-3 h-3 text-rose-500" />
-                  Nivel ADN
-                </span>
+                <div className="flex items-center gap-6 divide-x divide-stone-200 border border-stone-200 bg-white/80 backdrop-blur-md rounded-[20px] px-6 py-4 shadow-sm self-start md:self-auto">
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl font-black text-stone-800 leading-tight">{attributes.length}</span>
+                    <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mt-1 flex items-center gap-1">
+                      <Dna className="w-3 h-3 text-rose-500" />
+                      Nivel ADN
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center pl-6">
+                    <span className="text-2xl font-black text-stone-800 leading-tight">3</span>
+                    <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mt-1 flex items-center gap-1">
+                      <Compass className="w-3 h-3 text-amber-500" />
+                      Rutas Activas
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col items-center pl-6">
-                <span className="text-2xl font-black text-stone-800 leading-tight">3</span>
-                <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest mt-1 flex items-center gap-1">
-                  <Compass className="w-3 h-3 text-amber-500" />
-                  Rutas Activas
-                </span>
-              </div>
-            </div>
-          </div>
 
-          {attributes.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-stone-100/50 flex flex-col md:flex-row md:items-center">
-              <span className="text-[10px] font-black text-stone-400 uppercase tracking-wider mr-3 shrink-0 mb-3 md:mb-0">Tu Inventario:</span>
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden w-full">
-                {skills.map((a, i) => (
-                  <span key={'s'+i} className="snap-start shrink-0 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
-                ))}
-                {interests.map((a, i) => (
-                  <span key={'i'+i} className="snap-start shrink-0 bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
-                ))}
-                {values.map((a, i) => (
-                  <span key={'v'+i} className="snap-start shrink-0 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between px-2 gap-4">
-            <div className="space-y-1">
-              <h2 className="text-xl font-black text-stone-850 tracking-tight flex items-center gap-2">
-                🗺️ Tablero de Misiones
-              </h2>
-              <p className="text-xs text-stone-500 font-bold">Rutas proyectadas para subir de nivel tu Árbol</p>
-            </div>
-            {!pathsError && paths.length > 0 && (
-              <button
-                onClick={handleRegeneratePaths}
-                className="self-start md:self-auto text-xs font-black uppercase tracking-wider text-emerald-700 bg-white border-2 border-stone-200 px-5 py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2 active:scale-95"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Re-calcular Rutas
-              </button>
-            )}
-          </div>
-
-          {pathsError && (
-            <div className="glass rounded-[32px] border border-stone-200/60 bg-white/80 p-12 text-center shadow-lg">
-              <div className="w-20 h-20 rounded-[24px] bg-stone-100 flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner">🌱</div>
-              <p className="text-stone-700 text-base font-black mb-6 max-w-md mx-auto">
-                {attributes.length === 0
-                  ? 'Aún no tienes ADN registrado. Completa tu perfil para desbloquear misiones.'
-                  : 'Hubo un error de conexión al cargar tus rutas.'}
-              </p>
-              {attributes.length === 0 ? (
-                <a href="/dna" className="inline-flex text-xs font-black uppercase tracking-wider text-white bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl transition-all shadow-xl hover:shadow-emerald-500/20 active:scale-95">
-                  🧬 Construir mi ADN →
-                </a>
-              ) : (
-                <button onClick={handleRegeneratePaths} className="inline-flex text-xs font-black uppercase tracking-wider text-emerald-700 bg-white border-2 border-stone-200 px-8 py-4 rounded-2xl transition-all shadow-sm active:scale-95">
-                  ↻ Reintentar Conexión
-                </button>
+              {attributes.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-stone-100/50 flex flex-col md:flex-row md:items-center">
+                  <span className="text-[10px] font-black text-stone-400 uppercase tracking-wider mr-3 shrink-0 mb-3 md:mb-0">Tu Inventario:</span>
+                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden w-full">
+                    {skills.map((a, i) => (
+                      <span key={'s' + i} className="snap-start shrink-0 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
+                    ))}
+                    {interests.map((a, i) => (
+                      <span key={'i' + i} className="snap-start shrink-0 bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
+                    ))}
+                    {values.map((a, i) => (
+                      <span key={'v' + i} className="snap-start shrink-0 bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">{a.name}</span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          )}
 
-          {!pathsError && paths.length > 0 && (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:grid md:grid-cols-3 md:gap-6 pb-6 pt-2 px-4 -mx-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-              {paths.map((path, i) => (
-                <PathCard
-                  key={path.id || i}
-                  path={path}
-                  index={i}
-                  onExplore={handleExplorePath}
-                  active={selectedPath?.path.title === path.title}
-                  isReplacing={path.id === replacingId}
-                />
-              ))}
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between px-2 gap-4">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-black text-stone-850 tracking-tight flex items-center gap-2">
+                    🗺️ Tablero de Misiones
+                  </h2>
+                  <p className="text-xs text-stone-500 font-bold">Rutas proyectadas para subir de nivel tu Árbol</p>
+                </div>
+                {!pathsError && paths.length > 0 && (
+                  <button
+                    onClick={handleRegeneratePaths}
+                    className="self-start md:self-auto text-xs font-black uppercase tracking-wider text-emerald-700 bg-white border-2 border-stone-200 px-5 py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2 active:scale-95"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Re-calcular Rutas
+                  </button>
+                )}
+              </div>
+
+              {pathsError && (
+                <div className="glass rounded-[32px] border border-stone-200/60 bg-white/80 p-12 text-center shadow-lg">
+                  <div className="w-20 h-20 rounded-[24px] bg-stone-100 flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner">🌱</div>
+                  <p className="text-stone-700 text-base font-black mb-6 max-w-md mx-auto">
+                    {attributes.length === 0
+                      ? 'Aún no tienes ADN registrado. Completa tu perfil para desbloquear misiones.'
+                      : 'Hubo un error de conexión al cargar tus rutas.'}
+                  </p>
+                  {attributes.length === 0 ? (
+                    <a href="/dna" className="inline-flex text-xs font-black uppercase tracking-wider text-white bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl transition-all shadow-xl hover:shadow-emerald-500/20 active:scale-95">
+                      🧬 Construir mi ADN →
+                    </a>
+                  ) : (
+                    <button onClick={handleRegeneratePaths} className="inline-flex text-xs font-black uppercase tracking-wider text-emerald-700 bg-white border-2 border-stone-200 px-8 py-4 rounded-2xl transition-all shadow-sm active:scale-95">
+                      ↻ Reintentar Conexión
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!pathsError && paths.length > 0 && (
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:grid md:grid-cols-3 md:gap-6 pb-6 pt-2 px-4 -mx-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+                  {paths.map((path, i) => (
+                    <PathCard
+                      key={path.id || i}
+                      path={path}
+                      index={i}
+                      onExplore={handleExplorePath}
+                      active={selectedPath?.path.title === path.title}
+                      isReplacing={path.id === replacingId}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-          <div className="px-2 pb-16 text-center">
-            <h2 className="text-sm font-black text-stone-700 uppercase tracking-widest mb-3">¿Listo para un desafío mayor?</h2>
-            <button onClick={() => openChat()} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition-colors">
-              <MessageSquare className="w-4 h-4" /> Abre el chat global
-            </button>
-          </div>
+            <div className="px-2 pb-16 text-center">
+              <h2 className="text-sm font-black text-stone-700 uppercase tracking-widest mb-3">¿Listo para un desafío mayor?</h2>
+              <button onClick={() => openChat()} className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition-colors">
+                <MessageSquare className="w-4 h-4" /> Abre el chat global
+              </button>
+            </div>
 
           </motion.div>
         )}

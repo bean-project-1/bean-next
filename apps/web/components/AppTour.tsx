@@ -4,9 +4,10 @@
 // =======================================================
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import { useGlobalChat } from '@/features/chat/GlobalChatProvider';
 
 interface Props {
   hasSeenTour: boolean;
@@ -14,11 +15,15 @@ interface Props {
 
 export function AppTour({ hasSeenTour }: Props) {
   const hasStartedRef = useRef(false);
+  const { isOpen } = useGlobalChat();
+  const [wantsMainTour, setWantsMainTour] = useState(false);
 
   useEffect(() => {
-    if (hasSeenTour) return;
-    if (hasStartedRef.current) return;
-    hasStartedRef.current = true;
+    const isFreshOnboarding = sessionStorage.getItem('just_onboarded') === 'true' || 
+                              sessionStorage.getItem('first_tour_active') === 'true' ||
+                              !!sessionStorage.getItem('just_onboarded_goal');
+                              
+    if (hasSeenTour && !isFreshOnboarding) return;
 
     // ─── 1. Main Dashboard Tour Definition ──────────────────────
     const startMainTour = () => {
@@ -46,15 +51,6 @@ export function AppTour({ hasSeenTour }: Props) {
             }
           },
           {
-            element: '#tour-top-toggle',
-            popover: {
-              title: '🌱 El Semillero',
-              description: 'Alterna esta vista para entrar al Semillero. Aquí guardamos las ideas sueltas que nos diste. Cuando estén maduras, puedes pasarlas al Bosque.',
-              side: 'bottom',
-              align: 'center'
-            }
-          },
-          {
             element: '#tour-nav-schedule',
             popover: {
               title: '🧭 La Agenda (Brújula)',
@@ -67,7 +63,25 @@ export function AppTour({ hasSeenTour }: Props) {
             element: '#tour-nav-dna',
             popover: {
               title: '🧬 Tu ADN',
-              description: 'Aquí vive tu perfil, tus habilidades (extraídas de tu CV/entrevista) y tus valores. Crecer en tu bosque mejora tu ADN.',
+              description: 'Tu perfil completo. Revisa tus atributos, tu brújula vocacional y cómo evoluciona tu identidad.',
+              side: 'top',
+              align: 'center'
+            }
+          },
+          {
+            element: '#tour-nav-descubre',
+            popover: {
+              title: '💡 Descubre',
+              description: 'Explora nuevos caminos, ideas de proyectos y posibles trayectorias según tu perfil.',
+              side: 'top',
+              align: 'center'
+            }
+          },
+          {
+            element: '#tour-nav-bean',
+            popover: {
+              title: '🤖 Chat y Herramientas',
+              description: 'Toca una vez para abrir el Chat y hablar con el Coach desde cualquier pantalla. Si MANTIENES PRESIONADO este botón, se abrirán opciones rápidas como Notas, Pomodoro o el Semillero.',
               side: 'top',
               align: 'center'
             }
@@ -113,23 +127,12 @@ export function AppTour({ hasSeenTour }: Props) {
               side: 'right',
               align: 'center'
             }
-          },
-          {
-            element: '#tour-nav-schedule',
-            popover: {
-              title: '📅 Agenda y Hábitos',
-              description: 'Las tareas y hábitos que confirmes aquí se sincronizarán automáticamente con tu Agenda Diaria para ayudarte a encontrar el mejor momento para actuar.',
-              side: 'top',
-              align: 'center'
-            }
           }
         ],
         onDestroyStarted: () => {
           onboardingTour.destroy();
-          // Chain to Main Dashboard Tour automatically
-          setTimeout(() => {
-            startMainTour();
-          }, 600);
+          // Flag that we want the main dashboard tour, but wait for the chat to close
+          setWantsMainTour(true);
         }
       });
       onboardingTour.drive();
@@ -137,28 +140,40 @@ export function AppTour({ hasSeenTour }: Props) {
 
     // ─── 3. Event Listener / Lifecycle ─────────────────────────
     const handleStartOnboarding = () => {
+      if (hasStartedRef.current) return;
+      hasStartedRef.current = true;
       startOnboardingTour();
     };
 
     window.addEventListener('start-onboarding-tour', handleStartOnboarding);
 
+    // Watch for chat closing if we want the main tour
+    if (wantsMainTour && !isOpen) {
+      setWantsMainTour(false);
+      setTimeout(() => {
+        startMainTour();
+      }, 600);
+    }
+
     // If it's a standard user returning or not starting onboarding flow directly, run main tour
-    const isNewUserOnboarding = sessionStorage.getItem('just_onboarded') === 'true' || sessionStorage.getItem('first_tour_active') === 'true';
+    const isNewUserOnboarding = sessionStorage.getItem('just_onboarded') === 'true' || 
+                                sessionStorage.getItem('first_tour_active') === 'true' ||
+                                !!sessionStorage.getItem('just_onboarded_goal');
+    
+    let timer: any;
     if (!isNewUserOnboarding) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
+        if (hasStartedRef.current) return;
+        hasStartedRef.current = true;
         startMainTour();
       }, 1500);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('start-onboarding-tour', handleStartOnboarding);
-      };
     }
 
     return () => {
+      if (timer) clearTimeout(timer);
       window.removeEventListener('start-onboarding-tour', handleStartOnboarding);
     };
-
-  }, [hasSeenTour]);
+  }, [hasSeenTour, wantsMainTour, isOpen]);
 
   return null;
 }

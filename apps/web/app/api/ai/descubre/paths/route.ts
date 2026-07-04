@@ -5,9 +5,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { deepseek, getTracedDeepseek } from '@/lib/openai';
+import { getTracedDeepseek, getTracedOpenAI } from '@/lib/openai';
+import { getDynamicAIClient, getDynamicModel } from '@/lib/ai-client';
 
 export const dynamic = 'force-dynamic';
+
+function getClientAndModel(req: NextRequest, userId: string) {
+  const config = {
+    userId,
+    tags: ["agent:insights-paths", `env:${process.env.NODE_ENV || 'development'}`]
+  };
+
+  const byokKey = req.cookies.get('bean_byok_key')?.value;
+  if (byokKey && byokKey.length >= 10) {
+    const client = getDynamicAIClient(req, config);
+    const model = getDynamicModel(req, 'gpt-4o-mini');
+    return { client, model };
+  }
+
+  const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key-here";
+  if (hasOpenAI) {
+    return {
+      client: getTracedOpenAI(config),
+      model: 'gpt-4o-mini'
+    };
+  }
+
+  return {
+    client: getTracedDeepseek(config),
+    model: 'deepseek-chat'
+  };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +56,7 @@ export async function GET(req: NextRequest) {
       });
 
       if (existingPaths.length > 0) {
-        console.log(`[InsightsPaths] Returning ${existingPaths.length} cached paths for user ${userId}`);
+        console.log(`[DescubrePaths] Returning ${existingPaths.length} cached paths for user ${userId}`);
         return NextResponse.json({ success: true, paths: existingPaths, cached: true });
       }
     }
@@ -64,7 +92,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Call AI
     const prompt = `
-      Eres BEAN Insights, un experto en desarrollo personal y planificación de vida. 
+      Eres BEAN Descubre, un experto en desarrollo personal y planificación de vida. 
       Analiza detenidamente el ADN COMPLETO del usuario y sus METAS ACTUALES. Tu objetivo es entender profundamente hacia dónde quiere llegar la persona en cada una de sus dimensiones.
       Basándote en esa visión integral, genera exactamente 3 posibles "Caminos de Vida" recomendados. Cada camino debe contribuir a los objetivos propios de su dimensión y ser ALTAMENTE REALISTA Y LOGRABLE.
       
@@ -107,15 +135,14 @@ export async function GET(req: NextRequest) {
       ]
     `.trim();
 
-    const tracedDeepseek = getTracedDeepseek({
-      userId: userId,
-      tags: ["agent:insights-paths", `env:${process.env.NODE_ENV || 'development'}`]
-    });
-    const aiRes = await tracedDeepseek.chat.completions.create({
-      model: 'deepseek-chat',
+    const { client, model } = getClientAndModel(req, userId);
+    const aiRes = await client.chat.completions.create({
+      model,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.9,
       max_tokens: 1500,
+    }, {
+      timeout: 30000 // 30 seconds timeout
     });
 
     const raw = aiRes.choices[0]?.message?.content ?? '[]';
@@ -206,7 +233,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Call AI for ONE new path
     const prompt = `
-      Eres BEAN Insights, experto en desarrollo personal. El usuario quiere REEMPLAZAR una de sus sugerencias de vida.
+      Eres BEAN Descubre, experto en desarrollo personal. El usuario quiere REEMPLAZAR una de sus sugerencias de vida.
       Analiza detenidamente el ADN COMPLETO del usuario y sus METAS ACTUALES, teniendo presente hacia dónde quiere llegar en cada dimensión.
       Genera exactamente 1 NUEVO "Camino de Vida" que sea diferente a estos: ${currentTitles}.
       Debe ser un paso ALTAMENTE REALISTA, LOGRABLE y que contribuya a los objetivos propios de su dimensión.
@@ -234,18 +261,17 @@ export async function POST(req: NextRequest) {
       Responde SOLO con el objeto JSON para este camino único (no array, solo el objeto).
     `.trim();
 
-    const tracedDeepseek = getTracedDeepseek({
-      userId: userId,
-      tags: ["agent:insights-paths", `env:${process.env.NODE_ENV || 'development'}`]
-    });
-    const aiRes = await tracedDeepseek.chat.completions.create({
-      model: 'deepseek-chat',
+    const { client, model } = getClientAndModel(req, userId);
+    const aiRes = await client.chat.completions.create({
+      model,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.9,
+    }, {
+      timeout: 30000 // 30 seconds timeout
     });
 
     const raw = aiRes.choices[0]?.message?.content ?? '{}';
-    
+
     let newPathData;
     try {
       const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();

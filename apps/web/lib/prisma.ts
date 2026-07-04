@@ -11,11 +11,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: ReturnType<typeof prismaClientSingleton> | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+export const prisma = (() => {
+  let instance = globalForPrisma.prisma;
+  
+  if (instance && !('budgetMonth' in instance)) {
+    console.log('BudgetMonth model not found in cached Prisma client. Re-instantiating...');
+    instance = undefined;
+  }
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+  if (!instance) {
+    instance = prismaClientSingleton();
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.prisma = instance;
+    }
+  }
+  return instance;
+})();
 
 // Debug check for model availability in development
 if (process.env.NODE_ENV === 'development') {

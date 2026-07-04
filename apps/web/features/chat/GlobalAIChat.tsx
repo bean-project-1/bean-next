@@ -455,11 +455,15 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
         setMessages([]);
         setAttachedContexts([]);
         
-        // Map existing branch data to the draftPlan structure
-        const allLeaves = existingGoalData.leaves || [];
-        const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
-        const tasks = allLeaves.filter((l: any) => l.type === 'task');
-        const milestones = allLeaves.filter((l: any) => l.type === 'milestone');
+        if (existingGoalData.isNewDraftFromOnboarding) {
+          setDraftPlan(null);
+          setMobileTab('draft');
+        } else {
+          // Map existing branch data to the draftPlan structure
+          const allLeaves = existingGoalData.leaves || [];
+          const phases = allLeaves.filter((l: any) => l.type === 'phase' || (!l.type && !l.parentId));
+          const tasks = allLeaves.filter((l: any) => l.type === 'task');
+          const milestones = allLeaves.filter((l: any) => l.type === 'milestone');
 
         const mappedDraft = {
           isExistingRefactor: true,
@@ -502,9 +506,10 @@ export function GlobalAIChat({ isOpen, onClose, initialMessage, context = 'globa
           }),
           habits: [],
           continuousProjects: []
-        };
-        setDraftPlan(mappedDraft);
-        setMobileTab('draft');
+          };
+          setDraftPlan(mappedDraft);
+          setMobileTab('draft');
+        }
       }
     }
   }, [isOpen, loadSession, existingGoalData]);

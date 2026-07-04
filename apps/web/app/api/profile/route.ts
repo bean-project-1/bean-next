@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
       await Promise.all(inputOps);
     }
 
-    // 3. Find or Create default Space
+    // 3. Find default Space if it exists
     let space = await prisma.space.findFirst({
       where: {
         members: {
@@ -198,30 +198,6 @@ export async function POST(req: NextRequest) {
         }
       }
     });
-
-    if (!space) {
-      space = await prisma.space.create({
-        data: {
-          name: 'Mi Árbol',
-          description: 'Tu espacio principal para crecer',
-          theme: 'green',
-          members: {
-            create: {
-              userId: user.id,
-              role: 'owner'
-            }
-          }
-        }
-      });
-    } else {
-      // Opt: ensure the name is 'Mi Árbol' if they had the old duplicate names
-      if (space.name === 'Mi Bosque Personal' || space.name === 'Mi Arbol Personal' || space.name === 'Mi Árbol Personal') {
-        space = await prisma.space.update({
-          where: { id: space.id },
-          data: { name: 'Mi Árbol' }
-        });
-      }
-    }
 
     // 4. Create or Update Base Commitments (Routine)
     const baseCommitments = [];
@@ -240,7 +216,8 @@ export async function POST(req: NextRequest) {
         where: { id: existingSleep.id },
         data: {
           hoursPerDay: data.sleepHours,
-          spaceId: space.id,
+          commuteHours: 0,
+          spaceId: space?.id || null,
           dimensionIds: healthDim ? [healthDim.id] : [],
         },
       });
@@ -252,7 +229,7 @@ export async function POST(req: NextRequest) {
         hoursPerDay: data.sleepHours,
         daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Everyday
         dimensionIds: healthDim ? [healthDim.id] : [],
-        spaceId: space.id,
+        spaceId: space?.id || null,
         isActive: true,
       });
     }
@@ -279,9 +256,10 @@ export async function POST(req: NextRequest) {
             title,
             type,
             hoursPerDay: hours,
+            commuteHours: 1,
             daysOfWeek: days,
+            spaceId: space?.id || null,
             dimensionIds: careerDim ? [careerDim.id] : [],
-            spaceId: space.id,
           },
         });
       } else {
@@ -291,8 +269,8 @@ export async function POST(req: NextRequest) {
           type,
           hoursPerDay: hours,
           daysOfWeek: days,
+          spaceId: space?.id || null,
           dimensionIds: careerDim ? [careerDim.id] : [],
-          spaceId: space.id,
           isActive: true,
         });
       }

@@ -24,6 +24,9 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  payday             Int?      @map("payday")
+  accumulatedSavings Float     @default(0) @map("accumulated_savings")
+
   timezone                String? @default("America/Bogota")
   notificationPreferences Json?   @map("notification_preferences")
 
@@ -45,6 +48,7 @@ model User {
   spaceMembers      SpaceMember[]
   spaceMessages     SpaceMessage[]
   assignedActions   GoalAction[] @relation("AssignedActions")
+  budgetMonths      BudgetMonth[]
 
   @@map("users")
 }
@@ -489,6 +493,7 @@ model DailyTask {
   isCompleted    Boolean  @default(false) @map("is_completed")
   date           DateTime // La fecha para la que se creó o a la que se arrastró
   estimatedHours Float?   @map("estimated_hours") // Opcional, tiempo estimado
+  notes          String?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -612,5 +617,27 @@ model SpaceMessage {
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("space_messages")
+}
+
+//
+// ───────────────── BUDGETS ─────────────────
+//
+model BudgetMonth {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @map("user_id") @db.ObjectId
+  
+  month   Int
+  year    Int
+
+  incomes Json[]  // [{ id, name, amount, type }]
+  expenses Json[] // [{ id, name, amount, category }]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("budget_months")
+  @@unique([userId, month, year])
 }
 

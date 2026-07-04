@@ -180,6 +180,7 @@ export async function GET(req: NextRequest) {
         id: task.id,
         title: task.title,
         description: task.description || (isOverdue ? 'Retrasada de un día anterior' : 'Tarea rápida'),
+        notes: task.notes || '',
         date: targetDate.toISOString(),
         type: 'daily',
         estimatedHours: task.estimatedHours || 0,

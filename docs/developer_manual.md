@@ -100,7 +100,7 @@ Ubicación: [services/ai-engine](file:///c:/Users/dhdiazga/OneDrive%20-%20Telefo
 Este módulo de backend se encarga de analizar los perfiles utilizando llamadas de IA (OpenAI / DeepSeek) y Langfuse para trazabilidad de prompts.
 *   El analizador core está en [profileAnalyzer.ts](file:///c:/Users/dhdiazga/OneDrive%20-%20Telefonica/Documentos/Desarrollos/bean-next/services/ai-engine/analyzers/profileAnalyzer.ts), que cuenta con las funciones:
     *   `analyzeProfile()`: Procesa la puntuación global de 10 dimensiones.
-    *   `generateInsights()`: Genera fortalezas, riesgos, y sugerencias de acción personalizadas.
+    *   `generateDescubre()`: Genera fortalezas, riesgos, y sugerencias de acción personalizadas.
     *   `simulateTrajectory()`: Proyecta la evolución mensual a futuro.
 
 ---

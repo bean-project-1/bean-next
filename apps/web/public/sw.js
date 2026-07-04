@@ -36,6 +36,22 @@ self.addEventListener('notificationclick', function (event) {
   console.log('[Service Worker] Notification click received.', event.notification.data);
   event.notification.close();
 
+  if (event.action === 'add_savings') {
+    event.waitUntil(
+      fetch('/api/dna/budgets/add-savings', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+           if (data.success) {
+             self.registration.showNotification('¡Ahorro registrado! 💎', {
+               body: `Se sumaron $${data.addedAmount.toLocaleString()} a tu ahorro acumulado. ¡Gran trabajo!`,
+             });
+           }
+        })
+        .catch(err => console.error('[Service Worker] Error adding savings:', err))
+    );
+    return;
+  }
+
   try {
     const urlToOpen = new URL(event.notification.data?.url || '/schedule', self.location.origin).href;
     console.log('[Service Worker] Opening URL:', urlToOpen);

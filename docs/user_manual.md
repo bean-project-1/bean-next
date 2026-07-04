@@ -38,8 +38,8 @@ Una vez completado el registro, accederás al panel central donde verás:
 
 ---
 
-### Paso 3: Perspectivas Personalizadas (AI Insights)
-En la pestaña de **Insights**, el motor de análisis evaluará la relación entre tus dimensiones y generará análisis prácticos:
+### Paso 3: Perspectivas Personalizadas (AI Descubre)
+En la pestaña de **Descubre**, el motor de análisis evaluará la relación entre tus dimensiones y generará análisis prácticos:
 *   **Strengths (Fortalezas)**: Comportamientos o recursos que ya tienes dominados y cómo apalancarte en ellos.
 *   **Gaps (Brechas)**: Desbalances críticos (por ejemplo, si tienes habilidades muy altas pero tus ingresos o tu satisfacción laboral son bajos).
 *   **Opportunities (Oportunidades)**: Sugerencias específicas de mejora que tendrán el mayor impacto en tu felicidad global.

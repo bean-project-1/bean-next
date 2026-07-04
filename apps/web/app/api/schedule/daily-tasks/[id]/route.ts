@@ -21,7 +21,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         isCompleted: body.isCompleted !== undefined ? body.isCompleted : undefined,
         title: body.title,
         description: body.description,
-        estimatedHours: body.estimatedHours
+        estimatedHours: body.estimatedHours,
+        notes: body.notes
       }
     });
 

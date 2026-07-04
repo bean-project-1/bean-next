@@ -14,15 +14,16 @@ import { PomodoroModal } from '@/features/schedule/PomodoroModal';
 import { NotesModal } from '@/features/schedule/NotesModal';
 import { useGlobalChat } from '@/features/chat/GlobalChatProvider';
 import { AppTour } from '@/components/AppTour';
+import { UserMenu } from '@/components/UserMenu';
 
 // ─── Static nav links ────────────────────────────────────────────────────────
-const LEFT_LINKS  = [
-  { href: '/home',     icon: LayoutDashboard, label: 'Árbol'   },
-  { href: '/schedule', icon: Calendar,         label: 'Agenda'  },
+const LEFT_LINKS = [
+  { href: '/home', icon: LayoutDashboard, label: 'Árbol' },
+  { href: '/schedule', icon: Calendar, label: 'Agenda' },
 ];
 const RIGHT_LINKS = [
-  { href: '/dna',      icon: Dna,       label: 'ADN'      },
-  { href: '/insights', icon: Lightbulb, label: 'Insights' },
+  { href: '/dna', icon: Dna, label: 'Yo' },
+  { href: '/descubre', icon: Lightbulb, label: 'Descubre' },
 ];
 
 // ─── NavLink ─────────────────────────────────────────────────────────────────
@@ -38,12 +39,10 @@ function NavLink({ href, icon: Icon, label, path }: { href: string; icon: any; l
         />
       )}
       <div className="relative flex flex-col sm:flex-row items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 transition-colors">
-        <Icon className={`w-5 h-5 transition-transform duration-300 ${
-          active ? 'scale-110 text-emerald-600' : 'text-stone-400 group-hover:scale-110 group-hover:text-stone-600'
-        }`} />
-        <span className={`text-[10px] sm:text-xs font-semibold tracking-wide ${
-          active ? 'text-stone-800' : 'hidden sm:block text-stone-500 group-hover:text-stone-700'
-        }`}>
+        <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110 text-emerald-600' : 'text-stone-400 group-hover:scale-110 group-hover:text-stone-600'
+          }`} />
+        <span className={`text-[10px] sm:text-xs font-semibold tracking-wide ${active ? 'text-stone-800' : 'hidden sm:block text-stone-500 group-hover:text-stone-700'
+          }`}>
           {label}
         </span>
       </div>
@@ -53,7 +52,7 @@ function NavLink({ href, icon: Icon, label, path }: { href: string; icon: any; l
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const path   = usePathname();
+  const path = usePathname();
   const router = useRouter();
   const { isOpen: isChatOpen, openChat, closeChat } = useGlobalChat();
   const [showRadialMenu, setShowRadialMenu] = useState(false);
@@ -62,9 +61,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Close chat/menu on route change
   const lastPathRef = useRef(path);
-  useEffect(() => { 
+  useEffect(() => {
     if (lastPathRef.current !== path) {
-      closeChat(); 
+      closeChat();
       setShowRadialMenu(false);
       lastPathRef.current = path;
     }
@@ -98,7 +97,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleCentralButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     if (isLongPressRef.current) {
       // It was a long press, do nothing on click
       return;
@@ -172,15 +171,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* ── Main content ──────────────────────────────────────────────── */}
-      <main className={`flex-1 w-full relative overflow-x-hidden ${
-        isFullscreenApp ? 'h-[100dvh] overflow-hidden' : 'min-h-screen pb-32 sm:pb-32'
-      }`}>
+      <main className={`flex-1 w-full relative overflow-x-hidden ${isFullscreenApp ? 'h-[100dvh] overflow-hidden' : 'min-h-screen pb-32 sm:pb-32'
+        }`}>
+        <UserMenu />
         <div className="w-full h-full">{children}</div>
       </main>
 
       {/* ── Floating Dock ──────────────────────────────────────────────── */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        
+
         {/* Radial Speed Dial Menu */}
         <AnimatePresence>
           {showRadialMenu && (
@@ -256,11 +255,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   top: 'calc(50% - 28px)',
                 }}
               >
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-[3px] ring-stone-100 transition-all duration-300 ${
-                  isChatOpen
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-[3px] ring-stone-100 transition-all duration-300 ${isChatOpen
                     ? 'bg-gradient-to-br from-stone-400 to-stone-600 shadow-[0_4px_18px_rgba(0,0,0,0.22)] scale-95'
                     : 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_6px_22px_rgba(52,211,153,0.50)] group-hover:scale-110 group-hover:shadow-[0_8px_28px_rgba(52,211,153,0.60)]'
-                }`}>
+                  }`}>
                   <motion.div
                     animate={{ rotate: isChatOpen ? 90 : 0 }}
                     transition={{ type: 'spring', damping: 18, stiffness: 280 }}
@@ -295,15 +293,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={handleCentralButtonClick}
             id="tour-nav-bean"
             aria-label="Herramientas BEAN"
-            className={`absolute left-1/2 -translate-x-1/2 -top-5 group outline-none transition-opacity duration-200 ${
-              showRadialMenu ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
+            className={`absolute left-1/2 -translate-x-1/2 -top-5 group outline-none transition-opacity duration-200 ${showRadialMenu ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
           >
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-[3px] ring-stone-100 transition-all duration-300 ${
-              isChatOpen
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center ring-[3px] ring-stone-100 transition-all duration-300 ${isChatOpen
                 ? 'bg-gradient-to-br from-stone-400 to-stone-600 shadow-[0_4px_18px_rgba(0,0,0,0.22)] scale-95'
                 : 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_6px_22px_rgba(52,211,153,0.50)] group-hover:scale-110 group-hover:shadow-[0_8px_28px_rgba(52,211,153,0.60)]'
-            }`}>
+              }`}>
               <motion.div
                 animate={{ rotate: isChatOpen ? 90 : 0 }}
                 transition={{ type: 'spring', damping: 18, stiffness: 280 }}

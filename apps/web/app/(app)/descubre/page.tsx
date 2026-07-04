@@ -1,9 +1,9 @@
 // =======================================================
-// BEAN — Insights Page
+// BEAN — Descubre Page
 // apps/web/app/(app)/insights/page.tsx
 // =======================================================
-import { InsightsView } from '@/features/insights/InsightsView';
+import { DescubreView } from '@/features/descubre/DescubreView';
 
-export default function InsightsPage() {
-  return <InsightsView />;
+export default function DescubrePage() {
+  return <DescubreView />;
 }

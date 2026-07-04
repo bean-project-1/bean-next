@@ -53,6 +53,9 @@ export function OnboardingFlow() {
           // Sync pending onboarding inputs from sessionStorage if it exists
           const pendingRaw = sessionStorage.getItem('pending_onboarding_inputs');
           if (pendingRaw) {
+            // Consume it synchronously to prevent React StrictMode double-fire race conditions
+            sessionStorage.removeItem('pending_onboarding_inputs');
+            
             console.log('[OnboardingFlow] Found pending onboarding inputs, saving to DB...');
             try {
               setPhase('generating');
